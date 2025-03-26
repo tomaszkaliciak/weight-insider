@@ -1,3 +1,3 @@
 # weight-insider
 
-![screenshot](visualisation.png)
+![screenshot](assets/visualisation.png)
