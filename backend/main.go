@@ -2,12 +2,23 @@ package main
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"net/http/httputil"
+	"os"
+	"strings"
+)
+
+const (
+	FitatuAPIBaseURL = "https://pl-pl.fitatu.com/api"
+	ApiSecret        = "PYRXtfs88UDJMuCCrNpLV"
+	ApiKey           = "FITATU-MOBILE-APP"
+	ContentType      = "application/json;charset=UTF-8"
+	CredentialsFile  = "credentials.json"
 )
 
 type WeightData struct {
@@ -16,21 +27,96 @@ type WeightData struct {
 	WeightUnit string             `json:"weightUnit"`
 }
 
-func main() {
+type Credentials struct {
+	Login    string `json:"login"`
+	Password string `json:"password"`
+}
 
-	values := map[string]string{"_username": "email", "_password": "password"}
+type JWT struct {
+	Header    map[string]any `json:"header"`
+	Payload   map[string]any `json:"payload"`
+	Signature string         `json:"signature"`
+}
 
-	jsonValue, _ := json.Marshal(values)
-
-	client := &http.Client{}
-
-	req, err := http.NewRequest("POST", "https://pl-pl.fitatu.com/api/login", bytes.NewBuffer(jsonValue))
-	if err != nil {
-		log.Fatalf("Error creating request: %v", err)
+func decodeBase64(s string) ([]byte, error) {
+	missing := len(s) % 4
+	if missing != 0 {
+		s += strings.Repeat("=", 4-missing)
 	}
-	req.Header.Set("api-secret", "PYRXtfs88UDJMuCCrNpLV")
-	req.Header.Set("api-key", "FITATU-MOBILE-APP")
-	req.Header.Add("content-Type", "application/json;charset=UTF-8")
+
+	decoded, err := base64.RawURLEncoding.DecodeString(s)
+	if err != nil {
+		decoded, err = base64.StdEncoding.DecodeString(s)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode base64 string: %w", err)
+		}
+	}
+	return decoded, nil
+}
+
+func DecodeJWT(token string) (*JWT, error) {
+	parts := strings.Split(token, ".")
+	if len(parts) != 3 {
+		return nil, fmt.Errorf("invalid JWT format")
+	}
+
+	headerEncoded := parts[0]
+	payloadEncoded := parts[1]
+	signature := parts[2]
+
+	headerJSON, err := decodeBase64(headerEncoded)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode header: %w", err)
+	}
+
+	payloadJSON, err := decodeBase64(payloadEncoded)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode payload: %w", err)
+	}
+
+	var header map[string]any
+	err = json.Unmarshal(headerJSON, &header)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal header: %w", err)
+	}
+
+	var payload map[string]any
+	err = json.Unmarshal(payloadJSON, &payload)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal payload: %w", err)
+	}
+
+	return &JWT{
+		Header:    header,
+		Payload:   payload,
+		Signature: signature,
+	}, nil
+}
+
+func loadCredentials(filename string) (*Credentials, error) {
+	byteValue, err := os.ReadFile(filename)
+	if err != nil {
+		return nil, fmt.Errorf("error reading file %s: %w", filename, err)
+	}
+
+	var credentials Credentials
+	err = json.Unmarshal(byteValue, &credentials)
+	if err != nil {
+		return nil, fmt.Errorf("error unmarshalling JSON: %w", err)
+	}
+
+	return &credentials, nil
+}
+
+func makeHTTPRequest(client *http.Client, method, url string, body io.Reader, headers map[string]string) (*http.Response, error) {
+	req, err := http.NewRequest(method, url, body)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
+
+	for key, value := range headers {
+		req.Header.Set(key, value)
+	}
 
 	requestDump, err := httputil.DumpRequestOut(req, true)
 	if err != nil {
@@ -40,70 +126,126 @@ func main() {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Fatalf("Error sending request: %v", err)
+		return nil, fmt.Errorf("error sending request: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("request failed with status code: %d", resp.StatusCode)
+	}
+
+	return resp, nil
+}
+
+func fitatuLogin(client *http.Client, credentials *Credentials) (string, string, error) {
+	values := map[string]string{"_username": credentials.Login, "_password": credentials.Password}
+	jsonValue, err := json.Marshal(values)
+	if err != nil {
+		return "", "", fmt.Errorf("error marshalling JSON: %w", err)
+	}
+
+	headers := map[string]string{
+		"api-secret":   ApiSecret,
+		"api-key":      ApiKey,
+		"content-Type": ContentType,
+	}
+
+	resp, err := makeHTTPRequest(client, "POST", FitatuAPIBaseURL+"/login", bytes.NewBuffer(jsonValue), headers)
+	if err != nil {
+		return "", "", err
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		log.Printf("Request failed with status code: %d\n", resp.StatusCode)
-		return
-	}
-
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatalf("Error reading response: %v", err)
+		return "", "", fmt.Errorf("error reading response: %w", err)
 	}
 
 	var responseData map[string]any
 	err = json.Unmarshal(body, &responseData)
 	if err != nil {
-		log.Fatalf("Error unmarshaling JSON: %v", err)
+		return "", "", fmt.Errorf("error unmarshaling JSON: %w", err)
 	}
 
 	token, ok := responseData["token"].(string)
 	if !ok {
-		log.Println("Token not found or not a string")
-		token = ""
+		return "", "", fmt.Errorf("token not found or not a string")
 	}
 
 	refreshToken, ok := responseData["refresh_token"].(string)
 	if !ok {
-		log.Println("Refresh token not found or not a string")
+		log.Println("Refresh token not found or not a string, using empty string")
 		refreshToken = ""
+	}
+
+	return token, refreshToken, nil
+}
+
+func fetchWeightData(client *http.Client, userID, token string) (*WeightData, error) {
+	url := fmt.Sprintf("%s/users/%s/measurements/chart/weight", FitatuAPIBaseURL, userID)
+
+	headers := map[string]string{
+		"api-secret":    ApiSecret,
+		"api-key":       ApiKey,
+		"content-Type":  ContentType,
+		"authorization": "Bearer " + token,
+	}
+
+	resp, err := makeHTTPRequest(client, "GET", url, nil, headers)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("error reading response: %w", err)
+	}
+
+	var weightData WeightData
+	err = json.Unmarshal(body, &weightData)
+	if err != nil {
+		return nil, fmt.Errorf("error unmarshaling JSON: %w", err)
+	}
+
+	return &weightData, nil
+}
+
+func main() {
+	client := &http.Client{}
+
+	credentials, err := loadCredentials(CredentialsFile)
+	if err != nil {
+		log.Fatalf("Failed to load credentials: %v", err)
+	}
+
+	token, refreshToken, err := fitatuLogin(client, credentials)
+	if err != nil {
+		log.Fatalf("Login failed: %v", err)
 	}
 
 	fmt.Printf("Token: %s\n", token)
 	fmt.Printf("Refresh Token: %s\n", refreshToken)
 
-	req2, err2 := http.NewRequest("GET", "https://pl-pl.fitatu.com/api/users/<userid>/measurements/chart/weight", bytes.NewBuffer(jsonValue))
-	if err2 != nil {
-		log.Fatalf("Error creating request: %v", err2)
-	}
-	req2.Header.Set("api-secret", "PYRXtfs88UDJMuCCrNpLV")
-	req2.Header.Set("api-key", "FITATU-MOBILE-APP")
-	req2.Header.Add("content-Type", "application/json;charset=UTF-8")
-	req2.Header.Set("authorization", "Bearer "+token)
-
-	resp2, err3 := client.Do(req2)
-	if err3 != nil {
-		log.Fatalf("Error sending request: %v", err3)
-	}
-	defer resp2.Body.Close()
-
-	if resp2.StatusCode != http.StatusOK {
-		log.Printf("Request failed with status code: %d\n", resp2.StatusCode)
-		return
-	}
-	body2, err4 := io.ReadAll(resp2.Body)
-	if err4 != nil {
-		log.Fatalf("Error reading response: %v", 4)
-	}
-
-	var weightData WeightData
-	err = json.Unmarshal(body2, &weightData)
+	jwtData, err := DecodeJWT(token)
 	if err != nil {
-		log.Fatalf("Error unmarshaling JSON: %v", err)
+		log.Fatalf("Error decoding JWT: %v", err)
 	}
 
-	fmt.Printf("Weight Unit: %s\n", weightData.WeightUnit)
+	fmt.Println("Header:", jwtData.Header)
+	fmt.Println("Payload:", jwtData.Payload)
+	fmt.Println("Signature:", jwtData.Signature)
+
+	idValue, ok := jwtData.Payload["id"].(string)
+	if !ok {
+		log.Fatalf("JWT ID not found or not a string")
+	}
+
+	fmt.Println("JWT ID is: ", idValue)
+
+	weightData, err := fetchWeightData(client, idValue, token)
+	if err != nil {
+		log.Fatalf("Failed to fetch weight data: %v", err)
+	}
+
+	fmt.Printf("Weight data: %+v\n", weightData.Weights)
 }
