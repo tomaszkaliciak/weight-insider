@@ -1,3 +1,4 @@
+/* style.css */
 :root {
     --hue-primary: 210; /* Slightly desaturated blue */
     --hue-secondary: 160; /* Teal/Green */
@@ -54,7 +55,6 @@
         70%,
         58%
     ); /* Made surplus redder */
-    --expected-line-color: hsl(var(--hue-accent), 85%, 70%);
 
     /* Chart Specific */
     --sma-color: var(--primary-color);
@@ -64,18 +64,9 @@
     --trend1-color: var(--secondary-color);
     --trend2-color: hsl(var(--hue-tertiary), 60%, 65%);
     --regression-color: var(--accent-color);
-    --regression-ci-color: hsla(
-        var(--hue-accent),
-        75%,
-        55%,
-        0.1
-    ); /* NEW CI Color */
+    --regression-ci-color: hsla(var(--hue-accent), 75%, 55%, 0.1);
     --goal-line-color: var(--goal-color);
-    --second-axis-color: hsl(
-        var(--hue-secondary),
-        50%,
-        50%
-    ); /* NEW: Color for 2nd axis */
+    --second-axis-color: hsl(var(--hue-secondary), 50%, 50%);
 
     /* Transitions & Fonts */
     --transition-speed: 0.2s; /* Slightly faster transitions */
@@ -85,7 +76,6 @@
     --font-mono: "Fira Code", SFMono-Regular, Menlo, Monaco, Consolas,
         "Liberation Mono", "Courier New", monospace;
 
-    /* NEW/MODIFIED Colors (Light Theme) */
     --rate-line-color: hsl(var(--hue-goal), 50%, 55%); /* Use goal hue */
     --tdee-diff-line-color: hsl(var(--hue-secondary), 55%, 60%); /* Tealish */
     --annotation-marker-color: hsl(var(--hue-accent), 70%, 60%);
@@ -100,11 +90,7 @@
     --table-header-bg: hsl(var(--hue-neutral), 25%, 92%);
     --table-row-hover: hsl(var(--hue-neutral), 25%, 95%);
     --crosshair-color: hsl(var(--hue-neutral), 20%, 50%); /* NEW Crosshair */
-    --scatter-dot-color: hsl(
-        var(--hue-neutral),
-        30%,
-        40%
-    ); /* NEW Scatter dot */
+    --scatter-dot-color: hsl(var(--hue-neutral), 30%, 40%);
 }
 
 body.dark-theme {
@@ -148,20 +134,10 @@ body.dark-theme {
     --outlier-color: var(--tertiary-color);
     --deficit-color: hsl(var(--hue-secondary), 55%, 55%);
     --surplus-color: hsl(var(--hue-tertiary), 65%, 60%);
-    --expected-line-color: hsl(var(--hue-accent), 80%, 75%);
-    --regression-ci-color: hsla(
-        var(--hue-accent),
-        70%,
-        60%,
-        0.1
-    ); /* NEW CI Color Dark */
-    --second-axis-color: hsl(
-        var(--hue-secondary),
-        50%,
-        65%
-    ); /* NEW: Color for 2nd axis Dark */
+    /* --expected-line-color: hsl(var(--hue-accent), 80%, 75%); */ /* REMOVED */
+    --regression-ci-color: hsla(var(--hue-accent), 70%, 60%, 0.1);
+    --second-axis-color: hsl(var(--hue-secondary), 50%, 65%);
 
-    /* NEW/MODIFIED Dark Colors */
     --rate-line-color: hsl(var(--hue-goal), 50%, 70%);
     --tdee-diff-line-color: hsl(var(--hue-secondary), 50%, 70%);
     --annotation-marker-color: hsl(var(--hue-accent), 70%, 70%);
@@ -171,16 +147,8 @@ body.dark-theme {
     --highlight-stroke-color: hsl(var(--hue-accent), 85%, 75%);
     --table-header-bg: hsl(var(--hue-neutral), 15%, 20%);
     --table-row-hover: hsl(var(--hue-neutral), 15%, 25%);
-    --crosshair-color: hsl(
-        var(--hue-neutral),
-        15%,
-        55%
-    ); /* NEW Crosshair Dark */
-    --scatter-dot-color: hsl(
-        var(--hue-neutral),
-        15%,
-        70%
-    ); /* NEW Scatter dot Dark */
+    --crosshair-color: hsl(var(--hue-neutral), 15%, 55%);
+    --scatter-dot-color: hsl(var(--hue-neutral), 15%, 70%);
 }
 
 /* --- General Styles & Resets --- */
@@ -333,17 +301,21 @@ header h1 .edition {
 /* --- Dashboard Layout --- */
 .dashboard-container {
     display: grid;
-    grid-template-columns: clamp(320px, 28%, 400px) 1fr; /* Slightly adjusted sidebar width */
+    /* CHANGED: Added third column */
+    grid-template-columns: clamp(320px, 25%, 400px) 1fr clamp(320px, 25%, 400px);
     gap: clamp(18px, 2vw, 25px);
     width: 100%;
     max-width: 1800px; /* Wider max width */
     align-items: flex-start;
 }
-.sidebar {
+
+/* --- Sidebar Styling (Common for Left & Right) --- */
+.left-sidebar,
+.right-sidebar {
     display: flex;
     flex-direction: column;
     gap: clamp(15px, 2vw, 22px);
-    /* Allow sidebar to scroll independently if content overflows */
+    /* Allow sidebars to scroll independently if content overflows */
     max-height: calc(100vh - 100px); /* Adjust height based on header/padding */
     overflow-y: auto;
     padding-right: 5px; /* Space for scrollbar */
@@ -359,11 +331,8 @@ header h1 .edition {
     transition:
         box-shadow var(--transition-speed) var(--transition-ease),
         border-color var(--transition-speed) var(--transition-ease);
-    /* --- FIX: Ensure card is flex container BUT REMOVE overflow hidden --- */
     display: flex;
     flex-direction: column;
-    /* overflow: hidden; /* REMOVED - Often causes height calculation issues with dynamic content */
-    /* --- End FIX --- */
 }
 .card:hover {
     box-shadow: 0 4px 10px var(--shadow-hover); /* Subtle hover shadow */
@@ -453,7 +422,6 @@ form {
 }
 .form-row {
     display: grid;
-    /* Default label width, adjusted below for specific forms */
     grid-template-columns: minmax(90px, 1fr) 1fr;
     gap: 8px 12px;
     align-items: center;
@@ -564,11 +532,8 @@ form button[type="submit"]:hover,
     display: flex;
     align-items: center;
     justify-content: space-between;
-    /* margin-bottom: 15px; REMOVED, handled by hr */
-    /* padding-bottom: 10px; REMOVED */
     flex-shrink: 0; /* Prevent shrinking */
 }
-/* NEW: Spacing between toggle groups */
 #controls-section .toggle-group + .toggle-group {
     margin-top: 15px;
     padding-top: 10px;
@@ -583,10 +548,9 @@ form button[type="submit"]:hover,
     margin-bottom: 0.8em; /* Reduced margin */
 }
 
-/* FIX: Adjusted trendline layout */
 .trendline-input-group {
     display: grid;
-    grid-template-columns: minmax(90px, auto) 1fr; /* Give label a bit more min space */
+    grid-template-columns: minmax(90px, auto) 1fr;
     gap: 8px 10px; /* Row gap, Column gap */
     align-items: center; /* Vertical centering */
     margin-bottom: 0; /* Remove bottom margin if any */
@@ -632,13 +596,12 @@ form button[type="submit"]:hover,
     font-size: 0.75em;
     color: var(--text-muted);
     margin-top: 8px; /* Increased space slightly */
-    /* Align with inputs based on label column width (90px) + column gap (10px) */
     margin-left: calc(90px + 10px);
     text-align: left;
     line-height: 1.4;
 }
 
-/* --- What-If Controls (Feature #10) --- */
+/* --- What-If Controls --- */
 #what-if-controls {
     flex-shrink: 0; /* Prevent shrinking */
 }
@@ -758,32 +721,28 @@ input:checked + .slider:before {
 /* --- Statistics & Insights Layout --- */
 .stat-item {
     display: grid;
-    /* Keep the grid definition */
     grid-template-columns: 1fr auto;
-    gap: 5px 15px; /* Keep gap */
-    align-items: baseline; /* Align baselines of label and value */
+    gap: 5px 15px;
+    align-items: baseline;
     margin: 0.5em 0;
     font-size: 0.9rem;
     line-height: 1.4;
     color: var(--text-secondary);
 }
 .stat-item span:first-child {
-    /* The label on the left */
     line-height: 1.3;
-    text-align: left; /* Ensure label is left-aligned */
-    padding-right: 5px; /* Add a little space before the value column */
+    text-align: left;
+    padding-right: 5px;
 }
 .stat-item div {
-    /* The container for value+unit/details on the right */
-    text-align: right; /* Align content inside the div to the right */
-    justify-self: end; /* Align the div itself to the end of the grid column */
-    display: inline-flex; /* Use flex for inline alignment of value/unit */
-    align-items: baseline; /* Align value and unit baselines */
-    gap: 0.3em; /* Space between value and unit/details */
+    text-align: right;
+    justify-self: end;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.4em;
 }
 .stat-item span.stat-value,
 .stat-item div > span.stat-value {
-    /* The actual value span */
     font-weight: 500;
     color: var(--text-primary);
     font-family: var(--font-mono);
@@ -792,26 +751,21 @@ input:checked + .slider:before {
     padding: 2px 6px;
     border-radius: 4px;
     white-space: nowrap;
-    /* justify-self: end; REMOVE this, alignment handled by parent div */
     border: 1px solid var(--border-color-light);
-    display: inline-block; /* Ensure it behaves like a block for padding */
+    display: inline-block;
 }
-/* Keep stat-date and stat-details styles */
 .stat-item span.stat-date {
     font-size: 0.85em;
     color: var(--text-muted);
-    /* margin-left: 0.4em; REMOVE margin, use gap in parent div */
     font-family: var(--font-sans);
-    white-space: nowrap; /* Prevent date wrapping */
+    white-space: nowrap;
 }
 .stat-item span.stat-details {
     font-size: 0.8em;
     color: var(--text-muted);
-    /* margin-left: 0.4em; REMOVE margin, use gap in parent div */
     font-family: var(--font-sans);
 }
 .stat-value.feedback.good {
-    /* Added specificity */
     background-color: hsla(var(--hue-secondary), 50%, 50%, 0.1);
     border-color: hsla(var(--hue-secondary), 50%, 50%, 0.3);
     color: var(--success-color);
@@ -831,7 +785,6 @@ body.dark-theme .stat-value.feedback.warn {
     background-color: hsla(var(--hue-accent), 65%, 65%, 0.1);
     border-color: hsla(var(--hue-accent), 65%, 65%, 0.3);
 }
-/* Feature #4: Highlightable stat elements */
 .highlightable {
     cursor: pointer;
     text-decoration: underline dotted;
@@ -842,7 +795,7 @@ body.dark-theme .stat-value.feedback.warn {
 }
 .highlight-trigger:hover .highlightable {
     color: var(--highlight-stroke-color);
-} /* Ensure date highlights on row hover */
+}
 
 #all-time-stats-card hr,
 #analysis-results-card hr {
@@ -855,11 +808,11 @@ body.dark-theme .stat-value.feedback.warn {
         transparent
     );
     margin: 1.2em 0;
-    flex-shrink: 0; /* Prevent shrinking */
+    flex-shrink: 0;
 }
 #analysis-results-card .insight-group {
     margin-bottom: 0.8em;
-    flex-shrink: 0; /* Prevent shrinking */
+    flex-shrink: 0;
 }
 
 /* --- Insight Summary --- */
@@ -871,16 +824,17 @@ body.dark-theme .stat-value.feedback.warn {
     margin: 1em 0;
     font-size: 0.88rem;
     color: var(--text-secondary);
-    flex-shrink: 0; /* Prevent shrinking */
+    flex-shrink: 0;
 }
-.insight-summary h4 {
-    font-size: 0.9em;
+.insight-summary h4.detected-events-heading {
+    /* Style for the Detected Events heading */
+    font-size: 0.85em; /* Slightly smaller */
     color: var(--primary-color);
-    margin-bottom: 0.6em;
+    margin-bottom: 0.5em; /* Reduced space */
     padding-bottom: 0;
     border: none;
     text-transform: uppercase;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.04em;
 }
 .insight-summary p {
     margin: 0 0 0.6em 0;
@@ -921,31 +875,76 @@ body.dark-theme .stat-value.feedback.warn {
     font-size: 0.9em;
     color: var(--text-muted);
 }
+.insight-summary .detected-plateaus {
+    margin-top: 0.4em;
+    margin-bottom: 0.4em;
+    line-height: 1.4;
+}
+.insight-summary .trend-change-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 8px; /* Vertical and horizontal gap */
+    line-height: 1.4;
+    margin-top: 0.4em;
+}
+.insight-summary .trend-change-list.short-list {
+    /* For non-details lists */
+    margin-bottom: 0.6em; /* Maintain bottom margin for non-collapsible */
+}
+.insight-summary .trend-change-item {
+    display: inline-block;
+    font-size: 0.9em; /* Slightly smaller */
+    padding: 1px 4px;
+    border-radius: 3px;
+    white-space: nowrap;
+    color: var(--text-secondary);
+}
+.insight-summary .trend-change-item.trend-accel {
+    color: var(--surplus-color);
+    background-color: hsla(var(--hue-tertiary), 70%, 58%, 0.08);
+}
+.insight-summary .trend-change-item.trend-decel {
+    color: var(--deficit-color);
+    background-color: hsla(var(--hue-secondary), 60%, 45%, 0.08);
+}
+.insight-summary .trend-change-details summary {
+    cursor: pointer;
+    margin-bottom: 0.4em;
+    outline: none; /* Remove default browser outline */
+}
+.insight-summary .trend-change-details summary::marker {
+    /* Style the arrow */
+    font-size: 0.8em;
+    color: var(--text-muted);
+}
+.insight-summary .trend-change-details[open] summary {
+    margin-bottom: 0.6em; /* Slightly more space when open */
+}
 
-/* In --- Annotations (Feature #1) --- */
+/* --- Annotations --- */
 #annotations-section h3 {
     margin-top: 1em;
     margin-bottom: 0.5em;
     font-size: 0.9rem;
-    flex-shrink: 0; /* Prevent shrinking */
+    flex-shrink: 0;
 }
 #annotation-form .form-row {
-    grid-template-columns: minmax(60px, auto) 1fr; /* Slightly shorter label column */
-    gap: 6px 10px; /* Adjust gap */
+    grid-template-columns: minmax(60px, auto) 1fr;
+    gap: 6px 10px;
     align-items: center;
 }
 #annotation-form label {
-    text-align: right; /* Keep right aligned */
-    font-size: 0.8em; /* Ensure consistent label size */
+    text-align: right;
+    font-size: 0.8em;
 }
 #annotation-form input[type="date"],
 #annotation-form input[type="text"] {
-    font-size: 0.9em; /* Ensure consistent input size */
-    padding: 7px 10px; /* Adjust padding */
+    font-size: 0.9em;
+    padding: 7px 10px;
 }
 #annotation-form button[type="submit"] {
-    grid-column: 1 / -1; /* Make button span full width */
-    margin-top: 8px; /* Adjust margin */
+    grid-column: 1 / -1;
+    margin-top: 8px;
     font-size: 0.85em;
     padding: 8px 14px;
 }
@@ -953,23 +952,22 @@ body.dark-theme .stat-value.feedback.warn {
     list-style: none;
     padding: 0;
     margin: 0;
-    max-height: 200px; /* Keep max height */
+    max-height: 200px;
     overflow-y: auto;
     font-size: 0.85em;
     border: 1px solid var(--border-color-light);
     border-radius: 4px;
     padding: 5px;
     background-color: var(--bg-tertiary);
-    flex-shrink: 0; /* Prevent shrinking */
-    /* Add flex-grow: 1 if list should fill space, but likely not needed here */
+    flex-shrink: 0;
 }
 .annotation-list li {
-    display: flex; /* Use flexbox */
-    justify-content: space-between; /* Push button to end */
-    align-items: center; /* Align items vertically */
-    padding: 5px 8px; /* Slightly more padding */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 8px;
     border-bottom: 1px solid var(--border-color-light);
-    gap: 10px; /* Increased space between elements */
+    gap: 10px;
 }
 .annotation-list li:last-child {
     border-bottom: none;
@@ -980,17 +978,16 @@ body.dark-theme .stat-value.feedback.warn {
 .annotation-list .annotation-date {
     font-weight: 500;
     color: var(--text-secondary);
-    white-space: nowrap; /* Prevent date from wrapping */
-    flex-shrink: 0; /* Prevent date from shrinking */
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 .annotation-list .annotation-text {
-    flex-grow: 1; /* Allow text to take available space */
+    flex-grow: 1;
     color: var(--text-primary);
-    overflow-wrap: break-word; /* Wrap long text */
-    word-break: break-word; /* Ensure breaks */
-    /* Ensure text doesn't push button off */
-    min-width: 0; /* Critical for flexbox text wrapping */
-    text-align: left; /* Ensure text aligns left */
+    overflow-wrap: break-word;
+    word-break: break-word;
+    min-width: 0;
+    text-align: left;
 }
 .annotation-list .remove-annotation {
     background: none;
@@ -1000,8 +997,8 @@ body.dark-theme .stat-value.feedback.warn {
     cursor: pointer;
     padding: 0 4px;
     line-height: 1;
-    opacity: 0.6; /* Slightly more visible */
-    flex-shrink: 0; /* Prevent button from shrinking */
+    opacity: 0.6;
+    flex-shrink: 0;
     transition:
         color var(--transition-speed),
         opacity var(--transition-speed);
@@ -1013,7 +1010,7 @@ body.dark-theme .stat-value.feedback.warn {
 .annotation-list .empty-msg {
     color: var(--text-muted);
     text-align: center;
-    padding: 12px; /* More padding */
+    padding: 12px;
     border: none;
     font-style: italic;
 }
@@ -1022,32 +1019,30 @@ body.dark-theme .stat-value.feedback.warn {
 .chart-section {
     display: flex;
     flex-direction: column;
-    height: auto; /* Let content determine height */
-    /* Adjusted min-height to account for scatter plot */
-    min-height: clamp(750px, 85vh, 1100px);
-    /* overflow: hidden; */ /* KEEP THIS REMOVED or commented out */
+    height: auto;
+    /* CHANGED: Slightly increased min-height to accommodate potential width reduction */
+    min-height: clamp(780px, 85vh, 1100px);
     position: relative;
-    padding: 15px; /* Reduce padding slightly */
+    padding: 15px;
 }
 #chart-container {
     position: relative;
-    flex-grow: 3; /* Weight chart still takes most space */
+    flex-grow: 3;
     min-height: 280px;
 }
 #balance-chart-container,
 #rate-of-change-container,
 #tdee-reconciliation-container {
     position: relative;
-    height: 75px; /* Slightly reduced height */
+    height: 75px;
     flex-shrink: 0;
     margin-top: 8px;
     padding-top: 8px;
     border-top: 1px solid var(--border-color-light);
 }
-/* NEW FEATURE: Correlation Scatter Plot Container */
 #correlation-scatter-container {
     position: relative;
-    height: 180px; /* Adjust height as needed */
+    height: 180px;
     flex-shrink: 0;
     margin-top: 15px;
     padding-top: 10px;
@@ -1061,23 +1056,23 @@ body.dark-theme .stat-value.feedback.warn {
     padding: 6px 5px;
     font-size: 0.8rem;
     border-top: 1px solid var(--border-color-light);
-    margin-top: 10px; /* Increased margin */
-    flex-shrink: 0; /* Prevent legend shrinking */
+    margin-top: 10px;
+    flex-shrink: 0;
 }
 #context-chart-container {
     position: relative;
     height: 65px;
     flex-shrink: 0;
-    margin-top: 5px;
+    margin-top: 5px; /* Added margin to separate from main chart */
     padding-bottom: 0;
 }
 
-/* --- Feature #2: Weekly Summary Table --- */
+/* --- Weekly Summary Table --- */
 .weekly-summary-section {
     margin-top: 15px;
     padding-top: 10px;
     border-top: 1px solid var(--border-color-light);
-    flex-shrink: 0; /* Prevent shrinking */
+    flex-shrink: 0;
 }
 .weekly-summary-section h4 {
     font-size: 0.9rem;
@@ -1146,11 +1141,17 @@ body.dark-theme .stat-value.feedback.warn {
     font-size: 0.75rem;
     font-family: var(--font-sans);
 }
-.axis-label.y-axis-label {
-    font-size: 0.8rem;
+
+.axis-label.y-axis-label,
+.axis-label.y-axis-label2,
+.axis-label.scatter-axis-label-x,
+.axis-label.scatter-axis-label-y,
+.axis-label.y-axis-label-small {
+    font-size: 0.8rem; /* Base size for labels */
     fill: var(--text-secondary);
-    font-weight: 500;
+    font-weight: 600; /* Increased emphasis */
 }
+
 .grid line {
     stroke: var(--border-color);
     stroke-opacity: 0.3;
@@ -1159,16 +1160,19 @@ body.dark-theme .stat-value.feedback.warn {
 .grid path {
     stroke-width: 0;
 }
+
 .axis-label.y-axis-label-small {
-    /* Style for smaller chart labels */
-    font-size: 0.7rem;
-    fill: var(--text-secondary);
-    font-weight: 500;
+    font-size: 0.65rem; /* REDUCED for small charts */
+    /* Inherits fill and weight from the combined rule above */
 }
 
-/* --- NEW FEATURE: Second Y Axis Styling --- */
+.axis-label.scatter-axis-label-y {
+    font-size: 0.7rem; /* Optional: slightly smaller than main labels */
+}
+
+/* Second Y Axis Styling */
 .axis--y2 .domain {
-    stroke: var(--second-axis-color); /* Color axis line */
+    stroke: var(--second-axis-color);
 }
 .axis--y2 line {
     stroke: var(--second-axis-color);
@@ -1177,13 +1181,12 @@ body.dark-theme .stat-value.feedback.warn {
 .axis--y2 text {
     fill: var(--second-axis-color);
     font-weight: 500;
-    font-size: 0.75rem; /* Match primary axis */
+    font-size: 0.75rem;
 }
 .axis-label.y-axis-label2 {
     fill: var(--second-axis-color);
-    font-size: 0.8rem; /* Match primary axis label */
+    /* Inherits font-size from combined rule */
 }
-/* Placeholder for BF% line */
 .line.bf-line {
     stroke: var(--second-axis-color);
     stroke-width: 1.5px;
@@ -1219,26 +1222,18 @@ body.dark-theme .stat-value.feedback.warn {
     stroke: var(--regression-color);
     stroke-width: 2px;
 }
-/* NEW FEATURE: Regression CI Area */
 .area.regression-ci-area {
     fill: var(--regression-ci-color);
     stroke: none;
     opacity: 0.8;
     pointer-events: none;
 }
-
 .trend-line.goal-line {
     stroke: var(--goal-line-color);
     stroke-width: 1.75px;
     stroke-dasharray: 5, 2;
 }
-.trend-line.expected-weight-line {
-    stroke: var(--expected-line-color);
-    stroke-width: 1.25px;
-    stroke-dasharray: 2, 2;
-    opacity: 0.65;
-}
-/* New Lines */
+
 .line.rate-line {
     stroke: var(--rate-line-color);
     stroke-width: 1.75px;
@@ -1250,20 +1245,23 @@ body.dark-theme .stat-value.feedback.warn {
     stroke-dasharray: 3, 2;
     fill: none;
 }
-/* New Axes/Zero Lines */
 .rate-axis path,
 .rate-axis line,
 .tdee-diff-axis path,
-.tdee-diff-axis line {
+.tdee-diff-axis line,
+.balance-axis path, /* Include balance axis */
+.balance-axis line {
     stroke: var(--border-color);
 }
 .rate-axis text,
-.tdee-diff-axis text {
+.tdee-diff-axis text,
+.balance-axis text {
     fill: var(--text-muted);
-    font-size: 0.7rem;
+    font-size: 0.65rem; /* REDUCED for small chart tick labels */
 }
 .rate-zero-line,
-.tdee-diff-zero-line {
+.tdee-diff-zero-line,
+.balance-zero-line {
     stroke: var(--text-muted);
     stroke-width: 1px;
     stroke-dasharray: 2, 2;
@@ -1285,20 +1283,7 @@ body.dark-theme .stat-value.feedback.warn {
 .balance-bar:hover {
     opacity: 1;
 }
-.balance-axis path,
-.balance-axis line {
-    stroke: var(--border-color);
-}
-.balance-axis text {
-    fill: var(--text-muted);
-    font-size: 0.7rem;
-}
-.balance-zero-line {
-    stroke: var(--text-muted);
-    stroke-width: 1px;
-    stroke-dasharray: 2, 2;
-    opacity: 0.7;
-}
+/* Balance Axis styles moved to combined block above */
 
 /* Data Points */
 .raw-dot {
@@ -1331,7 +1316,6 @@ body.dark-theme .stat-value.feedback.warn {
     opacity: 1;
     fill: hsla(var(--hue-tertiary), 70%, 58%, 0.1); /* Subtle fill on hover */
 }
-/* Highlights (Feature #4) */
 .dot.highlighted {
     stroke: var(--highlight-stroke-color);
     stroke-width: 2.5px;
@@ -1341,22 +1325,18 @@ body.dark-theme .stat-value.feedback.warn {
 /* Highlight marker overlay */
 .highlight-marker {
     pointer-events: none; /* This marker is purely visual */
-    /* Stroke, fill, etc., defined in JS */
 }
 
 /* Annotations, Plateaus, Trend Changes */
 .annotations-group .annotation-marker circle {
-    /* Feature #1 */
     cursor: help;
     pointer-events: all; /* Ensure markers are interactive */
 }
 .plateau-group .plateau-region {
-    /* Feature #6 */
     pointer-events: none; /* These are visual overlays */
     /* fill defined in JS */
 }
 .trend-change-group .trend-change-marker path {
-    /* Feature #7 */
     cursor: help;
     pointer-events: all; /* Ensure markers are interactive */
     /* fill defined in JS */
@@ -1407,14 +1387,12 @@ body.dark-theme .tooltip {
     padding-top: 0;
     margin-top: 4px;
 }
-/* NEW: Pinned Tooltip Note */
 .tooltip .note.pinned-note {
     color: var(--info-color);
     font-style: normal;
     font-size: 0.9em;
     border-top: 1px dashed hsla(var(--hue-neutral), 10%, 50%, 0.2);
 }
-/* NEW: Annotation Note Styling */
 .tooltip .note.annotation-note {
     color: var(--annotation-marker-color);
     font-style: normal;
@@ -1494,20 +1472,16 @@ hr.tooltip-hr {
     color: var(--text-secondary);
     transition: color var(--transition-speed);
 }
-/* New Legend Swatches */
 .legend-swatch.area {
-    /* Used for Plateau & Regression CI */
     opacity: 0.6;
 }
-/* NEW: Specific style for CI legend swatch */
 .legend-item.regression-ci-area .legend-swatch {
     background-color: var(--regression-ci-color);
     opacity: 0.8;
 }
 .legend-swatch.marker {
     border-radius: 50%;
-} /* For annotation, trend change */
-/* Legend Item Hidden State */
+}
 .legend-item.hidden {
     opacity: 0.5;
 }
@@ -1552,7 +1526,6 @@ hr.tooltip-hr {
     fill: none; /* Make it invisible */
     pointer-events: all; /* Needs to capture zoom/pan */
 }
-/* Ensure interactive elements below zoom rect get events */
 svg .focus {
     pointer-events: none; /* Base focus group doesn't capture */
 }
@@ -1560,7 +1533,6 @@ svg .focus {
 .annotations-group,
 .trend-change-group,
 .regression-brush {
-    /* Allow regression brush to capture events */
     pointer-events: all; /* These specific groups *do* capture */
 }
 .dot,
@@ -1569,7 +1541,7 @@ svg .focus {
     pointer-events: all; /* Specific elements within groups capture */
 }
 
-/* NEW: Crosshair Styling */
+/* Crosshair Styling */
 .crosshair-group {
     pointer-events: none;
 }
@@ -1580,7 +1552,7 @@ svg .focus {
     opacity: 0.7;
 }
 
-/* NEW: Correlation Scatter Plot Styling */
+/* Correlation Scatter Plot Styling */
 #correlation-scatter-container {
     position: relative;
     height: 200px; /* Adjust as needed */
@@ -1597,12 +1569,7 @@ svg .focus {
     fill: var(--text-muted);
     font-size: 0.7rem;
 }
-.axis-label.scatter-axis-label-x,
-.axis-label.scatter-axis-label-y {
-    font-size: 0.75rem;
-    fill: var(--text-secondary);
-    font-weight: 500;
-}
+/* Scatter axis labels inherit from combined rule earlier */
 .scatter-dot {
     fill: var(--scatter-dot-color);
     opacity: 0.7;
@@ -1614,7 +1581,7 @@ svg .focus {
     stroke-width: 1px;
 }
 
-/* NEW: Interactive Regression Brush Styling */
+/* Interactive Regression Brush Styling */
 .regression-brush .selection {
     fill: var(--primary-color);
     fill-opacity: 0.1;
@@ -1636,12 +1603,11 @@ svg .focus {
     height: 20px; /* Make handles easier to grab */
     transform: translateY(-10px); /* Center handle vertically */
 }
-/* Hide the default overlay which blocks hover */
 .regression-brush .overlay {
     pointer-events: none;
 }
 
-/* NEW: Pinned Tooltip Styling */
+/* Pinned Tooltip Styling */
 #pinned-tooltip-container {
     position: fixed; /* Or absolute relative to chart */
     bottom: clamp(10px, 2vh, 20px);
@@ -1701,17 +1667,21 @@ svg .focus {
 
 /* Responsive */
 @media (max-width: 1100px) {
-    .sidebar {
+    /* CHANGED: Stack all three columns */
+    .dashboard-container {
+        grid-template-columns: 1fr;
+        padding: 10px;
+    }
+
+    /* CHANGED: Apply sidebar stacking rules to both */
+    .left-sidebar,
+    .right-sidebar {
         max-height: none;
         overflow-y: visible;
         padding-right: 0;
     }
     .chart-section {
         min-height: 700px; /* Adjusted min-height */
-    }
-    .dashboard-container {
-        grid-template-columns: 1fr; /* Stack sidebar and chart */
-        padding: 10px;
     }
     #correlation-scatter-container {
         height: 180px;
@@ -1728,7 +1698,9 @@ svg .focus {
     .card {
         padding: 12px;
     }
-    .sidebar {
+    /* CHANGED: Apply gap to both sidebars */
+    .left-sidebar,
+    .right-sidebar {
         gap: 12px;
     }
     .stat-item {
@@ -1744,7 +1716,6 @@ svg .focus {
     .form-row {
         grid-template-columns: minmax(70px, auto) 1fr;
     }
-    /* Adjust specific form layouts if needed */
     #annotation-form .form-row {
         grid-template-columns: 1fr; /* Stack label/input */
         gap: 4px 8px;
@@ -1789,11 +1760,6 @@ svg .focus {
     #correlation-scatter-container {
         height: 160px;
     }
-    /* Ensure scatter labels don't overlap */
-    .axis-label.scatter-axis-label-x,
-    .axis-label.scatter-axis-label-y {
-        font-size: 0.7rem;
-    }
     .axis-label.scatter-axis-label-y {
         dy: 1.2em; /* Push Y label out slightly more */
     }
@@ -1802,6 +1768,15 @@ svg .focus {
     }
     .table-wrapper {
         max-height: 160px;
+    }
+    .axis text {
+        /* Slightly smaller ticks on mobile */
+        font-size: 0.7rem;
+    }
+    .balance-axis text, /* Even smaller for small charts */
+    .rate-axis text,
+    .tdee-diff-axis text {
+        font-size: 0.6rem;
     }
 }
 @media (max-width: 480px) {
@@ -1820,7 +1795,6 @@ svg .focus {
         grid-column: 1 / -1; /* Ensure it spans full width if inside grid */
         margin-top: 5px;
     }
-    /* Ensure the trendline group stacks label/input */
     .trendline-input-group {
         grid-template-columns: 1fr; /* Stack label and input */
         gap: 4px 8px;
@@ -1900,5 +1874,29 @@ svg .focus {
         right: 5px;
         font-size: 10px;
         padding: 5px 8px;
+    }
+    /* Make small chart labels even smaller on tiny screens */
+    .axis-label.y-axis-label-small {
+        font-size: 0.6rem;
+    }
+    .balance-axis text,
+    .rate-axis text,
+    .tdee-diff-axis text {
+        font-size: 0.55rem;
+    }
+
+    .stat-item div > span.stat-value + /* Selects text node immediately after stat-value */ *,
+    .stat-item div > *:not(span.stat-value) /* Selects any element other than stat-value inside div */ {
+        margin-left: 0; /* Ensure no extra left margin on the unit text */
+        line-height: 1; /* Align baseline better with stat-value */
+        font-size: 0.9em; /* Slightly smaller unit text */
+        color: var(--text-secondary); /* Match secondary text color */
+    }
+
+    .stat-item div > span.stat-value + span.stat-date {
+        margin-left: 0.5em; /* Add back space before the date */
+        font-size: 0.85em; /* Restore original date size */
+        color: var(--text-muted); /* Restore original date color */
+        line-height: inherit; /* Use parent line height */
     }
 }
