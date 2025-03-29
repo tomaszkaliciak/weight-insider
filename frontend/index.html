@@ -3,80 +3,693 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>D3.js Fan Chart</title>
-        <style>
-            body {
-                font-family: sans-serif;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                flex-direction: column;
-                margin-top: 20px;
-            }
-            .chart-container {
-                position: relative;
-            }
-            .axis path,
-            .axis line {
-                fill: none;
-                stroke: #ccc;
-                shape-rendering: crispEdges;
-            }
-            .axis text {
-                fill: #555;
-            }
-            .line {
-                fill: none;
-                stroke: steelblue;
-                stroke-width: 1.5px;
-            }
-            .area {
-                fill: lightsteelblue;
-                opacity: 0.7;
-                stroke: none;
-            }
-            .grid line {
-                stroke: #e0e0e0;
-                stroke-opacity: 0.7;
-                shape-rendering: crispEdges;
-            }
-            .grid path {
-                stroke-width: 0;
-            }
-            .axis-label {
-                font-size: 0.8em;
-                fill: #333;
-            }
-            .trend-line {
-              stroke: green;
-              stroke-width: 2px;
-              fill: none;
-            }
-            .dot {
-              fill: steelblue;
-              opacity: 0.7;
-            }
-            .tooltip {
-                position: absolute;
-                text-align: center;
-                width: 120px;
-                height: auto;
-                padding: 2px;
-                font: 12px sans-serif;
-                background: white;
-                border: 1px solid #ccc;
-                border-radius: 2px;
-                pointer-events: none;
-            }
-            </style>
-        </style>
+        <title>Weight Insights - Advanced v2</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400&display=swap"
+            rel="stylesheet"
+        />
+        <link rel="stylesheet" href="style.css" />
+        <!-- <link rel="icon" href="favicon.ico" type="image/x-icon"> -->
     </head>
-    <body>
-        <h1>Daily Weights Fan Chart</h1>
-        <div id="chart-container" class="chart-container"></div>
-        <div id="tooltip" class="tooltip" style="opacity:0;"></div>
 
+    <body>
+        <header>
+            <h1>
+                <span class="logo-icon" aria-hidden="true">📊</span> Weight
+                Insights <span class="edition">Advanced v2</span>
+            </h1>
+            <button
+                id="theme-toggle"
+                title="Toggle Theme"
+                aria-label="Toggle Theme"
+            >
+                🌙
+            </button>
+        </header>
+
+        <div
+            id="status-message"
+            class="status-message"
+            role="alert"
+            aria-live="polite"
+        ></div>
+
+        <main class="dashboard-container">
+            <!-- ==================== SIDEBAR ==================== -->
+            <div class="controls-stats-container sidebar">
+                <!-- Controls Section -->
+                <section
+                    id="controls-section"
+                    class="card"
+                    aria-labelledby="controls-heading"
+                >
+                    <h2 id="controls-heading">
+                        <span class="icon" aria-hidden="true">⚙️</span> View &
+                        Interaction Controls
+                    </h2>
+                    <hr class="subtle-hr" />
+                    <!-- Regression Toggle -->
+                    <div class="control-group toggle-group">
+                        <label for="toggleRegression" class="switch-label"
+                            >Show Regression Line:</label
+                        >
+                        <label
+                            class="switch"
+                            aria-label="Toggle Linear Regression Line Visibility"
+                        >
+                            <input
+                                type="checkbox"
+                                id="toggleRegression"
+                                checked
+                            />
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    <hr class="subtle-hr" />
+                    <!-- Trendline Controls -->
+                    <div id="trendline-controls">
+                        <h3>Manual Trendlines</h3>
+                        <div class="trendline-input-group">
+                            <label for="trendStartDate">Start Date:</label>
+                            <input
+                                type="date"
+                                id="trendStartDate"
+                                value="2025-03-04"
+                                aria-label="Manual trendline start date"
+                            />
+                            <label for="trendInitialWeight">Start Wgt:</label>
+                            <input
+                                type="number"
+                                id="trendInitialWeight"
+                                value="71.4"
+                                step="0.1"
+                                placeholder="e.g., 70.0"
+                                aria-label="Manual trendline initial weight in KG"
+                            />
+                            <label for="trendWeeklyIncrease"
+                                >Rate 1
+                                <span class="trend-color-1">(Green)</span
+                                >:</label
+                            >
+                            <input
+                                type="number"
+                                id="trendWeeklyIncrease"
+                                value="0.3"
+                                step="0.01"
+                                placeholder="e.g., 0.25"
+                                aria-label="Manual trendline weekly weight change (Green line) in KG/wk"
+                            />
+                            <label for="trendWeeklyIncrease_2"
+                                >Rate 2
+                                <span class="trend-color-2">(Red)</span>:</label
+                            >
+                            <input
+                                type="number"
+                                id="trendWeeklyIncrease_2"
+                                value="0.2"
+                                step="0.01"
+                                placeholder="e.g., 0.15"
+                                aria-label="Manual trendline weekly weight change (Red line) in KG/wk"
+                            />
+                        </div>
+                        <small class="control-note"
+                            >Regression start date also uses 'Start Date'
+                            above.</small
+                        >
+                    </div>
+                    <hr class="subtle-hr" />
+                    <!-- Feature #10: What-If Scenarios -->
+                    <div id="what-if-controls">
+                        <h3>"What-If" Projection</h3>
+                        <div class="form-row">
+                            <label for="what-if-intake"
+                                >Future Daily Intake (kcal):</label
+                            >
+                            <input
+                                type="number"
+                                id="what-if-intake"
+                                placeholder="e.g., 3000"
+                                step="50"
+                                aria-label="Hypothetical future daily calorie intake"
+                            />
+                        </div>
+                        <div class="form-row">
+                            <label for="what-if-duration"
+                                >Duration (days):</label
+                            >
+                            <input
+                                type="number"
+                                id="what-if-duration"
+                                value="30"
+                                min="1"
+                                step="1"
+                                aria-label="Duration in days for projection"
+                            />
+                        </div>
+                        <button id="what-if-submit" class="button-secondary">
+                            Project Weight
+                        </button>
+                        <div id="what-if-result" class="what-if-result">
+                            Enter intake to see projection...
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Feature #1: Annotations -->
+                <section
+                    id="annotations-section"
+                    class="card"
+                    aria-labelledby="annotations-heading"
+                >
+                    <h2 id="annotations-heading">
+                        <span class="icon" aria-hidden="true">📌</span>
+                        Annotations
+                    </h2>
+                    <form id="annotation-form">
+                        <div class="form-row">
+                            <label for="annotation-date">Date:</label>
+                            <input
+                                type="date"
+                                id="annotation-date"
+                                required
+                                aria-label="Date for annotation"
+                            />
+                        </div>
+                        <div class="form-row">
+                            <label for="annotation-text">Note:</label>
+                            <input
+                                type="text"
+                                id="annotation-text"
+                                placeholder="e.g., Vacation Start"
+                                required
+                                aria-label="Annotation text"
+                            />
+                            <!-- Optional Type dropdown -->
+                            <!-- <select id="annotation-type" aria-label="Annotation type">
+                                 <option value="point">Point</option>
+                                 <option value="range">Range</option>
+                             </select> -->
+                        </div>
+                        <button type="submit">Add Annotation</button>
+                    </form>
+                    <hr class="subtle-hr" />
+                    <h3>Saved Annotations</h3>
+                    <ul id="annotation-list" class="annotation-list">
+                        <li>Loading annotations...</li>
+                    </ul>
+                </section>
+
+                <!-- Feature #11: Analysis Settings Card -->
+                <section
+                    id="analysis-settings-card"
+                    class="card"
+                    aria-labelledby="analysis-settings-heading"
+                >
+                    <h2 id="analysis-settings-heading">
+                        <span class="icon" aria-hidden="true">⏱️</span> Analysis
+                        Range Settings
+                    </h2>
+                    <div id="analysis-range-controls">
+                        <div class="form-row">
+                            <label for="analysisStartDate">Start Date:</label>
+                            <input
+                                type="date"
+                                id="analysisStartDate"
+                                aria-label="Start date for custom analysis range"
+                            />
+                        </div>
+                        <div class="form-row">
+                            <label for="analysisEndDate">End Date:</label>
+                            <input
+                                type="date"
+                                id="analysisEndDate"
+                                aria-label="End date for custom analysis range"
+                            />
+                        </div>
+                        <div class="button-group">
+                            <button id="updateAnalysisRange">
+                                Apply Range
+                            </button>
+                            <button
+                                id="resetAnalysisRange"
+                                class="button-secondary"
+                            >
+                                Use Chart View
+                            </button>
+                        </div>
+                        <div class="current-range-display">
+                            Currently Analyzing:
+                            <strong id="analysis-range-display"
+                                >Loading...</strong
+                            >
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Feature #11: All-Time Stats Card -->
+                <section
+                    id="all-time-stats-card"
+                    class="card"
+                    aria-labelledby="all-time-stats-heading"
+                >
+                    <h2 id="all-time-stats-heading">
+                        <span class="icon" aria-hidden="true">⚖️</span> Weight
+                        Overview <small>(All Time)</small>
+                    </h2>
+                    <div class="stat-item">
+                        <span>Starting Weight:</span>
+                        <span id="starting-weight" class="stat-value">N/A</span>
+                        KG
+                    </div>
+                    <div class="stat-item">
+                        <span>Latest Weight:</span>
+                        <span id="current-weight" class="stat-value">N/A</span>
+                        KG
+                    </div>
+                    <div class="stat-item">
+                        <span>Latest SMA:</span>
+                        <span id="current-sma" class="stat-value">N/A</span> KG
+                    </div>
+                    <div class="stat-item">
+                        <span>Total Change:</span>
+                        <span id="total-change" class="stat-value">N/A</span> KG
+                    </div>
+                    <hr />
+                    <div class="stat-item highlight-trigger">
+                        <!-- Feature #4 -->
+                        <span>Max Weight:</span>
+                        <div>
+                            <span id="max-weight" class="stat-value">N/A</span>
+                            KG on
+                            <span
+                                id="max-weight-date"
+                                class="stat-date highlightable"
+                                >N/A</span
+                            >
+                            <!-- Feature #4 -->
+                        </div>
+                    </div>
+                    <div class="stat-item highlight-trigger">
+                        <!-- Feature #4 -->
+                        <span>Min Weight:</span>
+                        <div>
+                            <span id="min-weight" class="stat-value">N/A</span>
+                            KG on
+                            <span
+                                id="min-weight-date"
+                                class="stat-date highlightable"
+                                >N/A</span
+                            >
+                            <!-- Feature #4 -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Feature #11: Analysis Results Card -->
+                <section
+                    id="analysis-results-card"
+                    class="card"
+                    aria-labelledby="analysis-results-heading"
+                >
+                    <!-- Heading updated dynamically -->
+                    <h2 id="analysis-results-heading">
+                        <span class="icon" aria-hidden="true">📈</span> Analysis
+                        Results
+                        <small>(Loading...)</small>
+                    </h2>
+                    <div id="insight-summary" class="insight-summary">
+                        <p>Loading analysis...</p>
+                    </div>
+                    <hr />
+                    <div class="insight-group">
+                        <h4>
+                            Trends & Consistency
+                            <span
+                                class="info-icon"
+                                title="Trends based on data within the Analysis Range. Correlation measures how well reported net calories match the weight trend (SMA changes) on a weekly basis. Closer to -1.0 is ideal."
+                                >ⓘ</span
+                            >
+                        </h4>
+                        <div
+                            class="stat-item"
+                            title="Volatility (Standard Deviation) of daily weight readings around the 7-day SMA within the Analysis Range."
+                        >
+                            <span>Volatility:</span>
+                            <span id="volatility-score" class="stat-value"
+                                >N/A</span
+                            >
+                            KG
+                        </div>
+                        <div class="stat-item">
+                            <span
+                                title="Smoothed weekly change rate (based on 7d moving average of daily SMA changes) ending at the end date of the Analysis Range."
+                                >Smoothed Weekly Δ Rate:</span
+                            >
+                            <span
+                                id="rolling-weekly-change-sma"
+                                class="stat-value"
+                                >N/A</span
+                            >
+                            KG/wk
+                        </div>
+                        <div class="stat-item">
+                            <span
+                                title="Slope of the linear regression line calculated using non-outlier weight data within the Analysis Range, starting from the date set in Controls (if within range), otherwise range start."
+                                >Lin. Reg. Slope
+                                <small
+                                    >(from
+                                    <span id="regression-start-date-label"
+                                        >Range Start</span
+                                    >)</small
+                                >
+                                :</span
+                            >
+                            <span id="regression-slope" class="stat-value"
+                                >N/A</span
+                            >
+                            KG/wk
+                        </div>
+                        <div
+                            class="stat-item"
+                            title="Pearson correlation between weekly average net calories and weekly smoothed SMA change rate over the Analysis Range. Requires sufficient weekly data."
+                        >
+                            <span>Correlation (Net Cal vs Rate):</span>
+                            <span
+                                id="netcal-rate-correlation"
+                                class="stat-value"
+                                >N/A</span
+                            >
+                            r
+                        </div>
+                        <div
+                            class="stat-item"
+                            title="Percentage of days within the Analysis Range with a weight entry."
+                        >
+                            <span>Weight Logging Consistency:</span>
+                            <div>
+                                <span id="weight-consistency" class="stat-value"
+                                    >N/A</span
+                                >%
+                                <span
+                                    id="weight-consistency-details"
+                                    class="stat-details"
+                                ></span>
+                            </div>
+                        </div>
+                        <div
+                            class="stat-item"
+                            title="Percentage of days within the Analysis Range with a calorie intake entry."
+                        >
+                            <span>Calorie Logging Consistency:</span>
+                            <div>
+                                <span
+                                    id="calorie-consistency"
+                                    class="stat-value"
+                                    >N/A</span
+                                >%
+                                <span
+                                    id="calorie-consistency-details"
+                                    class="stat-details"
+                                ></span>
+                            </div>
+                        </div>
+                    </div>
+                    <hr />
+                    <div class="insight-group">
+                        <h4>
+                            Energy Balance Estimation
+                            <span
+                                class="info-icon"
+                                title="Estimates based on reported intake, GFit expenditure, and weight trend within the Analysis Range. Assumes ~7700 kcal per kg. Accuracy depends on logging consistency and GFit accuracy."
+                                >ⓘ</span
+                            >
+                        </h4>
+                        <div class="stat-item">
+                            <span>Avg Intake:</span
+                            ><span id="avg-intake" class="stat-value">N/A</span>
+                            kcal/d
+                        </div>
+                        <div class="stat-item">
+                            <span>Avg Expend (GFit):</span
+                            ><span id="avg-expenditure" class="stat-value"
+                                >N/A</span
+                            >
+                            kcal/d
+                        </div>
+                        <div class="stat-item">
+                            <span>Avg Net (Intake - GFit):</span
+                            ><span id="avg-net-balance" class="stat-value"
+                                >N/A</span
+                            >
+                            kcal/d
+                        </div>
+                        <div
+                            class="stat-item"
+                            title="Estimated average daily calorie surplus (+) or deficit (-) based on the calculated weight trend (Regression or Smoothed Rate) within the Analysis Range."
+                        >
+                            <span>Est. Daily Balance (from Trend):</span
+                            ><span
+                                id="estimated-deficit-surplus"
+                                class="stat-value"
+                                >N/A</span
+                            >
+                            kcal/d
+                        </div>
+                    </div>
+                    <hr />
+                    <div class="insight-group">
+                        <h4>
+                            TDEE Estimation Comparison
+                            <span
+                                class="info-icon"
+                                title="Compares TDEE estimated by Google Fit vs. TDEE derived from your logged intake and weight trend (all calculated within the Analysis Range). Large discrepancies can highlight potential tracking errors or inaccuracies."
+                                >ⓘ</span
+                            >
+                        </h4>
+                        <div class="stat-item">
+                            <span>Avg TDEE (GFit):</span
+                            ><span id="avg-tdee-gfit" class="stat-value"
+                                >N/A</span
+                            >
+                            kcal/d
+                        </div>
+                        <div
+                            class="stat-item"
+                            title="TDEE calculated as: Average Intake - Estimated Daily Balance (from Trend), using values from the Analysis Range."
+                        >
+                            <span>Est. TDEE (from Weight Trend):</span
+                            ><span id="avg-tdee-wgt-change" class="stat-value"
+                                >N/A</span
+                            >
+                            kcal/d
+                        </div>
+                        <!-- Feature #8: TDEE Diff Stat -->
+                        <div
+                            class="stat-item"
+                            title="Average difference between Trend TDEE and GFit TDEE over the Analysis Range (using smoothed daily differences). Positive means Trend TDEE > GFit TDEE."
+                        >
+                            <span>Avg TDEE Difference (Trend - GFit):</span
+                            ><span id="avg-tdee-difference" class="stat-value"
+                                >N/A</span
+                            >
+                            kcal/d
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Goal Setting Section -->
+                <section
+                    id="goal-tracker-card"
+                    class="card"
+                    aria-labelledby="goal-heading"
+                >
+                    <h2 id="goal-heading">
+                        <span class="icon" aria-hidden="true">🎯</span> Goal
+                        Tracker
+                    </h2>
+                    <form id="goal-setting-form">
+                        <div class="form-row">
+                            <label for="goalWeight">Target Wgt (KG):</label>
+                            <input
+                                type="number"
+                                id="goalWeight"
+                                step="0.1"
+                                placeholder="e.g., 75.0"
+                                aria-label="Target weight goal in KG"
+                            />
+                        </div>
+                        <div class="form-row">
+                            <label for="goalDate">Target Date:</label>
+                            <input
+                                type="date"
+                                id="goalDate"
+                                aria-label="Target date for weight goal (optional)"
+                            />
+                        </div>
+                        <div class="form-row">
+                            <label
+                                for="goalTargetRate"
+                                title="Your desired average weekly weight change (e.g., 0.25 for lean gain)."
+                                >Target Weekly Rate:</label
+                            >
+                            <input
+                                type="number"
+                                id="goalTargetRate"
+                                step="0.05"
+                                placeholder="e.g., 0.25"
+                                aria-label="Target weekly weight change rate in KG (optional)"
+                            />
+                        </div>
+                        <button type="submit">Save Goal</button>
+                    </form>
+                    <div class="goal-stats">
+                        <div class="stat-item">
+                            <span>Target Weight:</span
+                            ><span id="target-weight-stat" class="stat-value"
+                                >N/A</span
+                            >
+                            KG
+                        </div>
+                        <div class="stat-item">
+                            <span>Target Rate:</span
+                            ><span id="target-rate-stat" class="stat-value"
+                                >N/A</span
+                            >
+                            KG/wk
+                        </div>
+                        <div class="stat-item">
+                            <span
+                                title="Difference between latest weight (SMA preferred) and target weight."
+                                >Weight to Goal:</span
+                            ><span id="weight-to-goal" class="stat-value"
+                                >N/A</span
+                            >
+                            KG
+                        </div>
+                        <div class="stat-item">
+                            <span
+                                title="Comparison of your current trend (Analysis Range) to your target weekly rate."
+                                >Actual Rate vs Target:</span
+                            ><span
+                                id="current-rate-feedback"
+                                class="stat-value feedback"
+                                >N/A</span
+                            >
+                        </div>
+                        <hr class="subtle-hr" />
+                        <div
+                            class="stat-item"
+                            title="Estimated time to reach Target Weight based on the current weight trend (Analysis Range)."
+                        >
+                            <span>Est. Time to Target Wgt:</span
+                            ><span
+                                id="estimated-time-to-goal"
+                                class="stat-value"
+                                >N/A</span
+                            >
+                        </div>
+                        <div
+                            class="stat-item"
+                            title="The constant weekly weight change required to reach your Target Weight by your Target Date (if set)."
+                        >
+                            <span>Required Rate for Target Date:</span
+                            ><span
+                                id="required-rate-for-goal"
+                                class="stat-value"
+                                >N/A</span
+                            >
+                            KG/wk
+                        </div>
+                        <div
+                            class="stat-item"
+                            title="Estimated average daily net calorie balance needed to achieve the 'Required Rate for Target Date', based on your estimated TDEE (Analysis Range)."
+                        >
+                            <span>Required Net Calories for Date:</span
+                            ><span id="required-net-calories" class="stat-value"
+                                >N/A</span
+                            >
+                            kcal/d
+                        </div>
+                        <!-- Feature #9: Calorie Target Guidance -->
+                        <div
+                            class="stat-item"
+                            title="Suggested daily calorie intake range to meet the 'Required Rate for Target Date', based on your estimated TDEE."
+                        >
+                            <span>Suggested Intake for Date:</span>
+                            <span id="suggested-intake-range" class="stat-value"
+                                >N/A</span
+                            >
+                            kcal/d
+                        </div>
+                    </div>
+                </section>
+            </div>
+            <!-- ================== END SIDEBAR ================== -->
+
+            <!-- ==================== CHART AREA ==================== -->
+            <div
+                class="chart-section card"
+                aria-label="Weight and Performance Metric Charts"
+            >
+                <div
+                    id="chart-container"
+                    role="img"
+                    aria-label="Main weight chart showing raw data, smoothed trend (SMA), bands, regression, expected weight, manual trends, goal line, annotations, and highlighted points. Use mouse wheel or trackpad to zoom/pan."
+                ></div>
+                <!-- Feature #3 note added -->
+                <div
+                    id="balance-chart-container"
+                    role="img"
+                    aria-label="Daily calorie balance chart (Intake - GFit TDEE)."
+                ></div>
+                <!-- Feature #5: Rate of Change Chart -->
+                <div
+                    id="rate-of-change-container"
+                    role="img"
+                    aria-label="Smoothed weekly rate of weight change chart (kg/week)."
+                ></div>
+                <!-- Feature #8: TDEE Reconciliation Chart -->
+                <div
+                    id="tdee-reconciliation-container"
+                    role="img"
+                    aria-label="Smoothed difference between Trend-Estimated TDEE and Google Fit TDEE (kcal/day)."
+                ></div>
+                <!-- Feature #2: Weekly Summary Table -->
+                <div
+                    id="weekly-summary-container"
+                    class="weekly-summary-section"
+                >
+                    <!-- Table generated by JS -->
+                    <h4>Weekly Summary <small>(Analysis Range)</small></h4>
+                    <p class="loading-msg">Loading weekly summary...</p>
+                </div>
+
+                <div
+                    id="legend-container"
+                    aria-label="Chart Legend (Click items to toggle visibility)"
+                ></div>
+                <div
+                    id="context-chart-container"
+                    role="img"
+                    aria-label="Chart overview and brush control for selecting the main chart view."
+                ></div>
+            </div>
+            <!-- ================== END CHART AREA ================== -->
+        </main>
+
+        <div
+            id="tooltip"
+            class="tooltip"
+            role="tooltip"
+            style="opacity: 0"
+        ></div>
+
+        <!-- Libraries -->
         <script src="https://d3js.org/d3.v7.min.js"></script>
+        <script src="https://unpkg.com/simple-statistics@7.8.3/dist/simple-statistics.min.js"></script>
+        <!-- Chart script -->
         <script src="chart.js"></script>
     </body>
 </html>

@@ -1,0 +1,1690 @@
+:root {
+    --hue-primary: 210; /* Slightly desaturated blue */
+    --hue-secondary: 160; /* Teal/Green */
+    --hue-tertiary: 0; /* Red */
+    --hue-accent: 40; /* Gold/Orange */
+    --hue-neutral: 220; /* Cooler neutral */
+    --hue-goal: 275; /* Purple */
+
+    /* Color Variables */
+    --info-color: hsl(var(--hue-primary), 60%, 60%);
+    --warning-color: hsl(var(--hue-accent), 70%, 55%);
+    --success-color: hsl(var(--hue-secondary), 50%, 50%);
+    --danger-color: hsl(var(--hue-tertiary), 70%, 58%);
+    --stable-color: hsl(var(--hue-neutral), 15%, 55%); /* For stable trend */
+
+    /* Light Theme (Default) */
+    --bg-primary: hsl(var(--hue-neutral), 30%, 97%);
+    --bg-secondary: hsl(var(--hue-neutral), 30%, 100%);
+    --bg-tertiary: hsl(var(--hue-neutral), 25%, 94%); /* Subtle contrast bg */
+    --text-primary: hsl(var(--hue-neutral), 25%, 15%);
+    --text-secondary: hsl(var(--hue-neutral), 15%, 40%);
+    --text-muted: hsl(var(--hue-neutral), 15%, 60%);
+    --border-color: hsl(var(--hue-neutral), 25%, 85%);
+    --border-color-light: hsl(
+        var(--hue-neutral),
+        25%,
+        90%
+    ); /* Lighter border */
+    --shadow-color: hsla(
+        var(--hue-neutral),
+        30%,
+        40%,
+        0.08
+    ); /* Softer shadow */
+    --shadow-hover: hsla(var(--hue-neutral), 30%, 40%, 0.12);
+    --primary-color: hsl(var(--hue-primary), 65%, 55%);
+    --primary-color-darker: hsl(var(--hue-primary), 65%, 45%);
+    --secondary-color: hsl(var(--hue-secondary), 50%, 50%);
+    --tertiary-color: hsl(var(--hue-tertiary), 70%, 58%);
+    --accent-color: hsl(var(--hue-accent), 75%, 55%);
+    --goal-color: hsl(var(--hue-goal), 50%, 60%);
+    --tooltip-bg: hsla(var(--hue-neutral), 25%, 10%, 0.92);
+    --tooltip-text: hsl(var(--hue-neutral), 20%, 95%);
+    --scrollbar-thumb: hsl(var(--hue-neutral), 15%, 70%);
+    --scrollbar-track: hsl(var(--hue-neutral), 15%, 92%);
+    --outlier-color: var(--tertiary-color);
+    --deficit-color: hsl(
+        var(--hue-secondary),
+        60%,
+        45%
+    ); /* Made deficit greener */
+    --surplus-color: hsl(
+        var(--hue-tertiary),
+        70%,
+        58%
+    ); /* Made surplus redder */
+    --expected-line-color: hsl(var(--hue-accent), 85%, 70%);
+
+    /* Chart Specific */
+    --sma-color: var(--primary-color);
+    --band-color: hsla(var(--hue-primary), 70%, 55%, 0.08);
+    --raw-dot-color: hsl(var(--hue-neutral), 15%, 78%);
+    --dot-color: var(--primary-color);
+    --trend1-color: var(--secondary-color);
+    --trend2-color: hsl(var(--hue-tertiary), 60%, 65%);
+    --regression-color: var(--accent-color);
+    --goal-line-color: var(--goal-color);
+
+    /* Transitions & Fonts */
+    --transition-speed: 0.2s; /* Slightly faster transitions */
+    --transition-ease: cubic-bezier(0.4, 0, 0.2, 1);
+    --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        Helvetica, Arial, sans-serif;
+    --font-mono: "Fira Code", SFMono-Regular, Menlo, Monaco, Consolas,
+        "Liberation Mono", "Courier New", monospace;
+
+    /* NEW/MODIFIED Colors (Light Theme) */
+    --rate-line-color: hsl(var(--hue-goal), 50%, 55%); /* Use goal hue */
+    --tdee-diff-line-color: hsl(var(--hue-secondary), 55%, 60%); /* Tealish */
+    --annotation-marker-color: hsl(var(--hue-accent), 70%, 60%);
+    --annotation-range-color: hsla(var(--hue-accent), 70%, 60%, 0.08);
+    --plateau-color: hsla(var(--hue-neutral), 15%, 55%, 0.1); /* Subtle gray */
+    --trend-change-color: var(--danger-color);
+    --highlight-stroke-color: hsl(
+        var(--hue-accent),
+        90%,
+        65%
+    ); /* Brighter highlight */
+    --table-header-bg: hsl(var(--hue-neutral), 25%, 92%);
+    --table-row-hover: hsl(var(--hue-neutral), 25%, 95%);
+}
+
+body.dark-theme {
+    --info-color: hsl(var(--hue-primary), 55%, 70%);
+    --warning-color: hsl(var(--hue-accent), 65%, 65%);
+    --success-color: hsl(var(--hue-secondary), 45%, 60%);
+    --danger-color: hsl(var(--hue-tertiary), 60%, 65%);
+    --stable-color: hsl(var(--hue-neutral), 10%, 55%);
+    --bg-primary: hsl(var(--hue-neutral), 15%, 10%);
+    --bg-secondary: hsl(var(--hue-neutral), 15%, 15%);
+    --bg-tertiary: hsl(var(--hue-neutral), 15%, 12%);
+    --text-primary: hsl(var(--hue-neutral), 15%, 92%);
+    --text-secondary: hsl(var(--hue-neutral), 10%, 68%);
+    --text-muted: hsl(var(--hue-neutral), 10%, 50%);
+    --border-color: hsl(var(--hue-neutral), 15%, 25%);
+    --border-color-light: hsl(var(--hue-neutral), 15%, 30%);
+    --shadow-color: hsla(
+        var(--hue-neutral),
+        0%,
+        0%,
+        0.15
+    ); /* Slightly darker shadow */
+    --shadow-hover: hsla(var(--hue-neutral), 0%, 0%, 0.25);
+    --primary-color: hsl(var(--hue-primary), 60%, 65%);
+    --primary-color-darker: hsl(var(--hue-primary), 60%, 55%);
+    --secondary-color: hsl(var(--hue-secondary), 50%, 60%);
+    --tertiary-color: hsl(var(--hue-tertiary), 65%, 65%);
+    --accent-color: hsl(var(--hue-accent), 70%, 60%);
+    --goal-color: hsl(var(--hue-goal), 50%, 70%);
+    --tooltip-bg: hsla(
+        var(--hue-neutral),
+        15%,
+        90%,
+        0.93
+    ); /* Light tooltip in dark mode */
+    --tooltip-text: hsl(var(--hue-neutral), 15%, 15%);
+    --scrollbar-thumb: hsl(var(--hue-neutral), 15%, 35%);
+    --scrollbar-track: hsl(var(--hue-neutral), 15%, 20%);
+    --band-color: hsla(var(--hue-primary), 60%, 65%, 0.08);
+    --raw-dot-color: hsl(var(--hue-neutral), 10%, 35%);
+    --outlier-color: var(--tertiary-color);
+    --deficit-color: hsl(var(--hue-secondary), 55%, 55%);
+    --surplus-color: hsl(var(--hue-tertiary), 65%, 60%);
+    --expected-line-color: hsl(var(--hue-accent), 80%, 75%);
+
+    /* NEW/MODIFIED Dark Colors */
+    --rate-line-color: hsl(var(--hue-goal), 50%, 70%);
+    --tdee-diff-line-color: hsl(var(--hue-secondary), 50%, 70%);
+    --annotation-marker-color: hsl(var(--hue-accent), 70%, 70%);
+    --annotation-range-color: hsla(var(--hue-accent), 70%, 70%, 0.1);
+    --plateau-color: hsla(var(--hue-neutral), 10%, 55%, 0.12);
+    --trend-change-color: hsl(var(--hue-tertiary), 60%, 70%);
+    --highlight-stroke-color: hsl(var(--hue-accent), 85%, 75%);
+    --table-header-bg: hsl(var(--hue-neutral), 15%, 20%);
+    --table-row-hover: hsl(var(--hue-neutral), 15%, 25%);
+}
+
+/* --- General Styles & Resets --- */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+html {
+    scroll-behavior: smooth;
+    font-size: 16px; /* Base font size */
+}
+body {
+    font-family: var(--font-sans);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    padding: clamp(15px, 3vw, 30px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    line-height: 1.6;
+    transition:
+        background-color var(--transition-speed) var(--transition-ease),
+        color var(--transition-speed) var(--transition-ease);
+    font-size: 15px; /* Adjusted base font size */
+}
+
+/* --- Scrollbar --- */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+    border-radius: 5px;
+}
+::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 5px;
+    border: 2px solid var(--scrollbar-track);
+}
+::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--hue-neutral), 15%, 60%);
+}
+body.dark-theme ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--hue-neutral), 15%, 45%);
+}
+
+/* --- Header --- */
+header {
+    width: 100%;
+    max-width: 1800px; /* Match dashboard max width */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: clamp(25px, 5vh, 40px);
+    padding: 0 5px;
+}
+header h1 {
+    color: var(--text-primary); /* Use text primary for header */
+    font-weight: 600; /* Slightly less bold */
+    font-size: clamp(1.5rem, 4vw, 1.9rem);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+}
+header h1 .logo-icon {
+    font-size: 1.1em; /* Slightly smaller icon */
+    color: var(--primary-color); /* Color the icon */
+}
+header h1 .edition {
+    font-size: 0.6em;
+    font-weight: 500; /* Medium weight */
+    color: var(--text-muted);
+    vertical-align: baseline; /* Align better */
+    margin-left: -0.3em; /* Tuck in slightly */
+    background-color: var(--bg-tertiary);
+    padding: 1px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color-light);
+}
+
+/* --- Theme Toggle --- */
+#theme-toggle {
+    background: none;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 8px 10px; /* Slightly smaller */
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.1em; /* Slightly smaller */
+    transition: all var(--transition-speed) var(--transition-ease);
+    line-height: 1;
+}
+#theme-toggle:hover {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    box-shadow: 0 1px 4px var(--shadow-hover); /* Subtle shadow */
+    border-color: var(--text-secondary);
+    transform: translateY(-1px);
+}
+
+/* --- Status Message --- */
+.status-message {
+    width: calc(100% - 40px); /* Responsive width */
+    max-width: 500px; /* Max width */
+    padding: 10px 15px;
+    margin-bottom: 15px;
+    border-radius: 6px; /* Slightly smaller radius */
+    text-align: center;
+    font-weight: 500;
+    opacity: 0;
+    transform: translateY(-15px); /* Start higher */
+    transition:
+        opacity 0.3s ease-out,
+        transform 0.3s ease-out;
+    pointer-events: none;
+    position: fixed;
+    top: 15px; /* Closer to top */
+    left: 50%;
+    transform: translateX(-50%) translateY(-15px);
+    z-index: 1000;
+    color: white;
+    box-shadow: 0 3px 8px hsla(0, 0%, 0%, 0.15); /* Softer shadow */
+    font-size: 0.9rem;
+    backdrop-filter: blur(2px); /* Subtle blur */
+}
+.status-message.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+    pointer-events: auto;
+}
+.status-message.success {
+    background-color: hsla(var(--hue-secondary), 60%, 40%, 0.9);
+}
+.status-message.error {
+    background-color: hsla(var(--hue-tertiary), 70%, 50%, 0.9);
+}
+.status-message.info {
+    background-color: hsla(var(--hue-primary), 70%, 45%, 0.9);
+}
+.status-message.warn {
+    background-color: hsla(var(--hue-accent), 70%, 50%, 0.9);
+}
+
+/* --- Dashboard Layout --- */
+.dashboard-container {
+    display: grid;
+    grid-template-columns: clamp(320px, 28%, 400px) 1fr; /* Slightly adjusted sidebar width */
+    gap: clamp(18px, 2vw, 25px);
+    width: 100%;
+    max-width: 1800px; /* Wider max width */
+    align-items: flex-start;
+}
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(15px, 2vw, 22px);
+    /* Allow sidebar to scroll independently if content overflows */
+    max-height: calc(100vh - 100px); /* Adjust height based on header/padding */
+    overflow-y: auto;
+    padding-right: 5px; /* Space for scrollbar */
+}
+
+/* --- Cards --- */
+.card {
+    background-color: var(--bg-secondary);
+    border-radius: 10px; /* Slightly smaller radius */
+    padding: clamp(15px, 2vw, 22px);
+    box-shadow: 0 2px 6px var(--shadow-color); /* Softer shadow */
+    border: 1px solid var(--border-color-light); /* Lighter border */
+    transition:
+        box-shadow var(--transition-speed) var(--transition-ease),
+        border-color var(--transition-speed) var(--transition-ease);
+    /* --- FIX: Ensure card is flex container BUT REMOVE overflow hidden --- */
+    display: flex;
+    flex-direction: column;
+    /* overflow: hidden; /* REMOVED - Often causes height calculation issues with dynamic content */
+    /* --- End FIX --- */
+}
+.card:hover {
+    box-shadow: 0 4px 10px var(--shadow-hover); /* Subtle hover shadow */
+}
+
+.card h2,
+.card h3,
+.card h4 {
+    margin-top: 0;
+    margin-bottom: 0.9em;
+    color: var(--text-primary); /* Use text primary */
+    font-weight: 600;
+    border-bottom: 1px solid var(--border-color-light); /* Lighter border */
+    padding-bottom: 0.5em;
+    font-size: 1.05rem; /* Slightly smaller h2 */
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    flex-shrink: 0; /* Prevent headers from shrinking in flex card */
+}
+.card h2 small {
+    /* Style for small text in h2 */
+    font-size: 0.7em;
+    color: var(--text-muted);
+    font-weight: 400;
+    margin-left: 0.5em;
+}
+.card h3 {
+    font-size: 0.95rem; /* Smaller h3 */
+    color: var(--text-secondary);
+    border-bottom: none;
+    margin-bottom: 0.8em;
+    font-weight: 600; /* Make h3 bolder */
+}
+.card h4 {
+    font-size: 0.85rem; /* Smaller h4 */
+    color: var(--primary-color); /* Use primary color for h4 */
+    border-bottom: none;
+    margin-bottom: 0.7em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.9;
+}
+.card .icon {
+    font-size: 1em; /* Match heading size */
+    color: var(--primary-color); /* Color icon */
+    opacity: 0.8;
+}
+.info-icon {
+    /* Style for info icons in headings */
+    font-size: 0.9em;
+    color: var(--text-muted);
+    cursor: help;
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    width: 1.4em;
+    height: 1.4em;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    margin-left: 0.3em;
+    transition: all var(--transition-speed) ease-out;
+}
+.info-icon:hover {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    border-color: var(--text-muted);
+}
+
+/* --- Subtle HR --- */
+hr.subtle-hr {
+    border: 0;
+    height: 1px;
+    background-color: var(--border-color-light); /* Lighter HR */
+    opacity: 0.7;
+    margin: 1.2em 0; /* Reduced margin */
+    flex-shrink: 0; /* Prevent HR from shrinking in flex card */
+}
+
+/* --- Forms (General + Goal + Analysis Range) --- */
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px; /* Reduced gap */
+    flex-shrink: 0; /* Prevent forms from shrinking in flex card */
+}
+.form-row {
+    display: grid;
+    /* Default label width, adjusted below for specific forms */
+    grid-template-columns: minmax(90px, 1fr) 1fr;
+    gap: 8px 12px;
+    align-items: center;
+}
+form label {
+    font-weight: 500;
+    font-size: 0.85em; /* Smaller labels */
+    color: var(--text-secondary);
+    margin-bottom: 0;
+    text-align: right;
+    line-height: 1.3; /* Ensure label vertical align */
+}
+
+/* Input styles */
+form input[type="date"],
+form input[type="number"],
+form input[type="text"],
+#analysis-range-controls input[type="date"] {
+    padding: 8px 12px; /* Reduced padding */
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    border-radius: 6px; /* Slightly smaller radius */
+    width: 100%;
+    font-family: inherit;
+    font-size: 0.9em; /* Smaller input text */
+    transition:
+        border-color var(--transition-speed) var(--transition-ease),
+        box-shadow var(--transition-speed) var(--transition-ease);
+    min-width: 0; /* Prevent input overflow */
+}
+form input:focus,
+#analysis-range-controls input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px hsla(var(--hue-primary), 65%, 55%, 0.15); /* Smaller focus ring */
+}
+form input::placeholder {
+    /* Style placeholder text */
+    /* --- FIX: Improve placeholder contrast --- */
+    color: var(--text-secondary); /* Use secondary text color */
+    opacity: 1; /* Use full opacity */
+    /* --- End FIX --- */
+}
+
+/* Button styles */
+form button[type="submit"],
+#trendline-controls button,
+#analysis-range-controls button,
+#what-if-controls button {
+    /* Include what-if button */
+    padding: 9px 16px; /* Adjusted padding */
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all var(--transition-speed) var(--transition-ease);
+    width: 100%;
+    font-weight: 500;
+    margin-top: 8px; /* Reduced margin */
+    font-size: 0.9em;
+    letter-spacing: 0.02em;
+    text-align: center;
+}
+
+form button[type="submit"]:hover,
+#trendline-controls button:hover,
+#analysis-range-controls button:hover,
+#what-if-controls button:hover {
+    background-color: var(--primary-color-darker);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px hsla(var(--hue-primary), 65%, 45%, 0.1); /* Softer shadow */
+}
+.button-secondary {
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}
+.button-secondary:hover {
+    background-color: var(--border-color);
+    color: var(--text-primary);
+    transform: translateY(-1px);
+    box-shadow: 0 1px 4px var(--shadow-hover); /* Subtle shadow */
+}
+.button-group {
+    /* For grouping buttons like Apply/Reset */
+    display: flex;
+    gap: 10px;
+    margin-top: 5px;
+}
+.button-group button {
+    width: auto; /* Allow buttons to size naturally */
+    flex-grow: 1; /* Make buttons share space */
+    margin-top: 0;
+}
+
+/* Goal Stats */
+.goal-stats {
+    margin-top: 1.2em;
+    padding-top: 0.8em;
+    border-top: 1px dashed var(--border-color-light);
+    flex-shrink: 0; /* Prevent shrinking */
+}
+.goal-stats div.stat-item {
+    margin: 4px 0; /* Reduced margin */
+}
+
+/* --- Controls Section Specific --- */
+#controls-section .toggle-group {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    flex-shrink: 0; /* Prevent shrinking */
+}
+
+#trendline-controls {
+    flex-shrink: 0; /* Prevent shrinking */
+}
+
+#trendline-controls h3 {
+    margin-bottom: 0.8em; /* Reduced margin */
+}
+
+/* FIX: Adjusted trendline layout */
+.trendline-input-group {
+    display: grid;
+    grid-template-columns: minmax(90px, auto) 1fr; /* Give label a bit more min space */
+    gap: 8px 10px; /* Row gap, Column gap */
+    align-items: center; /* Vertical centering */
+    margin-bottom: 0; /* Remove bottom margin if any */
+}
+.trendline-input-group label {
+    text-align: right;
+    font-weight: 500;
+    font-size: 0.8em; /* Smaller label */
+    color: var(--text-secondary);
+    margin-bottom: 0;
+    white-space: nowrap; /* Prevent label wrapping */
+    line-height: 1.3; /* Better vertical align with input */
+}
+.trendline-input-group label .trend-color-1 {
+    color: var(--trend1-color);
+}
+.trendline-input-group label .trend-color-2 {
+    color: var(--trend2-color);
+}
+
+#trendline-controls input[type="date"],
+#trendline-controls input[type="number"] {
+    padding: 6px 8px; /* Smaller padding */
+    font-size: 0.85em;
+    background-color: var(--bg-tertiary);
+    border-radius: 5px;
+    border: 1px solid var(--border-color);
+    width: 100%;
+    min-width: 0;
+    color: var(--text-primary);
+    font-family: inherit;
+    transition:
+        border-color var(--transition-speed) var(--transition-ease),
+        box-shadow var(--transition-speed) var(--transition-ease);
+}
+#trendline-controls input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px hsla(var(--hue-primary), 65%, 55%, 0.15);
+}
+#controls-section .control-note {
+    display: block;
+    font-size: 0.75em;
+    color: var(--text-muted);
+    margin-top: 8px; /* Increased space slightly */
+    /* Align with inputs based on label column width (90px) + column gap (10px) */
+    margin-left: calc(90px + 10px);
+    text-align: left;
+    line-height: 1.4;
+}
+
+/* --- What-If Controls (Feature #10) --- */
+#what-if-controls {
+    flex-shrink: 0; /* Prevent shrinking */
+}
+#what-if-controls h3 {
+    margin-bottom: 0.7em;
+}
+#what-if-controls .form-row {
+    grid-template-columns: minmax(90px, auto) 1fr; /* Match other forms */
+    gap: 8px 10px;
+}
+#what-if-controls button {
+    margin-top: 5px;
+    width: auto; /* Don't force full width */
+    grid-column: 1 / -1; /* Span full width */
+}
+.what-if-result {
+    font-size: 0.85em;
+    color: var(--text-secondary);
+    margin-top: 10px;
+    padding: 8px 10px;
+    background-color: var(--bg-tertiary);
+    border-radius: 4px;
+    border: 1px solid var(--border-color-light);
+    min-height: 2.5em; /* Ensure space even when empty */
+    line-height: 1.4;
+}
+.what-if-result.error {
+    color: var(--danger-color);
+    border-color: hsla(var(--hue-tertiary), 70%, 58%, 0.3);
+}
+
+/* --- Analysis Range Settings Card --- */
+#analysis-settings-card h2 {
+    margin-bottom: 0.8em;
+    flex-shrink: 0; /* Prevent header from shrinking */
+}
+
+/* --- FIX: Ensure content div takes space --- */
+#analysis-range-controls {
+    flex-grow: 1; /* Allow this div to take up remaining space in the card */
+    display: flex; /* Use flex internally for its own children */
+    flex-direction: column;
+    min-height: 0; /* Often needed for nested flex scrolling/growing */
+}
+/* --- End FIX --- */
+
+#analysis-range-controls .form-row {
+    margin-bottom: 8px;
+    grid-template-columns: minmax(90px, auto) 1fr;
+    flex-shrink: 0; /* Prevent form rows from shrinking */
+}
+#analysis-range-controls .button-group {
+    margin-top: 10px;
+    flex-shrink: 0; /* Prevent button group from shrinking */
+}
+#analysis-range-controls .button-group button {
+    padding: 7px 12px;
+    font-size: 0.85em;
+}
+.current-range-display {
+    font-size: 0.8em;
+    color: var(--text-muted);
+    margin-top: auto; /* Push to bottom if extra space */
+    padding-top: 10px; /* Add some space above it */
+    text-align: center;
+    flex-shrink: 0; /* Prevent shrinking */
+}
+
+/* --- Toggle Switch --- */
+.switch-label {
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-right: 10px; /* Reduced margin */
+    font-size: 0.9em;
+}
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 20px;
+    flex-shrink: 0;
+}
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background-color: hsl(var(--hue-neutral), 15%, 65%);
+    transition: 0.3s var(--transition-ease);
+}
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 14px;
+    width: 14px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.3s var(--transition-ease);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+input:checked + .slider {
+    background-color: var(--success-color);
+}
+input:checked + .slider:before {
+    transform: translateX(20px);
+}
+.slider.round {
+    border-radius: 20px;
+}
+.slider.round:before {
+    border-radius: 50%;
+}
+
+/* --- Statistics & Insights Layout --- */
+.stat-item {
+    display: grid;
+    /* Keep the grid definition */
+    grid-template-columns: 1fr auto;
+    gap: 5px 15px; /* Keep gap */
+    align-items: baseline; /* Align baselines of label and value */
+    margin: 0.5em 0;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    color: var(--text-secondary);
+}
+.stat-item span:first-child {
+    /* The label on the left */
+    line-height: 1.3;
+    text-align: left; /* Ensure label is left-aligned */
+    padding-right: 5px; /* Add a little space before the value column */
+}
+.stat-item div {
+    /* The container for value+unit/details on the right */
+    text-align: right; /* Align content inside the div to the right */
+    justify-self: end; /* Align the div itself to the end of the grid column */
+    display: inline-flex; /* Use flex for inline alignment of value/unit */
+    align-items: baseline; /* Align value and unit baselines */
+    gap: 0.3em; /* Space between value and unit/details */
+}
+.stat-item span.stat-value,
+.stat-item div > span.stat-value {
+    /* The actual value span */
+    font-weight: 500;
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 0.95em;
+    background-color: var(--bg-tertiary);
+    padding: 2px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+    /* justify-self: end; REMOVE this, alignment handled by parent div */
+    border: 1px solid var(--border-color-light);
+    display: inline-block; /* Ensure it behaves like a block for padding */
+}
+/* Keep stat-date and stat-details styles */
+.stat-item span.stat-date {
+    font-size: 0.85em;
+    color: var(--text-muted);
+    /* margin-left: 0.4em; REMOVE margin, use gap in parent div */
+    font-family: var(--font-sans);
+    white-space: nowrap; /* Prevent date wrapping */
+}
+.stat-item span.stat-details {
+    font-size: 0.8em;
+    color: var(--text-muted);
+    /* margin-left: 0.4em; REMOVE margin, use gap in parent div */
+    font-family: var(--font-sans);
+}
+
+body.dark-theme .stat-value.feedback.good {
+    color: hsl(var(--hue-secondary), 45%, 70%);
+    background-color: hsla(var(--hue-secondary), 45%, 60%, 0.1);
+    border-color: hsla(var(--hue-secondary), 45%, 60%, 0.3);
+}
+.stat-value.feedback.warn {
+    background-color: hsla(var(--hue-accent), 70%, 55%, 0.1);
+    border-color: hsla(var(--hue-accent), 70%, 55%, 0.3);
+    color: var(--warning-color);
+}
+body.dark-theme .stat-value.feedback.warn {
+    color: hsl(var(--hue-accent), 65%, 75%);
+    background-color: hsla(var(--hue-accent), 65%, 65%, 0.1);
+    border-color: hsla(var(--hue-accent), 65%, 65%, 0.3);
+}
+/* Feature #4: Highlightable stat elements */
+.highlightable {
+    cursor: pointer;
+    text-decoration: underline dotted;
+    transition: color 0.2s ease;
+}
+.highlightable:hover {
+    color: var(--highlight-stroke-color);
+}
+.highlight-trigger:hover .highlightable {
+    color: var(--highlight-stroke-color);
+} /* Ensure date highlights on row hover */
+
+#all-time-stats-card hr,
+#analysis-results-card hr {
+    border: 0;
+    height: 1px;
+    background-image: linear-gradient(
+        to right,
+        transparent,
+        var(--border-color-light),
+        transparent
+    );
+    margin: 1.2em 0;
+    flex-shrink: 0; /* Prevent shrinking */
+}
+#analysis-results-card .insight-group {
+    margin-bottom: 0.8em;
+    flex-shrink: 0; /* Prevent shrinking */
+}
+
+/* --- Insight Summary --- */
+.insight-summary {
+    background-color: var(--bg-tertiary);
+    border-left: 3px solid var(--primary-color);
+    padding: 10px 15px;
+    border-radius: 0 4px 4px 0;
+    margin: 1em 0;
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    flex-shrink: 0; /* Prevent shrinking */
+}
+.insight-summary h4 {
+    font-size: 0.9em;
+    color: var(--primary-color);
+    margin-bottom: 0.6em;
+    padding-bottom: 0;
+    border: none;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+.insight-summary p {
+    margin: 0 0 0.6em 0;
+    line-height: 1.5;
+}
+.insight-summary p:last-child {
+    margin-bottom: 0;
+}
+.insight-summary strong {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+.insight-summary .good {
+    color: var(--success-color);
+    font-weight: 500;
+}
+.insight-summary .warn {
+    color: var(--warning-color);
+    font-weight: 500;
+}
+.insight-summary .bad {
+    color: var(--danger-color);
+    font-weight: 500;
+}
+.insight-summary .stable {
+    color: var(--stable-color);
+    font-weight: 500;
+}
+.insight-summary .gaining {
+    color: var(--surplus-color);
+    font-weight: 500;
+}
+.insight-summary .losing {
+    color: var(--deficit-color);
+    font-weight: 500;
+}
+.insight-summary small {
+    font-size: 0.9em;
+    color: var(--text-muted);
+}
+
+/* In --- Annotations (Feature #1) --- */
+#annotations-section h3 {
+    margin-top: 1em;
+    margin-bottom: 0.5em;
+    font-size: 0.9rem;
+    flex-shrink: 0; /* Prevent shrinking */
+}
+/* FIX: Annotation form row layout consistency */
+#annotation-form .form-row {
+    grid-template-columns: minmax(60px, auto) 1fr; /* Slightly shorter label column */
+    gap: 6px 10px; /* Adjust gap */
+    align-items: center;
+}
+#annotation-form label {
+    text-align: right; /* Keep right aligned */
+    font-size: 0.8em; /* Ensure consistent label size */
+}
+#annotation-form input[type="date"],
+#annotation-form input[type="text"] {
+    font-size: 0.9em; /* Ensure consistent input size */
+    padding: 7px 10px; /* Adjust padding */
+}
+#annotation-form button[type="submit"] {
+    grid-column: 1 / -1; /* Make button span full width */
+    margin-top: 8px; /* Adjust margin */
+    font-size: 0.85em;
+    padding: 8px 14px;
+}
+.annotation-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 200px; /* Keep max height */
+    overflow-y: auto;
+    font-size: 0.85em;
+    border: 1px solid var(--border-color-light);
+    border-radius: 4px;
+    padding: 5px;
+    background-color: var(--bg-tertiary);
+    flex-shrink: 0; /* Prevent shrinking */
+    /* Add flex-grow: 1 if list should fill space, but likely not needed here */
+}
+/* FIX: Improved Annotation List Item Layout */
+.annotation-list li {
+    display: flex; /* Use flexbox */
+    justify-content: space-between; /* Push button to end */
+    align-items: center; /* Align items vertically */
+    padding: 5px 8px; /* Slightly more padding */
+    border-bottom: 1px solid var(--border-color-light);
+    gap: 10px; /* Increased space between elements */
+}
+.annotation-list li:last-child {
+    border-bottom: none;
+}
+.annotation-list li:hover {
+    background-color: var(--table-row-hover);
+}
+.annotation-list .annotation-date {
+    font-weight: 500;
+    color: var(--text-secondary);
+    white-space: nowrap; /* Prevent date from wrapping */
+    flex-shrink: 0; /* Prevent date from shrinking */
+}
+.annotation-list .annotation-text {
+    flex-grow: 1; /* Allow text to take available space */
+    color: var(--text-primary);
+    overflow-wrap: break-word; /* Wrap long text */
+    word-break: break-word; /* Ensure breaks */
+    /* Ensure text doesn't push button off */
+    min-width: 0; /* Critical for flexbox text wrapping */
+    text-align: left; /* Ensure text aligns left */
+}
+.annotation-list .remove-annotation {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.2em;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+    opacity: 0.6; /* Slightly more visible */
+    flex-shrink: 0; /* Prevent button from shrinking */
+    transition:
+        color var(--transition-speed),
+        opacity var(--transition-speed);
+}
+.annotation-list .remove-annotation:hover {
+    color: var(--danger-color);
+    opacity: 1;
+}
+.annotation-list .empty-msg {
+    color: var(--text-muted);
+    text-align: center;
+    padding: 12px; /* More padding */
+    border: none;
+    font-style: italic;
+}
+
+/* --- Chart Section --- */
+.chart-section {
+    display: flex;
+    flex-direction: column;
+    height: auto; /* Let content determine height */
+    min-height: clamp(650px, 80vh, 900px); /* Ensure minimum total height */
+    /* overflow: hidden; */ /* KEEP THIS REMOVED or commented out */
+    position: relative;
+    padding: 15px; /* Reduce padding slightly */
+}
+#chart-container {
+    position: relative;
+    flex-grow: 3;
+    min-height: 280px;
+} /* Main chart takes more space */
+#balance-chart-container {
+    position: relative;
+    height: 80px;
+    flex-shrink: 0;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-color-light);
+}
+#rate-of-change-container {
+    /* Feature #5 */
+    position: relative;
+    height: 75px;
+    flex-shrink: 0;
+    margin-top: 8px;
+    border-top: 1px solid var(--border-color-light);
+    padding-top: 8px;
+}
+#tdee-reconciliation-container {
+    /* Feature #8 */
+    position: relative;
+    height: 75px;
+    flex-shrink: 0;
+    margin-top: 8px;
+    border-top: 1px solid var(--border-color-light);
+    padding-top: 8px;
+}
+#legend-container {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px 15px;
+    padding: 6px 5px;
+    font-size: 0.8rem;
+    border-top: 1px solid var(--border-color-light);
+    margin-top: 5px;
+    flex-shrink: 0; /* Prevent legend shrinking */
+}
+#context-chart-container {
+    position: relative;
+    height: 65px;
+    flex-shrink: 0;
+    margin-top: 5px;
+    padding-bottom: 0;
+}
+
+/* --- Feature #2: Weekly Summary Table --- */
+.weekly-summary-section {
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-color-light);
+    flex-shrink: 0; /* Prevent shrinking */
+}
+.weekly-summary-section h4 {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    border: none;
+    padding: 0;
+}
+.weekly-summary-section h4 small {
+    font-weight: 400;
+    color: var(--text-muted);
+}
+.weekly-summary-section .loading-msg,
+.weekly-summary-section .empty-msg {
+    font-style: italic;
+    color: var(--text-muted);
+    text-align: center;
+    padding: 10px;
+}
+.table-wrapper {
+    max-height: 180px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color-light);
+    border-radius: 4px;
+}
+.weekly-summary-section table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+}
+.weekly-summary-section th,
+.weekly-summary-section td {
+    padding: 5px 8px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color-light);
+    white-space: nowrap;
+}
+.weekly-summary-section th {
+    background-color: var(--table-header-bg);
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+.weekly-summary-section td.number {
+    text-align: right;
+    font-family: var(--font-mono);
+}
+.weekly-summary-section tbody tr:hover {
+    background-color: var(--table-row-hover);
+}
+.weekly-summary-section tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* --- D3 Chart Elements --- */
+.axis path,
+.axis line {
+    stroke: var(--border-color);
+    shape-rendering: crispEdges;
+    fill: none;
+    stroke-width: 1px;
+}
+.axis text {
+    fill: var(--text-muted);
+    font-size: 0.75rem;
+    font-family: var(--font-sans);
+}
+.axis-label.y-axis-label {
+    font-size: 0.8rem;
+    fill: var(--text-secondary);
+    font-weight: 500;
+}
+.grid line {
+    stroke: var(--border-color);
+    stroke-opacity: 0.3;
+    shape-rendering: crispEdges;
+}
+.grid path {
+    stroke-width: 0;
+}
+.axis-label.y-axis-label-small {
+    /* Style for smaller chart labels */
+    font-size: 0.7rem;
+    fill: var(--text-secondary);
+    font-weight: 500;
+}
+
+/* Chart Lines/Areas */
+.line.sma-line {
+    stroke: var(--sma-color);
+    stroke-width: 2px;
+}
+.area.band-area {
+    fill: var(--band-color);
+    stroke: none;
+    opacity: 0.75;
+}
+.trend-line {
+    fill: none;
+    stroke-width: 1.5px;
+    opacity: 0.85;
+}
+.trend-line.manual-trend-1 {
+    stroke: var(--trend1-color);
+    stroke-dasharray: 3, 3;
+}
+.trend-line.manual-trend-2 {
+    stroke: var(--trend2-color);
+    stroke-dasharray: 3, 3;
+}
+.trend-line.regression-line {
+    stroke: var(--regression-color);
+    stroke-width: 2px;
+}
+.trend-line.goal-line {
+    stroke: var(--goal-line-color);
+    stroke-width: 1.75px;
+    stroke-dasharray: 5, 2;
+}
+.trend-line.expected-weight-line {
+    stroke: var(--expected-line-color);
+    stroke-width: 1.25px;
+    stroke-dasharray: 2, 2;
+    opacity: 0.65;
+}
+/* New Lines */
+.line.rate-line {
+    stroke: var(--rate-line-color);
+    stroke-width: 1.75px;
+    fill: none; /* Explicitly add here too for safety */
+}
+.line.tdee-diff-line {
+    stroke: var(--tdee-diff-line-color);
+    stroke-width: 1.5px;
+    stroke-dasharray: 3, 2;
+    fill: none; /* Explicitly add here too for safety */
+}
+/* New Axes/Zero Lines */
+.rate-axis path,
+.rate-axis line,
+.tdee-diff-axis path,
+.tdee-diff-axis line {
+    stroke: var(--border-color);
+}
+.rate-axis text,
+.tdee-diff-axis text {
+    fill: var(--text-muted);
+    font-size: 0.7rem;
+}
+.rate-zero-line,
+.tdee-diff-zero-line {
+    stroke: var(--text-muted);
+    stroke-width: 1px;
+    stroke-dasharray: 2, 2;
+    opacity: 0.6;
+}
+
+/* Balance Chart Bars */
+.balance-bar {
+    shape-rendering: crispEdges;
+    transition: fill 0.2s ease-out;
+    opacity: 0.8;
+}
+.balance-bar.deficit {
+    fill: var(--deficit-color);
+}
+.balance-bar.surplus {
+    fill: var(--surplus-color);
+}
+.balance-bar:hover {
+    opacity: 1;
+}
+.balance-axis path,
+.balance-axis line {
+    stroke: var(--border-color);
+}
+.balance-axis text {
+    fill: var(--text-muted);
+    font-size: 0.7rem;
+}
+.balance-zero-line {
+    stroke: var(--text-muted);
+    stroke-width: 1px;
+    stroke-dasharray: 2, 2;
+    opacity: 0.7;
+}
+
+/* Data Points */
+.raw-dot {
+    fill: var(--raw-dot-color);
+    opacity: 0.4;
+    pointer-events: none; /* Raw dots are purely visual */
+}
+.dot {
+    /* These are the interactive dots in smaDotsGroup */
+    fill: var(--dot-color);
+    opacity: 0.7;
+    cursor: pointer;
+    stroke: var(--bg-secondary); /* Background color for halo effect */
+    stroke-width: 1px;
+    transition:
+        r 0.1s ease-out,
+        opacity 0.1s ease-out;
+    pointer-events: all; /* Ensure these are interactive */
+}
+.dot:hover {
+    opacity: 1;
+}
+.dot.outlier {
+    fill: var(--bg-secondary); /* Hollow fill */
+    stroke: var(--outlier-color); /* Use outlier color for stroke */
+    stroke-width: 1.5px;
+    opacity: 0.8;
+}
+.dot.outlier:hover {
+    opacity: 1;
+    fill: hsla(var(--hue-tertiary), 70%, 58%, 0.1); /* Subtle fill on hover */
+}
+/* Highlights (Feature #4) */
+.dot.highlighted {
+    stroke: var(--highlight-stroke-color);
+    stroke-width: 2.5px;
+    opacity: 1 !important; /* Use !important to override base opacity */
+    r: calc(var(--dot-radius, 3.5px) * 1.2); /* Slightly larger */
+}
+/* Highlight marker overlay */
+.highlight-marker {
+    pointer-events: none; /* This marker is purely visual */
+    /* Stroke, fill, etc., defined in JS */
+}
+
+/* Annotations, Plateaus, Trend Changes */
+.annotations-group .annotation-marker circle {
+    /* Feature #1 */
+    cursor: help;
+    pointer-events: all; /* Ensure markers are interactive */
+}
+.plateau-group .plateau-region {
+    /* Feature #6 */
+    pointer-events: none; /* These are visual overlays */
+    /* fill defined in JS */
+}
+.trend-change-group .trend-change-marker path {
+    /* Feature #7 */
+    cursor: help;
+    pointer-events: all; /* Ensure markers are interactive */
+    /* fill defined in JS */
+}
+
+/* Tooltip */
+.tooltip {
+    position: absolute;
+    text-align: left;
+    width: auto;
+    max-width: 260px;
+    padding: 10px 12px;
+    font: 11.5px var(--font-sans);
+    background: var(--tooltip-bg);
+    color: var(--tooltip-text);
+    border: 1px solid hsla(0, 0%, 50%, 0.1);
+    border-radius: 6px;
+    pointer-events: none; /* Tooltip itself shouldn't block events */
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+    line-height: 1.5;
+    transition: opacity 0.1s ease-out;
+    z-index: 10; /* Ensure tooltip is on top */
+    backdrop-filter: blur(3px);
+}
+body.dark-theme .tooltip {
+    border-color: hsla(0, 0%, 0%, 0.2);
+}
+.tooltip strong {
+    color: var(--primary-color);
+    font-weight: 600;
+    display: block;
+    margin-bottom: 4px;
+    font-size: 1.05em;
+}
+.tooltip .note {
+    display: block;
+    margin-top: 6px;
+    font-style: italic;
+    color: var(--text-muted);
+    padding-top: 6px;
+    font-size: 0.95em;
+}
+.tooltip .note.outlier-note {
+    color: var(--outlier-color);
+    font-weight: 500;
+    font-style: normal;
+    border-top: none;
+    padding-top: 0;
+    margin-top: 4px;
+}
+hr.tooltip-hr {
+    border: 0;
+    height: 1px;
+    background-color: hsla(var(--hue-neutral), 10%, 50%, 0.2);
+    margin: 6px 0;
+}
+.tooltip .positive {
+    color: var(--surplus-color);
+}
+.tooltip .negative {
+    color: var(--deficit-color);
+}
+
+/* Legend */
+.legend-item {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 3px 5px;
+    border-radius: 4px;
+    transition: background-color 0.15s ease-out;
+    user-select: none;
+}
+.legend-item:hover {
+    background-color: var(--bg-tertiary);
+}
+.legend-swatch {
+    width: 14px;
+    height: 14px;
+    margin-right: 6px;
+    border-radius: 3px;
+    display: inline-block;
+    flex-shrink: 0;
+    border: 1px solid rgba(128, 128, 128, 0.1);
+    position: relative;
+    box-sizing: border-box;
+}
+.legend-swatch.line {
+    height: 4px;
+    width: 18px;
+    border-radius: 2px;
+    border: none;
+}
+.legend-swatch.dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+}
+.legend-swatch .line-inside {
+    position: absolute;
+    height: 4px;
+    width: 100%;
+    background-color: var(--sma-color);
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+    border-radius: 2px;
+}
+.legend-swatch.area\+line {
+    /* Combined swatch */
+    border-width: 2px; /* Defined in JS */
+    border-style: solid;
+    height: 10px; /* Defined in JS */
+}
+.legend-text {
+    color: var(--text-secondary);
+    transition: color var(--transition-speed);
+}
+/* New Legend Swatches */
+.legend-swatch.area {
+    opacity: 0.6;
+} /* For plateau */
+.legend-swatch.marker {
+    border-radius: 50%;
+} /* For annotation, trend change */
+/* Legend Item Hidden State */
+.legend-item.hidden {
+    opacity: 0.5;
+}
+.legend-item.hidden:hover {
+    opacity: 0.7;
+}
+.legend-item.hidden .legend-text {
+    color: var(--text-muted);
+}
+.legend-item.hidden .legend-swatch {
+    opacity: 0.6;
+}
+
+/* Context Chart / Brush / Zoom */
+#context-chart-container .line {
+    stroke-width: 1px;
+    opacity: 0.7;
+}
+#context-chart-container .area {
+    fill-opacity: 0.3;
+}
+.brush .selection {
+    fill: var(--primary-color);
+    fill-opacity: 0.15;
+    stroke: var(--text-secondary);
+    stroke-width: 1px;
+    shape-rendering: crispEdges;
+}
+.brush .handle {
+    fill: var(--text-secondary);
+    stroke: var(--bg-secondary);
+    stroke-width: 0.5px;
+    rx: 2;
+    ry: 2;
+    opacity: 0.8;
+}
+
+/* --- FIX: CSS rule for zoom interactions --- */
+.zoom-capture {
+    cursor: move; /* Grab cursor for panning */
+    fill: none; /* Make it invisible */
+    pointer-events: all; /* *** SET TO 'all' TO CAPTURE ZOOM/PAN *** */
+}
+/* Ensure elements intended for interaction *below* the zoom rect *also* get events */
+svg .focus {
+    pointer-events: none; /* Base focus group doesn't capture */
+}
+.dots-group,
+.annotations-group,
+.trend-change-group {
+    pointer-events: all; /* These specific groups *do* capture */
+}
+.dot,
+.annotation-marker circle,
+.trend-change-marker path {
+    pointer-events: all; /* Specific elements within groups capture */
+}
+/* --- End FIX --- */
+
+/* Error Message Styling */
+.error-message,
+.init-error {
+    color: var(--danger-color);
+    padding: 20px;
+    text-align: center;
+    font-weight: 500;
+}
+.init-error {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--bg-secondary);
+    padding: 30px;
+    border-radius: 8px;
+    width: auto;
+    max-width: 100%;
+    z-index: 5;
+}
+.init-error h2 {
+    margin-bottom: 15px;
+    color: var(--danger-color);
+    border: none;
+    padding: 0;
+}
+.init-error p {
+    margin-bottom: 10px;
+    color: var(--text-secondary);
+}
+
+/* Responsive */
+@media (max-width: 1100px) {
+    .sidebar {
+        max-height: none;
+        overflow-y: visible;
+        padding-right: 0;
+    }
+    .chart-section {
+        min-height: 600px;
+    }
+    .dashboard-container {
+        grid-template-columns: 1fr; /* Stack sidebar and chart */
+        padding: 10px;
+    }
+}
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+        font-size: 14px;
+    } /* Smaller base */
+    header h1 {
+        font-size: 1.2rem;
+    }
+    .card {
+        padding: 12px;
+    }
+    .sidebar {
+        gap: 12px;
+    }
+    .stat-item {
+        font-size: 0.85rem;
+    }
+    .weekly-summary-section table {
+        font-size: 0.75rem;
+    }
+    .weekly-summary-section th,
+    .weekly-summary-section td {
+        padding: 4px 6px;
+    }
+    .form-row {
+        grid-template-columns: minmax(70px, auto) 1fr;
+    }
+    /* Adjust specific form layouts if needed */
+    #annotation-form .form-row {
+        grid-template-columns: 1fr; /* Stack label/input */
+        gap: 4px 8px;
+    }
+    #annotation-form label {
+        text-align: left; /* Left align label */
+        margin-bottom: 3px;
+    }
+    #annotation-form button[type="submit"] {
+        grid-column: auto; /* Reset span when stacked */
+    }
+    .annotation-list {
+        max-height: 150px;
+    }
+    .annotation-list li {
+        gap: 6px; /* Reduce gap */
+        padding: 4px 6px;
+    }
+
+    #what-if-controls .form-row {
+        grid-template-columns: minmax(70px, auto) 1fr;
+    }
+    .trendline-input-group {
+        grid-template-columns: minmax(70px, auto) 1fr;
+    }
+    form label {
+        text-align: right;
+    }
+    .button-group {
+        flex-direction: row;
+    }
+    #chart-container {
+        min-height: 250px;
+    }
+    #balance-chart-container,
+    #rate-of-change-container,
+    #tdee-reconciliation-container {
+        height: 70px;
+        margin-top: 5px;
+        padding-top: 5px;
+    }
+    #context-chart-container {
+        height: 55px;
+    }
+    .table-wrapper {
+        max-height: 160px;
+    }
+}
+@media (max-width: 480px) {
+    body {
+        font-size: 13px;
+    }
+    header h1 {
+        font-size: 1.1rem;
+        gap: 0.3em;
+    }
+    header h1 .edition {
+        display: none;
+    }
+    #controls-section .control-note {
+        margin-left: 0; /* Remove left margin when stacked */
+        grid-column: 1 / -1; /* Ensure it spans full width if inside grid */
+        margin-top: 5px;
+    }
+    /* Ensure the trendline group stacks label/input */
+    .trendline-input-group {
+        grid-template-columns: 1fr; /* Stack label and input */
+        gap: 4px 8px;
+    }
+    .trendline-input-group label {
+        text-align: left; /* Align labels left */
+        margin-bottom: 3px;
+        font-size: 0.8em;
+        white-space: normal; /* Allow wrapping on small screens */
+    }
+    form label {
+        text-align: left; /* Align labels left */
+        margin-bottom: 3px;
+        font-size: 0.8em;
+    }
+    #annotation-form button[type="submit"],
+    #what-if-controls button {
+        grid-column: auto; /* Reset grid span for buttons */
+    }
+
+    .stat-item {
+        grid-template-columns: 1fr; /* Stack label and value div */
+        gap: 2px;
+    }
+    .stat-item span:first-child {
+        text-align: left; /* Keep label left aligned */
+        padding-right: 0;
+    }
+    .stat-item div {
+        /* Value container */
+        justify-self: start; /* Align value container to the start */
+        text-align: left; /* Align content (value+unit) to the left */
+    }
+    .stat-item span.stat-value,
+    .stat-item div {
+        justify-self: start;
+        text-align: left;
+    }
+    .stat-item span.stat-date,
+    .stat-item span.stat-details {
+        margin-left: 0.5em;
+    }
+
+    #analysis-range-controls .button-group {
+        flex-direction: column;
+    }
+    #legend-container {
+        gap: 6px 10px;
+        font-size: 0.75rem;
+    }
+    .tooltip {
+        max-width: 200px;
+        font-size: 11px;
+    }
+    .annotation-list {
+        max-height: 150px;
+    }
+    .weekly-summary-section {
+        margin-top: 10px;
+    }
+    .table-wrapper {
+        max-height: 150px;
+    }
+    #balance-chart-container,
+    #rate-of-change-container,
+    #tdee-reconciliation-container {
+        height: 65px;
+    }
+    #context-chart-container {
+        height: 50px;
+    }
+}
