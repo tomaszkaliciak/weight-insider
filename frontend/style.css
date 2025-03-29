@@ -6,6 +6,7 @@
     --hue-accent: 40; /* Gold/Orange */
     --hue-neutral: 220; /* Cooler neutral */
     --hue-goal: 275; /* Purple */
+    --hue-optimal: 110; /* Green-ish for optimal zone */
 
     /* Color Variables */
     --info-color: hsl(var(--hue-primary), 60%, 60%);
@@ -55,6 +56,9 @@
         70%,
         58%
     ); /* Made surplus redder */
+
+    /* Optimal Gain Zone */
+    --optimal-gain-zone-color: hsla(var(--hue-optimal), 40%, 50%, 0.08);
 
     /* Chart Specific */
     --sma-color: var(--primary-color);
@@ -129,12 +133,14 @@ body.dark-theme {
     --tooltip-text: hsl(var(--hue-neutral), 15%, 15%);
     --scrollbar-thumb: hsl(var(--hue-neutral), 15%, 35%);
     --scrollbar-track: hsl(var(--hue-neutral), 15%, 20%);
+
+    --optimal-gain-zone-color: hsla(var(--hue-optimal), 40%, 70%, 0.1);
+
     --band-color: hsla(var(--hue-primary), 60%, 65%, 0.25);
     --raw-dot-color: hsl(var(--hue-neutral), 10%, 35%);
     --outlier-color: var(--tertiary-color);
     --deficit-color: hsl(var(--hue-secondary), 55%, 55%);
     --surplus-color: hsl(var(--hue-tertiary), 65%, 60%);
-    /* --expected-line-color: hsl(var(--hue-accent), 80%, 75%); */ /* REMOVED */
     --regression-ci-color: hsla(var(--hue-accent), 70%, 60%, 0.1);
     --second-axis-color: hsl(var(--hue-secondary), 50%, 65%);
 
@@ -1283,7 +1289,11 @@ body.dark-theme .stat-value.feedback.warn {
 .balance-bar:hover {
     opacity: 1;
 }
-/* Balance Axis styles moved to combined block above */
+
+/* Rate of Change Chart */
+.optimal-gain-zone {
+    fill: var(--optimal-gain-zone-color);
+}
 
 /* Data Points */
 .raw-dot {

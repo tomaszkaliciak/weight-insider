@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Weight Insights</title>
+        <title>Weight Insider</title>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <link
@@ -46,6 +46,7 @@
                         <span class="icon" aria-hidden="true">⚖️</span> Weight
                         Overview <small>(All Time)</small>
                     </h2>
+                    <!-- Existing Weight Stats -->
                     <div class="stat-item">
                         <span>Starting Weight:</span>
                         <div>
@@ -80,7 +81,6 @@
                             KG
                         </div>
                     </div>
-                    <hr />
                     <div class="stat-item highlight-trigger">
                         <span>Max Weight:</span>
                         <div>
@@ -105,6 +105,64 @@
                             >
                         </div>
                     </div>
+
+                    <hr class="subtle-hr" />
+
+                    <h4>
+                        Body Composition <small>(Est. from BF%)</small>
+                        <span
+                            class="info-icon"
+                            title="Lean Body Mass (LBM) and Fat Mass (FM) estimated using weight and body fat percentage entries. Requires consistent BF% logging for accuracy. SMA values used where available."
+                            >ⓘ</span
+                        >
+                    </h4>
+                    <div class="stat-item">
+                        <span>Starting LBM:</span>
+                        <div>
+                            <span id="starting-lbm" class="stat-value"
+                                >N/A</span
+                            >
+                            KG
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <span>Latest LBM (SMA):</span>
+                        <div>
+                            <span id="current-lbm-sma" class="stat-value"
+                                >N/A</span
+                            >
+                            KG
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <span>LBM Change:</span>
+                        <div>
+                            <span id="total-lbm-change" class="stat-value"
+                                >N/A</span
+                            >
+                            KG
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <span>Latest FM (SMA):</span>
+                        <div>
+                            <span id="current-fm-sma" class="stat-value"
+                                >N/A</span
+                            >
+                            KG
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <span>FM Change:</span>
+                        <div>
+                            <span id="total-fm-change" class="stat-value"
+                                >N/A</span
+                            >
+                            KG
+                        </div>
+                    </div>
+
+                    <hr />
 
                     <div class="insight-group">
                         <h4>

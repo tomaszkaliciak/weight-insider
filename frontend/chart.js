@@ -136,9 +136,9 @@ const WeightTrackerChart = (function () {
     statusMessageDurationMs: 3000,
     tooltipShowDelayMs: 100, // Slight delay before showing tooltip
     tooltipHideDelayMs: 300, // Delay before hiding tooltip
-    // Goal Guidance
-    MAX_RECOMMENDED_GAIN_RATE_KG_WEEK: 0.35,
-    MIN_RECOMMENDED_GAIN_RATE_KG_WEEK: 0.1,
+    // Goal Guidance & Lean Gain
+    MIN_RECOMMENDED_GAIN_RATE_KG_WEEK: 0.1, // Lower bound for optimal lean gain
+    MAX_RECOMMENDED_GAIN_RATE_KG_WEEK: 0.35, // Upper bound for optimal lean gain
     // Fallback Colors (referenced if CSS variables fail)
     fallbackColors: {
       sma: "#3498db",
@@ -163,6 +163,7 @@ const WeightTrackerChart = (function () {
       crosshairColor: "#7f8c8d",
       scatterDotColor: "#34495e",
       secondAxisColor: "#27ae60",
+      optimalGainZone: "hsla(120, 60%, 50%, 0.1)", // Added fallback
     },
   });
 
@@ -269,6 +270,7 @@ const WeightTrackerChart = (function () {
     balanceZeroLine: null,
     rateZeroLine: null,
     tdeeDiffZeroLine: null,
+    optimalGainZoneRect: null, // Added
     // Axes groups (populated during setup)
     xAxisGroup: null,
     yAxisGroup: null,
@@ -627,6 +629,10 @@ const WeightTrackerChart = (function () {
           stdDev: null,
           lowerBound: null,
           upperBound: null,
+          lbm: null, // Added
+          fm: null, // Added
+          lbmSma: null, // Added
+          fmSma: null, // Added
           isOutlier: false,
           dailySmaRate: null,
           smoothedWeeklyRate: null,
@@ -655,6 +661,7 @@ const WeightTrackerChart = (function () {
       }
 
       let processed = rawData;
+      processed = DataService._calculateBodyComposition(processed); // <-- Add this step
       processed = DataService._calculateSMAAndStdDev(processed);
       processed = DataService._identifyOutliers(processed);
       processed = DataService._calculateDailyRatesAndTDEETrend(processed);
@@ -677,6 +684,28 @@ const WeightTrackerChart = (function () {
     },
 
     // --- Processing Steps (Internal Helpers) ---
+
+    // NEW processing step function
+    _calculateBodyComposition(data) {
+      return data.map((d) => {
+        let lbm = null;
+        let fm = null;
+        if (
+          d.value != null &&
+          d.bfPercent != null &&
+          !isNaN(d.value) &&
+          !isNaN(d.bfPercent) &&
+          d.bfPercent >= 0 &&
+          d.bfPercent < 100
+        ) {
+          lbm = d.value * (1 - d.bfPercent / 100);
+          fm = d.value * (d.bfPercent / 100);
+        }
+        return { ...d, lbm, fm };
+      });
+    },
+
+    // Modify _calculateSMAAndStdDev to also smooth LBM/FM
     _calculateSMAAndStdDev(data) {
       const windowSize = CONFIG.movingAverageWindow;
       const stdDevMult = CONFIG.stdDevMultiplier;
@@ -686,13 +715,15 @@ const WeightTrackerChart = (function () {
           Math.max(0, i - windowSize + 1),
           i + 1,
         );
+
+        // Original Weight SMA/StdDev
         const validValuesInWindow = windowDataPoints
           .map((p) => p.value)
           .filter((v) => v != null && !isNaN(v));
-
-        let sma = null;
-        let stdDev = null;
-
+        let sma = null,
+          stdDev = null,
+          lowerBound = null,
+          upperBound = null;
         if (validValuesInWindow.length > 0) {
           sma = d3.mean(validValuesInWindow);
           stdDev =
@@ -700,14 +731,35 @@ const WeightTrackerChart = (function () {
             typeof ss?.standardDeviation === "function"
               ? ss.standardDeviation(validValuesInWindow)
               : 0;
+          lowerBound =
+            sma != null && stdDev != null ? sma - stdDevMult * stdDev : null;
+          upperBound =
+            sma != null && stdDev != null ? sma + stdDevMult * stdDev : null;
         }
 
-        const lowerBound =
-          sma != null && stdDev != null ? sma - stdDevMult * stdDev : null;
-        const upperBound =
-          sma != null && stdDev != null ? sma + stdDevMult * stdDev : null;
+        // --- NEW: LBM/FM SMA Calculation ---
+        const validLbmInWindow = windowDataPoints
+          .map((p) => p.lbm)
+          .filter((v) => v != null && !isNaN(v));
+        const lbmSma =
+          validLbmInWindow.length > 0 ? d3.mean(validLbmInWindow) : null;
 
-        return { ...d, sma, stdDev, lowerBound, upperBound };
+        const validFmInWindow = windowDataPoints
+          .map((p) => p.fm)
+          .filter((v) => v != null && !isNaN(v));
+        const fmSma =
+          validFmInWindow.length > 0 ? d3.mean(validFmInWindow) : null;
+        // --- End NEW ---
+
+        return {
+          ...d,
+          sma,
+          stdDev,
+          lowerBound,
+          upperBound,
+          lbmSma, // Added
+          fmSma, // Added
+        };
       });
     },
 
@@ -1131,6 +1183,10 @@ const WeightTrackerChart = (function () {
         crosshairColor: getColor("--crosshair-color", "crosshairColor"),
         scatterDotColor: getColor("--scatter-dot-color", "scatterDotColor"),
         secondAxisColor: getColor("--second-axis-color", "secondAxisColor"),
+        optimalGainZone: getColor(
+          "--optimal-gain-zone-color",
+          "optimalGainZone",
+        ), // Added
       });
     },
   };
@@ -1455,6 +1511,18 @@ const WeightTrackerChart = (function () {
           .attr("class", "rate-chart-area")
           .attr("transform", `translate(${rm.left},${rm.top})`)
           .attr("clip-path", "url(#clip-rate)");
+
+        // --- NEW: Add Optimal Zone Rect ---
+        ui.optimalGainZoneRect = ui.rateChartArea
+          .append("rect")
+          .attr("class", "optimal-gain-zone")
+          .attr("x", 0)
+          .attr("width", width)
+          .attr("y", 0) // Will be set in update
+          .attr("height", 0) // Will be set in update
+          .style("display", "none"); // Initially hidden
+        // --- End NEW ---
+
         ui.rateZeroLine = ui.rateChartArea
           .append("line")
           .attr("class", "rate-zero-line")
@@ -3158,7 +3226,37 @@ const WeightTrackerChart = (function () {
     updateChart(visibleData) {
       const dur = CONFIG.transitionDurationMs;
       if (!ui.rateChartArea || !scales.xRate || !scales.yRate) return;
-      const yZero = scales.yRate(0);
+      const yRateScale = scales.yRate; // Cache scale
+
+      // --- NEW: Update Optimal Zone Rect ---
+      const lowerBoundKgWk = CONFIG.MIN_RECOMMENDED_GAIN_RATE_KG_WEEK;
+      const upperBoundKgWk = CONFIG.MAX_RECOMMENDED_GAIN_RATE_KG_WEEK;
+
+      if (
+        ui.optimalGainZoneRect &&
+        !ui.optimalGainZoneRect.empty() &&
+        yRateScale
+      ) {
+        const yUpper = yRateScale(upperBoundKgWk);
+        const yLower = yRateScale(lowerBoundKgWk);
+
+        // Check if bounds are valid numbers and correctly ordered on screen (yLower >= yUpper)
+        if (!isNaN(yUpper) && !isNaN(yLower) && yLower >= yUpper) {
+          ui.optimalGainZoneRect
+            .transition()
+            .duration(dur)
+            .attr("y", yUpper)
+            .attr("height", yLower - yUpper)
+            .style("display", null) // Make sure it's visible
+            .style("fill", colors.optimalGainZone); // Ensure color is set
+        } else {
+          // Hide if scale is invalid or bounds are off-screen/reversed
+          ui.optimalGainZoneRect.style("display", "none");
+        }
+      }
+      // --- End NEW ---
+
+      const yZero = yRateScale(0);
       if (isNaN(yZero)) {
         console.error("RateChartUpdater: Invalid Y=0 position.");
         return;
@@ -3168,6 +3266,7 @@ const WeightTrackerChart = (function () {
         .duration(dur)
         .attr("y1", yZero)
         .attr("y2", yZero);
+
       const rateLineGen = d3
         .line()
         .x((d) => scales.xRate(d.date))
@@ -3779,6 +3878,71 @@ const WeightTrackerChart = (function () {
         .find((d) => d.sma != null);
       stats.currentSma = lastSma ? lastSma.sma : stats.currentWeight;
 
+      // --- NEW: LBM/FM Stats ---
+      const validLbmSmaData = state.processedData.filter(
+        (d) => d.lbmSma != null && !isNaN(d.lbmSma),
+      );
+      if (validLbmSmaData.length > 0) {
+        stats.startingLbm = validLbmSmaData[0].lbmSma;
+        stats.currentLbmSma =
+          validLbmSmaData[validLbmSmaData.length - 1].lbmSma;
+        if (stats.startingLbm != null && stats.currentLbmSma != null) {
+          stats.totalLbmChange = stats.currentLbmSma - stats.startingLbm;
+        } else {
+          stats.totalLbmChange = null;
+        }
+      } else {
+        // Fallback to raw LBM if no SMA data
+        const validLbmRawData = state.processedData.filter(
+          (d) => d.lbm != null && !isNaN(d.lbm),
+        );
+        if (validLbmRawData.length > 0) {
+          stats.startingLbm = validLbmRawData[0].lbm;
+          // Find last non-null raw LBM for current
+          stats.currentLbmSma = validLbmRawData[validLbmRawData.length - 1].lbm; // Label uses SMA, but value is raw here
+          if (stats.startingLbm != null && stats.currentLbmSma != null) {
+            stats.totalLbmChange = stats.currentLbmSma - stats.startingLbm;
+          } else {
+            stats.totalLbmChange = null;
+          }
+        } else {
+          stats.startingLbm = null;
+          stats.currentLbmSma = null;
+          stats.totalLbmChange = null;
+        }
+      }
+
+      const validFmSmaData = state.processedData.filter(
+        (d) => d.fmSma != null && !isNaN(d.fmSma),
+      );
+      if (validFmSmaData.length > 0) {
+        const startingFmSma = validFmSmaData[0].fmSma; // Temp var for change calc
+        stats.currentFmSma = validFmSmaData[validFmSmaData.length - 1].fmSma;
+        if (startingFmSma != null && stats.currentFmSma != null) {
+          stats.totalFmChange = stats.currentFmSma - startingFmSma;
+        } else {
+          stats.totalFmChange = null;
+        }
+      } else {
+        // Fallback to raw FM if no SMA data
+        const validFmRawData = state.processedData.filter(
+          (d) => d.fm != null && !isNaN(d.fm),
+        );
+        if (validFmRawData.length > 0) {
+          const startingFmRaw = validFmRawData[0].fm;
+          stats.currentFmSma = validFmRawData[validFmRawData.length - 1].fm; // Label uses SMA, value is raw here
+          if (startingFmRaw != null && stats.currentFmSma != null) {
+            stats.totalFmChange = stats.currentFmSma - startingFmRaw;
+          } else {
+            stats.totalFmChange = null;
+          }
+        } else {
+          stats.currentFmSma = null;
+          stats.totalFmChange = null;
+        }
+      }
+      // --- End NEW ---
+
       if (
         analysisStart instanceof Date &&
         analysisEnd instanceof Date &&
@@ -4039,6 +4203,15 @@ const WeightTrackerChart = (function () {
       updateElement("maxWeightDate", stats.maxWeightDate, fd);
       updateElement("minWeight", stats.minWeight, fv, 1);
       updateElement("minWeightDate", stats.minWeightDate, fd);
+
+      // --- NEW: Update LBM/FM elements ---
+      updateElement("startingLbm", stats.startingLbm, fv, 1);
+      updateElement("currentLbmSma", stats.currentLbmSma, fv, 1);
+      updateElement("totalLbmChange", stats.totalLbmChange, fv, 1);
+      updateElement("currentFmSma", stats.currentFmSma, fv, 1);
+      updateElement("totalFmChange", stats.totalFmChange, fv, 1);
+      // --- End NEW ---
+
       updateElement("volatilityScore", stats.volatility, fv, 2);
       updateElement("rollingWeeklyChangeSma", stats.currentWeeklyRate, fv, 2);
       updateElement("regressionSlope", stats.regressionSlopeWeekly, fv, 2);
@@ -4163,16 +4336,26 @@ const WeightTrackerChart = (function () {
       const trendPercentStr =
         trendPercent != null ? ` (${fv(trendPercent, 1)}%)` : "";
       const basis = regressionUsed ? "Regression" : "Rate";
+
       if (trendAbs < CONFIG.plateauRateThresholdKgWeek) {
         return `Trend (<span class="stable">Stable</span>): ${trendValStr} <small>(${basis})</small>`;
       } else if (currentTrendWeekly > 0) {
         let status = `Trend (<span class="gaining">Gaining</span>): ${trendValStr}${trendPercentStr} <small>(${basis})</small>`;
-        if (currentTrendWeekly > CONFIG.MAX_RECOMMENDED_GAIN_RATE_KG_WEEK)
-          status += ` <span class="warn">(Fast)</span>`;
-        else if (currentTrendWeekly >= CONFIG.MIN_RECOMMENDED_GAIN_RATE_KG_WEEK)
-          status += ` <span class="good">(OK)</span>`;
+        // --- NEW: Optimal Zone Feedback ---
+        if (currentTrendWeekly > CONFIG.MAX_RECOMMENDED_GAIN_RATE_KG_WEEK) {
+          status += ` <span class="warn">(Faster than optimal)</span>`;
+        } else if (
+          currentTrendWeekly < CONFIG.MIN_RECOMMENDED_GAIN_RATE_KG_WEEK
+        ) {
+          status += ` <span class="warn">(Slower than optimal)</span>`;
+        } else {
+          status += ` <span class="good">(Optimal rate)</span>`;
+        }
+        // --- End NEW ---
         return status;
       } else {
+        // Losing weight
+        // You could add feedback for loss rate here if desired (e.g., vs. recommended cut rate)
         return `Trend (<span class="losing">Losing</span>): ${trendValStr}${trendPercentStr} <small>(${basis})</small>`;
       }
     },
@@ -5607,6 +5790,7 @@ const WeightTrackerChart = (function () {
       "what-if-duration": "whatIfDurationInput",
       "what-if-submit": "whatIfSubmitBtn",
       "what-if-result": "whatIfResultDisplay",
+      // Weight Stats
       "starting-weight": "startingWeight",
       "current-weight": "currentWeight",
       "current-sma": "currentSma",
@@ -5615,6 +5799,13 @@ const WeightTrackerChart = (function () {
       "max-weight-date": "maxWeightDate",
       "min-weight": "minWeight",
       "min-weight-date": "minWeightDate",
+      // LBM/FM Stats (NEW)
+      "starting-lbm": "startingLbm",
+      "current-lbm-sma": "currentLbmSma",
+      "total-lbm-change": "totalLbmChange",
+      "current-fm-sma": "currentFmSma",
+      "total-fm-change": "totalFmChange",
+      // Trend/Analysis Stats
       "volatility-score": "volatilityScore",
       "rolling-weekly-change-sma": "rollingWeeklyChangeSma",
       "regression-slope": "regressionSlope",
@@ -5631,6 +5822,7 @@ const WeightTrackerChart = (function () {
       "avg-tdee-wgt-change": "avgTdeeWgtChange",
       "avg-tdee-difference": "avgTdeeDifference",
       "avg-tdee-adaptive": "avgTdeeAdaptive",
+      // Goal Stats
       "target-weight-stat": "targetWeightStat",
       "target-rate-stat": "targetRateStat",
       "weight-to-goal": "weightToGoal",
@@ -5651,6 +5843,7 @@ const WeightTrackerChart = (function () {
       const elementNode = Utils.getElementByIdSafe(id);
       if (elementNode) {
         ui[key] = d3.select(elementNode);
+        // Capture references to all stat display DOM elements for performance
         if (
           elementNode.classList.contains("stat-value") ||
           elementNode.classList.contains("stat-date") ||
@@ -5658,7 +5851,12 @@ const WeightTrackerChart = (function () {
           elementNode.classList.contains("feedback") ||
           elementNode.classList.contains("what-if-result") ||
           elementNode.classList.contains("analysis-range-display") ||
-          id === "regression-start-date-label"
+          id === "regression-start-date-label" ||
+          id === "starting-lbm" || // Add LBM/FM ids here
+          id === "current-lbm-sma" ||
+          id === "total-lbm-change" ||
+          id === "current-fm-sma" ||
+          id === "total-fm-change"
         ) {
           ui.statElements[key] = elementNode;
         }
