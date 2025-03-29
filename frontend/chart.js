@@ -5643,9 +5643,10 @@ const WeightTrackerChart = (function () {
             .attr("class", `legend-item ${item.styleClass}`)
             .attr("data-id", item.id)
             .classed("hidden", !isVisible)
-            .on("click", () =>
-              LegendManager.toggleSeriesVisibility(item.id, !isVisible),
-            );
+            .on("click", () => {
+              const currentVisibility = state.seriesVisibility[item.id];
+              LegendManager.toggleSeriesVisibility(item.id, !currentVisibility);
+            });
           const swatch = itemDiv
             .append("span")
             .attr("class", `legend-swatch type-${item.type}`);
