@@ -64,7 +64,18 @@
     --trend1-color: var(--secondary-color);
     --trend2-color: hsl(var(--hue-tertiary), 60%, 65%);
     --regression-color: var(--accent-color);
+    --regression-ci-color: hsla(
+        var(--hue-accent),
+        75%,
+        55%,
+        0.1
+    ); /* NEW CI Color */
     --goal-line-color: var(--goal-color);
+    --second-axis-color: hsl(
+        var(--hue-secondary),
+        50%,
+        50%
+    ); /* NEW: Color for 2nd axis */
 
     /* Transitions & Fonts */
     --transition-speed: 0.2s; /* Slightly faster transitions */
@@ -88,6 +99,12 @@
     ); /* Brighter highlight */
     --table-header-bg: hsl(var(--hue-neutral), 25%, 92%);
     --table-row-hover: hsl(var(--hue-neutral), 25%, 95%);
+    --crosshair-color: hsl(var(--hue-neutral), 20%, 50%); /* NEW Crosshair */
+    --scatter-dot-color: hsl(
+        var(--hue-neutral),
+        30%,
+        40%
+    ); /* NEW Scatter dot */
 }
 
 body.dark-theme {
@@ -132,6 +149,17 @@ body.dark-theme {
     --deficit-color: hsl(var(--hue-secondary), 55%, 55%);
     --surplus-color: hsl(var(--hue-tertiary), 65%, 60%);
     --expected-line-color: hsl(var(--hue-accent), 80%, 75%);
+    --regression-ci-color: hsla(
+        var(--hue-accent),
+        70%,
+        60%,
+        0.1
+    ); /* NEW CI Color Dark */
+    --second-axis-color: hsl(
+        var(--hue-secondary),
+        50%,
+        65%
+    ); /* NEW: Color for 2nd axis Dark */
 
     /* NEW/MODIFIED Dark Colors */
     --rate-line-color: hsl(var(--hue-goal), 50%, 70%);
@@ -143,6 +171,16 @@ body.dark-theme {
     --highlight-stroke-color: hsl(var(--hue-accent), 85%, 75%);
     --table-header-bg: hsl(var(--hue-neutral), 15%, 20%);
     --table-row-hover: hsl(var(--hue-neutral), 15%, 25%);
+    --crosshair-color: hsl(
+        var(--hue-neutral),
+        15%,
+        55%
+    ); /* NEW Crosshair Dark */
+    --scatter-dot-color: hsl(
+        var(--hue-neutral),
+        15%,
+        70%
+    ); /* NEW Scatter dot Dark */
 }
 
 /* --- General Styles & Resets --- */
@@ -454,11 +492,8 @@ form input:focus,
     box-shadow: 0 0 0 2px hsla(var(--hue-primary), 65%, 55%, 0.15); /* Smaller focus ring */
 }
 form input::placeholder {
-    /* Style placeholder text */
-    /* --- FIX: Improve placeholder contrast --- */
-    color: var(--text-secondary); /* Use secondary text color */
-    opacity: 1; /* Use full opacity */
-    /* --- End FIX --- */
+    color: var(--text-muted); /* Use muted text */
+    opacity: 0.8; /* Slightly less than full opacity */
 }
 
 /* Button styles */
@@ -529,9 +564,15 @@ form button[type="submit"]:hover,
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 15px;
-    padding-bottom: 10px;
+    /* margin-bottom: 15px; REMOVED, handled by hr */
+    /* padding-bottom: 10px; REMOVED */
     flex-shrink: 0; /* Prevent shrinking */
+}
+/* NEW: Spacing between toggle groups */
+#controls-section .toggle-group + .toggle-group {
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border-color-light);
 }
 
 #trendline-controls {
@@ -635,14 +676,12 @@ form button[type="submit"]:hover,
     flex-shrink: 0; /* Prevent header from shrinking */
 }
 
-/* --- FIX: Ensure content div takes space --- */
 #analysis-range-controls {
     flex-grow: 1; /* Allow this div to take up remaining space in the card */
     display: flex; /* Use flex internally for its own children */
     flex-direction: column;
     min-height: 0; /* Often needed for nested flex scrolling/growing */
 }
-/* --- End FIX --- */
 
 #analysis-range-controls .form-row {
     margin-bottom: 8px;
@@ -771,7 +810,12 @@ input:checked + .slider:before {
     /* margin-left: 0.4em; REMOVE margin, use gap in parent div */
     font-family: var(--font-sans);
 }
-
+.stat-value.feedback.good {
+    /* Added specificity */
+    background-color: hsla(var(--hue-secondary), 50%, 50%, 0.1);
+    border-color: hsla(var(--hue-secondary), 50%, 50%, 0.3);
+    color: var(--success-color);
+}
 body.dark-theme .stat-value.feedback.good {
     color: hsl(var(--hue-secondary), 45%, 70%);
     background-color: hsla(var(--hue-secondary), 45%, 60%, 0.1);
@@ -885,7 +929,6 @@ body.dark-theme .stat-value.feedback.warn {
     font-size: 0.9rem;
     flex-shrink: 0; /* Prevent shrinking */
 }
-/* FIX: Annotation form row layout consistency */
 #annotation-form .form-row {
     grid-template-columns: minmax(60px, auto) 1fr; /* Slightly shorter label column */
     gap: 6px 10px; /* Adjust gap */
@@ -920,7 +963,6 @@ body.dark-theme .stat-value.feedback.warn {
     flex-shrink: 0; /* Prevent shrinking */
     /* Add flex-grow: 1 if list should fill space, but likely not needed here */
 }
-/* FIX: Improved Annotation List Item Layout */
 .annotation-list li {
     display: flex; /* Use flexbox */
     justify-content: space-between; /* Push button to end */
@@ -981,41 +1023,35 @@ body.dark-theme .stat-value.feedback.warn {
     display: flex;
     flex-direction: column;
     height: auto; /* Let content determine height */
-    min-height: clamp(650px, 80vh, 900px); /* Ensure minimum total height */
+    /* Adjusted min-height to account for scatter plot */
+    min-height: clamp(750px, 85vh, 1100px);
     /* overflow: hidden; */ /* KEEP THIS REMOVED or commented out */
     position: relative;
     padding: 15px; /* Reduce padding slightly */
 }
 #chart-container {
     position: relative;
-    flex-grow: 3;
+    flex-grow: 3; /* Weight chart still takes most space */
     min-height: 280px;
-} /* Main chart takes more space */
-#balance-chart-container {
-    position: relative;
-    height: 80px;
-    flex-shrink: 0;
-    margin-top: 8px;
-    padding-top: 8px;
-    border-top: 1px solid var(--border-color-light);
 }
-#rate-of-change-container {
-    /* Feature #5 */
-    position: relative;
-    height: 75px;
-    flex-shrink: 0;
-    margin-top: 8px;
-    border-top: 1px solid var(--border-color-light);
-    padding-top: 8px;
-}
+#balance-chart-container,
+#rate-of-change-container,
 #tdee-reconciliation-container {
-    /* Feature #8 */
     position: relative;
-    height: 75px;
+    height: 75px; /* Slightly reduced height */
     flex-shrink: 0;
     margin-top: 8px;
-    border-top: 1px solid var(--border-color-light);
     padding-top: 8px;
+    border-top: 1px solid var(--border-color-light);
+}
+/* NEW FEATURE: Correlation Scatter Plot Container */
+#correlation-scatter-container {
+    position: relative;
+    height: 180px; /* Adjust height as needed */
+    flex-shrink: 0;
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-color-light);
 }
 #legend-container {
     display: flex;
@@ -1025,7 +1061,7 @@ body.dark-theme .stat-value.feedback.warn {
     padding: 6px 5px;
     font-size: 0.8rem;
     border-top: 1px solid var(--border-color-light);
-    margin-top: 5px;
+    margin-top: 10px; /* Increased margin */
     flex-shrink: 0; /* Prevent legend shrinking */
 }
 #context-chart-container {
@@ -1130,6 +1166,32 @@ body.dark-theme .stat-value.feedback.warn {
     font-weight: 500;
 }
 
+/* --- NEW FEATURE: Second Y Axis Styling --- */
+.axis--y2 .domain {
+    stroke: var(--second-axis-color); /* Color axis line */
+}
+.axis--y2 line {
+    stroke: var(--second-axis-color);
+    stroke-opacity: 0.5;
+}
+.axis--y2 text {
+    fill: var(--second-axis-color);
+    font-weight: 500;
+    font-size: 0.75rem; /* Match primary axis */
+}
+.axis-label.y-axis-label2 {
+    fill: var(--second-axis-color);
+    font-size: 0.8rem; /* Match primary axis label */
+}
+/* Placeholder for BF% line */
+.line.bf-line {
+    stroke: var(--second-axis-color);
+    stroke-width: 1.5px;
+    stroke-dasharray: 1, 3;
+    fill: none;
+    opacity: 0.8;
+}
+
 /* Chart Lines/Areas */
 .line.sma-line {
     stroke: var(--sma-color);
@@ -1157,6 +1219,14 @@ body.dark-theme .stat-value.feedback.warn {
     stroke: var(--regression-color);
     stroke-width: 2px;
 }
+/* NEW FEATURE: Regression CI Area */
+.area.regression-ci-area {
+    fill: var(--regression-ci-color);
+    stroke: none;
+    opacity: 0.8;
+    pointer-events: none;
+}
+
 .trend-line.goal-line {
     stroke: var(--goal-line-color);
     stroke-width: 1.75px;
@@ -1172,13 +1242,13 @@ body.dark-theme .stat-value.feedback.warn {
 .line.rate-line {
     stroke: var(--rate-line-color);
     stroke-width: 1.75px;
-    fill: none; /* Explicitly add here too for safety */
+    fill: none;
 }
 .line.tdee-diff-line {
     stroke: var(--tdee-diff-line-color);
     stroke-width: 1.5px;
     stroke-dasharray: 3, 2;
-    fill: none; /* Explicitly add here too for safety */
+    fill: none;
 }
 /* New Axes/Zero Lines */
 .rate-axis path,
@@ -1337,6 +1407,22 @@ body.dark-theme .tooltip {
     padding-top: 0;
     margin-top: 4px;
 }
+/* NEW: Pinned Tooltip Note */
+.tooltip .note.pinned-note {
+    color: var(--info-color);
+    font-style: normal;
+    font-size: 0.9em;
+    border-top: 1px dashed hsla(var(--hue-neutral), 10%, 50%, 0.2);
+}
+/* NEW: Annotation Note Styling */
+.tooltip .note.annotation-note {
+    color: var(--annotation-marker-color);
+    font-style: normal;
+    border-top: 1px dashed hsla(var(--hue-neutral), 10%, 50%, 0.2);
+    margin-top: 4px;
+    padding-top: 4px;
+}
+
 hr.tooltip-hr {
     border: 0;
     height: 1px;
@@ -1379,6 +1465,7 @@ hr.tooltip-hr {
     width: 18px;
     border-radius: 2px;
     border: none;
+    background-color: currentColor; /* Use text color or define specific */
 }
 .legend-swatch.dot {
     width: 9px;
@@ -1397,9 +1484,11 @@ hr.tooltip-hr {
 }
 .legend-swatch.area\+line {
     /* Combined swatch */
-    border-width: 2px; /* Defined in JS */
+    border-width: 2px;
     border-style: solid;
-    height: 10px; /* Defined in JS */
+    height: 10px;
+    border-color: transparent; /* Base border transparent */
+    background-clip: padding-box; /* Background covers padding */
 }
 .legend-text {
     color: var(--text-secondary);
@@ -1407,8 +1496,14 @@ hr.tooltip-hr {
 }
 /* New Legend Swatches */
 .legend-swatch.area {
+    /* Used for Plateau & Regression CI */
     opacity: 0.6;
-} /* For plateau */
+}
+/* NEW: Specific style for CI legend swatch */
+.legend-item.regression-ci-area .legend-swatch {
+    background-color: var(--regression-ci-color);
+    opacity: 0.8;
+}
 .legend-swatch.marker {
     border-radius: 50%;
 } /* For annotation, trend change */
@@ -1435,6 +1530,7 @@ hr.tooltip-hr {
     fill-opacity: 0.3;
 }
 .brush .selection {
+    /* Context chart brush */
     fill: var(--primary-color);
     fill-opacity: 0.15;
     stroke: var(--text-secondary);
@@ -1442,6 +1538,7 @@ hr.tooltip-hr {
     shape-rendering: crispEdges;
 }
 .brush .handle {
+    /* Context chart handles */
     fill: var(--text-secondary);
     stroke: var(--bg-secondary);
     stroke-width: 0.5px;
@@ -1450,19 +1547,20 @@ hr.tooltip-hr {
     opacity: 0.8;
 }
 
-/* --- FIX: CSS rule for zoom interactions --- */
 .zoom-capture {
     cursor: move; /* Grab cursor for panning */
     fill: none; /* Make it invisible */
-    pointer-events: all; /* *** SET TO 'all' TO CAPTURE ZOOM/PAN *** */
+    pointer-events: all; /* Needs to capture zoom/pan */
 }
-/* Ensure elements intended for interaction *below* the zoom rect *also* get events */
+/* Ensure interactive elements below zoom rect get events */
 svg .focus {
     pointer-events: none; /* Base focus group doesn't capture */
 }
 .dots-group,
 .annotations-group,
-.trend-change-group {
+.trend-change-group,
+.regression-brush {
+    /* Allow regression brush to capture events */
     pointer-events: all; /* These specific groups *do* capture */
 }
 .dot,
@@ -1470,7 +1568,100 @@ svg .focus {
 .trend-change-marker path {
     pointer-events: all; /* Specific elements within groups capture */
 }
-/* --- End FIX --- */
+
+/* NEW: Crosshair Styling */
+.crosshair-group {
+    pointer-events: none;
+}
+.crosshair {
+    stroke: var(--crosshair-color);
+    stroke-width: 1px;
+    stroke-dasharray: 3, 3;
+    opacity: 0.7;
+}
+
+/* NEW: Correlation Scatter Plot Styling */
+#correlation-scatter-container {
+    position: relative;
+    height: 200px; /* Adjust as needed */
+    flex-shrink: 0;
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-color-light);
+}
+.scatter-axis path,
+.scatter-axis line {
+    stroke: var(--border-color);
+}
+.scatter-axis text {
+    fill: var(--text-muted);
+    font-size: 0.7rem;
+}
+.axis-label.scatter-axis-label-x,
+.axis-label.scatter-axis-label-y {
+    font-size: 0.75rem;
+    fill: var(--text-secondary);
+    font-weight: 500;
+}
+.scatter-dot {
+    fill: var(--scatter-dot-color);
+    opacity: 0.7;
+    transition: opacity 0.1s ease;
+}
+.scatter-dot:hover {
+    opacity: 1;
+    stroke: var(--text-primary);
+    stroke-width: 1px;
+}
+
+/* NEW: Interactive Regression Brush Styling */
+.regression-brush .selection {
+    fill: var(--primary-color);
+    fill-opacity: 0.1;
+    stroke: var(--primary-color);
+    stroke-width: 1px;
+    stroke-dasharray: 2, 2;
+    shape-rendering: crispEdges;
+    cursor: ew-resize;
+}
+.regression-brush .handle {
+    fill: var(--primary-color);
+    stroke: var(--bg-secondary);
+    stroke-width: 1px;
+    rx: 3;
+    ry: 3;
+    opacity: 0.8;
+    cursor: ew-resize;
+    width: 8px; /* Make handles easier to grab */
+    height: 20px; /* Make handles easier to grab */
+    transform: translateY(-10px); /* Center handle vertically */
+}
+/* Hide the default overlay which blocks hover */
+.regression-brush .overlay {
+    pointer-events: none;
+}
+
+/* NEW: Pinned Tooltip Styling */
+#pinned-tooltip-container {
+    position: fixed; /* Or absolute relative to chart */
+    bottom: clamp(10px, 2vh, 20px);
+    right: clamp(10px, 2vw, 20px);
+    background-color: var(--tooltip-bg);
+    color: var(--tooltip-text);
+    padding: 8px 12px;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    font: 11px var(--font-sans);
+    z-index: 15;
+    display: none; /* Hidden by default */
+    border: 1px solid hsla(0, 0%, 50%, 0.1);
+    max-width: 200px;
+    line-height: 1.4;
+}
+#pinned-tooltip-container strong {
+    color: var(--primary-color);
+    font-weight: 600;
+}
 
 /* Error Message Styling */
 .error-message,
@@ -1516,11 +1707,14 @@ svg .focus {
         padding-right: 0;
     }
     .chart-section {
-        min-height: 600px;
+        min-height: 700px; /* Adjusted min-height */
     }
     .dashboard-container {
         grid-template-columns: 1fr; /* Stack sidebar and chart */
         padding: 10px;
+    }
+    #correlation-scatter-container {
+        height: 180px;
     }
 }
 @media (max-width: 768px) {
@@ -1591,6 +1785,17 @@ svg .focus {
         height: 70px;
         margin-top: 5px;
         padding-top: 5px;
+    }
+    #correlation-scatter-container {
+        height: 160px;
+    }
+    /* Ensure scatter labels don't overlap */
+    .axis-label.scatter-axis-label-x,
+    .axis-label.scatter-axis-label-y {
+        font-size: 0.7rem;
+    }
+    .axis-label.scatter-axis-label-y {
+        dy: 1.2em; /* Push Y label out slightly more */
     }
     #context-chart-container {
         height: 55px;
@@ -1684,7 +1889,16 @@ svg .focus {
     #tdee-reconciliation-container {
         height: 65px;
     }
+    #correlation-scatter-container {
+        height: 150px;
+    }
     #context-chart-container {
         height: 50px;
+    }
+    #pinned-tooltip-container {
+        bottom: 5px;
+        right: 5px;
+        font-size: 10px;
+        padding: 5px 8px;
     }
 }

@@ -1,35 +1,38 @@
 /**
- * Weight Insights - Advanced Chart Module (v2)
+ * Weight Insights - Advanced Chart Module (v3.1 - Refactored)
  *
- * Incorporates annotations, weekly summary, direct interaction, highlighting,
- * rate of change chart, plateau/trend detection, TDEE reconciliation,
- * calorie guidance, what-if scenarios, and clearer stat scopes.
+ * Description:
+ * Renders an interactive multi-chart dashboard for weight tracking analysis.
+ * Incorporates features like SMA bands, regression analysis (with CI),
+ * manual trend lines, goal tracking, calorie balance visualization,
+ * rate of change display, TDEE reconciliation, annotations, plateau/trend
+ * detection, weekly summaries, correlation analysis, dynamic axes,
+ * interactive elements (hover, click-to-pin, highlighting), and more.
+ * Fetches data from `data.json`.
  *
  * Structure:
- * - Configuration & Constants (CONFIG)
+ * - Configuration (CONFIG)
  * - State Management (state)
- * - D3 Selections Cache (selections)
- * - D3 Scales, Axes, Brush, Zoom (scales, axes, brush, zoom)
- * - Color Palette (colors)
- * - Helper Functions (_helpers)
- * - Data Loading & Processing (_data)
- * - Chart Setup Functions (_setup)
- * - Domain & Initial View (_domains)
- * - Chart Update Functions (_update)
- * - Statistics Calculation & DOM Update (_stats)
- * - Insight Generation (_insights)
- * - Event Handlers (_handlers)
- * - Legend & Visibility (_legend)
- * - Annotations Management (_annotations)
- * - Initialization & Public Interface
+ * - D3 Selections Cache (ui)
+ * - D3 Constructs (scales, axes, brushes, zoom)
+ * - Color Management (colors)
+ * - Utility Functions (Utils)
+ * - Data Service (DataService) - Loading, processing, calculations
+ * - UI Setup (UISetup) - Creating DOM/SVG elements
+ * - Domain Manager (DomainManager) - Calculating scale domains
+ * - Chart Updaters (FocusChartUpdater, ContextChartUpdater, etc.) - Rendering logic
+ * - Statistics Manager (StatsManager) - Calculating and displaying stats
+ * - Insights Generator (InsightsGenerator) - Creating textual summaries
+ * - Event Handlers (EventHandlers) - User interactions
+ * - Legend Manager (LegendManager) - Legend rendering and visibility
+ * - Annotation Manager (AnnotationManager) - Handling user annotations
+ * - Theme Manager (ThemeManager) - Light/Dark mode
+ * - Initialization Logic
+ * - Public Interface
  */
 
 // Log script parsing start for timing checks
-console.log("chart.js (v2): Script parsing started.");
-// Initial check for DOM elements (expected to be null if script is in <head> without defer)
-console.log("chart.js (v2): Checking DOM at script parse time:", {
-  chartContainer: document.getElementById("chart-container"),
-});
+console.log("chart.js (v3.1 Refactored): Script parsing started.");
 
 const WeightTrackerChart = (function () {
   "use strict";
@@ -37,25 +40,47 @@ const WeightTrackerChart = (function () {
   // --- Dependency Checks ---
   if (typeof d3 === "undefined") {
     console.error("D3.js library not loaded! Chart cannot initialize.");
-    return {
-      initialize: () => {
-        console.error("D3 missing, initialization aborted.");
-      },
-    };
+    // Minimal error display if D3 is missing
+    document.addEventListener("DOMContentLoaded", () => {
+      document.body.innerHTML =
+        '<div class="init-error"><h2>Initialization Failed</h2><p>D3.js library is missing. Please ensure it is loaded correctly before this script.</p></div>';
+    });
+    return { initialize: () => {} }; // Return dummy interface
   }
   if (typeof ss === "undefined") {
     console.warn(
-      "simple-statistics library (ss) not loaded! Correlation and Regression features will be unavailable.",
+      "simple-statistics library (ss) not loaded! Correlation and Regression features will use basic fallbacks or be unavailable.",
     );
-    // Provide dummy functions if ss is missing
+    // Provide dummy functions if ss is missing to prevent errors
     window.ss = {
       sampleCorrelation: () => {
         console.warn("ss.sampleCorrelation unavailable");
-        return null;
+        return NaN;
       },
       linearRegression: () => {
         console.warn("ss.linearRegression unavailable");
         return { m: NaN, b: NaN };
+      },
+      standardDeviation: (arr) => {
+        console.warn(
+          "ss.standardDeviation unavailable, using basic implementation.",
+        );
+        const n = arr.length;
+        if (n < 2) return 0;
+        const meanVal = arr.reduce((a, b) => a + b, 0) / n;
+        return Math.sqrt(
+          arr.map((x) => Math.pow(x - meanVal, 2)).reduce((a, b) => a + b, 0) /
+            (n - 1),
+        );
+      },
+      sum: (arr) => arr.reduce((a, b) => a + b, 0),
+      mean: (arr) =>
+        arr.length === 0 ? 0 : arr.reduce((a, b) => a + b, 0) / arr.length,
+      tDistributionQuantile: (p, df) => {
+        console.warn(
+          "ss.tDistributionQuantile unavailable, using placeholder 1.96 for CI",
+        );
+        return 1.96; // Very rough approximation (like Z for large df)
       },
     };
   }
@@ -63,53 +88,56 @@ const WeightTrackerChart = (function () {
   // ========================================================================
   // Configuration & Constants
   // ========================================================================
-  const CONFIG = {
+  const CONFIG = Object.freeze({
+    // Make CONFIG immutable
     localStorageKeys: {
       goal: "weightInsightsGoalV2",
       theme: "weightInsightsThemeV2",
-      annotations: "weightInsightsAnnotationsV2", // Feature #1
+      annotations: "weightInsightsAnnotationsV2",
+      dynamicYAxis: "weightInsightsDynamicYV3",
     },
-    movingAverageWindow: 7, // For weight SMA
-    rateOfChangeSmoothingWindow: 7, // For smoothing daily rate changes (Feature #5)
-    tdeeDiffSmoothingWindow: 14, // For smoothing TDEE difference (Feature #8)
-    stdDevMultiplier: 1, // Multiplier for SMA band width
-    yAxisPaddingFactor: 0.02, // FIX: Reduced Y-axis padding factor from 0.05
-    yAxisMinPaddingKg: 0.1, // FIX: Reduced min padding from 0.3
-    rollingWindowWeeks: 4,
+    // Data Processing & Analysis
+    movingAverageWindow: 7,
+    rateOfChangeSmoothingWindow: 7,
+    tdeeDiffSmoothingWindow: 14,
+    adaptiveTDEEWindow: 28,
+    stdDevMultiplier: 1.0, // For SMA band width
     KCALS_PER_KG: 7700,
     OUTLIER_STD_DEV_THRESHOLD: 2.5,
-    MIN_POINTS_FOR_CORRELATION: 14, // Min days with *both* net cal and rate data within range
-    MIN_WEEKS_FOR_CORRELATION: 4, // Min weeks with sufficient data for correlation
     MIN_POINTS_FOR_REGRESSION: 7,
+    MIN_WEEKS_FOR_CORRELATION: 4,
+    CONFIDENCE_INTERVAL_ALPHA: 0.05, // For 95% CI
+    // Plateau & Trend Detection
+    plateauRateThresholdKgWeek: 0.07,
+    plateauMinDurationWeeks: 3,
+    trendChangeWindowDays: 14,
+    trendChangeMinSlopeDiffKgWeek: 0.15,
+    // Visual Appearance
     margins: {
-      focus: { top: 10, right: 30, bottom: 30, left: 50 }, // Keep reduced top margin
-      context: { top: 10, right: 30, bottom: 30, left: 50 },
-      balance: { top: 5, right: 30, bottom: 20, left: 50 },
-      rate: { top: 10, right: 30, bottom: 20, left: 50 },
-      tdeeDiff: { top: 5, right: 30, bottom: 20, left: 50 },
+      focus: { top: 10, right: 50, bottom: 30, left: 50 },
+      context: { top: 10, right: 50, bottom: 30, left: 50 },
+      balance: { top: 5, right: 50, bottom: 20, left: 50 },
+      rate: { top: 10, right: 50, bottom: 20, left: 50 },
+      tdeeDiff: { top: 5, right: 50, bottom: 20, left: 50 },
+      correlationScatter: { top: 10, right: 30, bottom: 30, left: 50 },
     },
+    dotRadius: 3.5,
+    dotHoverRadius: 5.5,
+    rawDotRadius: 2.5,
+    highlightRadiusMultiplier: 1.8,
+    annotationMarkerRadius: 4,
+    yAxisPaddingFactor: 0.02,
+    yAxisMinPaddingKg: 0.1,
+    domainBufferDays: 7, // Buffer for dynamic Y-axis calculation
+    // Interaction & Timing
     debounceResizeMs: 250,
     transitionDurationMs: 300,
     initialViewMonths: 3,
     statusMessageDurationMs: 3000,
-    MAX_RECOMMENDED_GAIN_RATE_KG_WEEK: 0.35, // kg/wk for gain phase
-    MIN_RECOMMENDED_GAIN_RATE_KG_WEEK: 0.1, // kg/wk for gain phase
-    dotRadius: 3.5,
-    dotHoverRadius: 5.5,
-    rawDotRadius: 2.5,
-    highlightRadiusMultiplier: 1.8, // Feature #4
-    // Annotation constants (Feature #1)
-    annotationMarkerRadius: 4,
-    annotationRangeOpacity: 0.1,
-    // Plateau Detection constants (Feature #6)
-    plateauRateThresholdKgWeek: 0.07, // Max abs weekly rate for plateau (based on smoothed rate)
-    plateauMinDurationWeeks: 3,
-    // Trend Change Detection constants (Feature #7 - Basic Slope)
-    trendChangeWindowDays: 14, // Window before/after to compare slope
-    trendChangeMinSlopeDiffKgWeek: 0.15, // Min absolute difference in weekly slope to flag
-    // Domain calculation constants
-    domainBufferDays: 7, // How many days outside the view to consider for Y domain of trendlines/expected
-    // Fallback colors
+    // Goal Guidance
+    MAX_RECOMMENDED_GAIN_RATE_KG_WEEK: 0.35,
+    MIN_RECOMMENDED_GAIN_RATE_KG_WEEK: 0.1,
+    // Fallback Colors (referenced if CSS variables fail)
     fallbackColors: {
       sma: "#3498db",
       band: "rgba(52,152,219,0.08)",
@@ -118,134 +146,147 @@ const WeightTrackerChart = (function () {
       trend1: "#2ecc71",
       trend2: "#e74c3c",
       regression: "#f39c12",
+      regressionCI: "rgba(243,156,18, 0.1)",
       goal: "#9b59b6",
       outlier: "#e74c3c",
       deficit: "#2ecc71",
       surplus: "#e74c3c",
       expectedLineColor: "#f1c40f",
-      rateLineColor: "#8e44ad", // Feature #5
-      tdeeDiffLineColor: "#1abc9c", // Feature #8
-      annotationMarker: "#e67e22", // Feature #1
-      annotationRange: "rgba(230, 126, 34, 0.1)", // Feature #1
-      plateauColor: "rgba(127, 140, 141, 0.15)", // Feature #6
-      trendChangeColor: "#e74c3c", // Feature #7
-      highlightStroke: "#f1c40f", // Feature #4
+      rateLineColor: "#8e44ad",
+      tdeeDiffLineColor: "#1abc9c",
+      annotationMarker: "#e67e22",
+      annotationRange: "rgba(230, 126, 34, 0.1)",
+      plateauColor: "rgba(127, 140, 141, 0.15)",
+      trendChangeColor: "#e74c3c",
+      highlightStroke: "#f1c40f",
+      crosshairColor: "#7f8c8d",
+      scatterDotColor: "#34495e",
+      secondAxisColor: "#27ae60",
     },
-  };
+  });
 
   // ========================================================================
   // State Management
   // ========================================================================
-  let state = {
+  const state = {
     isInitialized: false,
-    rawData: [],
-    processedData: [],
-    weeklySummaryData: [], // Feature #2
-    filteredData: [], // Data currently visible in focus chart (based on X domain)
-    showRegression: true,
-    dimensions: {
-      width: 0,
-      height: 0,
-      contextWidth: 0,
-      contextHeight: 0,
-      balanceWidth: 0,
-      balanceHeight: 0,
-      rateWidth: 0, // Feature #5
-      rateHeight: 0, // Feature #5
-      tdeeDiffWidth: 0, // Feature #8
-      tdeeDiffHeight: 0, // Feature #8
-    },
-    regressionStartDate: null,
-    goal: { weight: null, date: null, targetRate: null },
-    currentTheme: "light",
-    analysisRange: { start: null, end: null, isCustom: false },
+    rawData: [], // Raw data loaded from source
+    processedData: [], // Data after calculations (SMA, rates, TDEE, etc.)
+    weeklySummaryData: [], // Aggregated weekly stats
+    correlationScatterData: [], // Data points for the scatter plot
+    filteredData: [], // Data currently visible in focus chart (X domain)
+    annotations: [], // User-added annotations
+    plateaus: [], // Detected plateau periods {startDate, endDate}
+    trendChangePoints: [], // Detected trend change points {date, magnitude}
+    goal: { weight: null, date: null, targetRate: null }, // User goal settings
+    analysisRange: { start: null, end: null, isCustom: false }, // Currently analyzed date range
+    interactiveRegressionRange: { start: null, end: null }, // Range selected by regression brush
+    regressionStartDate: null, // Start date set via UI for regression calculation (if not using interactive brush)
+    useDynamicYAxis: false, // Preference for dynamic Y-axis scaling
+    currentTheme: "light", // Current UI theme ('light' or 'dark')
     seriesVisibility: {
+      // Visibility toggles for different chart series
       raw: true,
       sma: true,
       expected: true,
       regression: true,
+      regressionCI: true,
       trend1: true,
       trend2: true,
       goal: true,
-      annotations: true, // Feature #1
-      plateaus: true, // Feature #6
-      trendChanges: true, // Feature #7
+      annotations: true,
+      plateaus: true,
+      trendChanges: true,
+      bf: false, // Body Fat % visibility (initially off)
     },
-    statusTimeoutId: null,
-    highlightedDate: null, // Feature #4
-    annotations: [], // Feature #1
-    plateaus: [], // Feature #6 (Stores {startDate, endDate})
-    trendChangePoints: [], // Feature #7 (Stores {date, magnitude})
-    lastZoomTransform: null, // Feature #3
+    highlightedDate: null, // Date of the currently highlighted data point
+    pinnedTooltipData: null, // Data for the pinned tooltip {id, data, pageX, pageY}
+    activeHoverData: null, // Data point currently being hovered over
+    lastZoomTransform: null, // Stores the last d3.zoom transform
+    statusTimeoutId: null, // Timeout ID for the status message
   };
 
   // ========================================================================
-  // D3 Selections Cache
+  // D3 Selections Cache (UI Elements)
   // ========================================================================
-  const selections = {
+  const ui = {
+    // Container elements
+    body: null,
     chartContainer: null,
     contextContainer: null,
     balanceChartContainer: null,
     legendContainer: null,
-    rateChartContainer: null, // Feature #5
-    tdeeDiffContainer: null, // Feature #8
-    weeklySummaryContainer: null, // Feature #2
-    annotationForm: null, // Feature #1
-    annotationDateInput: null, // Feature #1
-    annotationTextInput: null, // Feature #1
-    annotationTypeInput: null, // Feature #1
-    annotationList: null, // Feature #1
-    whatIfIntakeInput: null, // Feature #10
-    whatIfDurationInput: null, // Feature #10
-    whatIfResultDisplay: null, // Feature #10
-    whatIfSubmitBtn: null, // Feature #10
-    body: null,
+    rateChartContainer: null,
+    tdeeDiffContainer: null,
+    weeklySummaryContainer: null,
+    correlationScatterContainer: null,
+    tooltip: null,
+    pinnedTooltipContainer: null,
+    statusMessage: null,
+    annotationForm: null,
+    annotationList: null,
+    insightSummaryContainer: null,
+    analysisResultsHeading: null,
+    // SVG elements & groups (populated during setup)
     svg: null,
-    contextSvg: null,
-    balanceSvg: null,
-    rateSvg: null, // Feature #5
-    tdeeDiffSvg: null, // Feature #8
     focus: null,
+    contextSvg: null,
     context: null,
-    chartArea: null,
+    balanceSvg: null,
     balanceChartArea: null,
-    rateChartArea: null, // Feature #5
-    tdeeDiffChartArea: null, // Feature #8
-    annotationsGroup: null, // Feature #1
-    plateauGroup: null, // Feature #6
-    trendChangeGroup: null, // Feature #7
-    highlightGroup: null, // Feature #4 (To draw highlight markers)
-    zoomCaptureRect: null, // Feature #3 - Specific selection for zoom overlay
+    rateSvg: null,
+    rateChartArea: null,
+    tdeeDiffSvg: null,
+    tdeeDiffChartArea: null,
+    correlationScatterSvg: null,
+    correlationScatterArea: null,
+    chartArea: null, // Clipped area in focus chart
+    gridGroup: null,
+    plateauGroup: null,
+    annotationsGroup: null,
+    trendChangeGroup: null,
+    highlightGroup: null,
+    crosshairGroup: null,
+    rawDotsGroup: null,
+    smaDotsGroup: null,
+    scatterDotsGroup: null,
+    regressionBrushGroup: null,
+    zoomCaptureRect: null,
+    // Paths & Areas (populated during setup)
     smaLine: null,
     bandArea: null,
     regressionLine: null,
+    regressionCIArea: null,
     trendLine1: null,
     trendLine2: null,
     goalLine: null,
     expectedLine: null,
-    rateLine: null, // Feature #5
-    tdeeDiffLine: null, // Feature #8
+    rateLine: null,
+    tdeeDiffLine: null,
+    bfLine: null,
     contextArea: null,
     contextLine: null,
     balanceZeroLine: null,
-    rateZeroLine: null, // Feature #5
-    tdeeDiffZeroLine: null, // Feature #8
-    rawDotsGroup: null,
-    smaDotsGroup: null,
+    rateZeroLine: null,
+    tdeeDiffZeroLine: null,
+    // Axes groups (populated during setup)
     xAxisGroup: null,
     yAxisGroup: null,
-    gridGroup: null,
+    yAxisGroup2: null,
     contextXAxisGroup: null,
     balanceXAxisGroup: null,
     balanceYAxisGroup: null,
-    rateXAxisGroup: null, // Feature #5
-    rateYAxisGroup: null, // Feature #5
-    tdeeDiffXAxisGroup: null, // Feature #8
-    tdeeDiffYAxisGroup: null, // Feature #8
+    rateXAxisGroup: null,
+    rateYAxisGroup: null,
+    tdeeDiffXAxisGroup: null,
+    tdeeDiffYAxisGroup: null,
+    correlationScatterXAxisGroup: null,
+    correlationScatterYAxisGroup: null,
+    // Brush group (populated during setup)
     brushGroup: null,
-    tooltip: null,
-    statusMessage: null,
+    // Input/Control Elements (Refs to D3 selections)
     themeToggle: null,
+    dynamicYAxisToggle: null,
     goalWeightInput: null,
     goalDateInput: null,
     goalTargetRateInput: null,
@@ -260,620 +301,711 @@ const WeightTrackerChart = (function () {
     updateAnalysisRangeBtn: null,
     resetAnalysisRangeBtn: null,
     analysisRangeDisplay: null,
-    analysisResultsHeading: null, // Feature #11
-    insightSummaryContainer: null,
-    statElements: {}, // Cache for direct node manipulation
-    // Stat elements that might be highlight triggers (Feature #4)
-    maxWeightDate: null,
-    minWeightDate: null,
+    annotationDateInput: null,
+    annotationTextInput: null,
+    whatIfIntakeInput: null,
+    whatIfDurationInput: null,
+    whatIfResultDisplay: null,
+    whatIfSubmitBtn: null,
+    // Statistic Display Elements (Refs to actual DOM nodes for perf)
+    statElements: {}, // e.g., statElements.currentWeight = <HTMLElement>
   };
 
   // ========================================================================
-  // D3 Scales, Axes, Brush, Zoom
+  // D3 Constructs (Scales, Axes, Brushes, Zoom)
   // ========================================================================
-  let scales = {
+  const scales = {
     x: null,
     y: null,
+    y2: null,
     xContext: null,
     yContext: null,
     xBalance: null,
     yBalance: null,
-    xRate: null, // Feature #5
-    yRate: null, // Feature #5
-    xTdeeDiff: null, // Feature #8
-    yTdeeDiff: null, // Feature #8
+    xRate: null,
+    yRate: null,
+    xTdeeDiff: null,
+    yTdeeDiff: null,
+    xScatter: null,
+    yScatter: null,
   };
-  let axes = {
+  const axes = {
     xAxis: null,
     yAxis: null,
+    yAxis2: null,
     xAxisContext: null,
-    yBalanceAxis: null,
     xBalanceAxis: null,
-    yRateAxis: null, // Feature #5
-    xRateAxis: null, // Feature #5
-    yTdeeDiffAxis: null, // Feature #8
-    xTdeeDiffAxis: null, // Feature #8
+    yBalanceAxis: null,
+    xRateAxis: null,
+    yRateAxis: null,
+    xTdeeDiffAxis: null,
+    yTdeeDiffAxis: null,
+    xScatterAxis: null,
+    yScatterAxis: null,
   };
-  let brush = null;
-  let zoom = null; // Feature #3
+  const brushes = {
+    context: null, // Main brush on context chart
+    regression: null, // Brush on focus chart for interactive range
+  };
+  let zoom = null; // Zoom behavior for focus chart
 
   // ========================================================================
-  // Color Palette
+  // Color Management
   // ========================================================================
-  let colors = {}; // Populated by _helpers.updateColors
+  const colors = {}; // Populated by ThemeManager
 
   // ========================================================================
-  // Helper Functions (`_helpers`)
+  // Utility Functions (`Utils`)
   // ========================================================================
-  const _helpers = {
+  const Utils = {
     getElementByIdSafe(id) {
       const el = document.getElementById(id);
-      // if (!el) {
-      //     console.warn(`Helper: Element with ID '${id}' not found.`);
+      // Only warn if the element is *expected* to exist for core functionality
+      // if (!el && ['chart-container', 'tooltip', /* other critical ids */].includes(id)) {
+      //     console.warn(`Utils: Critical element with ID "${id}" not found.`);
       // }
       return el;
     },
+
     formatValue(val, decimals = 2) {
-      return val !== null && !isNaN(val) ? val.toFixed(decimals) : "N/A";
+      return val != null && !isNaN(val) ? val.toFixed(decimals) : "N/A";
     },
+
     formatDate(date) {
-      return date instanceof Date && !isNaN(date.getTime())
+      return date instanceof Date && !isNaN(date)
         ? d3.timeFormat("%Y-%m-%d")(date)
         : "N/A";
     },
+
     formatDateShort(date) {
-      return date instanceof Date && !isNaN(date.getTime())
+      return date instanceof Date && !isNaN(date)
         ? d3.timeFormat("%d %b '%y")(date)
         : "N/A";
     },
+
     formatDateLong(date) {
-      return date instanceof Date && !isNaN(date.getTime())
+      return date instanceof Date && !isNaN(date)
         ? d3.timeFormat("%a, %d %b %Y")(date)
         : "N/A";
     },
-    updateColors() {
-      const style = getComputedStyle(document.documentElement);
-      const getColor = (varName, fallback) => {
-        const val = style.getPropertyValue(varName)?.trim();
-        // if (!val) {
-        //     console.warn(`CSS variable ${varName} not found, using fallback ${fallback}`);
-        // }
-        return val || fallback;
-      };
-      colors = {
-        sma: getColor("--sma-color", CONFIG.fallbackColors.sma),
-        band: getColor("--band-color", CONFIG.fallbackColors.band),
-        rawDot: getColor("--raw-dot-color", CONFIG.fallbackColors.rawDot),
-        dot: getColor("--dot-color", CONFIG.fallbackColors.dot),
-        trend1: getColor("--trend1-color", CONFIG.fallbackColors.trend1),
-        trend2: getColor("--trend2-color", CONFIG.fallbackColors.trend2),
-        regression: getColor(
-          "--regression-color",
-          CONFIG.fallbackColors.regression,
-        ),
-        goal: getColor("--goal-line-color", CONFIG.fallbackColors.goal),
-        outlier: getColor("--outlier-color", CONFIG.fallbackColors.outlier),
-        deficit: getColor("--deficit-color", CONFIG.fallbackColors.deficit),
-        surplus: getColor("--surplus-color", CONFIG.fallbackColors.surplus),
-        expectedLineColor: getColor(
-          "--expected-line-color",
-          CONFIG.fallbackColors.expectedLineColor,
-        ),
-        rateLineColor: getColor(
-          "--rate-line-color",
-          CONFIG.fallbackColors.rateLineColor,
-        ), // Feature #5
-        tdeeDiffLineColor: getColor(
-          "--tdee-diff-line-color",
-          CONFIG.fallbackColors.tdeeDiffLineColor,
-        ), // Feature #8
-        annotationMarker: getColor(
-          "--annotation-marker-color",
-          CONFIG.fallbackColors.annotationMarker,
-        ), // Feature #1
-        annotationRange: getColor(
-          "--annotation-range-color",
-          CONFIG.fallbackColors.annotationRange,
-        ), // Feature #1
-        plateauColor: getColor(
-          "--plateau-color",
-          CONFIG.fallbackColors.plateauColor,
-        ), // Feature #6
-        trendChangeColor: getColor(
-          "--trend-change-color",
-          CONFIG.fallbackColors.trendChangeColor,
-        ), // Feature #7
-        highlightStroke: getColor(
-          "--highlight-stroke-color",
-          CONFIG.fallbackColors.highlightStroke,
-        ), // Feature #4
+
+    // Debounce function
+    debounce(func, wait) {
+      let timeout;
+      return function executedFunction(...args) {
+        const later = () => {
+          clearTimeout(timeout);
+          func.apply(this, args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
       };
     },
+
     showStatusMessage(
       message,
       type = "info",
       duration = CONFIG.statusMessageDurationMs,
     ) {
-      if (!selections.statusMessage) return;
+      if (!ui.statusMessage || ui.statusMessage.empty()) return;
       if (state.statusTimeoutId) clearTimeout(state.statusTimeoutId);
-      selections.statusMessage
+
+      ui.statusMessage
         .text(message)
         .attr("class", `status-message ${type}`)
         .classed("show", true);
+
       state.statusTimeoutId = setTimeout(() => {
-        selections.statusMessage.classed("show", false);
+        ui.statusMessage.classed("show", false);
         state.statusTimeoutId = null;
       }, duration);
     },
-    getTrendlineConfig() {
-      const startDateInput = selections.trendStartDateInput?.property("value");
-      const initialWeight = parseFloat(
-        selections.trendInitialWeightInput?.property("value"),
-      );
-      const weeklyIncrease1 = parseFloat(
-        selections.trendWeeklyIncrease1Input?.property("value"),
-      );
-      const weeklyIncrease2 = parseFloat(
-        selections.trendWeeklyIncrease2Input?.property("value"),
-      );
-      let startDate = null;
-      if (startDateInput) {
-        const parsed = new Date(startDateInput);
-        if (!isNaN(parsed.getTime())) {
-          parsed.setHours(0, 0, 0, 0);
-          startDate = parsed;
-        }
-      }
-      const isValid =
-        startDate &&
-        !isNaN(initialWeight) &&
-        !isNaN(weeklyIncrease1) &&
-        !isNaN(weeklyIncrease2);
-      return {
-        startDate,
-        initialWeight,
-        weeklyIncrease1,
-        weeklyIncrease2,
-        isValid,
-      };
-    },
-    getRegressionStartDateFromUI() {
-      const inputVal = selections.trendStartDateInput?.property("value");
-      if (!inputVal) return null;
-      const parsedDate = new Date(inputVal);
-      if (isNaN(parsedDate.getTime())) {
-        console.warn("Invalid regression start date input.");
-        return null;
-      }
-      parsedDate.setHours(0, 0, 0, 0);
-      return parsedDate;
-    },
-    updateStatElement(
-      id,
-      value,
-      formatFn = _helpers.formatValue,
-      decimals = 2,
-    ) {
-      const el = selections.statElements[id];
-      if (el) {
-        el.textContent = formatFn(value, decimals);
-        // Add/manage event listener for highlighting (Feature #4)
-        if (id === "maxWeightDate" || id === "minWeightDate") {
-          if (!el.__clickListenerAttached) {
-            // Avoid attaching multiple listeners
-            el.style.cursor = "pointer";
-            el.style.textDecoration = "underline dotted";
-            el.addEventListener("click", () => _handlers.statDateClick(value)); // Pass the date value
-            el.__clickListenerAttached = true;
-          }
-          // Update the class for visual feedback
-          el.classList.add("highlightable");
-        }
-      } else if (selections[id] && !selections[id].empty()) {
-        // Check if it's a D3 selection (legacy, might be removable)
-        selections[id].text(formatFn(value, decimals));
-      } else {
-        // console.warn(`updateStatElement: Could not find element or stat cache for ID: ${id}`);
-      }
-    },
+
+    // Simple rolling average calculation
     calculateRollingAverage(data, windowSize) {
-      if (!data || data.length === 0 || windowSize <= 0) {
-        return [];
+      if (!Array.isArray(data) || data.length === 0 || windowSize <= 0) {
+        return new Array(data.length).fill(null); // Return array of nulls if invalid input
       }
+
       const result = [];
       let sum = 0;
       let count = 0;
-      const windowData = [];
+      const windowData = []; // Holds the actual values in the current window
 
       for (let i = 0; i < data.length; i++) {
         const value = data[i];
-        if (value !== null && !isNaN(value)) {
+
+        // Add current value to window if valid
+        if (value != null && !isNaN(value)) {
           windowData.push(value);
           sum += value;
           count++;
         } else {
-          // Add null placeholder to keep index alignment if needed, or just skip
-          windowData.push(null); // Pushing null helps maintain window size logic
+          // Even if null, we need to advance the window
+          windowData.push(null); // Use null as placeholder
         }
 
+        // Remove value leaving the window from the left
         if (windowData.length > windowSize) {
-          const removedValue = windowData.shift(); // Remove oldest value
-          if (removedValue !== null && !isNaN(removedValue)) {
+          const removedValue = windowData.shift(); // Remove from the beginning
+          if (removedValue != null && !isNaN(removedValue)) {
             sum -= removedValue;
             count--;
           }
         }
 
-        if (count > 0 && windowData.length >= Math.floor(windowSize / 2)) {
-          // Require at least half window of data
-          // Only calculate average if there are valid numbers in the window
-          result.push(sum / count);
-        } else {
-          result.push(null); // Not enough valid data in window
-        }
+        // Calculate average if there are valid points in the window
+        result.push(count > 0 ? sum / count : null);
       }
       return result;
+    },
+
+    // Calculates bounds for regression confidence interval
+    calculateRegressionCI(points, regressionParams, alpha) {
+      if (
+        !points ||
+        points.length < 2 ||
+        !regressionParams ||
+        regressionParams.slope == null ||
+        isNaN(regressionParams.slope) ||
+        !window.ss || // Check if stats library is available
+        typeof ss.standardDeviation !== "function" ||
+        typeof ss.sum !== "function" ||
+        typeof ss.mean !== "function"
+      ) {
+        return points.map((p) => ({
+          ...p,
+          regressionValue: null,
+          lowerCI: null,
+          upperCI: null,
+        }));
+      }
+
+      const n = points.length;
+      const { slope, intercept } = regressionParams;
+
+      // Ensure points are sorted by date for reliable xValue calculation
+      const sortedPoints = [...points].sort((a, b) => a.date - b.date);
+      const firstDateMs = sortedPoints[0].date.getTime();
+      const dayInMillis = 86400000;
+
+      // Map to objects containing date, original y-value (value), and calculated x-value (days from start)
+      const pointData = sortedPoints.map((p) => ({
+        date: p.date,
+        yValue: p.value, // Original y-value needed for residuals
+        xValue: (p.date.getTime() - firstDateMs) / dayInMillis,
+      }));
+
+      const xValues = pointData.map((p) => p.xValue);
+      const yValues = pointData.map((p) => p.yValue);
+
+      // Predicted y-values (y-hat) based on regression line
+      const yHatValues = pointData.map((p) => slope * p.xValue + intercept);
+
+      // Calculate Residuals and Standard Error of Estimate (SEE)
+      const residuals = yValues.map((y, i) => y - yHatValues[i]);
+      const SSE = ss.sum(residuals.map((r) => r * r));
+      const degreesOfFreedom = n - 2;
+
+      if (degreesOfFreedom <= 0) {
+        // Not enough data points for meaningful CI
+        return points.map((p, i) => ({
+          ...p,
+          regressionValue: yHatValues[i], // Still provide regression value
+          lowerCI: null,
+          upperCI: null,
+        }));
+      }
+
+      const SEE = Math.sqrt(SSE / degreesOfFreedom);
+
+      // Calculate Mean and Sum of Squares for X
+      const xMean = ss.mean(xValues);
+      const Sxx = ss.sum(xValues.map((x) => (x - xMean) ** 2));
+
+      // Determine T-value for the desired confidence level
+      const tValue = ss.tDistributionQuantile
+        ? ss.tDistributionQuantile(1 - alpha / 2, degreesOfFreedom)
+        : 1.96; // Fallback if unavailable
+
+      // Calculate CI bounds for each point
+      return pointData.map((p, i) => {
+        const x_i = p.xValue;
+        // Standard error for the *mean response* (the regression line itself) at x_i
+        const se_mean_response =
+          Sxx > 0
+            ? SEE * Math.sqrt(1 / n + (x_i - xMean) ** 2 / Sxx)
+            : SEE * Math.sqrt(1 / n); // Avoid division by zero if all X are the same
+
+        const marginOfError = tValue * se_mean_response;
+        const regressionValue = yHatValues[i];
+        const lowerCI = regressionValue - marginOfError;
+        const upperCI = regressionValue + marginOfError;
+
+        // Find the original point corresponding to this date to return all original properties
+        const originalPoint = points.find(
+          (op) => op.date.getTime() === p.date.getTime(),
+        );
+
+        return {
+          ...originalPoint, // Include original data fields
+          regressionValue: regressionValue,
+          lowerCI: lowerCI,
+          upperCI: upperCI,
+        };
+      });
     },
   };
 
   // ========================================================================
-  // Data Loading & Processing (`_data`)
+  // Data Service (`DataService`)
   // ========================================================================
-  const _data = {
-    getHardcodedData() {
-      // --- PASTE YOUR FULL HARDCODED DATA OBJECTS HERE ---
-      const weights = {
-        "2025-03-29": 73,
-        "2025-03-27": 72.6,
-        "2025-03-26": 72.6,
-        "2025-03-25": 72.299999999999997,
-        "2025-03-24": 71.099999999999994,
-        "2025-03-21": 70.700000000000003,
-        "2025-03-20": 71.5,
-        "2025-03-19": 71.400000000000006,
-        "2025-03-18": 71.400000000000006,
-        "2025-03-17": 73.099999999999994,
-        "2025-03-16": 71.799999999999997,
-        "2025-03-15": 71,
-        "2025-03-14": 72.200000000000003,
-        "2025-03-12": 71.299999999999997,
-        "2025-03-11": 71.900000000000006,
-        "2025-03-10": 71.400000000000006,
-        "2025-03-07": 70.299999999999997,
-        "2025-03-06": 70.299999999999997,
-        "2025-03-05": 70.700000000000003,
-        "2025-03-04": 71,
-        "2025-03-03": 70.599999999999994,
-        "2025-03-02": 70.599999999999994,
-        "2025-03-01": 71.299999999999997,
-        "2025-02-28": 70.700000000000003,
-        "2025-02-27": 70.700000000000003,
-        "2025-02-26": 70.400000000000006,
-        "2025-02-24": 70.099999999999994,
-        "2025-02-21": 71.200000000000003,
-        "2025-02-20": 70.799999999999997,
-        "2025-02-19": 70.799999999999997,
-        "2025-02-18": 71.400000000000006,
-        "2025-02-17": 70.5,
-        "2025-02-16": 70.900000000000006,
-        "2025-02-15": 69.400000000000006,
-        "2025-02-14": 69.700000000000003,
-        "2025-02-13": 70,
-        "2025-02-12": 70.099999999999994,
-        "2025-02-11": 70.900000000000006,
-        "2025-02-10": 70.799999999999997,
-        "2025-02-09": 71,
-        "2025-02-08": 70.200000000000003,
-        "2025-02-07": 69.700000000000003,
-        "2025-02-05": 69.700000000000003,
-        "2025-02-04": 70.099999999999994,
-        "2025-02-03": 70.099999999999994,
-        "2025-02-02": 70.099999999999994,
-        "2025-02-01": 71,
-        "2025-01-30": 70.200000000000003,
-        "2025-01-29": 70.200000000000003,
-        "2025-01-28": 69.900000000000006,
-        "2025-01-27": 69.299999999999997,
-        "2025-01-26": 69.700000000000003,
-        "2025-01-25": 69.5,
-        "2025-01-24": 69.700000000000003,
-        "2025-01-23": 70.299999999999997,
-        "2025-01-22": 70.5,
-        "2025-01-21": 70.599999999999994,
-        "2025-01-20": 70.599999999999994,
-        "2025-01-16": 69.599999999999994,
-        "2025-01-15": 69.900000000000006,
-        "2025-01-14": 69.400000000000006,
-        "2025-01-13": 69.900000000000006,
-        "2025-01-12": 69.900000000000006,
-        "2025-01-11": 69.200000000000003,
-        "2025-01-10": 69.900000000000006,
-        "2025-01-09": 70.599999999999994,
-        "2025-01-08": 69.799999999999997,
-        "2025-01-07": 69.799999999999997,
-        "2025-01-06": 69.799999999999997,
-        "2025-01-05": 69.700000000000003,
-        "2025-01-03": 69.099999999999994,
-        "2025-01-02": 69,
-        "2025-01-01": 69.700000000000003,
-        "2024-12-31": 69.200000000000003,
-        "2024-12-30": 68.799999999999997,
-        "2024-12-29": 69.299999999999997,
-        "2024-12-28": 69.400000000000006,
-        "2024-12-27": 69.400000000000006,
-        "2024-12-26": 70,
-        "2024-12-25": 70,
-        "2024-12-24": 70.700000000000003,
-        "2024-12-22": 70.700000000000003,
-        "2024-12-21": 70.700000000000003,
-        "2024-12-20": 70.700000000000003,
-        "2024-12-19": 71,
-        "2024-12-18": 71.5,
-        "2024-12-17": 71.5,
-        "2024-12-16": 72,
-        "2024-12-15": 73.099999999999994,
-        "2024-12-14": 71.900000000000006,
-        "2024-12-13": 71.299999999999997,
-        "2024-12-12": 71.299999999999997,
-        "2024-12-11": 70.799999999999997,
-        "2024-12-10": 71.400000000000006,
-        "2024-12-09": 71.400000000000006,
-        "2024-12-08": 72.099999999999994,
-        "2024-12-07": 72.299999999999997,
-        "2024-12-06": 71.599999999999994,
-        "2024-12-05": 72.299999999999997,
-        "2024-12-04": 73,
-        "2024-12-03": 73,
-        "2024-12-02": 74.200000000000003,
-        "2024-11-30": 72.5,
-        "2024-11-29": 72.5,
-        "2024-11-28": 72.799999999999997,
-        "2024-11-27": 73.099999999999994,
-        "2024-11-26": 72.700000000000003,
-        "2024-11-25": 73.700000000000003,
-        "2024-11-24": 74.099999999999994,
-        "2024-11-23": 73.799999999999997,
-        "2024-11-22": 73.5,
-        "2024-11-21": 73.299999999999997,
-        "2024-11-20": 73.200000000000003,
-        "2024-11-19": 73.799999999999997,
-        "2024-11-18": 74.099999999999994,
-        "2024-11-17": 73.5,
-        "2024-11-16": 74.400000000000006,
-        "2024-11-15": 74.799999999999997,
-        "2024-11-14": 74.799999999999997,
-        "2024-11-13": 74.400000000000006,
-        "2024-11-12": 74.599999999999994,
-        "2024-11-11": 75.400000000000006,
-        "2024-11-10": 75.400000000000006,
-      };
-      const calorieIntake = {
-        "2025-03-29": 3344,
-        "2025-03-27": 3303,
-        "2025-03-26": 3341,
-        "2025-03-25": 3326,
-        "2025-03-24": 3243,
-        "2025-03-21": 3143,
-        "2025-03-20": 3219,
-        "2025-03-19": 3258,
-        "2025-03-18": 3127,
-        "2025-03-17": 3087,
-        "2025-03-16": 3079,
-        "2025-03-15": 3056,
-        "2025-03-14": 3075,
-        "2025-03-12": 3008,
-        "2025-03-11": 3024,
-        "2025-03-10": 3010,
-        "2025-03-07": 3030,
-        "2025-03-06": 2999,
-        "2025-03-05": 2656,
-        "2025-03-04": 2939,
-        "2025-03-03": 2966,
-        "2025-03-02": 2817,
-        "2025-03-01": 2651,
-        "2025-02-28": 2459,
-        "2025-02-27": 2699,
-        "2025-02-26": 2912,
-        "2025-02-24": 2912,
-        "2025-02-21": 2942,
-        "2025-02-20": 2961,
-        "2025-02-19": 3036,
-        "2025-02-18": 2948,
-        "2025-02-17": 2940,
-        "2025-02-16": 2892,
-        "2025-02-15": 2817,
-        "2025-02-14": 3105,
-        "2025-02-13": 2845,
-        "2025-02-12": 2925,
-        "2025-02-11": 2826,
-        "2025-02-10": 2821,
-        "2025-02-09": 2836,
-        "2025-02-08": 2876,
-        "2025-02-07": 2852,
-        "2025-02-05": 3219,
-        "2025-02-04": 2800,
-        "2025-02-03": 2751,
-        "2025-02-02": 2784,
-        "2025-02-01": 2784,
-        "2025-01-30": 2795,
-        "2025-01-29": 2751,
-        "2025-01-28": 2734,
-        "2025-01-27": 2732,
-        "2025-01-26": 2757,
-        "2025-01-25": 2644,
-        "2025-01-24": 2661,
-        "2025-01-23": 2581,
-        "2025-01-22": 2688,
-        "2025-01-21": 2634,
-        "2025-01-20": 2669,
-        "2025-01-16": 2673,
-        "2025-01-15": 2645,
-        "2025-01-14": 2688,
-        "2025-01-13": 2693,
-        "2025-01-12": 2460,
-        "2025-01-11": 2359,
-        "2025-01-10": 2367,
-        "2025-01-09": 2409,
-        "2025-01-08": 2398,
-        "2025-01-07": 2305,
-        "2025-01-06": 2318,
-      };
-      const googleFitExpenditure = {
-        "2025-03-29": 2770,
-        "2025-03-27": 1874,
-        "2025-03-26": 2979,
-        "2025-03-25": 2485,
-        "2025-03-24": 2255,
-        "2025-03-21": 2261,
-        "2025-03-20": 2031,
-        "2025-03-19": 2536,
-        "2025-03-18": 2517,
-        "2025-03-17": 2378,
-        "2025-03-16": 2735,
-        "2025-03-15": 2720,
-        "2025-03-14": 2155,
-        "2025-03-12": 2265,
-        "2025-03-11": 1841,
-        "2025-03-10": 1923,
-        "2025-03-07": 2250,
-        "2025-03-06": 2507,
-        "2025-03-05": 2144,
-        "2025-03-04": 2046,
-        "2025-03-03": 2144,
-        "2025-03-02": 2189,
-        "2025-03-01": 2055,
-        "2025-02-28": 2098,
-        "2025-02-27": 1822,
-        "2025-02-26": 1827,
-        "2025-02-24": 1681,
-        "2025-02-21": 1864,
-        "2025-02-20": 2201,
-        "2025-02-19": 2253,
-        "2025-02-18": 2356,
-        "2025-02-17": 2083,
-        "2025-02-16": 2410,
-        "2025-02-15": 1962,
-        "2025-02-14": 3544,
-        "2025-02-13": 2030,
-        "2025-02-12": 1881,
-        "2025-02-11": 2270,
-        "2025-02-10": 2240,
-        "2025-02-09": 2417,
-        "2025-02-08": 2028,
-        "2025-02-07": 2706,
-        "2025-02-05": 1719,
-        "2025-02-04": 2594,
-        "2025-02-03": 1988,
-        "2025-02-02": 2432,
-        "2025-02-01": 1961,
-        "2025-01-30": 2006,
-        "2025-01-29": 2492,
-        "2025-01-28": 2344,
-        "2025-01-27": 2437,
-        "2025-01-26": 3093,
-        "2025-01-25": 2387,
-        "2025-01-24": 2081,
-        "2025-01-23": 2567,
-        "2025-01-22": 2125,
-        "2025-01-21": 2155,
-        "2025-01-20": 2272,
-        "2025-01-16": 2234,
-        "2025-01-15": 2222,
-        "2025-01-14": 2616,
-        "2025-01-13": 2093,
-        "2025-01-12": 2830,
-        "2025-01-11": 1834,
-        "2025-01-10": 2794,
-        "2025-01-09": 2413,
-        "2025-01-08": 2145,
-        "2025-01-07": 2227,
-        "2025-01-06": 2113,
-      };
-      // --- END OF DATA TO PASTE ---
-      return { weights, calorieIntake, googleFitExpenditure };
+  const DataService = {
+    // --- Fetching & Basic Merging ---
+    async fetchData() {
+      console.log("DataService: Fetching data from data.json...");
+      try {
+        const response = await fetch("data.json");
+        if (!response.ok) {
+          throw new Error(
+            `HTTP error! Status: ${response.status} - Failed to fetch data.json`,
+          );
+        }
+        const rawDataObjects = await response.json();
+        console.log("DataService: Successfully fetched and parsed data.json");
+        return rawDataObjects;
+      } catch (error) {
+        console.error("DataService: Failed to load or parse data.json:", error);
+        Utils.showStatusMessage(
+          `Error loading data: ${error.message}. Chart may be incomplete or empty.`,
+          "error",
+          10000,
+        );
+        // Return empty structure to prevent downstream errors
+        return {
+          weights: {},
+          calorieIntake: {},
+          googleFitExpenditure: {},
+          bodyFat: {},
+        };
+        // Re-throwing would halt initialization completely:
+        // throw error;
+      }
     },
 
-    load() {
-      console.log("Using hardcoded data for chart.");
-      const rawDataObjects = this.getHardcodedData();
-      if (!rawDataObjects) {
-        throw new Error("Failed to retrieve hardcoded data.");
-      }
+    mergeRawData(rawDataObjects) {
+      console.log("DataService: Merging raw data sources...");
       const weights = rawDataObjects.weights || {};
       const calorieIntake = rawDataObjects.calorieIntake || {};
       const googleFitExpenditure = rawDataObjects.googleFitExpenditure || {};
+      const bodyFat = rawDataObjects.bodyFat || {};
+
       const allDates = new Set([
         ...Object.keys(weights),
         ...Object.keys(calorieIntake),
         ...Object.keys(googleFitExpenditure),
+        ...Object.keys(bodyFat),
       ]);
 
       let mergedData = [];
       for (const dateStr of allDates) {
         const dateObj = new Date(dateStr);
         if (isNaN(dateObj.getTime())) {
-          console.warn(`Skipping invalid date string: ${dateStr}`);
+          console.warn(`DataService: Skipping invalid date string: ${dateStr}`);
           continue;
         }
-        dateObj.setHours(0, 0, 0, 0);
+        dateObj.setHours(0, 0, 0, 0); // Normalize date
 
         const intake = calorieIntake[dateStr] ?? null;
         const expenditure = googleFitExpenditure[dateStr] ?? null;
-        const netBalance = this.calculateDailyBalance(intake, expenditure);
-        const expectedChange = this.calculateExpectedWeightChange(netBalance);
+        const netBalance = DataService._calculateDailyBalance(
+          intake,
+          expenditure,
+        );
+        const expectedChange =
+          DataService._calculateExpectedWeightChange(netBalance);
 
         mergedData.push({
           dateString: dateStr,
           date: dateObj,
           value: weights[dateStr] ?? null,
-          notes: undefined,
+          bfPercent: bodyFat[dateStr] ?? null,
+          notes: undefined, // Placeholder for future use
           calorieIntake: intake,
           googleFitTDEE: expenditure,
           netBalance: netBalance,
           expectedWeightChange: expectedChange,
+          // Fields to be calculated in processing steps:
           sma: null,
           stdDev: null,
           lowerBound: null,
           upperBound: null,
           isOutlier: false,
-          // Placeholders for new calculated fields
-          dailySmaRate: null, // Feature #5
-          smoothedWeeklyRate: null, // Feature #5
-          tdeeTrend: null, // Feature #8 (calculated later)
-          tdeeDifference: null, // Feature #8
-          avgTdeeDifference: null, // Feature #8
+          dailySmaRate: null,
+          smoothedWeeklyRate: null,
+          tdeeTrend: null,
+          tdeeDifference: null,
+          avgTdeeDifference: null,
+          adaptiveTDEE: null,
+          regressionValue: null,
+          regressionLowerCI: null,
+          regressionUpperCI: null,
         });
       }
       mergedData.sort((a, b) => a.date - b.date);
-      state.rawData = mergedData;
-      console.log(`Loaded and merged data for ${state.rawData.length} dates.`);
+      console.log(
+        `DataService: Merged data for ${mergedData.length} unique dates.`,
+      );
+      return mergedData;
     },
 
+    // --- Data Processing Pipeline ---
+    processData(rawData) {
+      console.log("DataService: Starting data processing pipeline...");
+      if (!Array.isArray(rawData) || rawData.length === 0) {
+        console.warn("DataService: No raw data to process.");
+        return [];
+      }
+
+      let processed = rawData;
+      processed = DataService._calculateSMAAndStdDev(processed);
+      processed = DataService._identifyOutliers(processed);
+      processed = DataService._calculateDailyRatesAndTDEETrend(processed);
+      processed = DataService._calculateAdaptiveTDEE(processed);
+      processed = DataService._smoothRatesAndTDEEDifference(processed);
+
+      console.log("DataService: Data processing pipeline completed.");
+      // Log counts of key calculated fields for diagnostics
+      const validSMACount = processed.filter((d) => d.sma != null).length;
+      const validRateCount = processed.filter(
+        (d) => d.smoothedWeeklyRate != null,
+      ).length;
+      const validAdaptiveTDEECount = processed.filter(
+        (d) => d.adaptiveTDEE != null,
+      ).length;
+      console.log(
+        `DataService: Processed data stats - SMA: ${validSMACount}, Smoothed Rate: ${validRateCount}, Adaptive TDEE: ${validAdaptiveTDEECount}`,
+      );
+
+      return processed;
+    },
+
+    // --- Processing Steps (Internal Helpers) ---
+    _calculateSMAAndStdDev(data) {
+      const windowSize = CONFIG.movingAverageWindow;
+      const stdDevMult = CONFIG.stdDevMultiplier;
+
+      return data.map((d, i, arr) => {
+        // Get the window of *previous* data points including current
+        const windowDataPoints = arr.slice(
+          Math.max(0, i - windowSize + 1),
+          i + 1,
+        );
+        // Extract valid weight values from the window
+        const validValuesInWindow = windowDataPoints
+          .map((p) => p.value)
+          .filter((v) => v != null && !isNaN(v));
+
+        let sma = null;
+        let stdDev = null;
+
+        if (validValuesInWindow.length > 0) {
+          sma = d3.mean(validValuesInWindow);
+          // StdDev requires at least 2 points
+          stdDev =
+            validValuesInWindow.length > 1 &&
+            typeof ss?.standardDeviation === "function"
+              ? ss.standardDeviation(validValuesInWindow)
+              : 0; // Use 0 if not enough points or ss unavailable
+        }
+
+        // Calculate bounds based on SMA and StdDev
+        const lowerBound =
+          sma != null && stdDev != null ? sma - stdDevMult * stdDev : null;
+        const upperBound =
+          sma != null && stdDev != null ? sma + stdDevMult * stdDev : null;
+
+        return { ...d, sma, stdDev, lowerBound, upperBound };
+      });
+    },
+
+    _identifyOutliers(data) {
+      const threshold = CONFIG.OUTLIER_STD_DEV_THRESHOLD;
+      return data.map((d) => {
+        let isOutlier = false;
+        if (
+          d.value != null &&
+          d.sma != null &&
+          d.stdDev != null &&
+          d.stdDev > 0.01 // Avoid flagging flat lines as outliers
+        ) {
+          if (Math.abs(d.value - d.sma) > threshold * d.stdDev) {
+            isOutlier = true;
+          }
+        }
+        return { ...d, isOutlier };
+      });
+    },
+
+    _calculateDailyRatesAndTDEETrend(data) {
+      return data.map((d, i, arr) => {
+        let dailySmaRate = null;
+        let tdeeTrend = null;
+
+        if (i > 0) {
+          const prev = arr[i - 1];
+          if (prev.sma != null && d.sma != null) {
+            // Ensure dates are valid before calculating time difference
+            if (
+              d.date instanceof Date &&
+              prev.date instanceof Date &&
+              !isNaN(d.date) &&
+              !isNaN(prev.date)
+            ) {
+              const timeDiffDays =
+                (d.date.getTime() - prev.date.getTime()) / 86400000;
+
+              // Calculate rate only if time difference is positive and reasonable
+              if (
+                timeDiffDays > 0 &&
+                timeDiffDays <= CONFIG.movingAverageWindow
+              ) {
+                const smaDiff = d.sma - prev.sma;
+                dailySmaRate = smaDiff / timeDiffDays;
+
+                // Calculate TDEE Trend based on *previous* day's intake and the *calculated* rate
+                if (prev.calorieIntake != null && !isNaN(prev.calorieIntake)) {
+                  const dailyDeficitSurplusKcals =
+                    dailySmaRate * CONFIG.KCALS_PER_KG;
+                  tdeeTrend = prev.calorieIntake - dailyDeficitSurplusKcals;
+                }
+              }
+            }
+          }
+        }
+        return { ...d, dailySmaRate, tdeeTrend };
+      });
+    },
+
+    _calculateAdaptiveTDEE(data) {
+      const windowSize = CONFIG.adaptiveTDEEWindow;
+      const minDataRatio = 0.7; // Minimum ratio of valid intake days required in window
+
+      return data.map((d, i, arr) => {
+        let adaptiveTDEE = null;
+
+        if (i >= windowSize - 1) {
+          const windowData = arr.slice(i - windowSize + 1, i + 1);
+          const startPoint = windowData[0];
+          const endPoint = d; // Current point is the end of the window
+
+          const validIntakes = windowData
+            .map((p) => p.calorieIntake)
+            .filter((v) => v != null && !isNaN(v));
+
+          // Check conditions: enough intake data, valid start/end SMA, valid dates
+          if (
+            validIntakes.length >= windowSize * minDataRatio &&
+            startPoint.sma != null &&
+            endPoint.sma != null &&
+            startPoint.date instanceof Date &&
+            !isNaN(startPoint.date) && // Ensure dates are valid
+            endPoint.date instanceof Date &&
+            !isNaN(endPoint.date)
+          ) {
+            const avgIntakeWindow = d3.mean(validIntakes);
+            const totalSmaChange = endPoint.sma - startPoint.sma;
+
+            // Calculate time difference carefully, handling potential gaps
+            const actualDaysInWindow =
+              (endPoint.date.getTime() - startPoint.date.getTime()) / 86400000;
+
+            if (actualDaysInWindow > 0) {
+              const avgDailySmaChange = totalSmaChange / actualDaysInWindow;
+              const avgDailyDeficitSurplusKcals =
+                avgDailySmaChange * CONFIG.KCALS_PER_KG;
+              adaptiveTDEE = avgIntakeWindow - avgDailyDeficitSurplusKcals;
+            }
+          }
+        }
+        return { ...d, adaptiveTDEE };
+      });
+    },
+
+    _smoothRatesAndTDEEDifference(data) {
+      const dailyRates = data.map((d) => d.dailySmaRate);
+      const smoothedDailyRates = Utils.calculateRollingAverage(
+        dailyRates,
+        CONFIG.rateOfChangeSmoothingWindow,
+      );
+
+      const tdeeDifferences = data.map((d) =>
+        d.tdeeTrend != null &&
+        d.googleFitTDEE != null &&
+        !isNaN(d.tdeeTrend) &&
+        !isNaN(d.googleFitTDEE)
+          ? d.tdeeTrend - d.googleFitTDEE
+          : null,
+      );
+      const smoothedTdeeDifferences = Utils.calculateRollingAverage(
+        tdeeDifferences,
+        CONFIG.tdeeDiffSmoothingWindow,
+      );
+
+      return data.map((d, i) => ({
+        ...d,
+        smoothedWeeklyRate:
+          smoothedDailyRates[i] != null ? smoothedDailyRates[i] * 7 : null,
+        tdeeDifference: tdeeDifferences[i], // Raw daily difference
+        avgTdeeDifference: smoothedTdeeDifferences[i], // Smoothed difference
+      }));
+    },
+
+    // --- Calculation Helpers ---
+    _calculateDailyBalance(intake, expenditure) {
+      return intake != null &&
+        expenditure != null &&
+        !isNaN(intake) &&
+        !isNaN(expenditure)
+        ? intake - expenditure
+        : null;
+    },
+
+    _calculateExpectedWeightChange(netBalance) {
+      return netBalance == null || isNaN(netBalance)
+        ? null
+        : netBalance / CONFIG.KCALS_PER_KG;
+    },
+
+    // --- Regression & Trend Calculations ---
+    calculateLinearRegression(dataPoints, startDate) {
+      // Filter data: non-outlier, valid value, within optional start date
+      const validData = dataPoints.filter(
+        (d) =>
+          d.value != null &&
+          !d.isOutlier &&
+          d.date instanceof Date &&
+          !isNaN(d.date),
+      );
+      const filteredData =
+        startDate instanceof Date && !isNaN(startDate)
+          ? validData.filter((d) => d.date >= startDate)
+          : validData;
+
+      if (filteredData.length < CONFIG.MIN_POINTS_FOR_REGRESSION) {
+        // console.log(`Regression: Not enough points (${filteredData.length})`);
+        return { slope: null, intercept: null, points: [], pointsWithCI: [] };
+      }
+
+      // Ensure data is sorted by date for consistent calculations
+      filteredData.sort((a, b) => a.date - b.date);
+
+      const firstDateMs = filteredData[0].date.getTime();
+      const dayInMillis = 86400000;
+      // Prepare data for simple-statistics: [ [x1, y1], [x2, y2], ... ]
+      // X is days since the start date of the filtered range
+      const dataForRegression = filteredData.map((d) => [
+        (d.date.getTime() - firstDateMs) / dayInMillis,
+        d.value,
+      ]);
+
+      try {
+        if (!window.ss || typeof ss.linearRegression !== "function") {
+          throw new Error("simple-statistics linearRegression not available.");
+        }
+        const regressionLine = ss.linearRegression(dataForRegression);
+
+        if (
+          !regressionLine ||
+          isNaN(regressionLine.m) ||
+          isNaN(regressionLine.b)
+        ) {
+          throw new Error(
+            `simple-statistics linearRegression returned invalid results: m=${regressionLine?.m}, b=${regressionLine?.b}`,
+          );
+        }
+
+        const slope = regressionLine.m; // Daily change
+        const intercept = regressionLine.b; // Estimated weight at firstDateMs
+
+        // Prepare points data needed for CI calculation (includes original value)
+        const pointsForCI = filteredData.map((d) => ({
+          ...d, // Keep original data point fields
+          value: d.value, // Explicitly ensure 'value' is the Y value
+        }));
+
+        // Calculate Confidence Intervals using the utility function
+        const pointsWithCI = Utils.calculateRegressionCI(
+          pointsForCI,
+          { slope, intercept },
+          CONFIG.CONFIDENCE_INTERVAL_ALPHA,
+        );
+
+        // Prepare points array just for plotting the *line* itself
+        const plotPoints = pointsWithCI.map((p) => ({
+          date: p.date,
+          regressionValue: p.regressionValue, // Use the calculated regression value
+        }));
+
+        // console.log(`Regression: Slope=${slope.toFixed(4)}, Intercept=${intercept.toFixed(2)}, Points=${plotPoints.length}`);
+        return { slope, intercept, points: plotPoints, pointsWithCI };
+      } catch (e) {
+        console.error("DataService: Error calculating linear regression:", e);
+        return { slope: null, intercept: null, points: [], pointsWithCI: [] };
+      }
+    },
+
+    calculateTrendWeight(startDate, initialWeight, weeklyIncrease, targetDate) {
+      if (
+        !(startDate instanceof Date) ||
+        isNaN(startDate) ||
+        initialWeight == null ||
+        isNaN(initialWeight) ||
+        weeklyIncrease == null ||
+        isNaN(weeklyIncrease) ||
+        !(targetDate instanceof Date) ||
+        isNaN(targetDate)
+      ) {
+        return null;
+      }
+      const msPerWeek = 7 * 86400000;
+      // Calculate elapsed weeks, allowing for negative values if targetDate is before startDate
+      const weeksElapsed =
+        (targetDate.getTime() - startDate.getTime()) / msPerWeek;
+      return initialWeight + weeksElapsed * weeklyIncrease;
+    },
+
+    // --- Goal Management ---
     loadGoal() {
       const storedGoal = localStorage.getItem(CONFIG.localStorageKeys.goal);
-      state.goal = { weight: null, date: null, targetRate: null };
+      const defaultGoal = { weight: null, date: null, targetRate: null };
       if (storedGoal) {
         try {
           const parsed = JSON.parse(storedGoal);
-          state.goal.weight = parsed.weight ? parseFloat(parsed.weight) : null;
-          state.goal.date = parsed.date ? new Date(parsed.date) : null;
-          state.goal.targetRate = parsed.targetRate
+          const weight = parsed.weight ? parseFloat(parsed.weight) : null;
+          // Ensure date string is handled robustly (Safari needs '-' not '/')
+          const dateStr = parsed.date?.replace(/\//g, "-");
+          const date = dateStr ? new Date(dateStr) : null;
+          const targetRate = parsed.targetRate
             ? parseFloat(parsed.targetRate)
             : null;
+
           // Validate parsed values
-          if (state.goal.date && isNaN(state.goal.date.getTime()))
-            state.goal.date = null;
-          if (state.goal.weight && isNaN(state.goal.weight))
-            state.goal.weight = null;
-          if (state.goal.targetRate && isNaN(state.goal.targetRate))
-            state.goal.targetRate = null;
+          state.goal.weight = weight != null && !isNaN(weight) ? weight : null;
+          // Check if date is valid after parsing
+          state.goal.date =
+            date instanceof Date && !isNaN(date.getTime()) ? date : null;
+          state.goal.targetRate =
+            targetRate != null && !isNaN(targetRate) ? targetRate : null;
         } catch (e) {
-          console.error("Error parsing goal from localStorage", e);
-          localStorage.removeItem(CONFIG.localStorageKeys.goal); // Clear corrupted data
-          state.goal = { weight: null, date: null, targetRate: null };
+          console.error("DataService: Error parsing goal from localStorage", e);
+          localStorage.removeItem(CONFIG.localStorageKeys.goal);
+          state.goal = { ...defaultGoal }; // Reset to default
         }
+      } else {
+        state.goal = { ...defaultGoal }; // Set default if nothing stored
       }
-      this.updateGoalUI();
+      DataService.updateGoalUI(); // Update UI after loading
     },
 
     saveGoal() {
@@ -882,1217 +1014,1534 @@ const WeightTrackerChart = (function () {
           weight: state.goal.weight,
           date: state.goal.date
             ? state.goal.date.toISOString().slice(0, 10)
-            : null,
+            : null, // Use ISO YYYY-MM-DD
           targetRate: state.goal.targetRate,
         };
         localStorage.setItem(
           CONFIG.localStorageKeys.goal,
           JSON.stringify(goalToStore),
         );
-        _helpers.showStatusMessage("Goal saved!", "success");
+        Utils.showStatusMessage("Goal saved successfully.", "success");
       } catch (e) {
-        console.error("Error saving goal", e);
-        _helpers.showStatusMessage("Could not save goal.", "error");
+        console.error("DataService: Error saving goal to localStorage", e);
+        Utils.showStatusMessage(
+          "Could not save goal due to storage error.",
+          "error",
+        );
       }
     },
 
     updateGoalUI() {
-      if (selections.goalWeightInput)
-        selections.goalWeightInput.property("value", state.goal.weight ?? "");
-      if (selections.goalDateInput)
-        selections.goalDateInput.property(
-          "value",
-          state.goal.date ? _helpers.formatDate(state.goal.date) : "",
-        );
-      if (selections.goalTargetRateInput)
-        selections.goalTargetRateInput.property(
-          "value",
-          state.goal.targetRate ?? "",
-        );
+      ui.goalWeightInput?.property("value", state.goal.weight ?? "");
+      ui.goalDateInput?.property(
+        "value",
+        state.goal.date ? Utils.formatDate(state.goal.date) : "",
+      );
+      ui.goalTargetRateInput?.property("value", state.goal.targetRate ?? "");
     },
 
-    processRawData() {
-      const data = state.rawData;
-      if (!data || data.length === 0) {
-        state.processedData = [];
-        return;
-      }
-      const windowSize = CONFIG.movingAverageWindow;
-      const stdDevMult = CONFIG.stdDevMultiplier;
-      const outlierThreshold = CONFIG.OUTLIER_STD_DEV_THRESHOLD;
+    getTrendlineConfigFromUI() {
+      const startDateInput = ui.trendStartDateInput?.property("value");
+      const initialWeight = parseFloat(
+        ui.trendInitialWeightInput?.property("value"),
+      );
+      const weeklyIncrease1 = parseFloat(
+        ui.trendWeeklyIncrease1Input?.property("value"),
+      );
+      const weeklyIncrease2 = parseFloat(
+        ui.trendWeeklyIncrease2Input?.property("value"),
+      );
 
-      // Pass 1: Calculate SMA and Std Dev
-      let tempProcessed = data.map((d, i, arr) => {
-        const windowDataPoints = arr.slice(
-          Math.max(0, i - windowSize + 1),
-          i + 1,
-        );
-        const validValuesInWindow = windowDataPoints
-          .map((p) => p.value)
-          .filter((v) => v !== null && !isNaN(v));
-        let sma = null,
-          stdDev = null;
-
-        // Require at least half the window size worth of *valid* points to calculate SMA
-        if (
-          validValuesInWindow.length >= Math.floor(windowSize / 2) &&
-          validValuesInWindow.length > 0
-        ) {
-          sma = d3.mean(validValuesInWindow);
-          stdDev =
-            validValuesInWindow.length > 1
-              ? d3.deviation(validValuesInWindow)
-              : 0;
+      let startDate = null;
+      if (startDateInput) {
+        const parsedDate = new Date(startDateInput);
+        if (!isNaN(parsedDate.getTime())) {
+          parsedDate.setHours(0, 0, 0, 0);
+          startDate = parsedDate;
         }
-        return { ...d, sma, stdDev };
-      });
-
-      // Pass 2: Calculate bounds, identify outliers
-      tempProcessed = tempProcessed.map((d) => {
-        let lowerBound = null,
-          upperBound = null,
-          isOutlier = false;
-        if (d.value !== null && d.sma !== null && d.stdDev !== null) {
-          lowerBound = d.sma - stdDevMult * d.stdDev;
-          upperBound = d.sma + stdDevMult * d.stdDev;
-          // Check for outlier: value exists, sma exists, std dev is meaningful, and value is far from sma
-          if (
-            d.stdDev > 0.01 &&
-            Math.abs(d.value - d.sma) > outlierThreshold * d.stdDev
-          ) {
-            isOutlier = true;
-          }
-        }
-        return { ...d, lowerBound, upperBound, isOutlier };
-      });
-
-      // Pass 3: Calculate Daily SMA Rate (Feature #5) & Trend-Based TDEE (Feature #8)
-      tempProcessed = tempProcessed.map((d, i, arr) => {
-        let dailySmaRate = null;
-        let tdeeTrend = null;
-
-        if (i > 0 && arr[i - 1].sma !== null && d.sma !== null) {
-          const prev = arr[i - 1];
-          const timeDiffDays =
-            (d.date.getTime() - prev.date.getTime()) / 86400000;
-          if (timeDiffDays > 0 && timeDiffDays <= windowSize) {
-            // Only calculate rate if points are reasonably close
-            const smaDiff = d.sma - prev.sma;
-            dailySmaRate = smaDiff / timeDiffDays; // kg per day
-
-            // Calculate TDEE based on this daily change and *previous day's* intake (more causal)
-            if (prev.calorieIntake !== null && !isNaN(prev.calorieIntake)) {
-              const dailyDeficitSurplus = dailySmaRate * CONFIG.KCALS_PER_KG;
-              tdeeTrend = prev.calorieIntake - dailyDeficitSurplus;
-            }
-          }
-        }
-        return { ...d, dailySmaRate, tdeeTrend };
-      });
-
-      // Pass 4: Smooth the daily rate & calculate TDEE Difference (Features #5, #8)
-      const dailyRates = tempProcessed.map((d) => d.dailySmaRate);
-      const smoothedDailyRates = _helpers.calculateRollingAverage(
-        dailyRates,
-        CONFIG.rateOfChangeSmoothingWindow,
-      );
-
-      const tdeeDifferences = tempProcessed.map((d) =>
-        d.tdeeTrend !== null &&
-        d.googleFitTDEE !== null &&
-        !isNaN(d.tdeeTrend) &&
-        !isNaN(d.googleFitTDEE)
-          ? d.tdeeTrend - d.googleFitTDEE
-          : null,
-      );
-      const smoothedTdeeDifferences = _helpers.calculateRollingAverage(
-        tdeeDifferences,
-        CONFIG.tdeeDiffSmoothingWindow,
-      );
-
-      state.processedData = tempProcessed.map((d, i) => ({
-        ...d,
-        smoothedWeeklyRate:
-          smoothedDailyRates[i] !== null ? smoothedDailyRates[i] * 7 : null, // Convert smoothed daily rate to weekly
-        tdeeDifference: tdeeDifferences[i],
-        avgTdeeDifference: smoothedTdeeDifferences[i],
-      }));
-
-      console.log(
-        `Processed data: Calculated SMA, bounds, outliers, rates, TDEE diffs.`,
-      );
-    },
-
-    calculateDailyBalance(intake, expenditure) {
-      return intake !== null &&
-        expenditure !== null &&
-        !isNaN(intake) &&
-        !isNaN(expenditure)
-        ? intake - expenditure
-        : null;
-    },
-
-    calculateExpectedWeightChange(netBalance) {
-      return netBalance === null || isNaN(netBalance)
-        ? null
-        : netBalance / CONFIG.KCALS_PER_KG;
-    },
-
-    calculateLinearRegression(data, startDate) {
-      const nonOutlierData = data.filter(
-        (d) => !d.isOutlier && d.value !== null && d.date,
-      );
-      const filteredData = startDate
-        ? nonOutlierData.filter((d) => d.date >= startDate)
-        : nonOutlierData;
-
-      if (filteredData.length < CONFIG.MIN_POINTS_FOR_REGRESSION) {
-        // console.log("Not enough points for regression:", filteredData.length);
-        return { slope: null, intercept: null, points: [] };
       }
 
-      const firstDateMs = filteredData[0].date.getTime();
-      const dataForRegression = filteredData.map((d) => [
-        (d.date.getTime() - firstDateMs) / 86400000, // X: days since start
-        d.value, // Y: weight
-      ]);
+      const isValid =
+        startDate &&
+        !isNaN(initialWeight) &&
+        !isNaN(weeklyIncrease1) &&
+        !isNaN(weeklyIncrease2);
 
-      try {
-        if (
-          typeof ss === "undefined" ||
-          typeof ss.linearRegression !== "function"
-        ) {
-          console.warn(
-            "simple-statistics (ss) or ss.linearRegression not available.",
-          );
-          return { slope: null, intercept: null, points: [] };
-        }
-        const regressionLine = ss.linearRegression(dataForRegression);
-
-        if (
-          regressionLine &&
-          !isNaN(regressionLine.m) &&
-          !isNaN(regressionLine.b)
-        ) {
-          const slope = regressionLine.m; // kg per day
-          const intercept = regressionLine.b;
-          // Map back to original dates for plotting
-          const points = filteredData.map((d) => {
-            const xValue = (d.date.getTime() - firstDateMs) / 86400000;
-            const regressionValue = slope * xValue + intercept;
-            return { date: d.date, regressionValue: regressionValue };
-          });
-          return { slope, intercept, points };
-        } else {
-          console.warn(
-            "simple-statistics linearRegression returned invalid results:",
-            regressionLine,
-          );
-          return { slope: null, intercept: null, points: [] };
-        }
-      } catch (e) {
-        console.error(
-          "Error calculating linear regression with simple-statistics:",
-          e,
-        );
-        return { slope: null, intercept: null, points: [] };
-      }
+      return {
+        startDate,
+        initialWeight,
+        weeklyIncrease1,
+        weeklyIncrease2,
+        isValid,
+      };
     },
 
-    calculateTrendWeight(startDate, initialWeight, weeklyIncrease, date) {
-      if (
-        !startDate ||
-        initialWeight === null ||
-        weeklyIncrease === null ||
-        !date ||
-        !(startDate instanceof Date) ||
-        !(date instanceof Date) ||
-        isNaN(startDate.getTime()) ||
-        isNaN(date.getTime())
-      ) {
+    getRegressionStartDateFromUI() {
+      const inputVal = ui.trendStartDateInput?.property("value");
+      if (!inputVal) return null;
+      const parsedDate = new Date(inputVal);
+      if (isNaN(parsedDate.getTime())) {
+        console.warn("DataService: Invalid regression start date input.");
         return null;
       }
-      const msPerWeek = 7 * 86400000;
-      const weeksElapsed = (date.getTime() - startDate.getTime()) / msPerWeek;
-      return initialWeight + weeksElapsed * weeklyIncrease;
+      parsedDate.setHours(0, 0, 0, 0);
+      return parsedDate;
     },
   };
 
   // ========================================================================
-  // Chart Setup Functions (`_setup`)
+  // Theme Manager
   // ========================================================================
-  const _setup = {
-    dimensions() {
-      const getDim = (containerSelection, margins) => {
-        if (!containerSelection?.node()) return { width: 0, height: 0 };
-        const rect = containerSelection.node().getBoundingClientRect();
-        if (!rect || rect.width <= 0 || rect.height <= 0)
-          return { width: 0, height: 0 };
-        const width = Math.max(50, rect.width - margins.left - margins.right);
-        const height = Math.max(20, rect.height - margins.top - margins.bottom);
-        return { width, height };
-      };
-
-      const focusDim = getDim(selections.chartContainer, CONFIG.margins.focus);
-      const contextDim = getDim(
-        selections.contextContainer,
-        CONFIG.margins.context,
-      );
-      const balanceDim = getDim(
-        selections.balanceChartContainer,
-        CONFIG.margins.balance,
-      );
-      const rateDim = getDim(
-        selections.rateChartContainer,
-        CONFIG.margins.rate,
-      ); // Feature #5
-      const tdeeDiffDim = getDim(
-        selections.tdeeDiffContainer,
-        CONFIG.margins.tdeeDiff,
-      ); // Feature #8
-
-      if (
-        focusDim.width === 0 ||
-        contextDim.width === 0 ||
-        balanceDim.width === 0 ||
-        rateDim.width === 0 ||
-        tdeeDiffDim.width === 0
-      ) {
-        console.error(
-          "Cannot setup dimensions, required container elements not found or have zero size.",
-          { focusDim, contextDim, balanceDim, rateDim, tdeeDiffDim },
-        );
-        return false;
-      }
-
-      state.dimensions.width = focusDim.width;
-      state.dimensions.height = focusDim.height;
-      state.dimensions.contextWidth = contextDim.width;
-      state.dimensions.contextHeight = contextDim.height;
-      state.dimensions.balanceWidth = balanceDim.width;
-      state.dimensions.balanceHeight = balanceDim.height;
-      state.dimensions.rateWidth = rateDim.width; // Feature #5
-      state.dimensions.rateHeight = rateDim.height; // Feature #5
-      state.dimensions.tdeeDiffWidth = tdeeDiffDim.width; // Feature #8
-      state.dimensions.tdeeDiffHeight = tdeeDiffDim.height; // Feature #8
-
-      return true;
+  const ThemeManager = {
+    init() {
+      const savedTheme =
+        localStorage.getItem(CONFIG.localStorageKeys.theme) || "light";
+      ThemeManager.setTheme(savedTheme, false); // Set initial theme without redraw
+      ThemeManager.updateColors(); // Populate colors object initially
     },
 
-    svgElements() {
-      const {
-        width,
-        height,
-        contextWidth,
-        contextHeight,
-        balanceWidth,
-        balanceHeight,
-        rateWidth,
-        rateHeight,
-        tdeeDiffWidth,
-        tdeeDiffHeight,
-      } = state.dimensions; // Features #5, #8
+    setTheme(theme, triggerUpdate = true) {
+      state.currentTheme = theme === "dark" ? "dark" : "light"; // Sanitize input
+      ui.body?.classed("dark-theme", state.currentTheme === "dark");
+      ui.themeToggle?.html(state.currentTheme === "dark" ? "☀️" : "🌙");
+      localStorage.setItem(CONFIG.localStorageKeys.theme, state.currentTheme);
+
+      ThemeManager.updateColors(); // Update color cache
+
+      // If the chart is already initialized, trigger updates that depend on colors
+      if (state.isInitialized && triggerUpdate) {
+        console.log(
+          `ThemeManager: Switched to ${theme} theme, triggering updates.`,
+        );
+        LegendManager.build(); // Rebuild legend with new colors
+        // Trigger a full redraw to apply new colors to lines, areas, etc.
+        // This relies on CSS variables being updated and D3 elements inheriting them.
+        MasterUpdater.updateAllCharts();
+      }
+    },
+
+    toggleTheme() {
+      ThemeManager.setTheme(state.currentTheme === "light" ? "dark" : "light");
+    },
+
+    updateColors() {
+      if (!document?.documentElement) {
+        console.error(
+          "ThemeManager: Cannot update colors, documentElement not found.",
+        );
+        return;
+      }
+      const style = getComputedStyle(document.documentElement);
+      const getColor = (varName, fallbackKey) => {
+        const val = style.getPropertyValue(varName)?.trim();
+        if (!val && CONFIG.fallbackColors[fallbackKey]) {
+          // console.warn(`ThemeManager: CSS variable ${varName} not found, using fallback ${fallbackKey}`);
+          return CONFIG.fallbackColors[fallbackKey];
+        }
+        // Ensure a color value is returned, even if CSS var is invalid/missing and fallback is missing
+        return val || CONFIG.fallbackColors[fallbackKey] || "#000000"; // Absolute fallback
+      };
+
+      // Populate the global 'colors' object
+      Object.assign(colors, {
+        sma: getColor("--sma-color", "sma"),
+        band: getColor("--band-color", "band"),
+        rawDot: getColor("--raw-dot-color", "rawDot"),
+        dot: getColor("--dot-color", "dot"),
+        trend1: getColor("--trend1-color", "trend1"),
+        trend2: getColor("--trend2-color", "trend2"),
+        regression: getColor("--regression-color", "regression"),
+        regressionCI: getColor("--regression-ci-color", "regressionCI"),
+        goal: getColor("--goal-line-color", "goal"),
+        outlier: getColor("--outlier-color", "outlier"),
+        deficit: getColor("--deficit-color", "deficit"),
+        surplus: getColor("--surplus-color", "surplus"),
+        expectedLineColor: getColor(
+          "--expected-line-color",
+          "expectedLineColor",
+        ),
+        rateLineColor: getColor("--rate-line-color", "rateLineColor"),
+        tdeeDiffLineColor: getColor(
+          "--tdee-diff-line-color",
+          "tdeeDiffLineColor",
+        ),
+        annotationMarker: getColor(
+          "--annotation-marker-color",
+          "annotationMarker",
+        ),
+        annotationRange: getColor(
+          "--annotation-range-color",
+          "annotationRange",
+        ),
+        plateauColor: getColor("--plateau-color", "plateauColor"),
+        trendChangeColor: getColor("--trend-change-color", "trendChangeColor"),
+        highlightStroke: getColor(
+          "--highlight-stroke-color",
+          "highlightStroke",
+        ),
+        crosshairColor: getColor("--crosshair-color", "crosshairColor"),
+        scatterDotColor: getColor("--scatter-dot-color", "scatterDotColor"),
+        secondAxisColor: getColor("--second-axis-color", "secondAxisColor"),
+      });
+    },
+  };
+
+  // ========================================================================
+  // UI Setup (`UISetup`) - Creates SVG structure, scales, axes, brushes, zoom
+  // ========================================================================
+  const UISetup = {
+    _dimensions: {}, // Internal cache for dimensions
+
+    // Calculate and cache dimensions for all chart areas
+    calculateDimensions() {
+      const getDim = (containerSelection, margins) => {
+        if (!containerSelection || containerSelection.empty())
+          return { width: 0, height: 0, valid: false };
+        const node = containerSelection.node();
+        if (!node) return { width: 0, height: 0, valid: false };
+
+        const rect = node.getBoundingClientRect();
+        // Use clientWidth/Height for content dimensions excluding padding/border if needed
+        // but getBoundingClientRect includes border/padding - adjust if box-sizing is border-box
+        const style = window.getComputedStyle(node);
+        const paddingLeft = parseFloat(style.paddingLeft) || 0;
+        const paddingRight = parseFloat(style.paddingRight) || 0;
+        const paddingTop = parseFloat(style.paddingTop) || 0;
+        const paddingBottom = parseFloat(style.paddingBottom) || 0;
+
+        const effectiveWidth = rect.width - paddingLeft - paddingRight;
+        const effectiveHeight = rect.height - paddingTop - paddingBottom;
+
+        const width = Math.max(
+          10,
+          effectiveWidth - margins.left - margins.right,
+        );
+        const height = Math.max(
+          10,
+          effectiveHeight - margins.top - margins.bottom,
+        );
+
+        const valid = width > 10 && height > 10; // Check if calculated dimensions are usable
+        if (!valid) {
+          console.warn(
+            `UISetup: Invalid dimensions calculated for container node:`,
+            node,
+            `Rect:`,
+            rect,
+            `Calculated: w=${width}, h=${height}`,
+          );
+        }
+        return { width, height, valid };
+      };
+
+      this._dimensions = {
+        focus: getDim(ui.chartContainer, CONFIG.margins.focus),
+        context: getDim(ui.contextContainer, CONFIG.margins.context),
+        balance: getDim(ui.balanceChartContainer, CONFIG.margins.balance),
+        rate: getDim(ui.rateChartContainer, CONFIG.margins.rate),
+        tdeeDiff: getDim(ui.tdeeDiffContainer, CONFIG.margins.tdeeDiff),
+        scatter: getDim(
+          ui.correlationScatterContainer,
+          CONFIG.margins.correlationScatter,
+        ),
+      };
+
+      // Check if all *required* charts have valid dimensions
+      const requiredDimsValid =
+        this._dimensions.focus.valid && this._dimensions.context.valid;
+      // Optional charts only need checking if their container exists
+      const optionalDimsValid =
+        (!ui.balanceChartContainer ||
+          ui.balanceChartContainer.empty() ||
+          this._dimensions.balance.valid) &&
+        (!ui.rateChartContainer ||
+          ui.rateChartContainer.empty() ||
+          this._dimensions.rate.valid) &&
+        (!ui.tdeeDiffContainer ||
+          ui.tdeeDiffContainer.empty() ||
+          this._dimensions.tdeeDiff.valid) &&
+        (!ui.correlationScatterContainer ||
+          ui.correlationScatterContainer.empty() ||
+          this._dimensions.scatter.valid);
+
+      if (!requiredDimsValid || !optionalDimsValid) {
+        console.error(
+          "UISetup: Cannot setup dimensions, one or more required container elements not found or have zero effective size.",
+          this._dimensions,
+        );
+        return false; // Indicate failure
+      }
+
+      return true; // Indicate success
+    },
+
+    // Create all SVG elements and main groups
+    createSVGElements() {
+      console.log("UISetup: Creating SVG elements...");
       const fm = CONFIG.margins.focus;
       const cm = CONFIG.margins.context;
       const bm = CONFIG.margins.balance;
-      const rm = CONFIG.margins.rate; // Feature #5
-      const tdm = CONFIG.margins.tdeeDiff; // Feature #8
+      const rm = CONFIG.margins.rate;
+      const tdm = CONFIG.margins.tdeeDiff;
+      const sm = CONFIG.margins.correlationScatter;
 
-      // Clear existing SVGs
-      selections.chartContainer.selectAll("svg").remove();
-      selections.contextContainer.selectAll("svg").remove();
-      selections.balanceChartContainer.selectAll("svg").remove();
-      selections.rateChartContainer?.selectAll("svg").remove(); // Feature #5
-      selections.tdeeDiffContainer?.selectAll("svg").remove(); // Feature #8
+      // --- Clear existing SVGs ---
+      ui.chartContainer?.select("svg").remove();
+      ui.contextContainer?.select("svg").remove();
+      ui.balanceChartContainer?.select("svg").remove();
+      ui.rateChartContainer?.select("svg").remove();
+      ui.tdeeDiffContainer?.select("svg").remove();
+      ui.correlationScatterContainer?.select("svg").remove();
 
       // --- Focus Chart ---
-      selections.svg = selections.chartContainer
-        .append("svg")
-        .attr("width", width + fm.left + fm.right)
-        .attr("height", height + fm.top + fm.bottom)
-        .attr("aria-hidden", "true"); // Main SVG
+      if (
+        this._dimensions.focus.valid &&
+        ui.chartContainer &&
+        !ui.chartContainer.empty()
+      ) {
+        const { width, height } = this._dimensions.focus;
+        ui.svg = ui.chartContainer
+          .append("svg")
+          .attr("width", width + fm.left + fm.right)
+          .attr("height", height + fm.top + fm.bottom)
+          .attr("aria-label", "Main Weight Chart") // Accessibility
+          .attr("role", "img");
 
-      // Defs for clipping
-      selections.svg
-        .append("defs")
-        .append("clipPath")
-        .attr("id", "clip")
-        .append("rect")
-        .attr("width", width)
-        .attr("height", height);
+        // Defs for clipping
+        ui.svg
+          .append("defs")
+          .append("clipPath")
+          .attr("id", "clip-focus")
+          .append("rect")
+          .attr("width", width)
+          .attr("height", height);
 
-      // Zoom capture rectangle (added BEFORE focus group)
-      // --- FIX: pointer-events change ---
-      selections.zoomCaptureRect = selections.svg
-        .append("rect")
-        .attr("class", "zoom-capture")
-        .attr("width", width)
-        .attr("height", height)
-        .attr("transform", `translate(${fm.left}, ${fm.top})`)
-        .style("pointer-events", "all"); // NOW 'all' so zoom works, CSS rules manage other interactions
-      // --- End FIX ---
+        // Zoom capture rectangle (covers the plot area)
+        ui.zoomCaptureRect = ui.svg
+          .append("rect")
+          .attr("class", "zoom-capture")
+          .attr("width", width)
+          .attr("height", height)
+          .attr("transform", `translate(${fm.left}, ${fm.top})`)
+          .style("fill", "none") // Make transparent
+          .style("pointer-events", "all"); // Ensure it captures events
 
-      // Focus group (main chart content)
-      selections.focus = selections.svg
-        .append("g")
-        .attr("class", "focus")
-        .attr("transform", `translate(${fm.left},${fm.top})`);
+        // Main focus group
+        ui.focus = ui.svg
+          .append("g")
+          .attr("class", "focus")
+          .attr("transform", `translate(${fm.left},${fm.top})`);
 
-      // Groups within focus (order matters for layering)
-      selections.gridGroup = selections.focus.append("g").attr("class", "grid");
-      selections.plateauGroup = selections.focus
-        .append("g")
-        .attr("class", "plateau-group"); // Feature #6
-      selections.annotationsGroup = selections.focus
-        .append("g")
-        .attr("class", "annotations-group"); // Feature #1
-      selections.chartArea = selections.focus
-        .append("g")
-        .attr("clip-path", "url(#clip)"); // Data clipped here
+        // Groups within focus (order matters for layering)
+        ui.gridGroup = ui.focus.append("g").attr("class", "grid y-grid"); // Grid lines behind data
+        ui.plateauGroup = ui.focus.append("g").attr("class", "plateau-group");
+        ui.annotationsGroup = ui.focus
+          .append("g")
+          .attr("class", "annotations-group");
+        ui.chartArea = ui.focus
+          .append("g")
+          .attr("clip-path", "url(#clip-focus)"); // Apply clipping
 
-      // Paths within chart area
-      selections.bandArea = selections.chartArea
-        .append("path")
-        .attr("class", "area band-area");
-      selections.smaLine = selections.chartArea
-        .append("path")
-        .attr("class", "line sma-line");
-      selections.trendLine1 = selections.chartArea
-        .append("path")
-        .attr("class", "trend-line manual-trend-1");
-      selections.trendLine2 = selections.chartArea
-        .append("path")
-        .attr("class", "trend-line manual-trend-2");
-      selections.regressionLine = selections.chartArea
-        .append("path")
-        .attr("class", "trend-line regression-line");
-      selections.goalLine = selections.chartArea
-        .append("path")
-        .attr("class", "trend-line goal-line");
-      selections.expectedLine = selections.chartArea
-        .append("path")
-        .attr("class", "trend-line expected-weight-line");
+        // Paths/Areas within chartArea
+        ui.bandArea = ui.chartArea
+          .append("path")
+          .attr("class", "area band-area");
+        ui.regressionCIArea = ui.chartArea
+          .append("path")
+          .attr("class", "area regression-ci-area");
+        ui.smaLine = ui.chartArea.append("path").attr("class", "line sma-line");
+        ui.trendLine1 = ui.chartArea
+          .append("path")
+          .attr("class", "trend-line manual-trend-1");
+        ui.trendLine2 = ui.chartArea
+          .append("path")
+          .attr("class", "trend-line manual-trend-2");
+        ui.regressionLine = ui.chartArea
+          .append("path")
+          .attr("class", "trend-line regression-line");
+        ui.goalLine = ui.chartArea
+          .append("path")
+          .attr("class", "trend-line goal-line");
+        ui.expectedLine = ui.chartArea
+          .append("path")
+          .attr("class", "trend-line expected-weight-line");
+        ui.bfLine = ui.chartArea.append("path").attr("class", "line bf-line");
 
-      // Dot groups within chart area
-      selections.rawDotsGroup = selections.chartArea
-        .append("g")
-        .attr("class", "raw-dots-group");
-      selections.smaDotsGroup = selections.chartArea
-        .append("g")
-        .attr("class", "dots-group"); // Contains interactive dots
+        // Dot groups within chartArea
+        ui.rawDotsGroup = ui.chartArea
+          .append("g")
+          .attr("class", "raw-dots-group");
+        ui.smaDotsGroup = ui.chartArea.append("g").attr("class", "dots-group");
 
-      // Overlay markers within chart area
-      selections.trendChangeGroup = selections.chartArea
-        .append("g")
-        .attr("class", "trend-change-group"); // Feature #7
-      selections.highlightGroup = selections.chartArea
-        .append("g")
-        .attr("class", "highlight-group"); // Feature #4
+        // Overlay markers within chartArea
+        ui.trendChangeGroup = ui.chartArea
+          .append("g")
+          .attr("class", "trend-change-group");
+        ui.highlightGroup = ui.chartArea
+          .append("g")
+          .attr("class", "highlight-group");
 
-      // Axes for focus chart (outside chartArea)
-      selections.xAxisGroup = selections.focus
-        .append("g")
-        .attr("class", "axis axis--x")
-        .attr("transform", `translate(0,${height})`);
-      selections.yAxisGroup = selections.focus
-        .append("g")
-        .attr("class", "axis axis--y");
+        // Crosshair group (initially hidden)
+        ui.crosshairGroup = ui.focus
+          .append("g")
+          .attr("class", "crosshair-group")
+          .style("pointer-events", "none") // Don't interfere with hover
+          .style("display", "none");
+        ui.crosshairGroup
+          .append("line")
+          .attr("class", "crosshair crosshair-x") // Vertical line
+          .attr("y1", 0)
+          .attr("y2", height);
+        ui.crosshairGroup
+          .append("line")
+          .attr("class", "crosshair crosshair-y") // Horizontal line
+          .attr("x1", 0)
+          .attr("x2", width);
 
-      // Y Axis Label (outside focus group, attached to main SVG)
-      selections.svg
-        .append("text")
-        .attr("class", "axis-label y-axis-label")
-        .attr("transform", "rotate(-90)")
-        .attr("y", 6)
-        .attr("x", 0 - (height / 2 + fm.top))
-        .attr("dy", "1em")
-        .style("text-anchor", "middle")
-        .text("Weight (KG)");
+        // Regression brush group (overlay on focus chart)
+        ui.regressionBrushGroup = ui.focus
+          .append("g")
+          .attr("class", "regression-brush");
+
+        // Axis groups for focus chart
+        ui.xAxisGroup = ui.focus
+          .append("g")
+          .attr("class", "axis axis--x")
+          .attr("transform", `translate(0,${height})`);
+        ui.yAxisGroup = ui.focus.append("g").attr("class", "axis axis--y");
+        ui.yAxisGroup2 = ui.focus
+          .append("g")
+          .attr("class", "axis axis--y2")
+          .attr("transform", `translate(${width}, 0)`);
+
+        // Axis Labels for focus chart
+        ui.svg
+          .append("text")
+          .attr("class", "axis-label y-axis-label")
+          .attr("transform", "rotate(-90)")
+          .attr("y", 6)
+          .attr("x", 0 - (height / 2 + fm.top))
+          .attr("dy", "1em")
+          .style("text-anchor", "middle")
+          .text("Weight (KG)");
+        ui.svg
+          .append("text")
+          .attr("class", "axis-label y-axis-label y-axis-label2")
+          .attr("transform", "rotate(-90)")
+          .attr("y", width + fm.left + fm.right - 20)
+          .attr("x", 0 - (height / 2 + fm.top))
+          .attr("dy", "-0.5em")
+          .style("text-anchor", "middle")
+          .text("Body Fat (%)")
+          .style("display", state.seriesVisibility.bf ? null : "none"); // Initially hide if BF off
+      }
 
       // --- Context Chart ---
-      selections.contextSvg = selections.contextContainer
-        .append("svg")
-        .attr("width", contextWidth + cm.left + cm.right)
-        .attr("height", contextHeight + cm.top + cm.bottom)
-        .attr("aria-hidden", "true");
-      selections.context = selections.contextSvg
-        .append("g")
-        .attr("class", "context")
-        .attr("transform", `translate(${cm.left},${cm.top})`);
-      selections.contextArea = selections.context
-        .append("path")
-        .attr("class", "area band-area context-area");
-      selections.contextLine = selections.context
-        .append("path")
-        .attr("class", "line sma-line context-line");
-      selections.contextXAxisGroup = selections.context
-        .append("g")
-        .attr("class", "axis axis--x")
-        .attr("transform", `translate(0,${contextHeight})`);
+      if (
+        this._dimensions.context.valid &&
+        ui.contextContainer &&
+        !ui.contextContainer.empty()
+      ) {
+        const { width, height } = this._dimensions.context;
+        ui.contextSvg = ui.contextContainer
+          .append("svg")
+          .attr("width", width + cm.left + cm.right)
+          .attr("height", height + cm.top + cm.bottom)
+          .attr("aria-hidden", "true"); // Decorative element
+        ui.context = ui.contextSvg
+          .append("g")
+          .attr("class", "context")
+          .attr("transform", `translate(${cm.left},${cm.top})`);
+        ui.contextArea = ui.context
+          .append("path")
+          .attr("class", "area band-area context-area");
+        ui.contextLine = ui.context
+          .append("path")
+          .attr("class", "line sma-line context-line");
+        ui.contextXAxisGroup = ui.context
+          .append("g")
+          .attr("class", "axis axis--x")
+          .attr("transform", `translate(0,${height})`);
+        // Brush group will be added later in setupBrushes()
+      }
 
       // --- Balance Chart ---
-      selections.balanceSvg = selections.balanceChartContainer
-        .append("svg")
-        .attr("width", balanceWidth + bm.left + bm.right)
-        .attr("height", balanceHeight + bm.top + bm.bottom)
-        .attr("aria-hidden", "true");
-      selections.balanceChartArea = selections.balanceSvg
-        .append("g")
-        .attr("class", "balance-chart-area")
-        .attr("transform", `translate(${bm.left},${bm.top})`);
-      selections.balanceZeroLine = selections.balanceChartArea
-        .append("line")
-        .attr("class", "balance-zero-line");
-      selections.balanceXAxisGroup = selections.balanceSvg
-        .append("g")
-        .attr("class", "axis balance-axis balance-axis--x")
-        .attr("transform", `translate(${bm.left},${bm.top + balanceHeight})`);
-      selections.balanceYAxisGroup = selections.balanceSvg
-        .append("g")
-        .attr("class", "axis balance-axis balance-axis--y")
-        .attr("transform", `translate(${bm.left},${bm.top})`);
-
-      // --- Rate of Change Chart (Feature #5) ---
-      if (selections.rateChartContainer) {
-        selections.rateSvg = selections.rateChartContainer
+      if (
+        this._dimensions.balance.valid &&
+        ui.balanceChartContainer &&
+        !ui.balanceChartContainer.empty()
+      ) {
+        const { width, height } = this._dimensions.balance;
+        ui.balanceSvg = ui.balanceChartContainer
           .append("svg")
-          .attr("width", rateWidth + rm.left + rm.right)
-          .attr("height", rateHeight + rm.top + rm.bottom)
+          .attr("width", width + bm.left + bm.right)
+          .attr("height", height + bm.top + bm.bottom)
           .attr("aria-hidden", "true");
-        selections.rateChartArea = selections.rateSvg
+        ui.balanceChartArea = ui.balanceSvg
           .append("g")
-          .attr("class", "rate-chart-area")
-          .attr("transform", `translate(${rm.left},${rm.top})`);
-        // Add clip path for rate chart
-        selections.rateSvg
+          .attr("class", "balance-chart-area")
+          .attr("transform", `translate(${bm.left},${bm.top})`);
+        ui.balanceZeroLine = ui.balanceChartArea
+          .append("line")
+          .attr("class", "balance-zero-line")
+          .attr("x1", 0)
+          .attr("x2", width); // Span width
+        ui.balanceXAxisGroup = ui.balanceSvg
+          .append("g")
+          .attr("class", "axis balance-axis balance-axis--x")
+          .attr("transform", `translate(${bm.left},${bm.top + height})`);
+        ui.balanceYAxisGroup = ui.balanceSvg
+          .append("g")
+          .attr("class", "axis balance-axis balance-axis--y")
+          .attr("transform", `translate(${bm.left},${bm.top})`);
+      }
+
+      // --- Rate of Change Chart ---
+      if (
+        this._dimensions.rate.valid &&
+        ui.rateChartContainer &&
+        !ui.rateChartContainer.empty()
+      ) {
+        const { width, height } = this._dimensions.rate;
+        ui.rateSvg = ui.rateChartContainer
+          .append("svg")
+          .attr("width", width + rm.left + rm.right)
+          .attr("height", height + rm.top + rm.bottom)
+          .attr("aria-hidden", "true");
+        ui.rateSvg
           .append("defs")
           .append("clipPath")
           .attr("id", "clip-rate")
           .append("rect")
-          .attr("width", rateWidth)
-          .attr("height", rateHeight);
-        selections.rateChartArea.attr("clip-path", "url(#clip-rate)"); // Apply clip path
-
-        selections.rateZeroLine = selections.rateChartArea
+          .attr("width", width)
+          .attr("height", height);
+        ui.rateChartArea = ui.rateSvg
+          .append("g")
+          .attr("class", "rate-chart-area")
+          .attr("transform", `translate(${rm.left},${rm.top})`)
+          .attr("clip-path", "url(#clip-rate)");
+        ui.rateZeroLine = ui.rateChartArea
           .append("line")
-          .attr("class", "rate-zero-line");
-        selections.rateLine = selections.rateChartArea
+          .attr("class", "rate-zero-line")
+          .attr("x1", 0)
+          .attr("x2", width);
+        ui.rateLine = ui.rateChartArea
           .append("path")
           .attr("class", "line rate-line");
-        selections.rateXAxisGroup = selections.rateSvg
+        ui.rateXAxisGroup = ui.rateSvg
           .append("g")
           .attr("class", "axis rate-axis rate-axis--x")
-          .attr("transform", `translate(${rm.left},${rm.top + rateHeight})`);
-        selections.rateYAxisGroup = selections.rateSvg
+          .attr("transform", `translate(${rm.left},${rm.top + height})`);
+        ui.rateYAxisGroup = ui.rateSvg
           .append("g")
           .attr("class", "axis rate-axis rate-axis--y")
           .attr("transform", `translate(${rm.left},${rm.top})`);
-        // Y Axis Label for Rate Chart
-        selections.rateSvg
+        ui.rateSvg
           .append("text")
           .attr("class", "axis-label y-axis-label-small")
           .attr("transform", "rotate(-90)")
           .attr("y", 6)
-          .attr("x", 0 - (rateHeight / 2 + rm.top))
+          .attr("x", 0 - (height / 2 + rm.top))
           .attr("dy", "1em")
           .style("text-anchor", "middle")
           .text("Rate (kg/wk)");
       }
 
-      // --- TDEE Difference Chart (Feature #8) ---
-      if (selections.tdeeDiffContainer) {
-        selections.tdeeDiffSvg = selections.tdeeDiffContainer
+      // --- TDEE Difference Chart ---
+      if (
+        this._dimensions.tdeeDiff.valid &&
+        ui.tdeeDiffContainer &&
+        !ui.tdeeDiffContainer.empty()
+      ) {
+        const { width, height } = this._dimensions.tdeeDiff;
+        ui.tdeeDiffSvg = ui.tdeeDiffContainer
           .append("svg")
-          .attr("width", tdeeDiffWidth + tdm.left + tdm.right)
-          .attr("height", tdeeDiffHeight + tdm.top + tdm.bottom)
+          .attr("width", width + tdm.left + tdm.right)
+          .attr("height", height + tdm.top + tdm.bottom)
           .attr("aria-hidden", "true");
-        selections.tdeeDiffChartArea = selections.tdeeDiffSvg
-          .append("g")
-          .attr("class", "tdee-diff-chart-area")
-          .attr("transform", `translate(${tdm.left},${tdm.top})`);
-        // Add clip path for tdee diff chart
-        selections.tdeeDiffSvg
+        ui.tdeeDiffSvg
           .append("defs")
           .append("clipPath")
           .attr("id", "clip-tdee-diff")
           .append("rect")
-          .attr("width", tdeeDiffWidth)
-          .attr("height", tdeeDiffHeight);
-        selections.tdeeDiffChartArea.attr("clip-path", "url(#clip-tdee-diff)"); // Apply clip path
-
-        selections.tdeeDiffZeroLine = selections.tdeeDiffChartArea
+          .attr("width", width)
+          .attr("height", height);
+        ui.tdeeDiffChartArea = ui.tdeeDiffSvg
+          .append("g")
+          .attr("class", "tdee-diff-chart-area")
+          .attr("transform", `translate(${tdm.left},${tdm.top})`)
+          .attr("clip-path", "url(#clip-tdee-diff)");
+        ui.tdeeDiffZeroLine = ui.tdeeDiffChartArea
           .append("line")
-          .attr("class", "tdee-diff-zero-line");
-        selections.tdeeDiffLine = selections.tdeeDiffChartArea
+          .attr("class", "tdee-diff-zero-line")
+          .attr("x1", 0)
+          .attr("x2", width);
+        ui.tdeeDiffLine = ui.tdeeDiffChartArea
           .append("path")
           .attr("class", "line tdee-diff-line");
-        selections.tdeeDiffXAxisGroup = selections.tdeeDiffSvg
+        ui.tdeeDiffXAxisGroup = ui.tdeeDiffSvg
           .append("g")
           .attr("class", "axis tdee-diff-axis tdee-diff-axis--x")
-          .attr(
-            "transform",
-            `translate(${tdm.left},${tdm.top + tdeeDiffHeight})`,
-          );
-        selections.tdeeDiffYAxisGroup = selections.tdeeDiffSvg
+          .attr("transform", `translate(${tdm.left},${tdm.top + height})`);
+        ui.tdeeDiffYAxisGroup = ui.tdeeDiffSvg
           .append("g")
           .attr("class", "axis tdee-diff-axis tdee-diff-axis--y")
           .attr("transform", `translate(${tdm.left},${tdm.top})`);
-        // Y Axis Label for TDEE Diff Chart
-        selections.tdeeDiffSvg
+        ui.tdeeDiffSvg
           .append("text")
           .attr("class", "axis-label y-axis-label-small")
           .attr("transform", "rotate(-90)")
           .attr("y", 6)
-          .attr("x", 0 - (tdeeDiffHeight / 2 + tdm.top))
+          .attr("x", 0 - (height / 2 + tdm.top))
           .attr("dy", "1em")
           .style("text-anchor", "middle")
           .text("TDEE Diff (kcal)");
       }
+
+      // --- Correlation Scatter Plot ---
+      if (
+        this._dimensions.scatter.valid &&
+        ui.correlationScatterContainer &&
+        !ui.correlationScatterContainer.empty()
+      ) {
+        const { width, height } = this._dimensions.scatter;
+        ui.correlationScatterSvg = ui.correlationScatterContainer
+          .append("svg")
+          .attr("width", width + sm.left + sm.right)
+          .attr("height", height + sm.top + sm.bottom)
+          .attr("aria-label", "Correlation Scatter Plot")
+          .attr("role", "img");
+        ui.correlationScatterArea = ui.correlationScatterSvg
+          .append("g")
+          .attr("class", "correlation-scatter-area")
+          .attr("transform", `translate(${sm.left},${sm.top})`);
+        ui.correlationScatterXAxisGroup = ui.correlationScatterSvg
+          .append("g")
+          .attr("class", "axis scatter-axis scatter-axis--x")
+          .attr("transform", `translate(${sm.left},${sm.top + height})`);
+        ui.correlationScatterYAxisGroup = ui.correlationScatterSvg
+          .append("g")
+          .attr("class", "axis scatter-axis scatter-axis--y")
+          .attr("transform", `translate(${sm.left},${sm.top})`);
+        ui.correlationScatterSvg // X Axis Label
+          .append("text")
+          .attr("class", "axis-label scatter-axis-label-x")
+          .attr("x", sm.left + width / 2)
+          .attr("y", height + sm.top + sm.bottom - 5)
+          .style("text-anchor", "middle")
+          .text("Avg Weekly Net Calories (kcal)");
+        ui.correlationScatterSvg // Y Axis Label
+          .append("text")
+          .attr("class", "axis-label scatter-axis-label-y")
+          .attr("transform", "rotate(-90)")
+          .attr("y", 6)
+          .attr("x", 0 - (height / 2 + sm.top))
+          .attr("dy", "1em")
+          .style("text-anchor", "middle")
+          .text("Weekly Rate (kg/wk)");
+        ui.scatterDotsGroup = ui.correlationScatterArea
+          .append("g")
+          .attr("class", "scatter-dots-group");
+      }
+      console.log("UISetup: SVG element creation finished.");
     },
 
-    scalesAndAxes() {
-      const {
-        width,
-        height,
-        contextWidth,
-        contextHeight,
-        balanceWidth,
-        balanceHeight,
-        rateWidth,
-        rateHeight,
-        tdeeDiffWidth,
-        tdeeDiffHeight,
-      } = state.dimensions;
+    // Create D3 scale objects
+    createScales() {
+      // Use validated dimensions, default to 0 if invalid to avoid errors
+      const focusW = this._dimensions.focus.valid
+        ? this._dimensions.focus.width
+        : 0;
+      const focusH = this._dimensions.focus.valid
+        ? this._dimensions.focus.height
+        : 0;
+      const contextW = this._dimensions.context.valid
+        ? this._dimensions.context.width
+        : 0;
+      const contextH = this._dimensions.context.valid
+        ? this._dimensions.context.height
+        : 0;
+      const balanceW = this._dimensions.balance.valid
+        ? this._dimensions.balance.width
+        : 0;
+      const balanceH = this._dimensions.balance.valid
+        ? this._dimensions.balance.height
+        : 0;
+      const rateW = this._dimensions.rate.valid
+        ? this._dimensions.rate.width
+        : 0;
+      const rateH = this._dimensions.rate.valid
+        ? this._dimensions.rate.height
+        : 0;
+      const tdeeDiffW = this._dimensions.tdeeDiff.valid
+        ? this._dimensions.tdeeDiff.width
+        : 0;
+      const tdeeDiffH = this._dimensions.tdeeDiff.valid
+        ? this._dimensions.tdeeDiff.height
+        : 0;
+      const scatterW = this._dimensions.scatter.valid
+        ? this._dimensions.scatter.width
+        : 0;
+      const scatterH = this._dimensions.scatter.valid
+        ? this._dimensions.scatter.height
+        : 0;
 
-      // Existing Scales
-      scales.x = d3.scaleTime().range([0, width]);
-      scales.y = d3.scaleLinear().range([height, 0]);
-      scales.xContext = d3.scaleTime().range([0, contextWidth]);
-      scales.yContext = d3.scaleLinear().range([contextHeight, 0]);
-      scales.xBalance = d3.scaleTime().range([0, balanceWidth]);
-      scales.yBalance = d3.scaleLinear().range([balanceHeight, 0]);
+      // Focus Chart Scales
+      scales.x = d3.scaleTime().range([0, focusW]);
+      scales.y = d3.scaleLinear().range([focusH, 0]);
+      scales.y2 = d3.scaleLinear().range([focusH, 0]); // Second Y Axis
 
-      // New Scales (Features #5, #8)
-      scales.xRate = d3.scaleTime().range([0, rateWidth]);
-      scales.yRate = d3.scaleLinear().range([rateHeight, 0]);
-      scales.xTdeeDiff = d3.scaleTime().range([0, tdeeDiffWidth]);
-      scales.yTdeeDiff = d3.scaleLinear().range([tdeeDiffHeight, 0]);
+      // Context Chart Scales
+      scales.xContext = d3.scaleTime().range([0, contextW]);
+      scales.yContext = d3.scaleLinear().range([contextH, 0]);
 
-      // Existing Axes
+      // Balance Chart Scales
+      scales.xBalance = d3.scaleTime().range([0, balanceW]);
+      scales.yBalance = d3.scaleLinear().range([balanceH, 0]);
+
+      // Rate Chart Scales
+      scales.xRate = d3.scaleTime().range([0, rateW]);
+      scales.yRate = d3.scaleLinear().range([rateH, 0]);
+
+      // TDEE Diff Chart Scales
+      scales.xTdeeDiff = d3.scaleTime().range([0, tdeeDiffW]);
+      scales.yTdeeDiff = d3.scaleLinear().range([tdeeDiffH, 0]);
+
+      // Scatter Plot Scales
+      scales.xScatter = d3.scaleLinear().range([0, scatterW]);
+      scales.yScatter = d3.scaleLinear().range([scatterH, 0]);
+    },
+
+    // Create D3 axis generator objects
+    createAxes() {
+      // Use validated dimensions, default to 0 if invalid
+      const focusWidth = this._dimensions.focus.valid
+        ? this._dimensions.focus.width
+        : 0;
+      const focusHeight = this._dimensions.focus.valid
+        ? this._dimensions.focus.height
+        : 0;
+      const contextWidth = this._dimensions.context.valid
+        ? this._dimensions.context.width
+        : 0;
+      const balanceWidth = this._dimensions.balance.valid
+        ? this._dimensions.balance.width
+        : 0;
+      const balanceHeight = this._dimensions.balance.valid
+        ? this._dimensions.balance.height
+        : 0;
+      const rateWidth = this._dimensions.rate.valid
+        ? this._dimensions.rate.width
+        : 0;
+      const rateHeight = this._dimensions.rate.valid
+        ? this._dimensions.rate.height
+        : 0;
+      const tdeeDiffWidth = this._dimensions.tdeeDiff.valid
+        ? this._dimensions.tdeeDiff.width
+        : 0;
+      const tdeeDiffHeight = this._dimensions.tdeeDiff.valid
+        ? this._dimensions.tdeeDiff.height
+        : 0;
+
+      // Focus Chart Axes
       axes.xAxis = d3
         .axisBottom(scales.x)
-        .ticks(Math.max(Math.floor(width / 100), 2))
-        .tickFormat(_helpers.formatDateShort);
+        .ticks(Math.max(Math.floor(focusWidth / 100), 2))
+        .tickSizeOuter(0)
+        .tickFormat(Utils.formatDateShort);
       axes.yAxis = d3
         .axisLeft(scales.y)
-        .ticks(Math.max(Math.floor(height / 40), 5))
-        .tickFormat((d) => _helpers.formatValue(d, 1));
+        .ticks(Math.max(Math.floor(focusHeight / 40), 5))
+        .tickSizeOuter(0)
+        .tickFormat((d) => Utils.formatValue(d, 1));
+      axes.yAxis2 = d3
+        .axisRight(scales.y2)
+        .ticks(5)
+        .tickSizeOuter(0)
+        .tickFormat((d) => Utils.formatValue(d, 1) + "%");
+
+      // Context Chart Axis
       axes.xAxisContext = d3
         .axisBottom(scales.xContext)
         .ticks(Math.max(Math.floor(contextWidth / 100), 2))
-        .tickFormat(d3.timeFormat("%b'%y"));
-      axes.xBalanceAxis = d3
-        .axisBottom(scales.xBalance)
-        .ticks(Math.max(Math.floor(balanceWidth / 100), 2))
-        .tickFormat(_helpers.formatDateShort);
-      axes.yBalanceAxis = d3
-        .axisLeft(scales.yBalance)
-        .ticks(Math.max(Math.floor(balanceHeight / 25), 3))
         .tickSizeOuter(0)
-        .tickFormat((d) => (d === 0 ? "0" : d3.format("+,")(d)));
+        .tickFormat(d3.timeFormat("%b '%y"));
 
-      // New Axes (Features #5, #8)
-      axes.xRateAxis = d3
-        .axisBottom(scales.xRate)
-        .ticks(Math.max(Math.floor(rateWidth / 100), 2))
-        .tickFormat(_helpers.formatDateShort);
-      axes.yRateAxis = d3
-        .axisLeft(scales.yRate)
-        .ticks(Math.max(Math.floor(rateHeight / 30), 3))
-        .tickSizeOuter(0)
-        .tickFormat((d) => _helpers.formatValue(d, 2)); // Format rate to 2 decimals
-      axes.xTdeeDiffAxis = d3
-        .axisBottom(scales.xTdeeDiff)
-        .ticks(Math.max(Math.floor(tdeeDiffWidth / 100), 2))
-        .tickFormat(_helpers.formatDateShort);
-      axes.yTdeeDiffAxis = d3
-        .axisLeft(scales.yTdeeDiff)
-        .ticks(Math.max(Math.floor(tdeeDiffHeight / 30), 3))
-        .tickSizeOuter(0)
-        .tickFormat(d3.format("+,")); // Show sign for diff
+      // Helper for secondary axes
+      const createSecondaryAxis = (
+        scale,
+        dimension,
+        orientation,
+        tickDivisor,
+        format,
+      ) => {
+        const axis =
+          orientation === "left" ? d3.axisLeft(scale) : d3.axisBottom(scale);
+        axis
+          .ticks(Math.max(Math.floor(dimension / tickDivisor), 3))
+          .tickSizeOuter(0)
+          .tickFormat(format);
+        return axis;
+      };
+
+      // Balance Chart Axes
+      axes.xBalanceAxis = createSecondaryAxis(
+        scales.xBalance,
+        balanceWidth,
+        "bottom",
+        100,
+        null,
+      );
+      axes.yBalanceAxis = createSecondaryAxis(
+        scales.yBalance,
+        balanceHeight,
+        "left",
+        25,
+        (d) => (d === 0 ? "0" : d3.format("+,")(d)),
+      );
+
+      // Rate Chart Axes
+      axes.xRateAxis = createSecondaryAxis(
+        scales.xRate,
+        rateWidth,
+        "bottom",
+        100,
+        null,
+      );
+      axes.yRateAxis = createSecondaryAxis(
+        scales.yRate,
+        rateHeight,
+        "left",
+        30,
+        (d) => Utils.formatValue(d, 2),
+      );
+
+      // TDEE Diff Chart Axes
+      axes.xTdeeDiffAxis = createSecondaryAxis(
+        scales.xTdeeDiff,
+        tdeeDiffWidth,
+        "bottom",
+        100,
+        null,
+      );
+      axes.yTdeeDiffAxis = createSecondaryAxis(
+        scales.yTdeeDiff,
+        tdeeDiffHeight,
+        "left",
+        30,
+        d3.format("+,"),
+      );
+
+      // Scatter Plot Axes
+      axes.xScatterAxis = d3
+        .axisBottom(scales.xScatter)
+        .ticks(5)
+        .tickFormat(d3.format("+,"));
+      axes.yScatterAxis = d3
+        .axisLeft(scales.yScatter)
+        .ticks(5)
+        .tickFormat((d) => d.toFixed(2));
     },
 
-    brush() {
-      const { contextWidth, contextHeight } = state.dimensions;
-      if (!selections.context || selections.context.empty()) {
+    // Create D3 brush objects
+    createBrushes() {
+      // Context Brush
+      if (this._dimensions.context.valid && ui.context && !ui.context.empty()) {
+        const { width, height } = this._dimensions.context;
+        brushes.context = d3
+          .brushX()
+          .extent([
+            [0, 0],
+            [width, height],
+          ])
+          .on("brush end", EventHandlers.contextBrushed); // Use specific handler
+
+        // Append brush group to the context SVG area
+        ui.brushGroup = ui.context
+          .append("g")
+          .attr("class", "brush context-brush")
+          .call(brushes.context);
+      }
+
+      // Regression Brush (on Focus Chart)
+      if (
+        this._dimensions.focus.valid &&
+        ui.regressionBrushGroup &&
+        !ui.regressionBrushGroup.empty()
+      ) {
+        const { width, height } = this._dimensions.focus;
+        brushes.regression = d3
+          .brushX()
+          .extent([
+            [0, 0],
+            [width, height],
+          ])
+          .on("end", EventHandlers.regressionBrushed); // Use specific handler
+
+        ui.regressionBrushGroup.call(brushes.regression);
+        // Initially hide the regression brush overlay/handles
+        ui.regressionBrushGroup
+          .selectAll(".overlay, .selection, .handle")
+          .style("display", "none");
+      }
+    },
+
+    // Create D3 zoom behavior
+    createZoom() {
+      if (!this._dimensions.focus.valid || !ui.svg || ui.svg.empty()) {
         console.error(
-          "Context group ('g.context') not found, cannot setup brush.",
+          "UISetup: Cannot create zoom - focus dimensions invalid or SVG missing.",
         );
         return;
       }
-      brush = d3
-        .brushX()
-        .extent([
-          [0, 0],
-          [contextWidth, contextHeight],
-        ])
-        .on("brush end", _handlers.brushed); // Trigger update on brush end
+      const { width, height } = this._dimensions.focus;
 
-      selections.brushGroup = selections.context
-        .append("g")
-        .attr("class", "brush")
-        .call(brush);
-    },
-
-    // --- Feature #3: Direct Chart Interaction (Zoom) ---
-    zoom() {
-      if (
-        !selections.svg ||
-        selections.svg.empty() ||
-        !scales.x ||
-        !scales.xContext
-      ) {
-        console.error("Cannot setup zoom: SVG or X scales not ready.");
-        return;
-      }
-      const { width, height } = state.dimensions;
+      // Ensure context scale range is available for translateExtent
+      const contextRange = scales.xContext?.range() || [0, width]; // Fallback range
 
       zoom = d3
         .zoom()
-        .scaleExtent([0.5, 20]) // Example: Allow zooming from half view to 20x
+        .scaleExtent([0.5, 20]) // Zoom limits
         .extent([
           [0, 0],
           [width, height],
-        ]) // Zoomable area relative to the element zoom is attached to (the zoomCaptureRect)
+        ]) // Viewport extent for zoom actions
         .translateExtent([
-          [scales.xContext.range()[0], -Infinity],
-          [scales.xContext.range()[1], Infinity],
-        ]) // Panning limits based on full context range
-        .on("zoom", _handlers.zoomed); // Attach the zoom handler
+          [contextRange[0], -Infinity],
+          [contextRange[1], Infinity],
+        ]) // Limit horizontal panning
+        .on("zoom.handler", EventHandlers.zoomed); // Attach zoom handler with namespace
 
-      // Apply the zoom behavior TO THE ZOOM CAPTURE RECTANGLE
-      // The zoomCaptureRect is visually behind the focus group but captures events for the zoom behavior.
-      if (selections.zoomCaptureRect && !selections.zoomCaptureRect.empty()) {
-        selections.zoomCaptureRect.call(zoom);
-        console.log("Zoom behavior initialized on zoomCaptureRect.");
+      // Attach zoom behavior to the capture rectangle
+      if (ui.zoomCaptureRect && !ui.zoomCaptureRect.empty()) {
+        ui.zoomCaptureRect.call(zoom).on("dblclick.zoom", null); // Disable double-click zoom reset
+        console.log("UISetup: Zoom behavior initialized.");
       } else {
         console.error(
-          "Zoom capture rectangle not found, cannot attach zoom behavior.",
+          "UISetup: Zoom capture rectangle not found, cannot attach zoom behavior.",
         );
       }
     },
-    // --- End Feature #3 ---
 
+    // Main setup function to run all steps
     runAll() {
-      console.log("Setting up chart elements...");
-      if (!_setup.dimensions()) return false;
-      _setup.svgElements();
-      _setup.scalesAndAxes();
-      _setup.brush();
-      _setup.zoom(); // Setup zoom AFTER scales/elements are created
-      console.log("Chart setup complete.");
-      return true;
+      console.log("UISetup: Running all setup steps...");
+      if (!UISetup.calculateDimensions()) return false; // Stop if dimensions fail
+      UISetup.createSVGElements();
+      UISetup.createScales();
+      UISetup.createAxes();
+      UISetup.createBrushes();
+      UISetup.createZoom();
+      console.log("UISetup: Setup complete.");
+      return true; // Indicate success
     },
   };
 
   // ========================================================================
-  // Domain & Initial View (`_domains`)
+  // Domain Manager (`DomainManager`) - Calculates and sets scale domains
   // ========================================================================
-  const _domains = {
-    calculateAndSetFocusY(dataForExtent, regressionPoints) {
-      const { height } = state.dimensions;
-      let yMin = Infinity,
-        yMax = -Infinity;
-
-      const updateExtent = (value) => {
-        if (value !== null && !isNaN(value)) {
-          yMin = Math.min(yMin, value);
-          yMax = Math.max(yMax, value);
-        }
-      };
-
-      dataForExtent.forEach((d) => {
-        // Always consider SMA/bounds for domain calculation, even if hidden,
-        // so toggling visibility doesn't cause drastic domain jumps.
-        if (d.sma !== null) {
-          updateExtent(d.sma);
-          // Only consider bounds if SMA is visible (or use wider padding otherwise?)
-          // Let's stick to considering them always for consistency when toggling
-          updateExtent(d.lowerBound);
-          updateExtent(d.upperBound);
-        }
-        // Only include raw values if visible
-        if (state.seriesVisibility.raw) {
-          updateExtent(d.value);
-        }
-      });
-
-      if (
-        state.seriesVisibility.regression &&
-        state.showRegression &&
-        regressionPoints
-      ) {
-        regressionPoints.forEach((d) => updateExtent(d.regressionValue));
-      }
-
-      const trendConfig = _helpers.getTrendlineConfig();
-      if (trendConfig.isValid) {
-        const currentXDomain = scales.x.domain();
-        if (currentXDomain && currentXDomain.length === 2) {
-          // Consider trend values potentially slightly outside the view
-          const startCheck = d3.timeDay.offset(
-            currentXDomain[0],
-            -CONFIG.domainBufferDays,
-          );
-          const endCheck = d3.timeDay.offset(
-            currentXDomain[1],
-            CONFIG.domainBufferDays,
-          );
-          const trendCheckDates = d3.timeDays(startCheck, endCheck);
-
-          if (state.seriesVisibility.trend1) {
-            trendCheckDates.forEach((date) => {
-              const trendVal = _data.calculateTrendWeight(
-                trendConfig.startDate,
-                trendConfig.initialWeight,
-                trendConfig.weeklyIncrease1,
-                date,
-              );
-              updateExtent(trendVal);
-            });
-          }
-          if (state.seriesVisibility.trend2) {
-            trendCheckDates.forEach((date) => {
-              const trendVal = _data.calculateTrendWeight(
-                trendConfig.startDate,
-                trendConfig.initialWeight,
-                trendConfig.weeklyIncrease2,
-                date,
-              );
-              updateExtent(trendVal);
-            });
-          }
-        }
-      }
-
-      if (state.seriesVisibility.goal && state.goal.weight !== null) {
-        updateExtent(state.goal.weight);
-        // Include the start/end points of the goal line if visible and within X buffer
-        const lastDataPointWithWeight = [...state.processedData]
-          .reverse()
-          .find((d) => d.value !== null || d.sma !== null);
-        const currentXDomain = scales.x.domain();
-        if (
-          lastDataPointWithWeight &&
-          currentXDomain &&
-          lastDataPointWithWeight.date >=
-            d3.timeDay.offset(currentXDomain[0], -CONFIG.domainBufferDays) &&
-          lastDataPointWithWeight.date <=
-            d3.timeDay.offset(currentXDomain[1], CONFIG.domainBufferDays)
-        ) {
-          updateExtent(
-            lastDataPointWithWeight.value ?? lastDataPointWithWeight.sma,
-          );
-        }
-        // Also check goal date if it exists and is within buffer
-        if (
-          state.goal.date &&
-          currentXDomain &&
-          state.goal.date >=
-            d3.timeDay.offset(currentXDomain[0], -CONFIG.domainBufferDays) &&
-          state.goal.date <=
-            d3.timeDay.offset(currentXDomain[1], CONFIG.domainBufferDays)
-        ) {
-          updateExtent(state.goal.weight);
-        }
-      }
-
-      // --- FIX: Refined Expected Weight Domain Calculation ---
-      if (state.seriesVisibility.expected) {
-        const currentXDomain = scales.x.domain();
-        const bufferDays = CONFIG.domainBufferDays;
-        const viewStartDateBuffered = d3.timeDay.offset(
-          currentXDomain[0],
-          -bufferDays,
-        );
-        const viewEndDateBuffered = d3.timeDay.offset(
-          currentXDomain[1],
-          bufferDays,
-        );
-
-        if (
-          currentXDomain &&
-          currentXDomain.length === 2 &&
-          state.processedData.length > 0
-        ) {
-          // Find the absolute first valid anchor point in all data
-          let startingWeight = null,
-            startingWeightIndex = -1;
-          for (let i = 0; i < state.processedData.length; i++) {
-            const d = state.processedData[i];
-            // Need an initial weight AND a valid change value eventually to start
-            if (d.value !== null || d.sma !== null) {
-              // Simpler start: first point with any weight
-              startingWeight = d.value ?? d.sma;
-              startingWeightIndex = i;
-              break;
-            }
-          }
-
-          if (startingWeight !== null && startingWeightIndex !== -1) {
-            let cumulativeChangeUpToPoint = 0;
-            // Include starting point if it's in the buffered view
-            if (
-              state.processedData[startingWeightIndex].date >=
-                viewStartDateBuffered &&
-              state.processedData[startingWeightIndex].date <=
-                viewEndDateBuffered
-            ) {
-              updateExtent(startingWeight);
-            }
-
-            // Iterate through ALL processed data to calculate cumulative change accurately *up to* points in view
-            for (
-              let i = startingWeightIndex + 1;
-              i < state.processedData.length;
-              i++
-            ) {
-              const d = state.processedData[i];
-
-              // Accumulate change regardless of whether the point is in view
-              if (
-                d.expectedWeightChange !== null &&
-                !isNaN(d.expectedWeightChange)
-              ) {
-                cumulativeChangeUpToPoint += d.expectedWeightChange;
-              } else {
-                // If expected change is null, the line should ideally be discontinuous or hold previous value.
-                // For domain calculation, we'll just skip updating based on this point's cumulative value if the change was null.
-                // This prevents propagation of 'NaN' or 'null' into the cumulative sum.
-                // Continue the loop to accumulate future valid changes.
-              }
-
-              // ***ONLY update extent if the CURRENT point 'd' is within the view buffer***
-              if (
-                d.date >= viewStartDateBuffered &&
-                d.date <= viewEndDateBuffered
-              ) {
-                // Only calculate and update extent if the change component *for this point* was valid
-                if (
-                  d.expectedWeightChange !== null &&
-                  !isNaN(d.expectedWeightChange)
-                ) {
-                  const expectedValueAtD =
-                    startingWeight + cumulativeChangeUpToPoint;
-                  updateExtent(expectedValueAtD);
-                }
-                // If change was null, expectedValueAtD would be based on previous cumulative sum,
-                // which might still be relevant if the point is in view. Let's update always if in view.
-                const expectedValueAtD =
-                  startingWeight + cumulativeChangeUpToPoint;
-                updateExtent(expectedValueAtD); // Update extent even if this specific point's change was null, using the last valid cumulative sum.
-              }
-
-              // Optimization: Stop if we're way past the view, no need to keep accumulating
-              if (
-                d.date > viewEndDateBuffered &&
-                i > startingWeightIndex + 50
-              ) {
-                break; // More generous break condition
-              }
-            }
-          }
-        }
-      }
-      // --- END FIX ---
-
-      // Final checks and padding
-      if (
-        yMin === Infinity ||
-        yMax === -Infinity ||
-        isNaN(yMin) ||
-        isNaN(yMax)
-      ) {
-        const contextDomain = scales.yContext?.domain();
-        if (
-          contextDomain &&
-          contextDomain.length === 2 &&
-          !isNaN(contextDomain[0]) &&
-          !isNaN(contextDomain[1])
-        ) {
-          [yMin, yMax] = contextDomain;
-        } else {
-          [yMin, yMax] = [60, 80]; // Absolute fallback
-        }
-        console.warn("Using fallback Y domain for focus chart:", [yMin, yMax]);
-      } else if (yMin === yMax) {
-        yMin -= 1;
-        yMax += 1;
-      } else {
-        // Apply padding based on CONFIG
-        const padding = Math.max(
-          CONFIG.yAxisMinPaddingKg, // Use updated min padding
-          (yMax - yMin) * CONFIG.yAxisPaddingFactor, // Use updated factor
-        );
-        yMin -= padding;
-        yMax += padding;
-      }
-
-      scales.y.domain([yMin, yMax]).nice(Math.max(Math.floor(height / 40), 5));
-    },
-
-    initialize() {
-      const fullDataExtent = d3.extent(state.processedData, (d) => d.date);
+  const DomainManager = {
+    // Sets the domains for all time-based X axes (Focus, Context, Balance, Rate, TDEE)
+    setXDomains(processedData) {
+      const fullDataExtent = d3.extent(processedData, (d) => d.date);
 
       if (!fullDataExtent[0] || !fullDataExtent[1]) {
-        console.warn("No valid date range in data. Using fallback domains.");
+        console.warn(
+          "DomainManager: No valid date range found. Using fallback.",
+        );
         const today = new Date();
-        const yesterday = new Date(today);
-        yesterday.setDate(today.getDate() - 1);
-        const fallbackDomain = [yesterday, today];
-        scales.x.domain(fallbackDomain);
-        scales.y.domain([60, 80]);
-        scales.xContext.domain(fallbackDomain);
-        scales.yContext.domain([60, 80]);
-        scales.xBalance.domain(fallbackDomain);
-        scales.xRate?.domain(fallbackDomain); // Feature #5
-        scales.xTdeeDiff?.domain(fallbackDomain); // Feature #8
-        if (selections.brushGroup?.node())
-          selections.brushGroup.call(brush.move, null);
-        state.lastZoomTransform = null; // Feature #3: Reset zoom transform
-        return;
+        const past = d3.timeMonth.offset(today, -CONFIG.initialViewMonths);
+        fullDataExtent[0] = past;
+        fullDataExtent[1] = today;
       }
 
+      // Context X domain covers the entire data range
       scales.xContext.domain(fullDataExtent);
 
-      // Use SMA bounds for context Y domain if SMA is visible, otherwise use raw values
-      const dataForContextY = state.seriesVisibility.sma
-        ? state.processedData.filter((d) => d.sma !== null)
-        : state.processedData.filter((d) => d.value !== null);
-      let yContextMin = d3.min(dataForContextY, (d) =>
-        state.seriesVisibility.sma ? d.lowerBound : d.value,
-      );
-      let yContextMax = d3.max(dataForContextY, (d) =>
-        state.seriesVisibility.sma ? d.upperBound : d.value,
-      );
-
-      if (
-        yContextMin === undefined ||
-        yContextMax === undefined ||
-        isNaN(yContextMin) ||
-        isNaN(yContextMax)
-      ) {
-        // Fallback if min/max can't be determined (e.g., only one point)
-        yContextMin = d3.min(state.processedData, (d) => d.value ?? d.sma);
-        yContextMax = d3.max(state.processedData, (d) => d.value ?? d.sma);
-        if (
-          yContextMin === undefined ||
-          yContextMax === undefined ||
-          isNaN(yContextMin) ||
-          isNaN(yContextMax)
-        ) {
-          yContextMin = 60;
-          yContextMax = 80; // Final fallback
-        }
-      }
-      if (yContextMin === yContextMax) {
-        yContextMin -= 1;
-        yContextMax += 1;
-      }
-      const yPaddingFull = Math.max(0.5, (yContextMax - yContextMin) * 0.05);
-      scales.yContext
-        .domain([yContextMin - yPaddingFull, yContextMax + yPaddingFull])
-        .nice();
-
-      // Set initial focus view
+      // Set initial focus view (last N months, but not before start of data)
       const initialEndDate = fullDataExtent[1];
-      const initialStartDateDefault = new Date(initialEndDate);
-      initialStartDateDefault.setMonth(
-        initialStartDateDefault.getMonth() - CONFIG.initialViewMonths,
+      const initialStartDateDefault = d3.timeMonth.offset(
+        initialEndDate,
+        -CONFIG.initialViewMonths,
       );
       const initialStartDate =
         initialStartDateDefault < fullDataExtent[0]
           ? fullDataExtent[0]
           : initialStartDateDefault;
 
-      scales.x.domain([initialStartDate, initialEndDate]);
-      scales.xBalance.domain(scales.x.domain());
-      scales.xRate?.domain(scales.x.domain()); // Feature #5
-      scales.xTdeeDiff?.domain(scales.x.domain()); // Feature #8
+      // Set initial domain for focus and sync other time-based charts
+      const initialXDomain = [initialStartDate, initialEndDate];
+      scales.x.domain(initialXDomain);
+      scales.xBalance?.domain(initialXDomain);
+      scales.xRate?.domain(initialXDomain);
+      scales.xTdeeDiff?.domain(initialXDomain);
 
-      const initialVisibleData = state.processedData.filter(
-        (d) => d.date >= initialStartDate && d.date <= initialEndDate,
+      return initialXDomain; // Return the initial focus domain
+    },
+
+    // Calculates and sets the Y domain for the context chart
+    setContextYDomain(processedData) {
+      // Base domain on visible SMA or Raw data
+      const dataForExtent = state.seriesVisibility.sma
+        ? processedData.filter((d) => d.sma != null)
+        : processedData.filter((d) => d.value != null);
+
+      let yMin = d3.min(dataForExtent, (d) =>
+        state.seriesVisibility.sma ? (d.lowerBound ?? d.sma) : d.value,
       );
-      state.regressionStartDate = _helpers.getRegressionStartDateFromUI(); // Get initial regression start date
-      const initialRegression = _data.calculateLinearRegression(
-        initialVisibleData.filter((d) => !d.isOutlier && d.value !== null),
-        state.regressionStartDate,
-      );
-      _domains.calculateAndSetFocusY(
-        initialVisibleData,
-        initialRegression.points,
+      let yMax = d3.max(dataForExtent, (d) =>
+        state.seriesVisibility.sma ? (d.upperBound ?? d.sma) : d.value,
       );
 
-      // Set initial brush and zoom (Feature #3)
-      const initialBrushPixels = [
-        scales.xContext(initialStartDate),
-        scales.xContext(initialEndDate),
-      ];
-      if (!isNaN(initialBrushPixels[0]) && !isNaN(initialBrushPixels[1])) {
-        const k =
-          scales.xContext.range()[1] /
-          (initialBrushPixels[1] - initialBrushPixels[0]);
-        const tx = -initialBrushPixels[0] * k;
-        state.lastZoomTransform = d3.zoomIdentity.translate(tx, 0).scale(k);
+      if (yMin == null || yMax == null || isNaN(yMin) || isNaN(yMax)) {
+        console.warn(
+          "DomainManager: No valid data for context Y domain. Using fallback [60, 80].",
+        );
+        [yMin, yMax] = [60, 80];
+      } else if (yMin === yMax) {
+        yMin -= 1;
+        yMax += 1;
       } else {
-        state.lastZoomTransform = d3.zoomIdentity; // Fallback if calculation fails
-        console.warn("Could not calculate initial brush pixels accurately.");
+        const padding = Math.max(0.5, (yMax - yMin) * 0.05); // 5% padding, min 0.5kg
+        yMin -= padding;
+        yMax += padding;
+      }
+      scales.yContext.domain([yMin, yMax]).nice();
+    },
+
+    // Calculates and sets the Y domains for the focus chart (Y1 and Y2)
+    setFocusYDomains(dataForCalculation, regressionResult) {
+      // Ensure scales are ready
+      if (!scales.y || !scales.y2 || !scales.x) return;
+
+      const yRange = scales.y.range();
+      const height =
+        yRange[0] > yRange[1]
+          ? yRange[0]
+          : UISetup._dimensions.focus.height || 200; // Get height from range or dimension cache
+      let yMin = Infinity,
+        yMax = -Infinity;
+      let y2Min = Infinity,
+        y2Max = -Infinity; // For second Y axis (BF%)
+
+      const updateExtent = (value) => {
+        if (value != null && !isNaN(value)) {
+          yMin = Math.min(yMin, value);
+          yMax = Math.max(yMax, value);
+        }
+      };
+      const updateExtentY2 = (value) => {
+        if (value != null && !isNaN(value)) {
+          y2Min = Math.min(y2Min, value);
+          y2Max = Math.max(y2Max, value);
+        }
+      };
+
+      const currentXDomain = scales.x.domain();
+      // Define buffer only if dynamic Y axis is enabled and domain is valid
+      const bufferStartDate =
+        state.useDynamicYAxis && currentXDomain[0] instanceof Date
+          ? d3.timeDay.offset(currentXDomain[0], -CONFIG.domainBufferDays)
+          : null;
+      const bufferEndDate =
+        state.useDynamicYAxis && currentXDomain[1] instanceof Date
+          ? d3.timeDay.offset(currentXDomain[1], CONFIG.domainBufferDays)
+          : null;
+
+      // Helper to check if a date falls within the potentially buffered view
+      const isWithinBufferedView = (date) => {
+        if (!state.useDynamicYAxis || !bufferStartDate || !bufferEndDate)
+          return true; // Static axis considers all data
+        return date >= bufferStartDate && date <= bufferEndDate;
+      };
+
+      // Ensure dataForCalculation is an array
+      const calculationDataArray = Array.isArray(dataForCalculation)
+        ? dataForCalculation
+        : [];
+
+      // 1. Consider core data points (SMA/Bounds or Raw) within the view
+      calculationDataArray.forEach((d) => {
+        if (!d.date || !isWithinBufferedView(d.date)) return;
+
+        if (state.seriesVisibility.sma && d.sma != null) {
+          updateExtent(d.lowerBound);
+          updateExtent(d.upperBound);
+        } else if (state.seriesVisibility.raw && d.value != null) {
+          updateExtent(d.value);
+        }
+        if (state.seriesVisibility.bf && d.bfPercent != null) {
+          updateExtentY2(d.bfPercent);
+        }
+      });
+
+      // 2. Consider Regression Line and CI within the view
+      if (
+        state.seriesVisibility.regression &&
+        regressionResult?.pointsWithCI?.length > 0
+      ) {
+        regressionResult.pointsWithCI.forEach((d) => {
+          if (!d.date || !isWithinBufferedView(d.date)) return;
+          updateExtent(d.regressionValue);
+          if (
+            state.seriesVisibility.regressionCI &&
+            d.lowerCI != null &&
+            d.upperCI != null
+          ) {
+            updateExtent(d.lowerCI);
+            updateExtent(d.upperCI);
+          }
+        });
       }
 
-      // Move brush and update zoom state AFTER potential DOM rendering delays
-      setTimeout(() => {
+      // 3. Consider Manual Trendlines within the view
+      const trendConfig = DataService.getTrendlineConfigFromUI();
+      if (trendConfig.isValid) {
+        // Determine dates within the view (or fallback if view is outside all data)
+        let datesToCheck = calculationDataArray
+          .map((d) => d.date)
+          .filter(isWithinBufferedView);
+        if (datesToCheck.length === 0 && state.processedData.length > 0) {
+          // If view is outside data range, check first/last point of full data
+          datesToCheck = [
+            state.processedData[0].date,
+            state.processedData[state.processedData.length - 1].date,
+          ].filter(isWithinBufferedView);
+        }
+        if (datesToCheck.length === 0 && state.processedData.length > 0) {
+          // If still no dates, maybe check just the start/end of the view range itself against the trend
+          if (currentXDomain[0] instanceof Date)
+            datesToCheck.push(currentXDomain[0]);
+          if (currentXDomain[1] instanceof Date)
+            datesToCheck.push(currentXDomain[1]);
+        }
+
+        datesToCheck.forEach((date) => {
+          if (state.seriesVisibility.trend1) {
+            updateExtent(
+              DataService.calculateTrendWeight(
+                trendConfig.startDate,
+                trendConfig.initialWeight,
+                trendConfig.weeklyIncrease1,
+                date,
+              ),
+            );
+          }
+          if (state.seriesVisibility.trend2) {
+            updateExtent(
+              DataService.calculateTrendWeight(
+                trendConfig.startDate,
+                trendConfig.initialWeight,
+                trendConfig.weeklyIncrease2,
+                date,
+              ),
+            );
+          }
+        });
+      }
+
+      // 4. Consider Goal Line within the view
+      if (state.seriesVisibility.goal && state.goal.weight != null) {
+        // Goal weight value itself is always a potential min/max
+        updateExtent(state.goal.weight);
+        // Consider the starting point of the goal line if it's within view
+        const lastSmaPoint = [...state.processedData]
+          .reverse()
+          .find((d) => d.sma != null);
+        if (lastSmaPoint?.date && isWithinBufferedView(lastSmaPoint.date)) {
+          updateExtent(lastSmaPoint.sma);
+        }
+        // Consider the goal date point if it exists and is within view
+        if (state.goal.date && isWithinBufferedView(state.goal.date)) {
+          updateExtent(state.goal.weight); // The value at the goal date is the goal weight
+        }
+      }
+
+      // 5. Consider Expected Weight Line within the view
+      if (state.seriesVisibility.expected) {
+        const expectedLinePoints = DomainManager._getExpectedWeightPoints();
+        expectedLinePoints.forEach((p) => {
+          if (p.date && isWithinBufferedView(p.date)) {
+            updateExtent(p.weight);
+          }
+        });
+      }
+
+      // --- Finalize Y1 Domain (Weight) ---
+      if (yMin === Infinity || yMax === -Infinity) {
+        const contextDomain = scales.yContext?.domain();
         if (
-          selections.brushGroup?.node() &&
-          brush &&
-          !isNaN(initialBrushPixels[0]) &&
-          !isNaN(initialBrushPixels[1])
+          contextDomain &&
+          !isNaN(contextDomain[0]) &&
+          !isNaN(contextDomain[1])
         ) {
-          selections.brushGroup.call(brush.move, initialBrushPixels);
+          [yMin, yMax] = contextDomain;
         } else {
-          console.warn("Could not initialize brush position after timeout.");
-          if (selections.brushGroup?.node() && brush) {
-            selections.brushGroup.call(brush.move, null); // Clear brush if failed
+          [yMin, yMax] = [60, 80]; // Absolute fallback
+          console.warn(
+            "DomainManager: Using absolute fallback Y domain [60, 80].",
+          );
+        }
+      } else if (yMin === yMax) {
+        yMin -= CONFIG.yAxisMinPaddingKg * 2; // Give more padding if only one value
+        yMax += CONFIG.yAxisMinPaddingKg * 2;
+      } else {
+        const padding = Math.max(
+          CONFIG.yAxisMinPaddingKg,
+          (yMax - yMin) * CONFIG.yAxisPaddingFactor,
+        );
+        yMin -= padding;
+        yMax += padding;
+      }
+      // Ensure domain is valid before setting
+      if (!isNaN(yMin) && !isNaN(yMax)) {
+        scales.y
+          .domain([yMin, yMax])
+          .nice(Math.max(Math.floor(height / 40), 5));
+      } else {
+        console.error("DomainManager: Calculated invalid Y1 domain", [
+          yMin,
+          yMax,
+        ]);
+        scales.y.domain([60, 80]).nice(); // Fallback if calculation failed
+      }
+
+      // --- Finalize Y2 Domain (Body Fat %) ---
+      if (state.seriesVisibility.bf) {
+        if (y2Min === Infinity || y2Max === -Infinity) {
+          [y2Min, y2Max] = [10, 30]; // Example fallback for BF%
+        } else if (y2Min === y2Max) {
+          y2Min -= 1; // Min 1% padding
+          y2Max += 1;
+        } else {
+          const padding = Math.max(0.5, (y2Max - y2Min) * 0.05); // 5% padding, min 0.5%
+          y2Min -= padding;
+          y2Max += padding;
+        }
+        if (!isNaN(y2Min) && !isNaN(y2Max)) {
+          scales.y2.domain([y2Min, y2Max]).nice(5);
+        } else {
+          console.error("DomainManager: Calculated invalid Y2 domain", [
+            y2Min,
+            y2Max,
+          ]);
+          scales.y2.domain([0, 100]).nice(); // Fallback
+        }
+      } else {
+        scales.y2.domain([0, 100]); // Default hidden domain
+      }
+    },
+
+    // Sets Y domains for secondary charts (Balance, Rate, TDEE Diff)
+    setSecondaryYDomains(visibleData) {
+      // Balance Chart Y Domain (Symmetric around 0)
+      if (scales.yBalance) {
+        const maxAbsBalance =
+          d3.max(visibleData, (d) => Math.abs(d.netBalance ?? 0)) ?? 0;
+        const yBalanceDomainMax =
+          maxAbsBalance > 100 ? maxAbsBalance * 1.1 : 500; // Add 10% padding or set min
+        scales.yBalance.domain([-yBalanceDomainMax, yBalanceDomainMax]).nice();
+      }
+
+      // Rate of Change Chart Y Domain
+      if (scales.yRate) {
+        const rateExtent = d3.extent(visibleData, (d) => d.smoothedWeeklyRate);
+        let [yRateMin, yRateMax] = rateExtent;
+        if (
+          yRateMin == null ||
+          yRateMax == null ||
+          isNaN(yRateMin) ||
+          isNaN(yRateMax)
+        )
+          [yRateMin, yRateMax] = [-0.5, 0.5]; // Fallback
+        else if (yRateMin === yRateMax) {
+          yRateMin -= 0.1;
+          yRateMax += 0.1;
+        }
+        const yRatePadding = Math.max(
+          0.05,
+          Math.abs(yRateMax - yRateMin) * 0.1,
+        );
+        scales.yRate
+          .domain([yRateMin - yRatePadding, yRateMax + yRatePadding])
+          .nice();
+      }
+
+      // TDEE Difference Chart Y Domain
+      if (scales.yTdeeDiff) {
+        const diffExtent = d3.extent(visibleData, (d) => d.avgTdeeDifference);
+        let [yDiffMin, yDiffMax] = diffExtent;
+        if (
+          yDiffMin == null ||
+          yDiffMax == null ||
+          isNaN(yDiffMin) ||
+          isNaN(yDiffMax)
+        )
+          [yDiffMin, yDiffMax] = [-300, 300]; // Fallback
+        else if (yDiffMin === yDiffMax) {
+          yDiffMin -= 50;
+          yDiffMax += 50;
+        }
+        const yDiffPadding = Math.max(50, Math.abs(yDiffMax - yDiffMin) * 0.1);
+        scales.yTdeeDiff
+          .domain([yDiffMin - yDiffPadding, yDiffMax + yDiffPadding])
+          .nice();
+      }
+    },
+
+    // Sets domain for Scatter Plot axes
+    setScatterPlotDomains(scatterData) {
+      if (!scales.xScatter || !scales.yScatter) return;
+
+      if (!Array.isArray(scatterData) || scatterData.length === 0) {
+        scales.xScatter.domain([-500, 500]).nice();
+        scales.yScatter.domain([-0.5, 0.5]).nice();
+        return;
+      }
+
+      const xExtent = d3.extent(scatterData, (d) => d.avgNetCal);
+      const yExtent = d3.extent(scatterData, (d) => d.weeklyRate);
+
+      // Ensure extents are valid numbers before calculating padding
+      const [xMinRaw, xMaxRaw] = xExtent;
+      const [yMinRaw, yMaxRaw] = yExtent;
+      const xMin = xMinRaw == null || isNaN(xMinRaw) ? 0 : xMinRaw;
+      const xMax = xMaxRaw == null || isNaN(xMaxRaw) ? 0 : xMaxRaw;
+      const yMin = yMinRaw == null || isNaN(yMinRaw) ? 0 : yMinRaw;
+      const yMax = yMaxRaw == null || isNaN(yMaxRaw) ? 0 : yMaxRaw;
+
+      const xRange = xMax - xMin;
+      const yRange = yMax - yMin;
+
+      // Add padding (10%), ensuring a minimum padding if range is zero or data is missing
+      const xPadding = xRange === 0 ? 500 : Math.max(100, xRange * 0.1);
+      const yPadding = yRange === 0 ? 0.5 : Math.max(0.1, yRange * 0.1);
+
+      scales.xScatter.domain([xMin - xPadding, xMax + xPadding]).nice();
+      scales.yScatter.domain([yMin - yPadding, yMax + yPadding]).nice();
+    },
+
+    // Helper to calculate points for expected weight line (used in Y domain calc)
+    _getExpectedWeightPoints() {
+      let lineData = [];
+      if (
+        Array.isArray(state.processedData) &&
+        state.processedData.length > 0
+      ) {
+        let startingWeight = null;
+        let startingWeightIndex = -1;
+        // Find first point with SMA or value
+        for (let i = 0; i < state.processedData.length; i++) {
+          const d = state.processedData[i];
+          if (d.sma != null && !isNaN(d.sma)) {
+            startingWeight = d.sma;
+            startingWeightIndex = i;
+            break;
+          } else if (d.value != null && !isNaN(d.value)) {
+            startingWeight = d.value;
+            startingWeightIndex = i;
+            break; // Use first raw value if no SMA found yet
           }
         }
-        // Also set the initial zoom transform on the capture rectangle AFTER brush move
-        if (
-          selections.zoomCaptureRect &&
-          !selections.zoomCaptureRect.empty() &&
-          zoom &&
-          state.lastZoomTransform
-        ) {
-          selections.zoomCaptureRect.call(
-            zoom.transform,
-            state.lastZoomTransform,
-          );
-        } else {
-          console.warn("Could not set initial zoom transform after timeout.");
+
+        if (startingWeight != null && startingWeightIndex !== -1) {
+          let cumulativeChange = 0;
+          lineData.push({
+            date: state.processedData[startingWeightIndex].date,
+            weight: startingWeight,
+          });
+          for (
+            let i = startingWeightIndex + 1;
+            i < state.processedData.length;
+            i++
+          ) {
+            const change = state.processedData[i].expectedWeightChange;
+            if (change != null && !isNaN(change)) {
+              cumulativeChange += change;
+            }
+            // Only add point if weight is valid
+            const expectedWeight = startingWeight + cumulativeChange;
+            if (!isNaN(expectedWeight)) {
+              lineData.push({
+                date: state.processedData[i].date,
+                weight: expectedWeight,
+              });
+            }
+          }
         }
-      }, 0);
-
-      _handlers.updateAnalysisRangeInputsFromCurrentView();
-      _handlers.updateAnalysisRangeDisplay();
+      }
+      return lineData;
     },
-  };
 
-  // ========================================================================
-  // Chart Update Functions (`_update`)
-  // ========================================================================
-  const _update = {
-    domainsAndAxes() {
+    // Set initial domains for all charts and configure initial view
+    initializeDomains(processedData) {
+      console.log("DomainManager: Initializing domains...");
+      // Set Context Y domain first, as Focus might use it as fallback
+      DomainManager.setContextYDomain(processedData);
+
+      // Set X domains and get the initial focus range
+      const initialXDomain = DomainManager.setXDomains(processedData);
+
+      // Filter data based on initial focus X domain for initial Y calc
+      const initialVisibleData = processedData.filter(
+        (d) => d.date >= initialXDomain[0] && d.date <= initialXDomain[1],
+      );
+
+      // Calculate initial regression for Y domain setting
+      // Use the stored state for regression start date, which was potentially set by UI input handling during init
+      const initialRegression = DataService.calculateLinearRegression(
+        initialVisibleData.filter((d) => !d.isOutlier && d.value != null),
+        state.regressionStartDate, // Use state value
+      );
+
+      // Set Focus Y domains (handles dynamic pref internally)
+      DomainManager.setFocusYDomains(initialVisibleData, initialRegression);
+
+      // Set domains for secondary charts based on initial visible data
+      DomainManager.setSecondaryYDomains(initialVisibleData);
+
+      // Set domains for scatter plot based on *full* dataset's weekly stats
+      const allWeeklyStats = StatsManager.calculateWeeklyStats(
+        processedData,
+        null,
+        null,
+      ); // Calculate for all data initially
+      state.correlationScatterData = allWeeklyStats.filter(
+        (w) => w.avgNetCal != null && w.weeklyRate != null,
+      );
+      DomainManager.setScatterPlotDomains(state.correlationScatterData);
+
+      console.log("DomainManager: Domain initialization complete.");
+    },
+
+    // Update domains during interaction (zoom/pan/brush)
+    updateDomainsOnInteraction() {
+      // 1. Get current X domain from focus chart
       const currentXDomain = scales.x.domain();
       if (
-        !Array.isArray(currentXDomain) ||
+        !currentXDomain ||
         currentXDomain.length !== 2 ||
         !(currentXDomain[0] instanceof Date) ||
-        !(currentXDomain[1] instanceof Date) ||
-        isNaN(currentXDomain[0].getTime()) ||
-        isNaN(currentXDomain[1].getTime())
+        !(currentXDomain[1] instanceof Date)
       ) {
         console.warn(
-          "Invalid X domain detected, skipping Y domain and axis update.",
-          currentXDomain,
+          "DomainManager: Invalid X domain during interaction update.",
         );
         return;
       }
 
-      // Filter data first
-      const visibleProcessedData = state.processedData.filter(
+      // 2. Filter data based on current X domain for calculations
+      state.filteredData = state.processedData.filter(
         (d) => d.date >= currentXDomain[0] && d.date <= currentXDomain[1],
       );
-      state.filteredData = visibleProcessedData; // Update filtered data state
 
-      // Recalculate regression for Y domain calculation
-      state.regressionStartDate = _helpers.getRegressionStartDateFromUI();
-      const visibleNonOutlierValueData = visibleProcessedData.filter(
-        (d) => d.value !== null && !d.isOutlier,
-      );
-      const regression = _data.calculateLinearRegression(
-        visibleNonOutlierValueData,
-        state.regressionStartDate,
-      );
-
-      // Recalculate Y domain for focus chart (Uses reduced padding now and corrected expected logic)
-      _domains.calculateAndSetFocusY(visibleProcessedData, regression.points);
-
-      // Sync X domains of secondary charts
-      scales.xBalance.domain(currentXDomain);
-      if (scales.xRate) scales.xRate.domain(currentXDomain); // Feature #5
-      if (scales.xTdeeDiff) scales.xTdeeDiff.domain(currentXDomain); // Feature #8
-
-      const { width, height } = state.dimensions;
-      const dur = CONFIG.transitionDurationMs;
-
-      // Update main axes
-      selections.xAxisGroup?.transition().duration(dur).call(axes.xAxis);
-      selections.yAxisGroup?.transition().duration(dur).call(axes.yAxis);
-      selections.gridGroup
-        ?.transition()
-        .duration(dur)
-        .call(
-          d3
-            .axisLeft(scales.y)
-            .tickSize(-width)
-            .tickFormat("")
-            .ticks(Math.max(Math.floor(height / 40), 5)),
+      // 3. Recalculate regression based on effective range (interactive or analysis)
+      const regressionRange = EventHandlers.getEffectiveRegressionRange();
+      let regressionResult = null;
+      if (regressionRange.start && regressionRange.end) {
+        const regressionData = state.processedData.filter(
+          (d) =>
+            d.date >= regressionRange.start &&
+            d.date <= regressionRange.end &&
+            d.value != null &&
+            !d.isOutlier,
         );
-      selections.gridGroup?.selectAll(".domain").remove(); // Remove axis line from grid
-      selections.contextXAxisGroup?.call(axes.xAxisContext); // No transition needed
+        regressionResult = DataService.calculateLinearRegression(
+          regressionData,
+          regressionRange.start, // Use the effective start date
+        );
+      } else {
+        // Handle case where effective range might be invalid
+        regressionResult = {
+          slope: null,
+          intercept: null,
+          points: [],
+          pointsWithCI: [],
+        };
+      }
 
-      // Update balance chart axes
-      selections.balanceXAxisGroup
-        ?.transition()
+      // 4. Recalculate Focus Y domains (handles dynamic Y axis logic internally)
+      // Pass filtered data if dynamic, full data if static
+      const dataForYCalc = state.useDynamicYAxis
+        ? state.filteredData
+        : state.processedData;
+      DomainManager.setFocusYDomains(dataForYCalc, regressionResult);
+
+      // 5. Sync X domains of secondary charts
+      scales.xBalance?.domain(currentXDomain);
+      scales.xRate?.domain(currentXDomain);
+      scales.xTdeeDiff?.domain(currentXDomain);
+
+      // 6. Update Y domains of secondary charts based on *visible* data
+      DomainManager.setSecondaryYDomains(state.filteredData);
+
+      // Note: Scatter plot domain typically only updates when analysis range changes,
+      // unless you want it to dynamically update with zoom/pan (less common).
+    },
+  };
+
+  // ========================================================================
+  // Chart Updaters (Rendering Logic)
+  // ========================================================================
+
+  // --- Focus Chart Updater ---
+  const FocusChartUpdater = {
+    updateAxes() {
+      // Check if dimensions are valid before proceeding
+      if (!UISetup._dimensions?.focus?.valid) return;
+
+      const dur = CONFIG.transitionDurationMs;
+      const { width, height } = UISetup._dimensions.focus;
+
+      // Ensure axis generators are available
+      if (!axes.xAxis || !axes.yAxis || !axes.yAxis2) return;
+
+      // Main X Axis
+      ui.xAxisGroup?.transition().duration(dur).call(axes.xAxis);
+
+      // Main Y Axis (Left)
+      ui.yAxisGroup?.transition().duration(dur).call(axes.yAxis);
+
+      // Y Grid Lines (aligned with left Y axis)
+      // Ensure ticks are available from the primary Y axis generator
+      const yTicks = axes.yAxis.scale().ticks(axes.yAxis.ticks()[0]);
+      ui.gridGroup?.transition().duration(dur).call(
+        d3
+          .axisLeft(scales.y) // Use the left scale
+          .tickSize(-width) // Extend lines across chart width
+          .tickFormat("") // No labels on grid lines
+          .tickValues(yTicks), // Use the same tick values as the Y axis
+      );
+      ui.gridGroup?.selectAll(".domain").remove(); // Remove axis line from grid
+
+      // Second Y Axis (Right - BF%)
+      const showY2 = state.seriesVisibility.bf;
+      ui.yAxisGroup2
+        ?.style("display", showY2 ? null : "none") // Toggle visibility first
+        .transition()
         .duration(dur)
-        .call(axes.xBalanceAxis);
-      // Balance Y domain updated in _update.balanceChart
-
-      // Update rate chart axes (Feature #5)
-      if (
-        axes.xRateAxis &&
-        axes.yRateAxis &&
-        selections.rateXAxisGroup &&
-        selections.rateYAxisGroup
-      ) {
-        selections.rateXAxisGroup
-          .transition()
-          .duration(dur)
-          .call(axes.xRateAxis);
-        // Rate Y domain updated in _update.rateOfChangeChart
-        selections.rateYAxisGroup.select(".domain").remove();
-      }
-
-      // Update TDEE diff chart axes (Feature #8)
-      if (
-        axes.xTdeeDiffAxis &&
-        axes.yTdeeDiffAxis &&
-        selections.tdeeDiffXAxisGroup &&
-        selections.tdeeDiffYAxisGroup
-      ) {
-        selections.tdeeDiffXAxisGroup
-          .transition()
-          .duration(dur)
-          .call(axes.xTdeeDiffAxis);
-        // TDEE Diff Y domain updated in _update.tdeeDifferenceChart
-        selections.tdeeDiffYAxisGroup.select(".domain").remove();
-      }
+        .call(axes.yAxis2);
+      ui.svg?.select(".y-axis-label2").style("display", showY2 ? null : "none");
     },
 
-    chartPaths(visibleValidSmaData, regressionPoints) {
+    updatePaths(visibleValidSmaData, regressionResult) {
       const dur = CONFIG.transitionDurationMs;
-      if (!scales.x || !scales.y || !selections.chartArea) return;
+      if (!ui.chartArea) return;
 
-      // Area for SMA band
-      const areaGenerator = d3
+      // --- Generators ---
+      const smaLineGen = d3
+        .line()
+        .x((d) => scales.x(d.date))
+        .y((d) => scales.y(d.sma))
+        .curve(d3.curveMonotoneX)
+        .defined(
+          (d) =>
+            d.sma != null &&
+            !isNaN(scales.x(d.date)) &&
+            !isNaN(scales.y(d.sma)),
+        ); // Add NaN checks
+
+      const smaBandAreaGen = d3
         .area()
         .x((d) => scales.x(d.date))
         .y0((d) => scales.y(d.lowerBound))
@@ -2100,1359 +2549,1585 @@ const WeightTrackerChart = (function () {
         .curve(d3.curveMonotoneX)
         .defined(
           (d) =>
-            d.lowerBound !== null && d.upperBound !== null && d.sma !== null,
-        ); // Ensure sma is also defined for bounds
+            d.lowerBound != null &&
+            d.upperBound != null &&
+            !isNaN(scales.x(d.date)) &&
+            !isNaN(scales.y(d.lowerBound)) &&
+            !isNaN(scales.y(d.upperBound)),
+        ); // Add NaN checks
 
-      // Line for SMA
-      const lineGenerator = d3
-        .line()
-        .x((d) => scales.x(d.date))
-        .y((d) => scales.y(d.sma))
-        .curve(d3.curveMonotoneX)
-        .defined((d) => d.sma !== null);
-
-      // Line for Regression
-      const regressionLineGenerator = d3
+      const regressionLineGen = d3
         .line()
         .x((d) => scales.x(d.date))
         .y((d) => scales.y(d.regressionValue))
         .defined(
-          (d) => d.regressionValue !== null && !isNaN(d.regressionValue),
+          (d) =>
+            d.regressionValue != null &&
+            !isNaN(scales.x(d.date)) &&
+            !isNaN(scales.y(d.regressionValue)),
         );
 
-      const showSma = state.seriesVisibility.sma;
-      const showReg = state.seriesVisibility.regression && state.showRegression;
+      const regressionCIAreaGen = d3
+        .area()
+        .x((d) => scales.x(d.date))
+        .y0((d) => scales.y(d.lowerCI))
+        .y1((d) => scales.y(d.upperCI))
+        .curve(d3.curveMonotoneX)
+        .defined(
+          (d) =>
+            d.lowerCI != null &&
+            d.upperCI != null &&
+            !isNaN(scales.x(d.date)) &&
+            !isNaN(scales.y(d.lowerCI)) &&
+            !isNaN(scales.y(d.upperCI)),
+        );
 
-      // Update SMA band and line
-      selections.bandArea
-        ?.datum(showSma ? visibleValidSmaData : [])
+      const trendLineGen = (startDate, initialWeight, weeklyIncrease) =>
+        d3
+          .line()
+          .x((d) => scales.x(d.date))
+          .y((d) => {
+            const weight = DataService.calculateTrendWeight(
+              startDate,
+              initialWeight,
+              weeklyIncrease,
+              d.date,
+            );
+            // Return a valid pixel value or rely on .defined()
+            return weight != null && !isNaN(weight) ? scales.y(weight) : NaN; // Use NaN for undefined points
+          })
+          .defined((d) => {
+            const weight = DataService.calculateTrendWeight(
+              startDate,
+              initialWeight,
+              weeklyIncrease,
+              d.date,
+            );
+            // Check date, weight validity, and scale output validity
+            return (
+              d.date >= startDate &&
+              weight != null &&
+              !isNaN(weight) &&
+              !isNaN(scales.x(d.date)) &&
+              !isNaN(scales.y(weight))
+            );
+          });
+
+      const goalLineGen = d3
+        .line()
+        .x((d) => scales.x(d.date))
+        .y((d) => scales.y(d.weight))
+        .defined((d) => !isNaN(scales.x(d.date)) && !isNaN(scales.y(d.weight))); // Add NaN checks
+
+      const expectedLineGen = d3
+        .line()
+        .x((d) => scales.x(d.date))
+        .y((d) => scales.y(d.weight))
+        .defined(
+          (d) =>
+            d.weight != null &&
+            !isNaN(scales.x(d.date)) &&
+            !isNaN(scales.y(d.weight)),
+        );
+
+      const bfLineGen = d3 // Body Fat Line Generator
+        .line()
+        .x((d) => scales.x(d.date))
+        .y((d) => scales.y2(d.bfPercent)) // Use the SECOND Y-axis scale
+        .defined(
+          (d) =>
+            d.bfPercent != null &&
+            !isNaN(scales.x(d.date)) &&
+            !isNaN(scales.y2(d.bfPercent)),
+        ); // Add NaN checks
+
+      // --- Update Selections ---
+      // SMA Band and Line
+      ui.bandArea
+        ?.datum(state.seriesVisibility.sma ? visibleValidSmaData : [])
         .transition()
         .duration(dur)
-        .style("display", showSma ? null : "none")
-        .attr("d", areaGenerator);
-      selections.smaLine
-        ?.datum(showSma ? visibleValidSmaData : [])
+        .style("display", state.seriesVisibility.sma ? null : "none")
+        .attr("d", smaBandAreaGen);
+      ui.smaLine
+        ?.datum(state.seriesVisibility.sma ? visibleValidSmaData : [])
         .transition()
         .duration(dur)
-        .style("display", showSma ? null : "none")
-        .attr("d", lineGenerator);
+        .style("display", state.seriesVisibility.sma ? null : "none")
+        .attr("d", smaLineGen);
 
-      // Update Regression line
-      selections.regressionLine
-        ?.datum(showReg ? regressionPoints : [])
+      // Regression Line and CI Area
+      const showReg = state.seriesVisibility.regression;
+      const showRegCI = state.seriesVisibility.regressionCI && showReg;
+      const regPoints =
+        showReg && regressionResult?.points ? regressionResult.points : [];
+      const regCIPoints =
+        showRegCI && regressionResult?.pointsWithCI
+          ? regressionResult.pointsWithCI
+          : [];
+
+      ui.regressionLine
+        ?.datum(regPoints.length > 0 ? regPoints : [])
         .transition()
         .duration(dur)
-        .style("display", showReg ? null : "none")
-        .attr("d", regressionLineGenerator);
+        .style("display", regPoints.length > 0 ? null : "none")
+        .attr("d", regressionLineGen);
 
-      // Update other lines
-      _update.manualTrendlines();
-      _update.goalLine();
-      _update.expectedWeightLine(); // Doesn't strictly need filtered data passed
+      ui.regressionCIArea
+        ?.datum(regCIPoints.length > 0 ? regCIPoints : [])
+        .transition()
+        .duration(dur)
+        .style("display", regCIPoints.length > 0 ? null : "none")
+        .attr("d", regressionCIAreaGen);
+
+      // Manual Trend Lines
+      const trendConfig = DataService.getTrendlineConfigFromUI();
+      const trendData = trendConfig.isValid
+        ? state.processedData.filter((d) => d.date >= trendConfig.startDate)
+        : [];
+
+      ui.trendLine1
+        ?.datum(
+          state.seriesVisibility.trend1 && trendData.length ? trendData : [],
+        )
+        .transition()
+        .duration(dur)
+        .style(
+          "display",
+          state.seriesVisibility.trend1 && trendData.length ? null : "none",
+        )
+        .attr(
+          "d",
+          trendLineGen(
+            trendConfig.startDate,
+            trendConfig.initialWeight,
+            trendConfig.weeklyIncrease1,
+          ),
+        );
+      ui.trendLine2
+        ?.datum(
+          state.seriesVisibility.trend2 && trendData.length ? trendData : [],
+        )
+        .transition()
+        .duration(dur)
+        .style(
+          "display",
+          state.seriesVisibility.trend2 && trendData.length ? null : "none",
+        )
+        .attr(
+          "d",
+          trendLineGen(
+            trendConfig.startDate,
+            trendConfig.initialWeight,
+            trendConfig.weeklyIncrease2,
+          ),
+        );
+
+      // Goal Line
+      let goalLineData = [];
+      if (
+        state.seriesVisibility.goal &&
+        state.goal.weight != null &&
+        state.processedData.length > 0
+      ) {
+        const lastSmaPoint = [...state.processedData]
+          .reverse()
+          .find((d) => d.sma != null);
+        if (lastSmaPoint?.date) {
+          // Check if lastSmaPoint and its date are valid
+          const startDate = lastSmaPoint.date;
+          const startWeight = lastSmaPoint.sma;
+          // If goal date exists, use it, otherwise extend to chart edge
+          const endDateRaw = state.goal.date
+            ? state.goal.date
+            : scales.x?.domain()?.[1];
+          // Ensure endDate is valid and after startDate
+          if (
+            endDateRaw instanceof Date &&
+            !isNaN(endDateRaw) &&
+            endDateRaw >= startDate
+          ) {
+            goalLineData = [
+              { date: startDate, weight: startWeight },
+              { date: endDateRaw, weight: state.goal.weight },
+            ];
+          }
+        }
+      }
+      ui.goalLine
+        ?.datum(goalLineData)
+        .transition()
+        .duration(dur)
+        .style("display", goalLineData.length > 0 ? null : "none")
+        .attr("d", goalLineGen);
+
+      // Expected Weight Line
+      const expectedLinePoints = DomainManager._getExpectedWeightPoints();
+      ui.expectedLine
+        ?.datum(state.seriesVisibility.expected ? expectedLinePoints : [])
+        .transition()
+        .duration(dur)
+        .style(
+          "display",
+          state.seriesVisibility.expected && expectedLinePoints.length > 0
+            ? null
+            : "none",
+        )
+        .attr("d", expectedLineGen);
+
+      // Body Fat Line
+      ui.bfLine
+        ?.datum(state.seriesVisibility.bf ? state.filteredData : []) // Use filtered data
+        .transition()
+        .duration(dur)
+        .style("display", state.seriesVisibility.bf ? null : "none")
+        .attr("d", bfLineGen);
     },
 
-    chartDots(visibleRawWeightData) {
-      // Combined raw & SMA dots logic based on visibility
+    updateDots(visibleRawWeightData) {
       const dur = CONFIG.transitionDurationMs;
-      if (
-        !scales.x ||
-        !scales.y ||
-        !selections.rawDotsGroup ||
-        !selections.smaDotsGroup ||
-        !selections.highlightGroup
-      ) {
-        console.error(
-          "Missing scales or dot/highlight groups for chartDots update.",
-        );
-        return;
-      }
+      if (!ui.rawDotsGroup || !ui.smaDotsGroup) return;
+      // Ensure scales are ready
+      if (!scales.x || !scales.y) return;
 
       const showRaw = state.seriesVisibility.raw;
-      const showSmaDots = state.seriesVisibility.sma; // Use smaDotsGroup for interactive points if SMA is visible
+      const showSmaDots = state.seriesVisibility.sma; // Interactive dots tied to SMA visibility
 
-      // --- Raw Data Dots (Visual only if raw is toggled on) ---
-      selections.rawDotsGroup.style("display", showRaw ? null : "none");
-      const rawDots = selections.rawDotsGroup
-        .selectAll(".raw-dot")
-        .data(
-          showRaw ? visibleRawWeightData.filter((d) => d.value !== null) : [],
-          (d) => d.date,
+      // --- Raw Data Dots (Non-interactive background dots) ---
+      ui.rawDotsGroup?.style("display", showRaw ? null : "none");
+      if (showRaw && ui.rawDotsGroup) {
+        const rawDotsDataValid = visibleRawWeightData.filter(
+          (d) =>
+            d.value != null &&
+            d.date instanceof Date &&
+            !isNaN(d.date) && // Check date validity
+            !isNaN(scales.x(d.date)) &&
+            !isNaN(scales.y(d.value)), // Check scale output validity
         );
+        const rawDots = ui.rawDotsGroup
+          .selectAll(".raw-dot")
+          .data(rawDotsDataValid, (d) => d.dateString || d.date); // Use dateString if available for stability
 
-      rawDots.join(
-        (enter) =>
-          enter
-            .append("circle")
-            .attr("class", "raw-dot")
-            .attr("r", CONFIG.rawDotRadius)
-            .attr("cx", (d) => scales.x(d.date))
-            .attr("cy", (d) => scales.y(d.value))
-            .style("opacity", 0)
-            .call((enter) =>
-              enter.transition().duration(dur).style("opacity", 0.4),
-            ),
-        (update) =>
-          update.call((update) =>
-            update
-              .transition()
-              .duration(dur)
+        rawDots.join(
+          (enter) =>
+            enter
+              .append("circle")
+              .attr("class", "raw-dot")
+              .attr("r", CONFIG.rawDotRadius)
               .attr("cx", (d) => scales.x(d.date))
               .attr("cy", (d) => scales.y(d.value))
-              .style("opacity", 0.4),
-          ),
-        (exit) => exit.transition().duration(dur).style("opacity", 0).remove(),
-      );
-
-      // --- SMA Data Dots (Interactive dots for tooltips, highlighting - represent the raw values but visibility tied to SMA) ---
-      // Data is always the raw weight data, but the group visibility depends on SMA series toggle
-      selections.smaDotsGroup.style("display", showSmaDots ? null : "none");
-      const smaDotsData = showSmaDots
-        ? visibleRawWeightData.filter((d) => d.value !== null)
-        : []; // Only create dots if SMA is visible
-
-      const smaDots = selections.smaDotsGroup
-        .selectAll(".dot")
-        .data(smaDotsData, (d) => d.date); // Key by date
-
-      smaDots.join(
-        (enter) =>
-          enter
-            .append("circle")
-            .attr("class", (d) => `dot ${d.isOutlier ? "outlier" : ""}`)
-            .classed(
-              "highlighted",
-              (d) =>
-                state.highlightedDate &&
-                d.date.getTime() === state.highlightedDate.getTime(),
-            ) // Feature #4
-            .attr("r", CONFIG.dotRadius)
-            .attr("cx", (d) => scales.x(d.date))
-            .attr("cy", (d) => scales.y(d.value)) // Position at the raw value
-            .style("opacity", 0)
-            .on("mouseover", _handlers.mouseOver) // Attach handlers
-            .on("mouseout", _handlers.mouseOut)
-            .on("click", (event, d) => _handlers.statDateClick(d.date)) // Feature #4 click
-            .call((enter) =>
-              enter.transition().duration(dur).style("opacity", 0.7),
-            ), // Fade in
-        (update) =>
-          update
-            .attr("class", (d) => `dot ${d.isOutlier ? "outlier" : ""}`) // Update class for outliers
-            .classed(
-              "highlighted",
-              (d) =>
-                state.highlightedDate &&
-                d.date.getTime() === state.highlightedDate.getTime(),
-            ) // Feature #4
-            .call((update) =>
+              .style("fill", colors.rawDot) // Explicitly set color
+              .style("opacity", 0)
+              .call((enter) =>
+                enter.transition().duration(dur).style("opacity", 0.4),
+              ),
+          (update) =>
+            update.call((update) =>
               update
                 .transition()
                 .duration(dur)
                 .attr("cx", (d) => scales.x(d.date))
                 .attr("cy", (d) => scales.y(d.value))
-                .attr("r", (d) =>
-                  state.highlightedDate &&
-                  d.date.getTime() === state.highlightedDate.getTime()
-                    ? CONFIG.dotRadius * 1.2
-                    : CONFIG.dotRadius,
-                ) // Slightly larger if highlighted
-                .style("opacity", (d) =>
-                  state.highlightedDate &&
-                  d.date.getTime() === state.highlightedDate.getTime()
-                    ? 1
-                    : 0.7,
-                ),
-            ), // Ensure opacity
-        (exit) => exit.transition().duration(dur).style("opacity", 0).remove(),
-      );
+                .style("opacity", 0.4),
+            ),
+          (exit) =>
+            exit.transition().duration(dur).style("opacity", 0).remove(),
+        );
+      } else {
+        ui.rawDotsGroup?.selectAll(".raw-dot").remove(); // Clear if hidden
+      }
 
-      // --- Highlight Marker (Feature #4) ---
-      const highlightData = state.highlightedDate
+      // --- SMA/Interactive Dots ---
+      ui.smaDotsGroup?.style("display", showSmaDots ? null : "none");
+      if (showSmaDots && ui.smaDotsGroup) {
+        // Data for interactive dots: All visible points with a *raw* value and valid scale output
+        const smaDotsDataValid = visibleRawWeightData.filter(
+          (d) =>
+            d.value != null &&
+            d.date instanceof Date &&
+            !isNaN(d.date) && // Check date validity
+            !isNaN(scales.x(d.date)) &&
+            !isNaN(scales.y(d.value)), // Check scale output validity
+        );
+
+        const smaDots = ui.smaDotsGroup
+          .selectAll(".dot")
+          .data(smaDotsDataValid, (d) => d.dateString || d.date);
+
+        smaDots.join(
+          (enter) =>
+            enter
+              .append("circle")
+              .attr("class", "dot") // Base class
+              .classed("outlier", (d) => d.isOutlier)
+              .attr("r", CONFIG.dotRadius)
+              .attr("cx", (d) => scales.x(d.date))
+              .attr("cy", (d) => scales.y(d.value)) // Position based on raw value
+              .style("fill", (d) => (d.isOutlier ? colors.outlier : colors.dot)) // Color based on outlier status
+              .style("opacity", 0)
+              .on("mouseover", EventHandlers.dotMouseOver) // Attach handlers
+              .on("mouseout", EventHandlers.dotMouseOut)
+              .on("click", EventHandlers.dotClick)
+              .call((enter) =>
+                enter.transition().duration(dur).style("opacity", 0.7),
+              ),
+          (update) =>
+            update
+              .classed("outlier", (d) => d.isOutlier) // Update outlier class
+              .classed(
+                "highlighted", // Update highlight class
+                (d) =>
+                  state.highlightedDate &&
+                  d.date.getTime() === state.highlightedDate.getTime(),
+              )
+              .call((update) =>
+                update
+                  .transition()
+                  .duration(dur)
+                  .attr("cx", (d) => scales.x(d.date))
+                  .attr("cy", (d) => scales.y(d.value)) // Update position
+                  .style("fill", (d) =>
+                    d.isOutlier ? colors.outlier : colors.dot,
+                  ) // Update color
+                  .attr(
+                    "r",
+                    (
+                      d, // Update radius based on highlight
+                    ) =>
+                      state.highlightedDate &&
+                      d.date.getTime() === state.highlightedDate.getTime()
+                        ? CONFIG.dotRadius *
+                          CONFIG.highlightRadiusMultiplier *
+                          0.8 // Slightly smaller multiplier than highlight ring
+                        : CONFIG.dotRadius,
+                  )
+                  .style(
+                    "opacity",
+                    (
+                      d, // Update opacity based on highlight
+                    ) =>
+                      state.highlightedDate &&
+                      d.date.getTime() === state.highlightedDate.getTime()
+                        ? 1
+                        : 0.7,
+                  ),
+              ),
+          (exit) =>
+            exit.transition().duration(dur).style("opacity", 0).remove(),
+        );
+      } else {
+        ui.smaDotsGroup?.selectAll(".dot").remove(); // Clear if hidden
+      }
+    },
+
+    updateHighlightMarker(visibleRawWeightData) {
+      const dur = CONFIG.transitionDurationMs;
+      if (!ui.highlightGroup) return;
+      // Ensure scales are ready
+      if (!scales.x || !scales.y) return;
+
+      // Find the data point corresponding to the highlighted date
+      const highlightDataPoint = state.highlightedDate
         ? visibleRawWeightData.find(
-            (d) => d.date.getTime() === state.highlightedDate.getTime(),
+            (d) =>
+              d.value != null &&
+              d.date instanceof Date &&
+              d.date.getTime() === state.highlightedDate.getTime() && // Match date
+              !isNaN(scales.x(d.date)) &&
+              !isNaN(scales.y(d.value)), // Ensure valid coords
           )
         : null;
 
-      const highlightMarker = selections.highlightGroup
+      const highlightMarker = ui.highlightGroup
         .selectAll(".highlight-marker")
-        .data(highlightData ? [highlightData] : [], (d) => d.date); // Use date as key
+        .data(highlightDataPoint ? [highlightDataPoint] : [], (d) => d.date); // Use date as key
 
       highlightMarker.join(
         (enter) =>
           enter
             .append("circle")
             .attr("class", "highlight-marker")
-            .attr("r", 0) // Start small
+            .attr("r", 0) // Start radius at 0
             .attr("cx", (d) => scales.x(d.date))
-            .attr("cy", (d) => scales.y(d.value)) // Use actual value for position
+            .attr("cy", (d) => scales.y(d.value)) // Position based on raw value
             .style("fill", "none")
             .style("stroke", colors.highlightStroke)
             .style("stroke-width", "2.5px")
+            .style("pointer-events", "none") // Ensure marker doesn't block interaction
             .style("opacity", 0)
             .call((enter) =>
               enter
                 .transition()
-                .duration(dur * 0.8) // Slightly faster transition
+                .duration(dur * 0.8) // Faster appearance
                 .attr("r", CONFIG.dotRadius * CONFIG.highlightRadiusMultiplier)
                 .style("opacity", 0.8),
             ),
         (update) =>
-          update.call(
-            (update) =>
-              update
-                .transition()
-                .duration(dur)
-                .attr("cx", (d) => scales.x(d.date))
-                .attr("cy", (d) => scales.y(d.value))
-                .attr("r", CONFIG.dotRadius * CONFIG.highlightRadiusMultiplier) // Ensure size
-                .style("opacity", 0.8), // Ensure opacity
-          ),
+          update
+            .transition()
+            .duration(dur) // Smooth transition if date changes while highlighted
+            .attr("cx", (d) => scales.x(d.date))
+            .attr("cy", (d) => scales.y(d.value))
+            .attr("r", CONFIG.dotRadius * CONFIG.highlightRadiusMultiplier) // Ensure correct size
+            .style("opacity", 0.8), // Ensure correct opacity
         (exit) =>
           exit
             .transition()
-            .duration(dur / 2) // Faster exit
+            .duration(dur / 2) // Faster disappearance
             .attr("r", 0)
             .style("opacity", 0)
             .remove(),
       );
     },
 
-    contextChart() {
-      if (
-        !scales.xContext ||
-        !scales.yContext ||
-        !selections.contextArea ||
-        !selections.contextLine
-      ) {
-        console.error("Missing scales or paths for contextChart update.");
+    updateCrosshair(hoverData) {
+      if (!ui.crosshairGroup || !hoverData || !hoverData.date) {
+        ui.crosshairGroup?.style("display", "none");
         return;
       }
-      // Use all data for the context chart
-      const allValidSmaData = state.processedData.filter((d) => d.sma !== null);
+      // Ensure scales are ready
+      if (!scales.x || !scales.y || !UISetup._dimensions?.focus?.valid) return;
 
-      const contextAreaGenerator = d3
+      const xPos = scales.x(hoverData.date);
+      // Use raw value for crosshair Y position if available, else SMA
+      const yValue = hoverData.value ?? hoverData.sma;
+      const yPos = yValue != null ? scales.y(yValue) : null;
+
+      const { width, height } = UISetup._dimensions.focus;
+
+      // Check if position is within the chart bounds and valid
+      if (
+        yPos != null &&
+        isFinite(xPos) &&
+        isFinite(yPos) &&
+        xPos >= 0 &&
+        xPos <= width &&
+        yPos >= 0 &&
+        yPos <= height
+      ) {
+        ui.crosshairGroup.style("display", null); // Show group
+        // Update horizontal line (Y position) - Use transform for potential perf benefit
+        ui.crosshairGroup
+          .select(".crosshair.crosshair-y")
+          .attr("transform", `translate(0, ${yPos})`);
+        // Update vertical line (X position)
+        ui.crosshairGroup
+          .select(".crosshair.crosshair-x")
+          .attr("transform", `translate(${xPos}, 0)`);
+      } else {
+        ui.crosshairGroup.style("display", "none"); // Hide if outside bounds
+      }
+    },
+
+    updateAnnotations(visibleData) {
+      const dur = CONFIG.transitionDurationMs;
+      if (!ui.annotationsGroup || !scales.x || !scales.y) return;
+
+      const annotationData = state.seriesVisibility.annotations
+        ? state.annotations
+        : [];
+      const xDomain = scales.x.domain();
+
+      // Filter for annotations within the current view
+      const visibleAnnotations = annotationData.filter((a) => {
+        const date = new Date(a.date); // Assume date is stored as YYYY-MM-DD
+        // Ensure date is valid before comparison
+        return (
+          !isNaN(date.getTime()) &&
+          date >= xDomain[0] &&
+          date <= xDomain[1] &&
+          a.type === "point"
+        );
+      });
+
+      // Function to find the Y value (SMA or raw) for a given date
+      const findYValue = (targetDate) => {
+        // Ensure targetDate is valid
+        if (!(targetDate instanceof Date) || isNaN(targetDate.getTime()))
+          return null;
+        const targetTime = targetDate.getTime();
+        const pointData = visibleData.find(
+          (d) => d.date instanceof Date && d.date.getTime() === targetTime,
+        );
+        const yVal = pointData ? (pointData.sma ?? pointData.value) : null;
+        // Ensure the resulting yValue is valid for the scale
+        return yVal != null && !isNaN(scales.y(yVal)) ? yVal : null;
+      };
+
+      const markers = ui.annotationsGroup
+        .selectAll(".annotation-marker-group") // Select the group
+        .data(visibleAnnotations, (d) => d.id);
+
+      markers.join(
+        (enter) => {
+          const group = enter
+            .append("g")
+            .attr("class", "annotation-marker-group")
+            .style("opacity", 0); // Start transparent
+
+          group.attr("transform", (d) => {
+            const yValue = findYValue(new Date(d.date));
+            return yValue != null
+              ? `translate(${scales.x(new Date(d.date))}, ${scales.y(yValue)})`
+              : `translate(-1000, -1000)`; // Position off-screen if Y not found
+          });
+
+          // Append the circle inside the group
+          group
+            .append("circle")
+            .attr("class", "annotation-marker")
+            .attr("r", CONFIG.annotationMarkerRadius)
+            .style("fill", colors.annotationMarker)
+            .style("stroke", "var(--bg-secondary)") // Use CSS var for background contrast
+            .style("stroke-width", 1.5);
+
+          // Add mouse events to the group for easier hovering
+          group
+            .on("mouseover", EventHandlers.annotationMouseOver)
+            .on("mouseout", EventHandlers.annotationMouseOut);
+
+          // Fade in the group
+          group.transition().duration(dur).style("opacity", 1);
+
+          return group;
+        },
+        (update) =>
+          update
+            .transition()
+            .duration(dur)
+            .style("opacity", 1) // Ensure opacity is 1 on update
+            .attr("transform", (d) => {
+              // Update position smoothly
+              const yValue = findYValue(new Date(d.date));
+              return yValue != null
+                ? `translate(${scales.x(new Date(d.date))}, ${scales.y(yValue)})`
+                : `translate(-1000, -1000)`; // Move off-screen if Y not found
+            }),
+        (exit) =>
+          exit
+            .transition()
+            .duration(dur / 2)
+            .style("opacity", 0)
+            .attr("transform", `translate(-1000, -1000)`) // Move off-screen before removing
+            .remove(),
+      );
+
+      // Future: Handle range annotations (e.g., rects) here if implemented
+    },
+
+    updatePlateauRegions() {
+      const dur = CONFIG.transitionDurationMs;
+      if (!ui.plateauGroup || !scales.x || !UISetup._dimensions?.focus?.valid)
+        return;
+
+      const plateauData = state.seriesVisibility.plateaus ? state.plateaus : [];
+      const xDomain = scales.x.domain();
+      const { height } = UISetup._dimensions.focus;
+
+      // Filter for plateaus intersecting the current view
+      const visiblePlateaus = plateauData.filter(
+        (p) =>
+          p.endDate instanceof Date &&
+          p.startDate instanceof Date && // Ensure valid dates
+          p.endDate >= xDomain[0] &&
+          p.startDate <= xDomain[1],
+      );
+
+      const regions = ui.plateauGroup
+        .selectAll(".plateau-region")
+        .data(visiblePlateaus, (d) => `${d.startDate}-${d.endDate}`); // Unique key
+
+      regions.join(
+        (enter) =>
+          enter
+            .append("rect")
+            .attr("class", "plateau-region")
+            .attr("x", (d) => scales.x(d.startDate))
+            .attr("y", 0)
+            // Calculate width ensuring start/end points are valid on scale
+            .attr("width", (d) => {
+              const xStart = scales.x(d.startDate);
+              const xEnd = scales.x(d.endDate);
+              return !isNaN(xStart) && !isNaN(xEnd)
+                ? Math.max(0, xEnd - xStart)
+                : 0;
+            })
+            .attr("height", height)
+            .style("fill", colors.plateauColor)
+            .style("pointer-events", "none") // Don't block interactions
+            .style("opacity", 0)
+            .call((enter) =>
+              enter.transition().duration(dur).style("opacity", 0.15),
+            ), // Target opacity
+        (update) =>
+          update
+            .transition()
+            .duration(dur)
+            .attr("x", (d) => scales.x(d.startDate))
+            .attr("width", (d) => {
+              const xStart = scales.x(d.startDate);
+              const xEnd = scales.x(d.endDate);
+              return !isNaN(xStart) && !isNaN(xEnd)
+                ? Math.max(0, xEnd - xStart)
+                : 0;
+            })
+            .attr("height", height)
+            .style("opacity", 0.15),
+        (exit) =>
+          exit
+            .transition()
+            .duration(dur / 2)
+            .style("opacity", 0)
+            .remove(),
+      );
+    },
+
+    updateTrendChangeMarkers(processedData) {
+      const dur = CONFIG.transitionDurationMs;
+      if (!ui.trendChangeGroup || !scales.x || !scales.y) return;
+
+      const markerData = state.seriesVisibility.trendChanges
+        ? state.trendChangePoints
+        : [];
+      const xDomain = scales.x.domain();
+
+      // Find Y value (SMA or raw) for a given date in the processed data
+      const findYValue = (targetDate) => {
+        // Ensure targetDate is valid
+        if (!(targetDate instanceof Date) || isNaN(targetDate.getTime()))
+          return null;
+        const targetTime = targetDate.getTime();
+        const pointData = processedData.find(
+          (d) => d.date instanceof Date && d.date.getTime() === targetTime,
+        );
+        const yVal = pointData ? (pointData.sma ?? pointData.value) : null;
+        // Ensure the resulting yValue is valid for the scale
+        return yVal != null && !isNaN(scales.y(yVal)) ? yVal : null;
+      };
+
+      // Filter for markers within the current view
+      const visibleMarkers = markerData.filter(
+        (p) => p.date >= xDomain[0] && p.date <= xDomain[1],
+      );
+
+      // Define the symbol (triangle)
+      const markerSize = 6;
+      const markerPath = d3
+        .symbol()
+        .type(d3.symbolTriangle)
+        .size(markerSize * markerSize * 1.5); // Adjust size as needed
+
+      const markers = ui.trendChangeGroup
+        .selectAll(".trend-change-marker-group") // Select the group
+        .data(visibleMarkers, (d) => d.date); // Key by date
+
+      markers.join(
+        (enter) => {
+          const group = enter
+            .append("g")
+            .attr("class", "trend-change-marker-group")
+            .style("opacity", 0);
+
+          group.attr("transform", (d) => {
+            const yValue = findYValue(d.date);
+            const rotation = d.magnitude > 0 ? 180 : 0; // Point up for accel, down for decel
+            return yValue != null
+              ? `translate(${scales.x(d.date)}, ${scales.y(yValue)}) rotate(${rotation})`
+              : `translate(-1000, -1000)`; // Hide off-screen
+          });
+
+          // Append the path inside the group
+          group
+            .append("path")
+            .attr("class", "trend-change-marker")
+            .attr("d", markerPath)
+            .style("fill", colors.trendChangeColor);
+
+          // Add mouse events to the group
+          group
+            .on("mouseover", EventHandlers.trendChangeMouseOver)
+            .on("mouseout", EventHandlers.trendChangeMouseOut);
+
+          // Fade in
+          group.transition().duration(dur).style("opacity", 1);
+
+          return group;
+        },
+        (update) =>
+          update
+            .transition()
+            .duration(dur)
+            .style("opacity", 1)
+            .attr("transform", (d) => {
+              // Update position and rotation smoothly
+              const yValue = findYValue(d.date);
+              const rotation = d.magnitude > 0 ? 180 : 0;
+              return yValue != null
+                ? `translate(${scales.x(d.date)}, ${scales.y(yValue)}) rotate(${rotation})`
+                : `translate(-1000, -1000)`; // Move off-screen
+            }),
+        (exit) =>
+          exit
+            .transition()
+            .duration(dur / 2)
+            .style("opacity", 0)
+            .attr("transform", `translate(-1000, -1000)`)
+            .remove(),
+      );
+    },
+
+    updateRegressionBrushDisplay() {
+      if (
+        !ui.regressionBrushGroup ||
+        !brushes.regression ||
+        !scales.x ||
+        !UISetup._dimensions?.focus?.valid
+      )
+        return;
+
+      const range = state.interactiveRegressionRange;
+      const { width, height } = UISetup._dimensions.focus;
+
+      if (range.start instanceof Date && range.end instanceof Date) {
+        // Ensure dates are valid before scaling
+        if (isNaN(range.start.getTime()) || isNaN(range.end.getTime())) {
+          ui.regressionBrushGroup
+            .selectAll(".overlay, .selection, .handle")
+            .style("display", "none");
+          if (d3.brushSelection(ui.regressionBrushGroup.node())) {
+            ui.regressionBrushGroup.call(brushes.regression.move, null);
+          }
+          return;
+        }
+
+        // Calculate pixel positions, clamping to the visible range
+        const pixelStart = Math.max(0, Math.min(width, scales.x(range.start)));
+        const pixelEnd = Math.max(0, Math.min(width, scales.x(range.end)));
+
+        // Only show brush if the range meaningfully overlaps the current view and is valid
+        if (
+          pixelEnd > pixelStart &&
+          pixelEnd > 0 &&
+          pixelStart < width &&
+          !isNaN(pixelStart) &&
+          !isNaN(pixelEnd)
+        ) {
+          // Show overlay and handles
+          ui.regressionBrushGroup
+            .selectAll(".overlay, .selection, .handle")
+            .style("display", null);
+
+          // Move brush selection silently if it differs from the current visual state
+          const currentSelection = d3.brushSelection(
+            ui.regressionBrushGroup.node(),
+          );
+          // Use a tolerance for floating point comparison
+          const tolerance = 1; // 1 pixel tolerance
+          if (
+            !currentSelection ||
+            Math.abs(currentSelection[0] - pixelStart) > tolerance ||
+            Math.abs(currentSelection[1] - pixelEnd) > tolerance
+          ) {
+            // Prevent triggering listener during programmatic move
+            ui.regressionBrushGroup.on("end.handler", null);
+            ui.regressionBrushGroup.call(brushes.regression.move, [
+              pixelStart,
+              pixelEnd,
+            ]);
+            ui.regressionBrushGroup.on(
+              "end.handler",
+              EventHandlers.regressionBrushed,
+            );
+          }
+        } else {
+          // Range is outside the current view, hide the brush elements
+          ui.regressionBrushGroup
+            .selectAll(".overlay, .selection, .handle")
+            .style("display", "none");
+          // Clear the visual selection if it exists
+          if (d3.brushSelection(ui.regressionBrushGroup.node())) {
+            ui.regressionBrushGroup.on("end.handler", null);
+            ui.regressionBrushGroup.call(brushes.regression.move, null);
+            ui.regressionBrushGroup.on(
+              "end.handler",
+              EventHandlers.regressionBrushed,
+            );
+          }
+        }
+      } else {
+        // No interactive range is active, hide brush elements
+        ui.regressionBrushGroup
+          .selectAll(".overlay, .selection, .handle")
+          .style("display", "none");
+        // Clear the visual selection if it exists
+        if (d3.brushSelection(ui.regressionBrushGroup.node())) {
+          ui.regressionBrushGroup.on("end.handler", null);
+          ui.regressionBrushGroup.call(brushes.regression.move, null);
+          ui.regressionBrushGroup.on(
+            "end.handler",
+            EventHandlers.regressionBrushed,
+          );
+        }
+      }
+    },
+  };
+
+  // --- Context Chart Updater ---
+  const ContextChartUpdater = {
+    updateAxes() {
+      // Ensure axis generator is available
+      if (!axes.xAxisContext) return;
+      ui.contextXAxisGroup?.call(axes.xAxisContext);
+    },
+
+    updateChart(processedData) {
+      // Ensure elements and scales are ready
+      if (
+        !ui.contextArea ||
+        !ui.contextLine ||
+        !scales.xContext ||
+        !scales.yContext
+      )
+        return;
+
+      // Generator using SMA if available, falling back to raw value
+      const contextValueAccessor = (d) => d.sma ?? d.value;
+
+      const contextAreaGen = d3
         .area()
         .curve(d3.curveMonotoneX)
         .x((d) => scales.xContext(d.date))
-        .y0((d) => scales.yContext(d.lowerBound ?? d.sma)) // Fallback to sma if bounds missing
-        .y1((d) => scales.yContext(d.upperBound ?? d.sma))
-        .defined((d) => d.sma !== null);
+        .y0(scales.yContext.range()[0]) // Bottom of chart
+        .y1((d) => scales.yContext(contextValueAccessor(d)))
+        .defined(
+          (d) =>
+            contextValueAccessor(d) != null &&
+            !isNaN(scales.xContext(d.date)) &&
+            !isNaN(scales.yContext(contextValueAccessor(d))),
+        ); // Add NaN checks
 
-      const contextLineGenerator = d3
+      const contextLineGen = d3
         .line()
         .curve(d3.curveMonotoneX)
         .x((d) => scales.xContext(d.date))
-        .y((d) => scales.yContext(d.sma))
-        .defined((d) => d.sma !== null);
+        .y((d) => scales.yContext(contextValueAccessor(d)))
+        .defined(
+          (d) =>
+            contextValueAccessor(d) != null &&
+            !isNaN(scales.xContext(d.date)) &&
+            !isNaN(scales.yContext(contextValueAccessor(d))),
+        );
 
-      selections.contextArea
-        ?.datum(allValidSmaData) // Use optional chaining
-        .attr("d", contextAreaGenerator);
-      selections.contextLine
-        ?.datum(allValidSmaData)
-        .attr("d", contextLineGenerator);
+      // Apply generators (no transition needed for context usually)
+      ui.contextArea?.datum(processedData).attr("d", contextAreaGen);
+      ui.contextLine?.datum(processedData).attr("d", contextLineGen);
     },
+  };
 
-    manualTrendlines() {
+  // --- Balance Chart Updater ---
+  const BalanceChartUpdater = {
+    updateAxes() {
+      // Check if dimensions/axes are valid
       if (
-        !selections.trendLine1 ||
-        !selections.trendLine2 ||
-        !scales.x ||
-        !scales.y
+        !UISetup._dimensions?.balance?.valid ||
+        !axes.xBalanceAxis ||
+        !axes.yBalanceAxis
       )
         return;
-      const config = _helpers.getTrendlineConfig();
+
       const dur = CONFIG.transitionDurationMs;
-      const showTrend1 = state.seriesVisibility.trend1;
-      const showTrend2 = state.seriesVisibility.trend2;
+      // Update Y Axis (domain changes)
+      ui.balanceYAxisGroup?.transition().duration(dur).call(axes.yBalanceAxis);
+      ui.balanceYAxisGroup?.select(".domain").remove(); // Remove Y axis line
 
-      if (!config.isValid || (!showTrend1 && !showTrend2)) {
-        selections.trendLine1?.style("display", "none").attr("d", null);
-        selections.trendLine2?.style("display", "none").attr("d", null);
-        return;
-      }
-
-      const currentXDomain = scales.x.domain();
-      if (
-        !currentXDomain ||
-        currentXDomain.length !== 2 ||
-        !(currentXDomain[0] instanceof Date) ||
-        !(currentXDomain[1] instanceof Date) ||
-        isNaN(currentXDomain[0].getTime()) ||
-        isNaN(currentXDomain[1].getTime())
-      ) {
-        selections.trendLine1?.style("display", "none").attr("d", null);
-        selections.trendLine2?.style("display", "none").attr("d", null);
-        return;
-      }
-
-      // Calculate trend points slightly beyond the view for smoother panning/zooming
-      const buffer = CONFIG.domainBufferDays * 86400000; // Convert days to ms
-      const viewStartDate = new Date(currentXDomain[0].getTime() - buffer);
-      const viewEndDate = new Date(currentXDomain[1].getTime() + buffer);
-
-      const trendPoints = [viewStartDate, viewEndDate]; // Start and end points define the line
-
-      const trendData1 = showTrend1
-        ? trendPoints
-            .map((date) => ({
-              date: date,
-              trendWeight: _data.calculateTrendWeight(
-                config.startDate,
-                config.initialWeight,
-                config.weeklyIncrease1,
-                date,
-              ),
-            }))
-            .filter((d) => d.trendWeight !== null && !isNaN(d.trendWeight))
-        : [];
-
-      const trendData2 = showTrend2
-        ? trendPoints
-            .map((date) => ({
-              date: date,
-              trendWeight: _data.calculateTrendWeight(
-                config.startDate,
-                config.initialWeight,
-                config.weeklyIncrease2,
-                date,
-              ),
-            }))
-            .filter((d) => d.trendWeight !== null && !isNaN(d.trendWeight))
-        : [];
-
-      const trendLineGenerator = d3
-        .line()
-        .x((d) => scales.x(d.date))
-        .y((d) => scales.y(d.trendWeight))
-        .defined((d) => d.trendWeight !== null && !isNaN(d.trendWeight));
-
-      selections.trendLine1
-        ?.datum(trendData1.length >= 2 ? trendData1 : [])
-        .transition()
-        .duration(dur)
-        .style("display", showTrend1 && trendData1.length >= 2 ? null : "none")
-        .attr("d", trendLineGenerator);
-
-      selections.trendLine2
-        ?.datum(trendData2.length >= 2 ? trendData2 : [])
-        .transition()
-        .duration(dur)
-        .style("display", showTrend2 && trendData2.length >= 2 ? null : "none")
-        .attr("d", trendLineGenerator);
-    },
-
-    goalLine() {
-      if (!selections.goalLine || !scales.x || !scales.y) return;
-      const dur = CONFIG.transitionDurationMs;
-      const showGoal = state.seriesVisibility.goal;
-
-      if (!state.goal.weight || !showGoal) {
-        selections.goalLine.style("display", "none").attr("d", null);
-        return;
-      }
-
-      // Find the latest data point (SMA or raw) to start the goal line from
-      const lastDataPoint = [...state.processedData]
-        .reverse()
-        .find((d) => d.value !== null || d.sma !== null);
-      if (!lastDataPoint) {
-        selections.goalLine.style("display", "none").attr("d", null);
-        return;
-      }
-
-      const startWeight = lastDataPoint.value ?? lastDataPoint.sma;
-      const startDate = lastDataPoint.date;
-      let goalDate = state.goal.date;
-
-      // If no goal date, project it forward based on current view or a fixed duration
-      if (!goalDate || isNaN(goalDate.getTime())) {
-        const currentXDomain = scales.x.domain();
-        const fallbackEndDate = new Date(
-          currentXDomain[1].getTime() + 60 * 86400000,
-        ); // Project 60 days out
-        goalDate = fallbackEndDate; // Use a calculated end date
-      }
-
-      // Ensure goal date is after start date
-      if (goalDate < startDate) {
-        selections.goalLine.style("display", "none").attr("d", null);
-        return;
-      }
-
-      const goalLineData = [
-        { date: startDate, value: startWeight },
-        { date: goalDate, value: state.goal.weight },
-      ];
-
-      const goalLineGenerator = d3
-        .line()
-        .x((d) => scales.x(d.date))
-        .y((d) => scales.y(d.value))
-        .defined((d) => d.value !== null && !isNaN(d.value));
-
-      selections.goalLine
-        .datum(goalLineData)
-        .transition()
-        .duration(dur)
-        .style("display", null)
-        .attr("d", goalLineGenerator);
-    },
-
-    expectedWeightLine() {
-      if (!selections.expectedLine || !scales.x || !scales.y) return;
-      const dur = CONFIG.transitionDurationMs;
-      const showExpected = state.seriesVisibility.expected;
-
-      if (!showExpected || state.processedData.length === 0) {
-        selections.expectedLine.style("display", "none").attr("d", null);
-        return;
-      }
-
-      // Find the absolute first valid anchor point in all data
-      let startingWeight = null,
-        startingWeightIndex = -1,
-        startingDate = null;
-      for (let i = 0; i < state.processedData.length; i++) {
-        const d = state.processedData[i];
-        // Simpler start condition: First point with a weight value (SMA or raw)
-        if (d.value !== null || d.sma !== null) {
-          startingWeight = d.value ?? d.sma;
-          startingWeightIndex = i;
-          startingDate = d.date;
-          break;
-        }
-      }
-
-      if (startingWeight === null || startingWeightIndex === -1) {
-        console.warn(
-          "Could not find suitable starting point for expected weight line.",
-        );
-        selections.expectedLine.style("display", "none").attr("d", null);
-        return;
-      }
-
-      let cumulativeExpectedChange = 0;
-      const expectedWeightData = [];
-      expectedWeightData.push({
-        date: startingDate,
-        expectedValue: startingWeight,
-      }); // Anchor point
-
-      for (
-        let i = startingWeightIndex + 1;
-        i < state.processedData.length;
-        i++
-      ) {
-        const currentPoint = state.processedData[i];
-        // Only add points if there was an expected change calculated for them AND it's valid
-        if (
-          currentPoint.expectedWeightChange !== null &&
-          !isNaN(currentPoint.expectedWeightChange)
-        ) {
-          cumulativeExpectedChange += currentPoint.expectedWeightChange;
-          expectedWeightData.push({
-            date: currentPoint.date,
-            expectedValue: startingWeight + cumulativeExpectedChange,
-          });
-        } else {
-          // If change is null/NaN, continue the line flat from the last valid point.
-          // Add a point with the same cumulative change as the previous valid one.
-          if (expectedWeightData.length > 0) {
-            const lastValidExpectedValue =
-              expectedWeightData[expectedWeightData.length - 1].expectedValue;
-            expectedWeightData.push({
-              date: currentPoint.date,
-              expectedValue: lastValidExpectedValue, // Use the last known good value
-            });
-          }
-        }
-      }
-
-      const expectedLineGenerator = d3
-        .line()
-        .x((d) => scales.x(d.date))
-        .y((d) => scales.y(d.expectedValue))
-        .defined((d) => d.expectedValue !== null && !isNaN(d.expectedValue));
-
-      selections.expectedLine
-        .datum(expectedWeightData)
-        .transition()
-        .duration(dur)
-        .style(
-          "display",
-          showExpected && expectedWeightData.length > 1 ? null : "none",
-        )
-        .attr("d", expectedLineGenerator);
-    },
-
-    balanceChart(visibleData) {
-      const { balanceWidth, balanceHeight } = state.dimensions;
-      const dur = CONFIG.transitionDurationMs;
-      if (
-        !scales.xBalance ||
-        !scales.yBalance ||
-        !axes.yBalanceAxis ||
-        !selections.balanceChartArea ||
-        !selections.balanceZeroLine ||
-        !selections.balanceYAxisGroup ||
-        !visibleData
-      ) {
-        if (selections.balanceChartArea)
-          selections.balanceChartArea.selectAll(".balance-bar").remove();
-        return;
-      }
-
-      const balanceData = visibleData.filter(
-        (d) => d.netBalance !== null && !isNaN(d.netBalance),
-      );
-
-      // Update Y domain based on visible data
-      if (balanceData.length > 0) {
-        const yExtent = d3.extent(balanceData, (d) => d.netBalance);
-        const minVal = yExtent[0] ?? 0;
-        const maxVal = yExtent[1] ?? 0;
-        const range = Math.max(Math.abs(minVal), Math.abs(maxVal)); // Use max absolute value for symmetric padding
-        const padding = Math.max(100, range * 0.15);
-        const yMin = Math.min(0, minVal) - padding;
-        const yMax = Math.max(0, maxVal) + padding;
-        scales.yBalance
-          .domain([yMin, yMax])
-          .nice(Math.max(Math.floor(balanceHeight / 25), 3));
-      } else {
-        scales.yBalance.domain([-500, 500]).nice(); // Default if no data
-      }
-
-      // Update Y axis
-      selections.balanceYAxisGroup
+      // Update X Axis (domain changes, but labels are hidden)
+      ui.balanceXAxisGroup
         ?.transition()
         .duration(dur)
-        .call(axes.yBalanceAxis);
-      selections.balanceYAxisGroup?.select(".domain").remove();
+        .call((g) => {
+          axes.xBalanceAxis(g);
+          g.selectAll("text").remove(); // Ensure labels are removed
+        });
+    },
 
-      // Update zero line
-      const yZero = scales.yBalance(0);
-      if (!isNaN(yZero) && isFinite(yZero)) {
-        selections.balanceZeroLine
-          .transition()
-          .duration(dur)
-          .attr("x1", 0)
-          .attr("x2", balanceWidth)
-          .attr("y1", yZero)
-          .attr("y2", yZero)
-          .style("opacity", 0.7);
-      } else {
-        selections.balanceZeroLine.style("opacity", 0);
-      }
-
-      // Calculate dynamic bar width
-      let barWidth = 2;
-      const xDomain = scales.xBalance.domain();
+    updateChart(visibleData) {
+      const dur = CONFIG.transitionDurationMs;
+      // Ensure elements and scales are ready
       if (
-        balanceData.length > 1 &&
-        xDomain.length === 2 &&
-        xDomain[1] > xDomain[0]
-      ) {
-        const totalVisibleDays =
-          (xDomain[1].getTime() - xDomain[0].getTime()) / 86400000;
-        if (totalVisibleDays > 0) {
-          const widthPerDay = balanceWidth / totalVisibleDays;
-          barWidth = Math.max(1, Math.min(15, widthPerDay * 0.7)); // Clamp width
-        }
+        !ui.balanceChartArea ||
+        !scales.xBalance ||
+        !scales.yBalance ||
+        !UISetup._dimensions?.balance?.valid
+      )
+        return;
+
+      const { width } = UISetup._dimensions.balance;
+      const yZero = scales.yBalance(0); // Cache zero position
+
+      // Ensure yZero is a valid number
+      if (isNaN(yZero)) {
+        console.error("BalanceChartUpdater: Invalid Y=0 position.");
+        return;
       }
 
-      // Update bars
-      const bars = selections.balanceChartArea
+      // Update Zero Line position based on current Y scale
+      ui.balanceZeroLine
+        ?.transition()
+        .duration(dur)
+        .attr("y1", yZero)
+        .attr("y2", yZero);
+
+      // --- Update Bars ---
+      // Filter for valid data points with valid scale outputs
+      const validBarData = visibleData.filter(
+        (d) =>
+          d.netBalance != null &&
+          !isNaN(d.netBalance) &&
+          d.date instanceof Date &&
+          !isNaN(d.date) &&
+          !isNaN(scales.xBalance(d.date)) &&
+          !isNaN(scales.yBalance(d.netBalance)),
+      );
+
+      // Calculate bar width dynamically, ensuring a minimum width
+      const barWidth = Math.max(
+        1,
+        width / Math.max(1, validBarData.length) - 1,
+      ); // Avoid division by zero
+
+      const bars = ui.balanceChartArea
         .selectAll(".balance-bar")
-        .data(balanceData, (d) => d.date);
+        .data(validBarData, (d) => d.dateString || d.date); // Key by date
 
       bars.join(
         (enter) =>
           enter
             .append("rect")
-            .attr(
-              "class",
-              (d) => `balance-bar ${d.netBalance >= 0 ? "surplus" : "deficit"}`,
-            )
+            .attr("class", "balance-bar") // Apply base class
+            .classed("deficit", (d) => d.netBalance < 0)
+            .classed("surplus", (d) => d.netBalance >= 0)
             .attr("x", (d) => scales.xBalance(d.date) - barWidth / 2)
+            .attr("y", yZero) // Start at zero line
             .attr("width", barWidth)
-            .attr("y", yZero)
-            .attr("height", 0)
-            .style("opacity", 0)
-            .call((enter) =>
-              enter
+            .attr("height", 0) // Start with zero height
+            .style("fill", (d) =>
+              d.netBalance >= 0 ? colors.surplus : colors.deficit,
+            ) // Use defined colors
+            .call(
+              (
+                enter, // Animate entrance
+              ) =>
+                enter
+                  .transition()
+                  .duration(dur)
+                  .attr(
+                    "y",
+                    (
+                      d, // Animate Y position
+                    ) =>
+                      d.netBalance >= 0 ? scales.yBalance(d.netBalance) : yZero,
+                  )
+                  .attr(
+                    "height",
+                    (
+                      d, // Animate height
+                    ) => Math.abs(scales.yBalance(d.netBalance) - yZero),
+                  ),
+            ),
+        (update) =>
+          update
+            .classed("deficit", (d) => d.netBalance < 0) // Update classes
+            .classed("surplus", (d) => d.netBalance >= 0)
+            .style("fill", (d) =>
+              d.netBalance >= 0 ? colors.surplus : colors.deficit,
+            ) // Update color
+            .call(
+              (
+                update, // Animate updates
+              ) =>
+                update
+                  .transition()
+                  .duration(dur)
+                  .attr("x", (d) => scales.xBalance(d.date) - barWidth / 2)
+                  .attr("width", barWidth)
+                  .attr("y", (d) =>
+                    d.netBalance >= 0 ? scales.yBalance(d.netBalance) : yZero,
+                  )
+                  .attr("height", (d) =>
+                    Math.abs(scales.yBalance(d.netBalance) - yZero),
+                  ),
+            ),
+        (exit) =>
+          exit.call(
+            (
+              exit, // Animate exit
+            ) =>
+              exit
                 .transition()
-                .duration(dur)
-                .attr("y", (d) =>
-                  d.netBalance >= 0 ? scales.yBalance(d.netBalance) : yZero,
-                )
-                .attr("height", (d) =>
-                  Math.abs(scales.yBalance(d.netBalance) - yZero),
-                )
-                .style("opacity", 0.8),
-            ),
-        (update) =>
-          update.call((update) =>
-            update
-              .transition()
-              .duration(dur)
-              .attr(
-                "class",
-                (d) =>
-                  `balance-bar ${d.netBalance >= 0 ? "surplus" : "deficit"}`,
-              )
-              .attr("x", (d) => scales.xBalance(d.date) - barWidth / 2)
-              .attr("width", barWidth)
-              .attr("y", (d) =>
-                d.netBalance >= 0 ? scales.yBalance(d.netBalance) : yZero,
-              )
-              .attr("height", (d) =>
-                Math.abs(scales.yBalance(d.netBalance) - yZero),
-              )
-              .style("opacity", 0.8),
+                .duration(dur / 2) // Faster exit
+                .attr("y", yZero)
+                .attr("height", 0)
+                .remove(),
           ),
-        (exit) =>
-          exit
-            .transition()
-            .duration(dur / 2)
-            .attr("height", 0)
-            .attr("y", yZero)
-            .style("opacity", 0)
-            .remove(),
       );
     },
+  };
 
-    // --- Feature #1: Update Annotations ---
-    annotations(visibleData) {
-      // Pass visible data to potentially link annotations
-      if (!selections.annotationsGroup || !scales.x || !scales.y) return;
-      const dur = CONFIG.transitionDurationMs;
-      const showAnnotations = state.seriesVisibility.annotations;
-
-      selections.annotationsGroup.style(
-        "display",
-        showAnnotations ? null : "none",
-      );
-      if (!showAnnotations) return;
-
-      const currentXDomain = scales.x.domain();
-      const visibleAnnotations = state.annotations.filter((ann) => {
-        const annDate = new Date(ann.date); // Use single date for now
-        return annDate >= currentXDomain[0] && annDate <= currentXDomain[1];
-      });
-
-      const markers = selections.annotationsGroup
-        .selectAll(".annotation-marker")
-        .data(visibleAnnotations, (d) => d.id); // Use annotation id as key
-
-      markers.join(
-        (enter) => {
-          const group = enter.append("g").attr("class", "annotation-marker");
-          // Simple circle marker for now
-          group
-            .append("circle")
-            .attr("r", CONFIG.annotationMarkerRadius)
-            .attr("cx", (d) => scales.x(new Date(d.date)))
-            .attr("cy", (d) => {
-              // Position near the weight line on that date
-              const dataPoint = state.processedData.find(
-                (p) => p.date.getTime() === new Date(d.date).getTime(),
-              );
-              // Find the Y value: SMA preferred, then raw value, fallback to top 10% of chart
-              const yValue =
-                dataPoint?.sma ??
-                dataPoint?.value ??
-                scales.y.domain()[1] -
-                  (scales.y.domain()[1] - scales.y.domain()[0]) * 0.1;
-              return scales.y(yValue);
-            })
-            .style("fill", colors.annotationMarker)
-            .style("stroke", "white")
-            .style("stroke-width", 1)
-            .style("opacity", 0)
-            .transition()
-            .duration(dur)
-            .style("opacity", 0.8);
-
-          // Add simple line to axis? Or just tooltip
-          group
-            .on("mouseover", _handlers.annotationMouseOver)
-            .on("mouseout", _handlers.annotationMouseOut);
-
-          return group;
-        },
-        (update) => {
-          update
-            .select("circle")
-            .transition()
-            .duration(dur)
-            .attr("cx", (d) => scales.x(new Date(d.date)))
-            .attr("cy", (d) => {
-              const dataPoint = state.processedData.find(
-                (p) => p.date.getTime() === new Date(d.date).getTime(),
-              );
-              const yValue =
-                dataPoint?.sma ??
-                dataPoint?.value ??
-                scales.y.domain()[1] -
-                  (scales.y.domain()[1] - scales.y.domain()[0]) * 0.1;
-              return scales.y(yValue);
-            })
-            .style("opacity", 0.8); // Ensure opacity
-          return update;
-        },
-        (exit) =>
-          exit
-            .transition()
-            .duration(dur / 2)
-            .style("opacity", 0)
-            .remove(),
-      );
-
-      // Placeholder for Range annotations (Rects) - more complex
-    },
-
-    // --- Feature #6: Update Plateau Regions ---
-    plateauRegions() {
-      if (!selections.plateauGroup || !scales.x || !scales.y) return;
-      const dur = CONFIG.transitionDurationMs;
-      const showPlateaus = state.seriesVisibility.plateaus;
-
-      selections.plateauGroup.style("display", showPlateaus ? null : "none");
-      if (!showPlateaus) return;
-
-      const currentXDomain = scales.x.domain();
-      // Filter plateaus detected on the *full* dataset, to show only those overlapping the current view
-      const visiblePlateaus = state.plateaus.filter(
-        (p) =>
-          p.endDate >= currentXDomain[0] && p.startDate <= currentXDomain[1],
-      );
-
-      const plateauRects = selections.plateauGroup
-        .selectAll(".plateau-region")
-        .data(visiblePlateaus, (d) => d.startDate.getTime()); // Use start date as key
-
-      plateauRects.join(
-        (enter) =>
-          enter
-            .append("rect")
-            .attr("class", "plateau-region")
-            .attr("x", (p) => scales.x(p.startDate))
-            .attr("y", 0) // Top of chart area
-            .attr("width", (p) =>
-              Math.max(0, scales.x(p.endDate) - scales.x(p.startDate)),
-            )
-            .attr("height", state.dimensions.height)
-            .style("fill", colors.plateauColor)
-            .style("opacity", 0)
-            .call((enter) =>
-              enter.transition().duration(dur).style("opacity", 0.6),
-            ),
-        (update) =>
-          update.call((update) =>
-            update
-              .transition()
-              .duration(dur)
-              .attr("x", (p) => scales.x(p.startDate))
-              .attr("width", (p) =>
-                Math.max(0, scales.x(p.endDate) - scales.x(p.startDate)),
-              )
-              .style("opacity", 0.6),
-          ),
-        (exit) =>
-          exit
-            .transition()
-            .duration(dur / 2)
-            .style("opacity", 0)
-            .remove(),
-      );
-    },
-
-    // --- Feature #7: Update Trend Change Markers ---
-    trendChangeMarkers() {
-      if (!selections.trendChangeGroup || !scales.x || !scales.y) return;
-      const dur = CONFIG.transitionDurationMs;
-      const showChanges = state.seriesVisibility.trendChanges;
-
-      selections.trendChangeGroup.style("display", showChanges ? null : "none");
-      if (!showChanges) return;
-
-      const currentXDomain = scales.x.domain();
-      // Filter trend changes detected on the *full* dataset
-      const visibleChanges = state.trendChangePoints.filter(
-        (p) => p.date >= currentXDomain[0] && p.date <= currentXDomain[1],
-      );
-
-      const changeMarkers = selections.trendChangeGroup
-        .selectAll(".trend-change-marker")
-        .data(visibleChanges, (d) => d.date.getTime());
-
-      changeMarkers.join(
-        (enter) => {
-          const group = enter.append("g").attr("class", "trend-change-marker");
-          // Simple triangle marker
-          group
-            .append("path")
-            .attr("d", d3.symbol().type(d3.symbolTriangle).size(36)) // Small triangle
-            .attr("transform", (d) => {
-              const dataPoint = state.processedData.find(
-                (p) => p.date.getTime() === d.date.getTime(),
-              );
-              // Position slightly above/below the SMA/value line
-              const yPosBase = scales.y(
-                dataPoint?.sma ?? dataPoint?.value ?? scales.y.domain()[0],
-              ); // Position near line, fallback top
-              const yOffset = d.magnitude > 0 ? -8 : 8; // Place above for accel, below for decel
-              const yPos = yPosBase + yOffset;
-              return `translate(${scales.x(d.date)}, ${yPos}) rotate(${d.magnitude > 0 ? 0 : 180})`; // Point up for increase, down for decrease
-            })
-            .style("fill", colors.trendChangeColor)
-            .style("opacity", 0)
-            .transition()
-            .duration(dur)
-            .style("opacity", 0.8);
-
-          group
-            .on("mouseover", _handlers.trendChangeMouseOver)
-            .on("mouseout", _handlers.trendChangeMouseOut);
-          return group;
-        },
-        (update) => {
-          update
-            .select("path")
-            .transition()
-            .duration(dur)
-            .attr("transform", (d) => {
-              const dataPoint = state.processedData.find(
-                (p) => p.date.getTime() === d.date.getTime(),
-              );
-              const yPosBase = scales.y(
-                dataPoint?.sma ?? dataPoint?.value ?? scales.y.domain()[0],
-              );
-              const yOffset = d.magnitude > 0 ? -8 : 8;
-              const yPos = yPosBase + yOffset;
-              return `translate(${scales.x(d.date)}, ${yPos}) rotate(${d.magnitude > 0 ? 0 : 180})`;
-            })
-            .style("opacity", 0.8);
-          return update;
-        },
-        (exit) =>
-          exit
-            .transition()
-            .duration(dur / 2)
-            .style("opacity", 0)
-            .remove(),
-      );
-    },
-
-    // --- Feature #5: Update Rate of Change Chart ---
-    rateOfChangeChart(visibleData) {
+  // --- Rate of Change Chart Updater ---
+  const RateChartUpdater = {
+    updateAxes() {
       if (
-        !selections.rateLine ||
-        !scales.xRate ||
-        !scales.yRate ||
-        !axes.yRateAxis ||
-        !selections.rateChartArea ||
-        !selections.rateZeroLine ||
-        !selections.rateYAxisGroup ||
-        !visibleData
-      ) {
-        if (selections.rateChartArea)
-          selections.rateChartArea.selectAll(".rate-line").attr("d", null); // Clear line
+        !UISetup._dimensions?.rate?.valid ||
+        !axes.xRateAxis ||
+        !axes.yRateAxis
+      )
         return;
-      }
       const dur = CONFIG.transitionDurationMs;
-      const rateData = visibleData.filter(
-        (d) => d.smoothedWeeklyRate !== null && !isNaN(d.smoothedWeeklyRate),
-      );
-
-      // Update Y domain based on visible smoothed rates
-      if (rateData.length > 0) {
-        const yRateExtent = d3.extent(rateData, (d) => d.smoothedWeeklyRate);
-        const rateRange = Math.max(
-          Math.abs(yRateExtent[0]),
-          Math.abs(yRateExtent[1]),
-        ); // Use max absolute value
-        const ratePadding = Math.max(0.05, rateRange * 0.15);
-        // Ensure domain includes 0
-        const yMin = Math.min(0, yRateExtent[0]) - ratePadding;
-        const yMax = Math.max(0, yRateExtent[1]) + ratePadding;
-        scales.yRate
-          .domain([yMin, yMax])
-          .nice(Math.max(Math.floor(state.dimensions.rateHeight / 30), 3));
-      } else {
-        scales.yRate.domain([-0.5, 0.5]).nice(); // Default if no data
-      }
-
-      // Update Y axis
-      selections.rateYAxisGroup
+      ui.rateYAxisGroup?.transition().duration(dur).call(axes.yRateAxis);
+      ui.rateYAxisGroup?.select(".domain").remove();
+      ui.rateXAxisGroup
         ?.transition()
         .duration(dur)
-        .call(axes.yRateAxis);
-
-      // Update zero line
-      const yRateZero = scales.yRate(0);
-      if (!isNaN(yRateZero) && isFinite(yRateZero)) {
-        selections.rateZeroLine
-          .transition()
-          .duration(dur)
-          .attr("x1", 0)
-          .attr("x2", state.dimensions.rateWidth)
-          .attr("y1", yRateZero)
-          .attr("y2", yRateZero)
-          .style("opacity", 0.7);
-      } else {
-        selections.rateZeroLine.style("opacity", 0);
-      }
-
-      // Update line path
-      const rateLineGenerator = d3
-        .line()
-        .x((d) => scales.xRate(d.date)) // Use xRate scale
-        .y((d) => scales.yRate(d.smoothedWeeklyRate)) // Use yRate scale
-        .curve(d3.curveMonotoneX)
-        .defined(
-          (d) => d.smoothedWeeklyRate !== null && !isNaN(d.smoothedWeeklyRate),
-        );
-
-      selections.rateLine
-        ?.datum(rateData)
-        .transition()
-        .duration(dur)
-        .attr("d", rateLineGenerator);
+        .call((g) => {
+          axes.xRateAxis(g);
+          g.selectAll("text").remove();
+        });
     },
 
-    // --- Feature #8: Update TDEE Difference Chart ---
-    tdeeDifferenceChart(visibleData) {
-      if (
-        !selections.tdeeDiffLine ||
-        !scales.xTdeeDiff ||
-        !scales.yTdeeDiff ||
-        !axes.yTdeeDiffAxis ||
-        !selections.tdeeDiffChartArea ||
-        !selections.tdeeDiffZeroLine ||
-        !selections.tdeeDiffYAxisGroup ||
-        !visibleData
-      ) {
-        if (selections.tdeeDiffChartArea)
-          selections.tdeeDiffChartArea
-            .selectAll(".tdee-diff-line")
-            .attr("d", null);
+    updateChart(visibleData) {
+      const dur = CONFIG.transitionDurationMs;
+      if (!ui.rateChartArea || !scales.xRate || !scales.yRate) return;
+
+      const yZero = scales.yRate(0);
+      if (isNaN(yZero)) {
+        console.error("RateChartUpdater: Invalid Y=0 position.");
         return;
       }
+
+      // Update Zero Line
+      ui.rateZeroLine
+        ?.transition()
+        .duration(dur)
+        .attr("y1", yZero)
+        .attr("y2", yZero);
+
+      // Update Rate Line
+      const rateLineGen = d3
+        .line()
+        .x((d) => scales.xRate(d.date))
+        .y((d) => scales.yRate(d.smoothedWeeklyRate))
+        .defined(
+          (d) =>
+            d.smoothedWeeklyRate != null &&
+            !isNaN(scales.xRate(d.date)) &&
+            !isNaN(scales.yRate(d.smoothedWeeklyRate)),
+        ); // Add NaN check
+
+      ui.rateLine
+        ?.datum(visibleData) // Use only data visible in the main chart
+        .transition()
+        .duration(dur)
+        .attr("d", rateLineGen);
+    },
+  };
+
+  // --- TDEE Difference Chart Updater ---
+  const TDEEDiffChartUpdater = {
+    updateAxes() {
+      if (
+        !UISetup._dimensions?.tdeeDiff?.valid ||
+        !axes.xTdeeDiffAxis ||
+        !axes.yTdeeDiffAxis
+      )
+        return;
       const dur = CONFIG.transitionDurationMs;
-      const tdeeDiffData = visibleData.filter(
-        (d) => d.avgTdeeDifference !== null && !isNaN(d.avgTdeeDifference),
-      );
-
-      // Update Y domain based on visible smoothed differences
-      if (tdeeDiffData.length > 0) {
-        const yDiffExtent = d3.extent(tdeeDiffData, (d) => d.avgTdeeDifference);
-        const diffRange = Math.max(
-          Math.abs(yDiffExtent[0]),
-          Math.abs(yDiffExtent[1]),
-        ); // Max absolute value
-        const diffPadding = Math.max(100, diffRange * 0.15); // Min 100kcal padding
-        // Ensure domain includes 0
-        const yMin = Math.min(0, yDiffExtent[0]) - diffPadding;
-        const yMax = Math.max(0, yDiffExtent[1]) + diffPadding;
-        scales.yTdeeDiff
-          .domain([yMin, yMax])
-          .nice(Math.max(Math.floor(state.dimensions.tdeeDiffHeight / 30), 3));
-      } else {
-        scales.yTdeeDiff.domain([-500, 500]).nice(); // Default if no data
-      }
-
-      // Update Y axis
-      selections.tdeeDiffYAxisGroup
+      ui.tdeeDiffYAxisGroup
         ?.transition()
         .duration(dur)
         .call(axes.yTdeeDiffAxis);
+      ui.tdeeDiffYAxisGroup?.select(".domain").remove();
+      ui.tdeeDiffXAxisGroup
+        ?.transition()
+        .duration(dur)
+        .call((g) => {
+          axes.xTdeeDiffAxis(g);
+          g.selectAll("text").remove();
+        });
+    },
 
-      // Update zero line
-      const yTdeeDiffZero = scales.yTdeeDiff(0);
-      if (!isNaN(yTdeeDiffZero) && isFinite(yTdeeDiffZero)) {
-        selections.tdeeDiffZeroLine
-          .transition()
-          .duration(dur)
-          .attr("x1", 0)
-          .attr("x2", state.dimensions.tdeeDiffWidth)
-          .attr("y1", yTdeeDiffZero)
-          .attr("y2", yTdeeDiffZero)
-          .style("opacity", 0.7);
-      } else {
-        selections.tdeeDiffZeroLine.style("opacity", 0);
+    updateChart(visibleData) {
+      const dur = CONFIG.transitionDurationMs;
+      if (!ui.tdeeDiffChartArea || !scales.xTdeeDiff || !scales.yTdeeDiff)
+        return;
+
+      const yZero = scales.yTdeeDiff(0);
+      if (isNaN(yZero)) {
+        console.error("TDEEDiffChartUpdater: Invalid Y=0 position.");
+        return;
       }
 
-      // Update line path
-      const tdeeDiffLineGenerator = d3
-        .line()
-        .x((d) => scales.xTdeeDiff(d.date)) // Use xTdeeDiff scale
-        .y((d) => scales.yTdeeDiff(d.avgTdeeDifference)) // Use yTdeeDiff scale
-        .curve(d3.curveMonotoneX)
-        .defined(
-          (d) => d.avgTdeeDifference !== null && !isNaN(d.avgTdeeDifference),
-        );
+      // Update Zero Line
+      ui.tdeeDiffZeroLine
+        ?.transition()
+        .duration(dur)
+        .attr("y1", yZero)
+        .attr("y2", yZero);
 
-      selections.tdeeDiffLine
-        ?.datum(tdeeDiffData)
+      // Update TDEE Difference Line
+      const tdeeDiffLineGen = d3
+        .line()
+        .x((d) => scales.xTdeeDiff(d.date))
+        .y((d) => scales.yTdeeDiff(d.avgTdeeDifference)) // Plot smoothed difference
+        .defined(
+          (d) =>
+            d.avgTdeeDifference != null &&
+            !isNaN(scales.xTdeeDiff(d.date)) &&
+            !isNaN(scales.yTdeeDiff(d.avgTdeeDifference)),
+        ); // Add NaN check
+
+      ui.tdeeDiffLine
+        ?.datum(visibleData) // Use only data visible in the main chart
         .transition()
         .duration(dur)
-        .attr("d", tdeeDiffLineGenerator);
+        .attr("d", tdeeDiffLineGen);
+    },
+  };
+
+  // --- Correlation Scatter Plot Updater ---
+  const ScatterPlotUpdater = {
+    updateAxes() {
+      if (
+        !UISetup._dimensions?.scatter?.valid ||
+        !axes.xScatterAxis ||
+        !axes.yScatterAxis
+      )
+        return;
+      const dur = CONFIG.transitionDurationMs;
+      ui.correlationScatterXAxisGroup
+        ?.transition()
+        .duration(dur)
+        .call(axes.xScatterAxis);
+      ui.correlationScatterYAxisGroup
+        ?.transition()
+        .duration(dur)
+        .call(axes.yScatterAxis);
     },
 
-    // --- Feature #2: Update Weekly Summary ---
-    weeklySummary(weeklyData) {
-      if (!selections.weeklySummaryContainer) return;
+    updateChart(scatterData) {
+      const dur = CONFIG.transitionDurationMs;
+      if (!ui.scatterDotsGroup || !scales.xScatter || !scales.yScatter) return;
 
-      let table = selections.weeklySummaryContainer.select("table");
-      if (table.empty()) {
-        // Create table if it doesn't exist
-        selections.weeklySummaryContainer.html(`
-                <h4>Weekly Summary <small>(Analysis Range)</small></h4>
-                <div class="table-wrapper">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Week Of</th>
-                                <th>Avg Weight (kg)</th>
-                                <th>Avg Intake (kcal)</th>
-                                <th>Avg Expend (kcal)</th>
-                                <th>Avg Net (kcal)</th>
-                                <th>SMA Δ (kg/wk)</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-                <p class="empty-msg" style="display: none;">No weekly summary data for this range.</p>
-            `);
-        table = selections.weeklySummaryContainer.select("table"); // Reselect after creation
-      }
+      // Ensure scatterData is an array, default to empty if not
+      const validScatterData = (
+        Array.isArray(scatterData) ? scatterData : []
+      ).filter(
+        (d) =>
+          d.avgNetCal != null &&
+          !isNaN(d.avgNetCal) &&
+          d.weeklyRate != null &&
+          !isNaN(d.weeklyRate) &&
+          !isNaN(scales.xScatter(d.avgNetCal)) &&
+          !isNaN(scales.yScatter(d.weeklyRate)), // Check scale validity
+      );
 
-      const tbody = table.select("tbody");
-      const emptyMsg = selections.weeklySummaryContainer.select(".empty-msg");
+      const dots = ui.scatterDotsGroup
+        .selectAll(".scatter-dot")
+        .data(validScatterData, (d) => d.weekKey); // Use weekKey as identifier
 
-      if (!weeklyData || weeklyData.length === 0) {
-        tbody.html(""); // Clear table body
-        emptyMsg.style("display", null); // Show message
-        return;
-      } else {
-        emptyMsg.style("display", "none"); // Hide message
-      }
-
-      const rows = tbody.selectAll("tr").data(weeklyData, (d) => d.weekKey); // Key by week
-
-      rows.join(
-        (enter) => {
-          const tr = enter.append("tr");
-          tr.append("td").text((d) =>
-            _helpers.formatDateShort(d.weekStartDate),
-          );
-          tr.append("td")
-            .attr("class", "number")
-            .text((d) => _helpers.formatValue(d.avgWeight, 1));
-          tr.append("td")
-            .attr("class", "number")
-            .text((d) => _helpers.formatValue(d.avgIntake, 0));
-          tr.append("td")
-            .attr("class", "number")
-            .text((d) => _helpers.formatValue(d.avgExpenditure, 0));
-          tr.append("td")
-            .attr("class", "number")
-            .text((d) => _helpers.formatValue(d.avgNetCal, 0));
-          tr.append("td")
-            .attr("class", "number")
-            .text((d) => _helpers.formatValue(d.weeklyRate, 2));
-          return tr;
-        },
-        (update) => {
+      dots.join(
+        (enter) =>
+          enter
+            .append("circle")
+            .attr("class", "scatter-dot")
+            .attr("cx", (d) => scales.xScatter(d.avgNetCal))
+            .attr("cy", (d) => scales.yScatter(d.weeklyRate))
+            .attr("r", 4) // Fixed radius
+            .style("fill", colors.scatterDotColor)
+            .style("opacity", 0)
+            .call((enter) =>
+              enter.transition().duration(dur).style("opacity", 0.7),
+            ),
+        (update) =>
           update
-            .select("td:nth-child(1)")
-            .text((d) => _helpers.formatDateShort(d.weekStartDate));
-          update
-            .select("td:nth-child(2)")
-            .text((d) => _helpers.formatValue(d.avgWeight, 1));
-          update
-            .select("td:nth-child(3)")
-            .text((d) => _helpers.formatValue(d.avgIntake, 0));
-          update
-            .select("td:nth-child(4)")
-            .text((d) => _helpers.formatValue(d.avgExpenditure, 0));
-          update
-            .select("td:nth-child(5)")
-            .text((d) => _helpers.formatValue(d.avgNetCal, 0));
-          update
-            .select("td:nth-child(6)")
-            .text((d) => _helpers.formatValue(d.weeklyRate, 2));
-          return update;
-        },
-        (exit) => exit.remove(),
+            .transition()
+            .duration(dur)
+            .attr("cx", (d) => scales.xScatter(d.avgNetCal))
+            .attr("cy", (d) => scales.yScatter(d.weeklyRate))
+            .style("opacity", 0.7),
+        (exit) =>
+          exit
+            .transition()
+            .duration(dur / 2)
+            .style("opacity", 0)
+            .remove(),
       );
     },
+  };
 
-    runAll() {
-      if (
-        !state.isInitialized ||
-        !state.processedData ||
-        !scales.x ||
-        !scales.y
-      ) {
+  // --- Weekly Summary Table Updater ---
+  const WeeklySummaryUpdater = {
+    updateTable(weeklyData) {
+      const container = ui.weeklySummaryContainer;
+      if (!container || container.empty()) return;
+
+      const loadingMsg = container.select(".loading-msg");
+      const emptyMsg = container.select(".empty-msg");
+      let tableWrapper = container.select(".table-wrapper");
+
+      loadingMsg.remove(); // Remove loading indicator if present
+
+      if (Array.isArray(weeklyData) && weeklyData.length > 0) {
+        emptyMsg?.style("display", "none"); // Hide empty message
+
+        // Create table structure if it doesn't exist
+        if (tableWrapper.empty()) {
+          tableWrapper = container.append("div").attr("class", "table-wrapper");
+          const table = tableWrapper
+            .append("table")
+            .attr("class", "summary-table"); // Add class for styling
+          const thead = table.append("thead");
+          table.append("tbody"); // Add tbody immediately
+
+          thead
+            .append("tr")
+            .selectAll("th")
+            .data([
+              { key: "weekStartDate", label: "Week Start", numeric: false },
+              { key: "avgWeight", label: "Avg Wgt (kg)", numeric: true },
+              { key: "weeklyRate", label: "Rate (kg/wk)", numeric: true },
+              { key: "avgIntake", label: "Avg Intake", numeric: true }, // Removed kcal unit for space
+              { key: "avgExpenditure", label: "Avg GFit", numeric: true }, // Removed kcal unit
+              { key: "avgNetCal", label: "Avg Net", numeric: true }, // Removed kcal unit
+            ])
+            .join("th")
+            .attr("class", (d) => (d.numeric ? "numeric" : null))
+            .text((d) => d.label);
+        }
+
+        const tbody = tableWrapper.select("tbody");
+        const fv = Utils.formatValue;
+        const fd = Utils.formatDateShort;
+
+        // Define cell data and formatters
+        const columns = [
+          { key: "weekStartDate", format: fd },
+          { key: "avgWeight", format: (d) => fv(d, 1) },
+          { key: "weeklyRate", format: (d) => fv(d, 2) },
+          { key: "avgIntake", format: (d) => fv(d, 0) },
+          { key: "avgExpenditure", format: (d) => fv(d, 0) },
+          { key: "avgNetCal", format: (d) => fv(d, 0) },
+        ];
+
+        const rows = tbody.selectAll("tr").data(weeklyData, (d) => d.weekKey); // Key rows by weekKey
+
+        rows.join(
+          (enter) => {
+            const tr = enter.append("tr");
+            columns.forEach((col) => {
+              tr.append("td")
+                .attr("class", col.format === fd ? null : "numeric") // Numeric class for non-date cols
+                .text((d) => col.format(d[col.key]));
+            });
+            return tr;
+          },
+          (update) => {
+            update
+              .selectAll("td")
+              // Re-bind data for each cell within the row
+              .data((d) =>
+                columns.map((col) => ({
+                  value: d[col.key],
+                  format: col.format,
+                  numeric: col.format !== fd,
+                })),
+              )
+              .attr("class", (d) => (d.numeric ? "numeric" : null))
+              .text((d) => d.format(d.value)); // Update text content based on cell data
+            return update;
+          },
+          (exit) => exit.remove(),
+        );
+      } else {
+        // No data: remove table, show empty message
+        tableWrapper.remove();
+        if (emptyMsg.empty()) {
+          // Create empty message if needed
+          container
+            .append("p")
+            .attr("class", "empty-msg")
+            .text("No weekly data available for the selected analysis range.");
+        } else {
+          emptyMsg.style("display", null); // Show existing empty message
+        }
+      }
+    },
+  };
+
+  // --- Master Updater ---
+  // Orchestrates updates across all charts and UI elements
+  const MasterUpdater = {
+    updateAllCharts() {
+      if (!state.isInitialized || !scales.x) {
         console.warn(
-          "Visual update skipped: Chart not initialized or scales/data missing.",
+          "MasterUpdater: Skipping update - chart not initialized or scales missing.",
         );
         return;
       }
 
-      // 1. Update Domains and Axes (handles main focus, balance, rate, tdee diff)
-      // This recalculates focus Y domain and updates state.filteredData
-      _update.domainsAndAxes();
+      // 1. Update Domains based on current view/state
+      DomainManager.updateDomainsOnInteraction(); // Calculates Y domains, syncs X axes
 
-      // 2. Use the filtered data from the updated domain
-      const visibleProcessedData = state.filteredData; // Use data filtered in domainsAndAxes
+      // 2. Get Filtered Data (calculated in updateDomainsOnInteraction)
+      const visibleProcessedData = state.filteredData;
       const visibleValidSmaData = visibleProcessedData.filter(
-        (d) => d.sma !== null,
+        (d) => d.sma != null,
       );
       const visibleRawWeightData = visibleProcessedData.filter(
-        (d) => d.value !== null,
-      );
-      const visibleNonOutlierValueData = visibleRawWeightData.filter(
-        (d) => !d.isOutlier,
+        (d) => d.value != null,
       );
 
-      // 3. Recalculate Regression for the *visible* non-outlier data
-      const regression = _data.calculateLinearRegression(
-        visibleNonOutlierValueData,
-        state.regressionStartDate,
-      );
-
-      // 4. Update Main Chart Visual Elements
-      _update.chartPaths(visibleValidSmaData, regression.points);
-      _update.chartDots(visibleRawWeightData); // Pass raw data, handles raw/sma dot visibility inside
-
-      // 5. Update Secondary Chart Visuals
-      _update.contextChart(); // Uses full dataset
-      _update.balanceChart(visibleProcessedData);
-      _update.rateOfChangeChart(visibleProcessedData); // Feature #5
-      _update.tdeeDifferenceChart(visibleProcessedData); // Feature #8
-
-      // 6. Update Overlays/Markers (using full dataset for detection, filtering visibility inside)
-      _update.annotations(visibleProcessedData); // Feature #1 - only shows visible ones
-      _update.plateauRegions(); // Feature #6 - only shows visible ones
-      _update.trendChangeMarkers(); // Feature #7 - only shows visible ones
-
-      // 7. Update UI Elements related to Analysis Range Display
-      if (!state.analysisRange.isCustom) {
-        _handlers.updateAnalysisRangeInputsFromCurrentView();
+      // 3. Recalculate Regression for the effective range
+      const regressionRange = EventHandlers.getEffectiveRegressionRange();
+      let regressionResult = null;
+      if (regressionRange.start && regressionRange.end) {
+        const regressionData = state.processedData.filter(
+          (d) =>
+            d.date >= regressionRange.start &&
+            d.date <= regressionRange.end &&
+            d.value != null &&
+            !d.isOutlier,
+        );
+        regressionResult = DataService.calculateLinearRegression(
+          regressionData,
+          regressionRange.start, // Use the effective start date
+        );
+      } else {
+        regressionResult = {
+          slope: null,
+          intercept: null,
+          points: [],
+          pointsWithCI: [],
+        };
       }
-      _handlers.updateAnalysisRangeDisplay(); // Update display text & heading
+
+      // 4. Update Axes for all charts
+      FocusChartUpdater.updateAxes();
+      ContextChartUpdater.updateAxes();
+      BalanceChartUpdater.updateAxes();
+      RateChartUpdater.updateAxes();
+      TDEEDiffChartUpdater.updateAxes();
+      ScatterPlotUpdater.updateAxes(); // Domains updated in StatsManager/DomainManager
+
+      // 5. Update Chart Content
+      // Focus Chart
+      FocusChartUpdater.updatePaths(visibleValidSmaData, regressionResult);
+      FocusChartUpdater.updateDots(visibleRawWeightData);
+      FocusChartUpdater.updateHighlightMarker(visibleRawWeightData);
+      FocusChartUpdater.updateCrosshair(state.activeHoverData); // Update based on hover state
+      FocusChartUpdater.updateAnnotations(visibleProcessedData);
+      FocusChartUpdater.updatePlateauRegions();
+      FocusChartUpdater.updateTrendChangeMarkers(visibleProcessedData); // Pass data to find Y values
+      FocusChartUpdater.updateRegressionBrushDisplay(); // Update visual state of brush
+
+      // Other Charts
+      ContextChartUpdater.updateChart(state.processedData); // Context uses full data
+      BalanceChartUpdater.updateChart(visibleProcessedData);
+      RateChartUpdater.updateChart(visibleProcessedData);
+      TDEEDiffChartUpdater.updateChart(visibleProcessedData);
+      ScatterPlotUpdater.updateChart(state.correlationScatterData); // Scatter uses pre-calculated data
+
+      // 6. Update Analysis Range Display (if not custom)
+      if (!state.analysisRange.isCustom) {
+        EventHandlers.updateAnalysisRangeInputsFromCurrentView();
+      }
+      EventHandlers.updateAnalysisRangeDisplay(); // Always update display text
     },
   };
 
   // ========================================================================
-  // Statistics Calculation & DOM Update (`_stats`)
+  // Statistics Manager (`StatsManager`) - Includes the fix for d3.greatest/least
   // ========================================================================
-  const _stats = {
-    calculateAverageInRange(data, field, startDate, endDate) {
+  const StatsManager = {
+    // --- Calculation Helpers ---
+    _calculateAverageInRange(data, field, startDate, endDate) {
       if (!data || !startDate || !endDate || startDate > endDate) return null;
       const rangeData = data.filter(
         (d) => d.date >= startDate && d.date <= endDate,
       );
       const relevantValues = rangeData
         .map((d) => d[field])
-        .filter((val) => val !== null && !isNaN(val));
+        .filter((val) => val != null && !isNaN(val));
       return relevantValues.length > 0 ? d3.mean(relevantValues) : null;
     },
 
-    calculateCountInRange(data, field, startDate, endDate) {
+    _calculateCountInRange(data, field, startDate, endDate) {
+      const defaultResult = { count: 0, totalDays: 0, percentage: 0 };
       if (!data || !startDate || !endDate || startDate > endDate)
-        return { count: 0, totalDays: 0, percentage: 0 };
+        return defaultResult;
+
       const totalDays =
         Math.round((endDate.getTime() - startDate.getTime()) / 86400000) + 1;
-      if (totalDays <= 0) return { count: 0, totalDays: 0, percentage: 0 };
+      if (totalDays <= 0) return defaultResult;
 
       const rangeData = data.filter(
         (d) => d.date >= startDate && d.date <= endDate,
       );
       const count = rangeData.filter(
-        (d) => d[field] !== null && !isNaN(d[field]),
+        (d) => d[field] != null && !isNaN(d[field]),
       ).length;
-      const percentage = totalDays > 0 ? (count / totalDays) * 100 : 0;
+      const percentage = (count / totalDays) * 100;
 
       return { count, totalDays, percentage };
     },
 
-    calculateRollingWeeklyChange(allSmoothedRateData, analysisEndDate) {
-      // Uses the pre-smoothed weekly rate for the stat
+    _calculateCurrentRate(allProcessedData, analysisEndDate) {
       if (
-        !allSmoothedRateData ||
-        allSmoothedRateData.length === 0 ||
+        !allProcessedData ||
+        allProcessedData.length === 0 ||
         !analysisEndDate
-      ) {
+      )
         return null;
-      }
-      // Find the latest point *at or before* the analysisEndDate that has a smoothed rate
-      let lastPointRate = null;
-      for (let i = allSmoothedRateData.length - 1; i >= 0; i--) {
+      // Find the last data point *at or before* the analysis end date with a valid rate
+      let lastRate = null;
+      for (let i = allProcessedData.length - 1; i >= 0; i--) {
+        const d = allProcessedData[i];
+        // Ensure date is valid before comparison
         if (
-          allSmoothedRateData[i].date <= analysisEndDate &&
-          allSmoothedRateData[i].smoothedWeeklyRate !== null &&
-          !isNaN(allSmoothedRateData[i].smoothedWeeklyRate)
+          d.date instanceof Date &&
+          d.date <= analysisEndDate &&
+          d.smoothedWeeklyRate != null &&
+          !isNaN(d.smoothedWeeklyRate)
         ) {
-          lastPointRate = allSmoothedRateData[i].smoothedWeeklyRate;
+          lastRate = d.smoothedWeeklyRate;
           break;
         }
       }
-      return lastPointRate; // Return the smoothed rate at the end date
+      return lastRate;
     },
 
-    calculateVolatility(processedData, startDate, endDate) {
+    _calculateVolatility(processedData, startDate, endDate) {
       if (!processedData || !startDate || !endDate || startDate > endDate)
         return null;
       const viewData = processedData.filter(
         (d) => d.date >= startDate && d.date <= endDate,
       );
-      // Calculate std dev of raw points around the SMA line (ignoring outliers?) - User choice?
-      // Let's include outliers for now to reflect raw volatility.
+      // Calculate deviation of raw value from SMA, excluding outliers
       const deviations = viewData
-        .filter(
-          (d) =>
-            d.sma !== null &&
-            !isNaN(d.sma) &&
-            d.value !== null &&
-            !isNaN(d.value) /*&& !d.isOutlier*/,
-        )
+        .filter((d) => d.sma != null && d.value != null && !d.isOutlier)
         .map((d) => d.value - d.sma);
 
-      return deviations.length >= 2 ? d3.deviation(deviations) : null;
+      // Use simple-statistics if available, otherwise return null
+      return deviations.length >= 2 &&
+        typeof ss?.standardDeviation === "function"
+        ? ss.standardDeviation(deviations)
+        : null;
     },
 
-    calculateTDEEFromTrend(avgIntake, weeklyKgChange) {
+    _calculateTDEEFromTrend(avgIntake, weeklyKgChange) {
       if (
-        avgIntake === null ||
-        weeklyKgChange === null ||
+        avgIntake == null ||
+        weeklyKgChange == null ||
         isNaN(avgIntake) ||
         isNaN(weeklyKgChange)
       )
         return null;
       const dailyKgChange = weeklyKgChange / 7;
       const dailyDeficitSurplus = dailyKgChange * CONFIG.KCALS_PER_KG;
-      return avgIntake - dailyDeficitSurplus; // TDEE = Intake - Deficit OR TDEE = Intake + Surplus
+      return avgIntake - dailyDeficitSurplus;
     },
 
-    estimateDeficitSurplusFromTrend(weeklyKgChange) {
-      if (weeklyKgChange === null || isNaN(weeklyKgChange)) return null;
+    _estimateDeficitSurplusFromTrend(weeklyKgChange) {
+      if (weeklyKgChange == null || isNaN(weeklyKgChange)) return null;
       return (weeklyKgChange / 7) * CONFIG.KCALS_PER_KG;
     },
 
-    calculateNetCalRateCorrelation(processedData, startDate, endDate) {
-      if (
-        !window.ss ||
-        typeof ss.sampleCorrelation !== "function" ||
-        !startDate ||
-        !endDate ||
-        startDate > endDate
-      )
-        return null;
+    calculateWeeklyStats(processedData, startDate, endDate) {
+      const rangeData =
+        startDate && endDate
+          ? processedData.filter(
+              (d) =>
+                d.date instanceof Date &&
+                d.date >= startDate &&
+                d.date <= endDate,
+            )
+          : processedData;
 
-      // Filter data for the analysis range first
-      const rangeData = processedData.filter(
-        (d) => d.date >= startDate && d.date <= endDate,
-      );
-
-      // Check if enough *daily* data points exist within the range
-      const daysWithSmaRate = rangeData.filter(
-        (d) => d.smoothedWeeklyRate !== null && !isNaN(d.smoothedWeeklyRate),
-      ).length;
-      const daysWithNetBalance = rangeData.filter(
-        (d) => d.netBalance !== null && !isNaN(d.netBalance),
-      ).length;
-      if (
-        daysWithSmaRate < CONFIG.MIN_POINTS_FOR_CORRELATION ||
-        daysWithNetBalance < CONFIG.MIN_POINTS_FOR_CORRELATION
-      ) {
-        state.weeklySummaryData = []; // Clear summary data if not enough daily points
-        return null;
-      }
+      if (!Array.isArray(rangeData) || rangeData.length === 0) return [];
 
       let weeklyStats = [];
-      const groupedByWeek = d3.group(rangeData, (d) =>
-        d3.timeFormat("%Y-%W")(d3.timeMonday(d.date)),
-      );
+      // Group data by week, starting on Monday
+      const getWeekKey = (date) => d3.timeFormat("%Y-%W")(d3.timeMonday(date));
+      const groupedByWeek = d3.group(rangeData, (d) => getWeekKey(d.date));
 
       groupedByWeek.forEach((weekData, weekKey) => {
-        // Calculate averages for the week
-        const validNetCals = weekData
-          .map((d) => d.netBalance)
-          .filter((nc) => nc !== null && !isNaN(nc));
-        const validRates = weekData
-          .map((d) => d.smoothedWeeklyRate)
-          .filter((r) => r !== null && !isNaN(r)); // Use smoothed rate
-        const validWeights = weekData
-          .map((d) => d.sma ?? d.value)
-          .filter((w) => w !== null && !isNaN(w));
-        const validExpenditures = weekData
-          .map((d) => d.googleFitTDEE)
-          .filter((e) => e !== null && !isNaN(e));
-        const validIntakes = weekData
-          .map((d) => d.calorieIntake)
-          .filter((c) => c !== null && !isNaN(c));
+        weekData.sort((a, b) => a.date - b.date); // Ensure chronological order
 
-        // Require at least 4 days with *both* net cal and rate data for a week to be included in correlation
-        const validPointsCount = weekData.filter(
+        // Filter for days within the week that have both net balance and smoothed rate
+        const validPoints = weekData.filter(
           (d) =>
-            d.netBalance !== null &&
+            d.netBalance != null &&
             !isNaN(d.netBalance) &&
-            d.smoothedWeeklyRate !== null &&
+            d.smoothedWeeklyRate != null &&
             !isNaN(d.smoothedWeeklyRate),
-        ).length;
+        );
 
-        if (validPointsCount >= 4) {
-          const avgNetCal = d3.mean(validNetCals);
-          const avgWeeklyRate = d3.mean(validRates); // Average the smoothed rate over the week
-          const avgWeight = d3.mean(validWeights);
-          const avgExpenditure = d3.mean(validExpenditures);
-          const avgIntake = d3.mean(validIntakes);
-          const weekStartDate = d3.timeMonday(weekData[0].date); // Get week start date for reference
+        // Require a minimum number of valid days (e.g., 4) for a reliable weekly average
+        if (validPoints.length >= 4) {
+          const avgNetCal = d3.mean(validPoints, (d) => d.netBalance);
+          const avgWeeklyRate = d3.mean(
+            validPoints,
+            (d) => d.smoothedWeeklyRate,
+          ); // Average of smoothed rates
+
+          // Calculate averages for other metrics using *all* available data in the week
+          const avgWeight = d3.mean(weekData, (d) => d.sma ?? d.value);
+          const avgExpenditure = d3.mean(weekData, (d) => d.googleFitTDEE);
+          const avgIntake = d3.mean(weekData, (d) => d.calorieIntake);
+          const weekStartDate = d3.timeMonday(weekData[0].date); // Use first day's Monday
 
           weeklyStats.push({
             weekKey,
             weekStartDate,
             avgNetCal,
             weeklyRate: avgWeeklyRate,
-            avgWeight,
-            avgExpenditure,
-            avgIntake,
+            avgWeight: avgWeight ?? null, // Ensure null if no data
+            avgExpenditure: avgExpenditure ?? null,
+            avgIntake: avgIntake ?? null,
           });
         }
       });
 
-      // Sort weekly stats by date for the summary table
       weeklyStats.sort((a, b) => a.weekStartDate - b.weekStartDate);
-      state.weeklySummaryData = weeklyStats; // Store the detailed weekly data for the table
+      return weeklyStats;
+    },
 
-      // Check if enough *weeks* meet the criteria for correlation
-      if (weeklyStats.length < CONFIG.MIN_WEEKS_FOR_CORRELATION) {
+    _calculateNetCalRateCorrelation(weeklyStats) {
+      if (!window.ss || typeof ss.sampleCorrelation !== "function") return null;
+      if (
+        !weeklyStats ||
+        weeklyStats.length < CONFIG.MIN_WEEKS_FOR_CORRELATION
+      ) {
         return null; // Not enough valid weeks
       }
 
-      // Calculate correlation using the weekly averages
+      // Extract arrays, ensuring corresponding indices have valid data (already filtered in calculateWeeklyStats)
       const netCalArray = weeklyStats.map((w) => w.avgNetCal);
       const rateArray = weeklyStats.map((w) => w.weeklyRate);
+
       try {
         const correlation = ss.sampleCorrelation(netCalArray, rateArray);
         return isNaN(correlation) ? null : correlation;
       } catch (e) {
-        console.error("Error calculating correlation:", e);
+        console.error("StatsManager: Error calculating correlation:", e);
         return null;
       }
     },
 
-    calculateEstimatedTimeToGoal(currentWeight, goalWeight, weeklyChange) {
+    _calculateEstimatedTimeToGoal(currentWeight, goalWeight, weeklyChange) {
       if (
-        currentWeight === null ||
-        goalWeight === null ||
-        weeklyChange === null ||
+        currentWeight == null ||
+        goalWeight == null ||
+        weeklyChange == null ||
         isNaN(weeklyChange) ||
         isNaN(currentWeight) ||
         isNaN(goalWeight)
@@ -3460,44 +4135,35 @@ const WeightTrackerChart = (function () {
         return "N/A";
 
       const weightDifference = goalWeight - currentWeight;
+      if (Math.abs(weightDifference) < 0.05) return "Goal Achieved!"; // Increased threshold slightly
 
-      if (Math.abs(weightDifference) < 0.01) return "Goal Achieved!"; // Close enough
-
-      // Check for invalid scenarios
-      if (Math.abs(weeklyChange) < 0.01) {
-        // Trend is effectively flat
-        return Math.abs(weightDifference) < 0.01
-          ? "Goal Achieved!"
-          : "Trend flat";
-      }
+      // Handle zero or counter-productive trend
+      if (Math.abs(weeklyChange) < 0.01) return "Trend flat";
       if (
         (weeklyChange > 0 && weightDifference < 0) ||
         (weeklyChange < 0 && weightDifference > 0)
-      ) {
-        return "Trending away"; // Moving opposite direction
-      }
+      )
+        return "Trending away";
 
       const weeksNeeded = weightDifference / weeklyChange;
+      if (weeksNeeded <= 0) return "N/A"; // Should be covered by 'Trending away' but belt-and-suspenders
 
-      if (weeksNeeded <= 0) return "N/A"; // Should be caught by "Trending away" but safe check
+      // Format the time estimate
       if (weeksNeeded < 1) return `~${(weeksNeeded * 7).toFixed(0)} days`;
       if (weeksNeeded < 8)
         return `~${Math.round(weeksNeeded)} week${weeksNeeded >= 1.5 ? "s" : ""}`;
-
       const monthsNeeded = weeksNeeded / (365.25 / 12 / 7); // Avg weeks per month
       if (monthsNeeded < 18)
         return `~${Math.round(monthsNeeded)} month${monthsNeeded >= 1.5 ? "s" : ""}`;
-
       return `~${(monthsNeeded / 12).toFixed(1)} years`;
     },
 
-    calculateRequiredRateForGoal(currentWeight, goalWeight, goalDate) {
+    _calculateRequiredRateForGoal(currentWeight, goalWeight, goalDate) {
       if (
-        currentWeight === null ||
-        goalWeight === null ||
-        !goalDate ||
+        currentWeight == null ||
+        goalWeight == null ||
         !(goalDate instanceof Date) ||
-        isNaN(goalDate.getTime()) ||
+        isNaN(goalDate) ||
         isNaN(currentWeight) ||
         isNaN(goalWeight)
       )
@@ -3505,823 +4171,1139 @@ const WeightTrackerChart = (function () {
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const targetDate = new Date(goalDate); // Clone goal date
+      const targetDate = new Date(goalDate);
       targetDate.setHours(0, 0, 0, 0);
 
-      if (targetDate <= today) return null; // Target date must be in the future
+      if (targetDate <= today) return null; // Goal date must be in the future
 
       const weightDifference = goalWeight - currentWeight;
       const daysRemaining = (targetDate.getTime() - today.getTime()) / 86400000;
 
+      // Avoid division by zero if goal is today
       if (daysRemaining <= 0) return null;
 
       return weightDifference / (daysRemaining / 7); // kg per week
     },
 
-    // --- Feature #6: Plateau Detection ---
-    detectPlateaus(processedData) {
-      const plateaus = [];
-      let plateauStartIndex = -1;
-      const minDays = CONFIG.plateauMinDurationWeeks * 7;
+    _detectPlateaus(processedData) {
+      if (!processedData || processedData.length === 0) return [];
+
+      const minDurationDays = CONFIG.plateauMinDurationWeeks * 7;
+      const rateThreshold = CONFIG.plateauRateThresholdKgWeek;
+      let plateaus = [];
+      let currentPlateauStart = null;
+      let currentPlateauStartIndex = -1;
 
       for (let i = 0; i < processedData.length; i++) {
         const d = processedData[i];
-        const rate = d.smoothedWeeklyRate; // Use smoothed rate
+        const rate = d.smoothedWeeklyRate; // Use smoothed rate for stability
 
-        if (
-          rate !== null &&
-          !isNaN(rate) &&
-          Math.abs(rate) < CONFIG.plateauRateThresholdKgWeek
-        ) {
-          if (plateauStartIndex === -1) {
-            plateauStartIndex = i; // Start of potential plateau
-          }
-        } else {
-          // End of potential plateau (or point is invalid)
-          if (plateauStartIndex !== -1) {
-            const plateauEndIndex = i - 1; // Last point that was part of the plateau
-            if (plateauEndIndex >= plateauStartIndex) {
-              // Ensure end is not before start
-              const startDate = processedData[plateauStartIndex].date;
-              const endDate = processedData[plateauEndIndex].date;
-              const durationDays =
-                (endDate.getTime() - startDate.getTime()) / 86400000;
+        // Check if rate is within plateau threshold
+        const isFlat = rate != null && Math.abs(rate) < rateThreshold;
 
-              if (durationDays >= minDays - 1) {
-                // Allow slightly less than exact min days (e.g., 20 days for 3 weeks)
-                plateaus.push({ startDate, endDate });
-              }
-            }
+        if (isFlat && currentPlateauStart === null) {
+          // Start of a potential plateau
+          currentPlateauStart = d.date;
+          currentPlateauStartIndex = i;
+        } else if (!isFlat && currentPlateauStart !== null) {
+          // End of a potential plateau
+          const endDate = processedData[i - 1].date; // Previous day was the last day of plateau
+          // Ensure dates are valid before calculating duration
+          if (
+            !(endDate instanceof Date) ||
+            !(currentPlateauStart instanceof Date) ||
+            isNaN(endDate) ||
+            isNaN(currentPlateauStart)
+          ) {
+            currentPlateauStart = null; // Reset if dates invalid
+            continue;
           }
-          plateauStartIndex = -1; // Reset
-        }
-      }
-      // Check for plateau ending at the last data point
-      if (plateauStartIndex !== -1 && processedData.length > 0) {
-        const plateauEndIndex = processedData.length - 1;
-        if (plateauEndIndex >= plateauStartIndex) {
-          const startDate = processedData[plateauStartIndex].date;
-          const endDate = processedData[plateauEndIndex].date;
           const durationDays =
-            (endDate.getTime() - startDate.getTime()) / 86400000;
-          if (durationDays >= minDays - 1) {
-            plateaus.push({ startDate, endDate });
+            (endDate.getTime() - currentPlateauStart.getTime()) / 86400000;
+
+          if (durationDays >= minDurationDays - 1) {
+            // Allow slightly less than exact duration (e.g. 20 days for 3 weeks)
+            plateaus.push({ startDate: currentPlateauStart, endDate: endDate });
+          }
+          // Reset plateau tracking
+          currentPlateauStart = null;
+          currentPlateauStartIndex = -1;
+        }
+      }
+
+      // Check if a plateau is ongoing at the very end of the data
+      if (currentPlateauStart !== null) {
+        const endDate = processedData[processedData.length - 1].date;
+        // Ensure dates are valid
+        if (
+          !(endDate instanceof Date) ||
+          !(currentPlateauStart instanceof Date) ||
+          isNaN(endDate) ||
+          isNaN(currentPlateauStart)
+        ) {
+          // Do nothing if dates invalid
+        } else {
+          const durationDays =
+            (endDate.getTime() - currentPlateauStart.getTime()) / 86400000;
+          if (durationDays >= minDurationDays - 1) {
+            plateaus.push({ startDate: currentPlateauStart, endDate: endDate });
           }
         }
       }
-      state.plateaus = plateaus; // Store detected plateaus
-      // console.log("Detected plateaus:", plateaus);
+      return plateaus;
     },
 
-    // --- Feature #7: Trend Change Detection (Basic Slope Comparison) ---
-    detectTrendChanges(processedData) {
-      const changes = [];
-      const windowDays = CONFIG.trendChangeWindowDays;
-      const minSlopeDiff = CONFIG.trendChangeMinSlopeDiffKgWeek / 7; // Convert threshold to daily rate
+    _detectTrendChanges(processedData) {
+      if (
+        !processedData ||
+        processedData.length < CONFIG.trendChangeWindowDays * 2
+      )
+        return [];
 
-      if (processedData.length < windowDays * 2) {
-        state.trendChangePoints = []; // Clear if not enough data
-        return; // Not enough data for comparison
-      }
+      const windowSize = CONFIG.trendChangeWindowDays;
+      const minSlopeDiff = CONFIG.trendChangeMinSlopeDiffKgWeek / 7; // Convert threshold to daily rate diff
+      let changes = [];
 
-      for (let i = windowDays; i < processedData.length - windowDays; i++) {
+      const calculateSlope = (dataSegment) => {
+        // Use SMA for slope calculation for stability
+        const validPoints = dataSegment.filter((p) => p.sma != null);
+        if (validPoints.length < 2) return null;
+
+        const first = validPoints[0];
+        const last = validPoints[validPoints.length - 1];
+        // Ensure dates are valid
+        if (
+          !(first.date instanceof Date) ||
+          !(last.date instanceof Date) ||
+          isNaN(first.date) ||
+          isNaN(last.date)
+        )
+          return null;
+        const timeDiffDays =
+          (last.date.getTime() - first.date.getTime()) / 86400000;
+
+        if (timeDiffDays <= 0) return null;
+        return (last.sma - first.sma) / timeDiffDays; // Daily rate change
+      };
+
+      for (let i = windowSize; i < processedData.length - windowSize; i++) {
         const currentDate = processedData[i].date;
+        // Ensure current date is valid before proceeding
+        if (!(currentDate instanceof Date) || isNaN(currentDate)) continue;
 
-        // Calculate slope before (using SMA)
-        const dataBefore = processedData.slice(i - windowDays, i);
-        const validBefore = dataBefore.filter(
-          (d) => d.sma !== null && !isNaN(d.sma),
-        );
-        if (validBefore.length < Math.min(5, windowDays)) continue; // Need min points for slope
-        const regressionBefore = _data.calculateLinearRegression(
-          validBefore,
-          null,
-        );
-        const slopeBefore = regressionBefore.slope; // Daily slope
+        // Define windows before and after the current point
+        const beforeData = processedData.slice(i - windowSize, i);
+        const afterData = processedData.slice(i + 1, i + 1 + windowSize); // Window starts *after* current point
 
-        // Calculate slope after (using SMA)
-        const dataAfter = processedData.slice(i + 1, i + 1 + windowDays);
-        const validAfter = dataAfter.filter(
-          (d) => d.sma !== null && !isNaN(d.sma),
-        );
-        if (validAfter.length < Math.min(5, windowDays)) continue;
-        const regressionAfter = _data.calculateLinearRegression(
-          validAfter,
-          null,
-        );
-        const slopeAfter = regressionAfter.slope; // Daily slope
+        const slopeBefore = calculateSlope(beforeData);
+        const slopeAfter = calculateSlope(afterData);
 
-        if (slopeBefore !== null && slopeAfter !== null) {
-          const slopeDiff = slopeAfter - slopeBefore; // Daily difference
-          if (Math.abs(slopeDiff) > minSlopeDiff) {
-            // Check if this is near an already detected change point to avoid clusters
-            const nearExisting = changes.some(
-              (c) =>
-                Math.abs(c.date.getTime() - currentDate.getTime()) <
-                (windowDays * 86400000) / 2,
-            ); // Half window buffer
-            if (!nearExisting) {
-              changes.push({ date: currentDate, magnitude: slopeDiff }); // Store daily magnitude
-            }
+        if (slopeBefore != null && slopeAfter != null) {
+          const slopeDiff = slopeAfter - slopeBefore; // Difference in daily rates
+          if (Math.abs(slopeDiff) >= minSlopeDiff) {
+            changes.push({ date: currentDate, magnitude: slopeDiff }); // Store daily rate difference
           }
         }
       }
-      state.trendChangePoints = changes;
-      // console.log("Detected trend changes:", changes);
+      return changes;
     },
 
-    getAll() {
-      let calculatedStats = {};
-      const analysisRange = _handlers.getAnalysisDateRange();
+    // --- Main Calculation Orchestrator ---
+    calculateAllStats() {
+      const stats = {};
+      const analysisRange = EventHandlers.getAnalysisDateRange(); // Use handler to get current range
       const { start: analysisStart, end: analysisEnd } = analysisRange;
 
       // --- Overall Stats (All Time) ---
       const validWeightDataAll = state.rawData.filter(
-        (d) => d.value !== null && !isNaN(d.value),
-      );
+        (d) => d.value != null && !isNaN(d.value),
+      ); // Filter NaN values too
       if (validWeightDataAll.length > 0) {
-        calculatedStats.startingWeight = validWeightDataAll[0].value;
-        calculatedStats.currentWeight =
+        stats.startingWeight = validWeightDataAll[0].value;
+        stats.currentWeight =
           validWeightDataAll[validWeightDataAll.length - 1].value;
-        const maxEntry = d3.max(validWeightDataAll, (d) => d.value);
-        calculatedStats.maxWeight = maxEntry;
-        calculatedStats.maxWeightDate = validWeightDataAll.find(
-          (d) => d.value === maxEntry,
-        )?.date;
-        const minEntry = d3.min(validWeightDataAll, (d) => d.value);
-        calculatedStats.minWeight = minEntry;
-        calculatedStats.minWeightDate = validWeightDataAll.find(
-          (d) => d.value === minEntry,
-        )?.date;
-        if (
-          calculatedStats.startingWeight !== null &&
-          calculatedStats.currentWeight !== null
-        ) {
-          calculatedStats.totalChange =
-            calculatedStats.currentWeight - calculatedStats.startingWeight;
+
+        // Find data points corresponding to max/min weights using d3.greatest/least
+        const maxEntryObject = d3.greatest(validWeightDataAll, (d) => d.value);
+        stats.maxWeight = maxEntryObject ? maxEntryObject.value : null;
+        stats.maxWeightDate = maxEntryObject ? maxEntryObject.date : null;
+
+        const minEntryObject = d3.least(validWeightDataAll, (d) => d.value);
+        stats.minWeight = minEntryObject ? minEntryObject.value : null;
+        stats.minWeightDate = minEntryObject ? minEntryObject.date : null;
+        // --- End Fix ---
+
+        // Calculate total change only if both start and end weights are valid
+        if (stats.startingWeight != null && stats.currentWeight != null) {
+          stats.totalChange = stats.currentWeight - stats.startingWeight;
+        } else {
+          stats.totalChange = null;
         }
       } else {
-        calculatedStats.startingWeight = null;
-        calculatedStats.currentWeight = null;
-        calculatedStats.maxWeight = null;
-        calculatedStats.maxWeightDate = null;
-        calculatedStats.minWeight = null;
-        calculatedStats.minWeightDate = null;
-        calculatedStats.totalChange = null;
+        // Set all overall stats to null if no valid weight data exists
+        Object.assign(stats, {
+          startingWeight: null,
+          currentWeight: null,
+          maxWeight: null,
+          maxWeightDate: null,
+          minWeight: null,
+          minWeightDate: null,
+          totalChange: null,
+        });
       }
-      const allValidSmaData = state.processedData.filter(
-        (d) => d.sma !== null && !isNaN(d.sma),
-      );
-      calculatedStats.currentSma =
-        allValidSmaData.length > 0
-          ? allValidSmaData[allValidSmaData.length - 1].sma
-          : null;
+      // Find the most recent SMA value, fallback to current raw weight if no SMA exists
+      const lastSma = [...state.processedData]
+        .reverse()
+        .find((d) => d.sma != null);
+      stats.currentSma = lastSma ? lastSma.sma : stats.currentWeight;
 
-      // --- Analysis Range Stats ---
-      let analysisRegression = { slope: null }; // Initialize regression object
-      state.plateaus = []; // Reset detected plateaus
-      state.trendChangePoints = []; // Reset detected trend changes
-      state.weeklySummaryData = []; // Reset weekly summary
-
-      if (analysisStart && analysisEnd && analysisStart <= analysisEnd) {
-        const analysisProcessedData = state.processedData.filter(
-          (d) => d.date >= analysisStart && d.date <= analysisEnd,
+      // --- Analysis Range Dependent Calculations ---
+      if (
+        analysisStart instanceof Date &&
+        analysisEnd instanceof Date &&
+        analysisStart <= analysisEnd
+      ) {
+        // Update detected features based on full data but store them in state for potential display filtering later
+        state.plateaus = StatsManager._detectPlateaus(state.processedData);
+        state.trendChangePoints = StatsManager._detectTrendChanges(
+          state.processedData,
         );
-        // Detect Plateaus & Trend Changes on the FULL dataset first
-        _stats.detectPlateaus(state.processedData);
-        _stats.detectTrendChanges(state.processedData);
-        // The update functions will filter visibility based on the current view
 
-        // Use the pre-smoothed rate ending at the analysis end date
-        // Pass ALL processed data to ensure smoothing uses points outside the range if needed
-        calculatedStats.rollingSmaWeeklyChange =
-          _stats.calculateRollingWeeklyChange(state.processedData, analysisEnd);
-
-        calculatedStats.volatility = _stats.calculateVolatility(
+        // Calculate weekly stats *only for the analysis range*
+        state.weeklySummaryData = StatsManager.calculateWeeklyStats(
           state.processedData,
           analysisStart,
           analysisEnd,
         );
-        calculatedStats.avgIntake = _stats.calculateAverageInRange(
-          state.rawData,
+        state.correlationScatterData = state.weeklySummaryData.filter(
+          (w) => w.avgNetCal != null && w.weeklyRate != null,
+        );
+
+        // Calculate stats specific to the analysis range
+        stats.netCalRateCorrelation =
+          StatsManager._calculateNetCalRateCorrelation(state.weeklySummaryData);
+        stats.currentWeeklyRate = StatsManager._calculateCurrentRate(
+          state.processedData,
+          analysisEnd,
+        ); // Use the rate at the end of the range
+        stats.volatility = StatsManager._calculateVolatility(
+          state.processedData,
+          analysisStart,
+          analysisEnd,
+        );
+
+        // Averages within the range
+        stats.avgIntake = StatsManager._calculateAverageInRange(
+          state.processedData,
           "calorieIntake",
           analysisStart,
           analysisEnd,
         );
-        calculatedStats.avgExpenditure = _stats.calculateAverageInRange(
-          state.rawData,
+        stats.avgExpenditureGFit = StatsManager._calculateAverageInRange(
+          state.processedData,
           "googleFitTDEE",
           analysisStart,
           analysisEnd,
         );
-        calculatedStats.avgNetBalance = _stats.calculateAverageInRange(
-          state.rawData,
+        stats.avgNetBalance = StatsManager._calculateAverageInRange(
+          state.processedData,
           "netBalance",
           analysisStart,
           analysisEnd,
         );
-        calculatedStats.avgTDEE_GFit = calculatedStats.avgExpenditure; // Same as avgExpenditure in this range
+        stats.avgTDEE_Difference = StatsManager._calculateAverageInRange(
+          state.processedData,
+          "avgTdeeDifference",
+          analysisStart,
+          analysisEnd,
+        ); // Avg smoothed difference
+        stats.avgTDEE_Adaptive = StatsManager._calculateAverageInRange(
+          state.processedData,
+          "adaptiveTDEE",
+          analysisStart,
+          analysisEnd,
+        ); // Avg adaptive TDEE
 
-        // Calculate correlation and update weekly summary state
-        calculatedStats.netCalRateCorrelation =
-          _stats.calculateNetCalRateCorrelation(
-            state.processedData,
-            analysisStart,
-            analysisEnd,
-          );
-
-        calculatedStats.weightDataConsistency = _stats.calculateCountInRange(
-          state.rawData,
+        // Consistency counts within the range
+        stats.weightDataConsistency = StatsManager._calculateCountInRange(
+          state.processedData,
           "value",
           analysisStart,
           analysisEnd,
         );
-        calculatedStats.calorieDataConsistency = _stats.calculateCountInRange(
-          state.rawData,
+        stats.calorieDataConsistency = StatsManager._calculateCountInRange(
+          state.processedData,
           "calorieIntake",
           analysisStart,
           analysisEnd,
         );
 
-        // Feature #8 TDEE Diff Stat - Average of smoothed diff in range
-        calculatedStats.avgTDEE_Difference = _stats.calculateAverageInRange(
-          analysisProcessedData,
-          "avgTdeeDifference",
-          analysisStart,
-          analysisEnd,
-        );
-
-        // Regression for Analysis Range
-        const analysisNonOutlierValueData = state.processedData.filter(
-          (d) =>
-            d.date >= analysisStart &&
-            d.date <= analysisEnd &&
-            d.value !== null &&
-            !d.isOutlier,
-        );
-        // Determine start date for regression stat: Use UI date if set and within range, else use analysis range start
-        let regressionStartDateForStats = analysisStart;
+        // Regression for Analysis Range (using effective range determined by handlers)
+        const regressionRange = EventHandlers.getEffectiveRegressionRange();
+        // Ensure regression range itself is valid before filtering
         if (
-          state.regressionStartDate &&
-          state.regressionStartDate >= analysisStart &&
-          state.regressionStartDate <= analysisEnd
+          regressionRange.start instanceof Date &&
+          regressionRange.end instanceof Date
         ) {
-          regressionStartDateForStats = state.regressionStartDate;
+          const regressionData = state.processedData.filter(
+            (d) =>
+              d.date instanceof Date && // Ensure date is valid
+              d.date >= regressionRange.start &&
+              d.date <= regressionRange.end &&
+              d.value != null &&
+              !d.isOutlier,
+          );
+          const analysisRegression = DataService.calculateLinearRegression(
+            regressionData,
+            regressionRange.start,
+          ); // Use effective start date
+          stats.regressionSlopeWeekly =
+            analysisRegression.slope != null
+              ? analysisRegression.slope * 7
+              : null;
+          stats.regressionStartDate = regressionRange.start; // Reflect the actual start date used for this calculation
+          stats.regressionPointsWithCI = analysisRegression.pointsWithCI; // Pass CI data for insights
+        } else {
+          // Set regression stats to null if range is invalid
+          stats.regressionSlopeWeekly = null;
+          stats.regressionStartDate = null;
+          stats.regressionPointsWithCI = [];
         }
-        analysisRegression = _data.calculateLinearRegression(
-          analysisNonOutlierValueData,
-          regressionStartDateForStats,
+
+        // TDEE from weight trend (prefer regression slope if valid and available, fallback to current rate)
+        const trendForTDEECalc =
+          stats.regressionSlopeWeekly != null &&
+          !isNaN(stats.regressionSlopeWeekly)
+            ? stats.regressionSlopeWeekly
+            : stats.currentWeeklyRate;
+        stats.avgTDEE_WgtChange = StatsManager._calculateTDEEFromTrend(
+          stats.avgIntake,
+          trendForTDEECalc,
         );
+        stats.estimatedDeficitSurplus =
+          StatsManager._estimateDeficitSurplusFromTrend(trendForTDEECalc);
       } else {
-        // Set defaults to null or empty if range is invalid
-        calculatedStats.rollingSmaWeeklyChange = null;
-        calculatedStats.volatility = null;
-        calculatedStats.avgIntake = null;
-        calculatedStats.avgExpenditure = null;
-        calculatedStats.avgNetBalance = null;
-        calculatedStats.avgTDEE_GFit = null;
-        calculatedStats.netCalRateCorrelation = null;
-        calculatedStats.weightDataConsistency = {
-          count: 0,
-          totalDays: 0,
-          percentage: 0,
-        };
-        calculatedStats.calorieDataConsistency = {
-          count: 0,
-          totalDays: 0,
-          percentage: 0,
-        };
-        calculatedStats.avgTDEE_Difference = null;
+        // Set defaults to null or empty if analysis range is invalid
+        Object.assign(stats, {
+          netCalRateCorrelation: null,
+          currentWeeklyRate: null,
+          volatility: null,
+          avgIntake: null,
+          avgExpenditureGFit: null,
+          avgNetBalance: null,
+          avgTDEE_Difference: null,
+          avgTDEE_Adaptive: null,
+          weightDataConsistency: { count: 0, totalDays: 0, percentage: 0 },
+          calorieDataConsistency: { count: 0, totalDays: 0, percentage: 0 },
+          regressionSlopeWeekly: null,
+          regressionStartDate: null,
+          regressionPointsWithCI: [],
+          avgTDEE_WgtChange: null,
+          estimatedDeficitSurplus: null,
+        });
+        // Clear state arrays that depend on analysis range
+        state.weeklySummaryData = [];
+        state.correlationScatterData = [];
+        // Keep plateaus/trends based on full data? Or clear? Let's clear for consistency.
+        // state.plateaus = []; // Or keep based on full data if desired for display regardless of range
+        // state.trendChangePoints = [];
       }
-
-      // --- Trend & TDEE (Based on Analysis Range) ---
-      calculatedStats.regressionSlopeWeekly =
-        analysisRegression && analysisRegression.slope !== null
-          ? analysisRegression.slope * 7
-          : null;
-      calculatedStats.regressionStartDate = state.regressionStartDate; // UI-selected date for visual line
-
-      // Prioritize regression slope if available AND considered reliable (enough points?)
-      // Simple prioritization: use regression if calculated, else rolling SMA rate
-      const trendForTDEECalc =
-        calculatedStats.regressionSlopeWeekly ??
-        calculatedStats.rollingSmaWeeklyChange;
-
-      calculatedStats.avgTDEE_WgtChange = _stats.calculateTDEEFromTrend(
-        calculatedStats.avgIntake,
-        trendForTDEECalc,
-      );
-      calculatedStats.estimatedDeficitSurplus =
-        _stats.estimateDeficitSurplusFromTrend(trendForTDEECalc);
 
       // --- Goal Related Stats ---
-      calculatedStats.targetWeight = state.goal.weight;
-      calculatedStats.targetRate = state.goal.targetRate;
-      calculatedStats.targetDate = state.goal.date;
-      const referenceWeightForGoal =
-        calculatedStats.currentSma ?? calculatedStats.currentWeight; // Use SMA if available
+      stats.targetWeight = state.goal.weight;
+      stats.targetRate = state.goal.targetRate;
+      stats.targetDate = state.goal.date;
+      const referenceWeightForGoal = stats.currentSma ?? stats.currentWeight; // Use latest SMA if available
 
-      if (
-        referenceWeightForGoal !== null &&
-        calculatedStats.targetWeight !== null
-      ) {
-        calculatedStats.weightToGoal =
-          calculatedStats.targetWeight - referenceWeightForGoal;
-        const trendForTimeEst = trendForTDEECalc; // Use analysis trend for estimation
-        calculatedStats.estimatedTimeToGoal =
-          _stats.calculateEstimatedTimeToGoal(
-            referenceWeightForGoal,
-            calculatedStats.targetWeight,
-            trendForTimeEst,
-          );
-
-        if (calculatedStats.targetDate) {
-          calculatedStats.requiredRateForGoal =
-            _stats.calculateRequiredRateForGoal(
+      // Calculate goal progress only if reference weight and target weight are known
+      if (referenceWeightForGoal != null && stats.targetWeight != null) {
+        stats.weightToGoal = stats.targetWeight - referenceWeightForGoal;
+        // Use the most relevant current trend (regression if valid, else smoothed rate)
+        const currentTrendForGoal =
+          stats.regressionSlopeWeekly ?? stats.currentWeeklyRate;
+        stats.estimatedTimeToGoal = StatsManager._calculateEstimatedTimeToGoal(
+          referenceWeightForGoal,
+          stats.targetWeight,
+          currentTrendForGoal,
+        );
+        // Calculate required rate only if target date is set
+        stats.requiredRateForGoal = stats.targetDate
+          ? StatsManager._calculateRequiredRateForGoal(
               referenceWeightForGoal,
-              calculatedStats.targetWeight,
-              calculatedStats.targetDate,
-            );
-          if (calculatedStats.requiredRateForGoal !== null) {
-            const baselineTDEE =
-              calculatedStats.avgTDEE_WgtChange ?? calculatedStats.avgTDEE_GFit; // Use calculated TDEE if available, else GFit
-            if (baselineTDEE !== null && !isNaN(baselineTDEE)) {
-              const requiredDailyDeficitSurplus =
-                (calculatedStats.requiredRateForGoal / 7) * CONFIG.KCALS_PER_KG;
-              calculatedStats.requiredNetCalories = requiredDailyDeficitSurplus;
-              // Feature #9: Calorie Target Guidance
-              const targetIntake = baselineTDEE + requiredDailyDeficitSurplus;
-              calculatedStats.targetIntakeRange = {
-                min: Math.round(targetIntake - 100),
-                max: Math.round(targetIntake + 100),
-              };
-            } else {
-              calculatedStats.requiredNetCalories = null;
-              calculatedStats.targetIntakeRange = null; // Feature #9
-            }
+              stats.targetWeight,
+              stats.targetDate,
+            )
+          : null;
+
+        // Calculate required net calories and suggested intake if required rate is known
+        if (stats.requiredRateForGoal != null) {
+          // Use best available TDEE estimate from the analysis range: Adaptive > Trend > GFit
+          const baselineTDEE =
+            stats.avgTDEE_Adaptive ??
+            stats.avgTDEE_WgtChange ??
+            stats.avgExpenditureGFit;
+          if (baselineTDEE != null && !isNaN(baselineTDEE)) {
+            const requiredDailyDeficitSurplus =
+              (stats.requiredRateForGoal / 7) * CONFIG.KCALS_PER_KG;
+            stats.requiredNetCalories = requiredDailyDeficitSurplus;
+            const targetIntake = baselineTDEE + requiredDailyDeficitSurplus;
+            // Provide a simple range around the calculated target intake
+            stats.suggestedIntakeRange = {
+              min: Math.round(targetIntake - 100),
+              max: Math.round(targetIntake + 100),
+            };
           } else {
-            calculatedStats.requiredNetCalories = null;
-            calculatedStats.targetIntakeRange = null; // Feature #9
+            // If TDEE cannot be estimated, cannot calculate calorie targets
+            stats.requiredNetCalories = null;
+            stats.suggestedIntakeRange = null;
           }
         } else {
-          calculatedStats.requiredRateForGoal = null;
-          calculatedStats.requiredNetCalories = null;
-          calculatedStats.targetIntakeRange = null; // Feature #9
+          // If required rate cannot be calculated (e.g., no target date)
+          stats.requiredNetCalories = null;
+          stats.suggestedIntakeRange = null;
         }
 
-        // Compare current rate to target rate
-        const currentActualRate = trendForTDEECalc; // Use analysis trend
-        if (calculatedStats.targetRate !== null && currentActualRate !== null) {
-          const diff = currentActualRate - calculatedStats.targetRate;
+        // Compare current rate to target rate if both exist
+        if (
+          stats.targetRate != null &&
+          currentTrendForGoal != null &&
+          !isNaN(currentTrendForGoal)
+        ) {
+          const diff = currentTrendForGoal - stats.targetRate;
           const absDiff = Math.abs(diff);
-          let feedback = { text: "N/A", class: "" };
-          if (absDiff < 0.03) feedback = { text: "On Target", class: "good" };
-          else if (diff > 0)
-            feedback = {
-              text: `Faster (+${_helpers.formatValue(diff, 2)})`,
-              class: "warn",
-            };
-          else
-            feedback = {
-              text: `Slower (${_helpers.formatValue(diff, 2)})`,
-              class: "warn",
-            };
-          calculatedStats.targetRateFeedback = feedback;
-        } else calculatedStats.targetRateFeedback = { text: "N/A", class: "" };
+          let feedbackClass = "";
+          let feedbackText = "N/A";
+          if (absDiff < 0.03) {
+            feedbackClass = "good";
+            feedbackText = "On Target";
+          } else if (diff > 0) {
+            feedbackClass = "warn";
+            feedbackText = `Faster (+${Utils.formatValue(diff, 2)})`;
+          } else {
+            feedbackClass = "warn";
+            feedbackText = `Slower (${Utils.formatValue(diff, 2)})`;
+          }
+          stats.targetRateFeedback = {
+            text: feedbackText,
+            class: feedbackClass,
+          };
+        } else {
+          // If target rate or current trend is missing
+          stats.targetRateFeedback = { text: "N/A", class: "" };
+        }
       } else {
-        calculatedStats.weightToGoal = null;
-        calculatedStats.estimatedTimeToGoal = "N/A";
-        calculatedStats.requiredRateForGoal = null;
-        calculatedStats.requiredNetCalories = null;
-        calculatedStats.targetIntakeRange = null; // Feature #9
-        calculatedStats.targetRateFeedback = { text: "N/A", class: "" };
+        // Set defaults if goal cannot be calculated (missing target or current weight)
+        Object.assign(stats, {
+          weightToGoal: null,
+          estimatedTimeToGoal: "N/A",
+          requiredRateForGoal: null,
+          requiredNetCalories: null,
+          suggestedIntakeRange: null,
+          targetRateFeedback: { text: "N/A", class: "" },
+        });
       }
 
-      return calculatedStats;
+      return stats;
     },
 
-    updateDOM(stats) {
-      const h = _helpers;
-      const fv = h.formatValue;
-      const fd = h.formatDate;
-      const na = (v) => v; // No-op formatter
+    // --- DOM Update ---
+    updateStatsDisplay(stats) {
+      const fv = Utils.formatValue;
+      const fd = Utils.formatDate;
+      const fdShort = Utils.formatDateShort; // Use short date for regression label
+      const na = (v) => v ?? "N/A";
 
-      // --- Weight Overview (All Time) ---
-      h.updateStatElement("startingWeight", stats.startingWeight, fv, 1);
-      h.updateStatElement("currentWeight", stats.currentWeight, fv, 1);
-      h.updateStatElement("currentSma", stats.currentSma, fv, 1);
-      h.updateStatElement("totalChange", stats.totalChange, fv, 1);
-      h.updateStatElement("maxWeight", stats.maxWeight, fv, 1);
-      h.updateStatElement("maxWeightDate", stats.maxWeightDate, fd); // Click listener added in helper
-      h.updateStatElement("minWeight", stats.minWeight, fv, 1);
-      h.updateStatElement("minWeightDate", stats.minWeightDate, fd); // Click listener added in helper
+      // Helper to update a single stat element safely
+      const updateElement = (key, value, formatter = na, args) => {
+        const element = ui.statElements[key];
+        if (element) {
+          element.textContent = formatter(value, args);
+          // Specific handling for highlightable dates
+          if (key === "maxWeightDate" || key === "minWeightDate") {
+            if (value instanceof Date && !isNaN(value)) {
+              element.classList.add("highlightable");
+              element.style.cursor = "pointer";
+              element.style.textDecoration = "underline dotted";
+              // Store date on element for listener, remove old listener first
+              element.removeEventListener(
+                "click",
+                EventHandlers.statDateClickWrapper,
+              ); // Use wrapper name
+              element.__highlightDate = value; // Use a non-standard property
+              element.addEventListener(
+                "click",
+                EventHandlers.statDateClickWrapper,
+              ); // Attach wrapper
+            } else {
+              element.classList.remove("highlightable");
+              element.style.cursor = "";
+              element.style.textDecoration = "";
+              element.removeEventListener(
+                "click",
+                EventHandlers.statDateClickWrapper,
+              );
+              element.__highlightDate = null;
+            }
+          }
+          // Specific handling for feedback class
+          if (key === "currentRateFeedback" && stats.targetRateFeedback) {
+            element.className = `stat-value feedback ${stats.targetRateFeedback.class || ""}`; // Reset classes safely
+            element.textContent = stats.targetRateFeedback.text; // Use pre-formatted text
+          }
+        } else {
+          // Log only once or use less verbose warning?
+          // console.warn(`StatsManager: Stat element node not found in cache for key: ${key}`);
+        }
+      };
 
-      // --- Analysis & Insights (Analysis Range) ---
-      h.updateStatElement("volatilityScore", stats.volatility, fv, 2); // Moved to Analysis Results
-      h.updateStatElement(
-        "rollingWeeklyChangeSma",
-        stats.rollingSmaWeeklyChange,
-        fv,
-        2,
-      ); // Uses smoothed rate now
-      h.updateStatElement(
-        "regressionSlope",
-        stats.regressionSlopeWeekly,
-        fv,
-        2,
-      );
-      if (selections.regressionStartDateLabel)
-        selections.regressionStartDateLabel.text(
+      // Update All-Time Stats
+      updateElement("startingWeight", stats.startingWeight, fv, 1);
+      updateElement("currentWeight", stats.currentWeight, fv, 1);
+      updateElement("currentSma", stats.currentSma, fv, 1);
+      updateElement("totalChange", stats.totalChange, fv, 1);
+      updateElement("maxWeight", stats.maxWeight, fv, 1);
+      updateElement("maxWeightDate", stats.maxWeightDate, fd);
+      updateElement("minWeight", stats.minWeight, fv, 1);
+      updateElement("minWeightDate", stats.minWeightDate, fd);
+
+      // Update Analysis Range Stats
+      updateElement("volatilityScore", stats.volatility, fv, 2);
+      updateElement("rollingWeeklyChangeSma", stats.currentWeeklyRate, fv, 2); // Use currentWeeklyRate
+      updateElement("regressionSlope", stats.regressionSlopeWeekly, fv, 2);
+      // Update the regression start date label shown in the UI
+      if (ui.regressionStartDateLabel)
+        ui.regressionStartDateLabel.text(
           stats.regressionStartDate
-            ? fd(stats.regressionStartDate)
-            : "Range Start",
+            ? `(${fdShort(stats.regressionStartDate)})`
+            : "(Range Start)",
         );
-      h.updateStatElement(
+      updateElement(
         "netcalRateCorrelation",
         stats.netCalRateCorrelation,
         fv,
         2,
       );
-      h.updateStatElement(
+      updateElement(
         "weightConsistency",
         stats.weightDataConsistency?.percentage,
         fv,
         0,
       );
-      const wcDetailsEl = selections.statElements["weightConsistencyDetails"];
-      if (wcDetailsEl)
-        wcDetailsEl.textContent = stats.weightDataConsistency
-          ? `(${stats.weightDataConsistency.count}/${stats.weightDataConsistency.totalDays} days)`
-          : "(N/A)";
-      h.updateStatElement(
+      updateElement(
+        "weightConsistencyDetails",
+        stats.weightDataConsistency,
+        (d) => (d ? `(${d.count}/${d.totalDays} days)` : "(N/A)"),
+      );
+      updateElement(
         "calorieConsistency",
         stats.calorieDataConsistency?.percentage,
         fv,
         0,
       );
-      const ccDetailsEl = selections.statElements["calorieConsistencyDetails"];
-      if (ccDetailsEl)
-        ccDetailsEl.textContent = stats.calorieDataConsistency
-          ? `(${stats.calorieDataConsistency.count}/${stats.calorieDataConsistency.totalDays} days)`
-          : "(N/A)";
-      h.updateStatElement("avgIntake", stats.avgIntake, fv, 0);
-      h.updateStatElement("avgExpenditure", stats.avgExpenditure, fv, 0);
-      h.updateStatElement("avgNetBalance", stats.avgNetBalance, fv, 0);
-      h.updateStatElement(
+      updateElement(
+        "calorieConsistencyDetails",
+        stats.calorieDataConsistency,
+        (d) => (d ? `(${d.count}/${d.totalDays} days)` : "(N/A)"),
+      );
+      updateElement("avgIntake", stats.avgIntake, fv, 0);
+      updateElement("avgExpenditure", stats.avgExpenditureGFit, fv, 0); // Clarified source
+      updateElement("avgNetBalance", stats.avgNetBalance, fv, 0);
+      updateElement(
         "estimatedDeficitSurplus",
         stats.estimatedDeficitSurplus,
         fv,
         0,
       );
-      h.updateStatElement("avgTdeeGfit", stats.avgTDEE_GFit, fv, 0);
-      h.updateStatElement("avgTdeeWgtChange", stats.avgTDEE_WgtChange, fv, 0);
-      // Feature #8 TDEE Diff Stat
-      h.updateStatElement("avgTdeeDifference", stats.avgTDEE_Difference, fv, 0);
+      updateElement("avgTdeeGfit", stats.avgExpenditureGFit, fv, 0); // TDEE GFit is just avg expenditure
+      updateElement("avgTdeeWgtChange", stats.avgTDEE_WgtChange, fv, 0);
+      updateElement("avgTdeeDifference", stats.avgTDEE_Difference, fv, 0);
+      updateElement("avgTdeeAdaptive", stats.avgTDEE_Adaptive, fv, 0);
 
-      // --- Goal Tracker ---
-      h.updateStatElement("targetWeightStat", stats.targetWeight, fv, 1);
-      h.updateStatElement("targetRateStat", stats.targetRate, fv, 2);
-      h.updateStatElement("weightToGoal", stats.weightToGoal, fv, 1);
-      h.updateStatElement("estimatedTimeToGoal", stats.estimatedTimeToGoal, na);
-      h.updateStatElement(
-        "requiredRateForGoal",
-        stats.requiredRateForGoal,
-        fv,
-        2,
+      // Update Goal Tracker Stats
+      updateElement("targetWeightStat", stats.targetWeight, fv, 1);
+      updateElement("targetRateStat", stats.targetRate, fv, 2);
+      updateElement("weightToGoal", stats.weightToGoal, fv, 1);
+      updateElement("estimatedTimeToGoal", stats.estimatedTimeToGoal); // String, no formatter
+      updateElement("requiredRateForGoal", stats.requiredRateForGoal, fv, 2);
+      updateElement("requiredNetCalories", stats.requiredNetCalories, fv, 0);
+      updateElement("suggestedIntakeRange", stats.suggestedIntakeRange, (r) =>
+        r ? `${r.min} - ${r.max}` : "N/A",
       );
-      h.updateStatElement(
-        "requiredNetCalories",
-        stats.requiredNetCalories,
-        fv,
-        0,
-      );
-      // Feature #9: Calorie Target Guidance
-      const rangeText = stats.targetIntakeRange
-        ? `${stats.targetIntakeRange.min} - ${stats.targetIntakeRange.max}`
-        : "N/A";
-      h.updateStatElement("suggestedIntakeRange", rangeText, na);
+      updateElement("currentRateFeedback"); // Special handling via class/text above
 
-      const feedbackEl = selections.statElements["currentRateFeedback"];
-      if (feedbackEl) {
-        feedbackEl.textContent = stats.targetRateFeedback?.text ?? "N/A";
-        feedbackEl.className = `stat-value feedback ${stats.targetRateFeedback?.class ?? ""}`;
+      // Update other UI elements related to stats
+      InsightsGenerator.updateSummary(stats); // Generate and display insights text
+      WeeklySummaryUpdater.updateTable(state.weeklySummaryData); // Update the summary table
+      ScatterPlotUpdater.updateChart(state.correlationScatterData); // Update scatter plot points
+      EventHandlers.updatePinnedTooltipDisplay(); // Refresh pinned tooltip if visible
+    },
+
+    // --- Public Method to Trigger Update ---
+    update() {
+      try {
+        const statsData = StatsManager.calculateAllStats();
+        StatsManager.updateStatsDisplay(statsData);
+      } catch (error) {
+        console.error("StatsManager: Error during statistics update:", error);
+        Utils.showStatusMessage("Error updating statistics.", "error");
       }
-
-      // Update Insight Summary Section
-      _insights.updateSummary(stats);
-
-      // Update Weekly Summary Table (Feature #2) - Pass the calculated weekly data
-      _update.weeklySummary(state.weeklySummaryData);
     },
-
-    updateAll() {
-      const statsData = _stats.getAll(); // Calculate all stats (includes plateau/trend detection now)
-      _stats.updateDOM(statsData);
-    },
-  };
+  }; // End of StatsManager
 
   // ========================================================================
-  // Insight Generation (`_insights`)
+  // Insights Generator (`InsightsGenerator`)
   // ========================================================================
-  const _insights = {
-    getConsistencyInsight(correlation, consistencyWgt, consistencyCal) {
+  const InsightsGenerator = {
+    _getConsistencyInsight(correlation, consistencyWgt, consistencyCal) {
       let insight = "<h4>Consistency Check</h4>";
-
-      // Data logging consistency feedback
       let consistencyMsg = "";
-      if (consistencyWgt.percentage < 80 || consistencyCal.percentage < 80) {
-        consistencyMsg += `<span class="warn">Low data consistency detected!</span> `;
-        if (consistencyWgt.percentage < 80)
-          consistencyMsg += `Weight logged only ${consistencyWgt.percentage.toFixed(0)}% of days. `;
-        if (consistencyCal.percentage < 80)
-          consistencyMsg += `Calories logged only ${consistencyCal.percentage.toFixed(0)}% of days. `;
-        consistencyMsg += `Inaccurate stats & correlation likely.`;
-      } else if (
-        consistencyWgt.percentage < 95 ||
-        consistencyCal.percentage < 95
-      ) {
-        consistencyMsg += `<span class="good">Good data consistency</span> (${consistencyWgt.percentage.toFixed(0)}% Wgt, ${consistencyCal.percentage.toFixed(0)}% Cal).`;
+      const wgtPct = consistencyWgt.percentage;
+      const calPct = consistencyCal.percentage;
+
+      if (wgtPct < 80 || calPct < 80) {
+        consistencyMsg += `<span class="warn">Low data consistency!</span> `;
+        if (wgtPct < 80)
+          consistencyMsg += `Weight logged ${wgtPct.toFixed(0)}%. `;
+        if (calPct < 80)
+          consistencyMsg += `Calories logged ${calPct.toFixed(0)}%. `;
+        consistencyMsg += `Stats & correlation may be unreliable.`;
+      } else if (wgtPct < 95 || calPct < 95) {
+        consistencyMsg += `<span class="good">Good consistency</span> (${wgtPct.toFixed(0)}% Wgt, ${calPct.toFixed(0)}% Cal).`;
       } else {
-        consistencyMsg += `<span class="good">Excellent data consistency</span> (${consistencyWgt.percentage.toFixed(0)}% Wgt, ${consistencyCal.percentage.toFixed(0)}% Cal).`;
+        consistencyMsg += `<span class="good">Excellent consistency</span> (${wgtPct.toFixed(0)}% Wgt, ${calPct.toFixed(0)}% Cal).`;
       }
       insight += `<p><strong>Logging Frequency:</strong> ${consistencyMsg}</p>`;
 
-      // Correlation feedback
-      if (correlation !== null && !isNaN(correlation)) {
+      if (wgtPct < 80 || calPct < 80) {
+        insight += `<p><span class="warn">Warning: Low consistency likely impacts TDEE estimates and correlation accuracy.</span></p>`;
+      }
+
+      // Correlation Insight
+      if (correlation != null && !isNaN(correlation)) {
         let level = "",
           explanation = "";
-        const rVal = _helpers.formatValue(correlation, 2);
-        // Correlation interpretation (NEGATIVE correlation expected: higher surplus -> faster gain / slower loss)
+        const rVal = Utils.formatValue(correlation, 2);
+        const absR = Math.abs(correlation);
+
         if (correlation <= -0.7) {
-          level = `<span class="good">Excellent!</span>`;
-          explanation = `Reported net calories strongly align (r=${rVal}) with weight trend.`;
+          level = `<span class="good">Strong Negative</span>`;
+          explanation = `Net calories strongly align (inversely) with weight trend (r=${rVal}). Good tracking indication.`;
         } else if (correlation <= -0.4) {
-          level = `<span class="good">Good.</span>`;
-          explanation = `Reported net calories generally align (r=${rVal}) with weight trend.`;
+          level = `<span class="good">Moderate Negative</span>`;
+          explanation = `Net calories show a moderate inverse alignment with weight trend (r=${rVal}).`;
         } else if (correlation < -0.1) {
-          level = `<span class="warn">Fair.</span>`;
-          explanation = `Weak negative link (r=${rVal}). Consider consistency warning above. Check tracking/activity levels.`;
+          level = `<span class="warn">Weak Negative</span>`;
+          explanation = `A weak inverse link observed (r=${rVal}). Check tracking accuracy/consistency.`;
+        } else if (absR < 0.1) {
+          level = `<span class="bad">Very Weak/None</span>`;
+          explanation = `No significant link between net calories and weight trend (r=${rVal}). Review tracking data carefully.`;
         } else {
-          level = `<span class="bad">Poor/Inconclusive.</span>`;
-          explanation = `Expected negative link not observed (r=${rVal}). Consider consistency warning above. Review tracking closely.`;
+          level = `<span class="bad">Unexpected Positive</span>`;
+          explanation = `Positive link (r=${rVal}) suggests potential issues (e.g., lag, inaccurate TDEE source, inconsistent tracking).`;
         }
-        insight += `<p><strong>Tracking vs. Trend:</strong> ${level} ${explanation}</p>`;
-      } else {
-        insight += `<p><strong>Tracking vs. Trend:</strong> Not enough comparable weekly data in range for correlation analysis.</p>`;
+
+        insight += `<p><strong>Net Calorie vs. Rate Correlation:</strong> ${level}. ${explanation}</p>`;
+      } else if (
+        consistencyWgt.percentage >= 50 &&
+        consistencyCal.percentage >= 50
+      ) {
+        // Only show message if some data exists
+        insight += `<p><strong>Net Calorie vs. Rate Correlation:</strong> Not enough comparable weekly data (${state.weeklySummaryData.length} weeks) in range for reliable correlation analysis (min ${CONFIG.MIN_WEEKS_FOR_CORRELATION} required).</p>`;
       }
+
       return insight;
     },
 
-    getTDEEInsight(tdeeGfit, tdeeTrend, tdeeDiffAvg) {
-      let insight = "<h4>Energy Balance Reality Check</h4>";
-      if (
-        tdeeGfit !== null &&
-        !isNaN(tdeeGfit) &&
-        tdeeTrend !== null &&
-        !isNaN(tdeeTrend)
-      ) {
-        const diff = tdeeTrend - tdeeGfit;
+    _getTDEEInsight(tdeeGFit, tdeeTrend, tdeeDiffAvg, tdeeAdaptive) {
+      let insight = "<h4>Energy Balance (TDEE)</h4>";
+      const fv = Utils.formatValue;
+
+      // Prioritize TDEE estimates: Adaptive > Trend > GFit
+      const estimates = [
+        { label: "Adaptive TDEE", value: tdeeAdaptive, priority: 1 },
+        { label: "Trend TDEE", value: tdeeTrend, priority: 2 },
+        { label: "GFit Avg TDEE", value: tdeeGFit, priority: 3 },
+      ]
+        .filter((e) => e.value != null && !isNaN(e.value))
+        .sort((a, b) => a.priority - b.priority);
+
+      if (estimates.length === 0) {
+        return (
+          insight +
+          "<p>Insufficient data in the analysis range to estimate TDEE.</p>"
+        );
+      }
+
+      const primaryTDEE = estimates[0];
+      insight += `<p><strong>Best Estimate (TDEE): ${primaryTDEE.label} ≈ ${fv(primaryTDEE.value, 0)} kcal/d.</strong></p>`;
+
+      // Compare primary estimate to GFit if available and not primary
+      const gfitEstimate = estimates.find((e) => e.label === "GFit Avg TDEE");
+      if (gfitEstimate && gfitEstimate !== primaryTDEE) {
+        const diff = primaryTDEE.value - gfitEstimate.value;
         const diffPercent =
-          tdeeGfit !== 0
-            ? (diff / tdeeGfit) * 100
+          gfitEstimate.value !== 0
+            ? (diff / gfitEstimate.value) * 100
             : diff > 0
               ? Infinity
               : -Infinity;
-        let msg = `Trend TDEE: <strong>${_helpers.formatValue(tdeeTrend, 0)} kcal/d</strong>. `;
         const diffAvgStr =
-          tdeeDiffAvg !== null
-            ? ` (Avg Diff: ${_helpers.formatValue(tdeeDiffAvg, 0)} kcal)`
-            : ""; // Feature #8
-
-        if (Math.abs(diffPercent) < 10) {
-          msg += `<span class="good">Aligns well (&lt;10% diff) with GFit avg (~${_helpers.formatValue(tdeeGfit, 0)} kcal/d)${diffAvgStr}.</span>`;
-        } else if (diff > 0) {
-          msg += `<span class="warn">Notably higher (+${diffPercent.toFixed(0)}%) than GFit avg (~${_helpers.formatValue(tdeeGfit, 0)} kcal/d)${diffAvgStr}. Possibilities: GFit underestimates burn, or intake log low.</span>`;
-        } else {
-          msg += `<span class="warn">Notably lower (${diffPercent.toFixed(0)}%) than GFit avg (~${_helpers.formatValue(tdeeGfit, 0)} kcal/d)${diffAvgStr}. Possibilities: GFit overestimates burn, or intake log high.</span>`;
-        }
-        insight += `<p><strong>TDEE Comparison:</strong> ${msg}</p>`;
-      } else if (tdeeGfit !== null && !isNaN(tdeeGfit)) {
-        insight += `<p><strong>TDEE Comparison:</strong> GFit Avg TDEE ~${_helpers.formatValue(tdeeGfit, 0)} kcal/d. Cannot estimate TDEE from weight trend in range (check data consistency?).</p>`;
-      } else if (tdeeTrend !== null && !isNaN(tdeeTrend)) {
-        insight += `<p><strong>TDEE Comparison:</strong> Trend TDEE ~${_helpers.formatValue(tdeeTrend, 0)} kcal/d. Missing Google Fit avg TDEE data in range.</p>`;
-      } else {
-        insight +=
-          "<p><strong>TDEE Comparison:</strong> Insufficient data in range to estimate TDEE from trend or GFit.</p>";
-      }
-      return insight;
-    },
-
-    getTrendInsight(currentTrendWeekly, currentWeight, regressionUsed) {
-      let insight = "<h4>Current Trend & Gaining Phase</h4>";
-      if (currentTrendWeekly !== null && !isNaN(currentTrendWeekly)) {
-        let trendDesc = "";
-        const trendAbs = Math.abs(currentTrendWeekly);
-        const trendPercent =
-          currentWeight && currentWeight > 0 && !isNaN(currentWeight)
-            ? (currentTrendWeekly / currentWeight) * 100
-            : null;
-        const trendValStr = `<strong>${_helpers.formatValue(currentTrendWeekly, 2)} kg/wk</strong>`;
-        const trendPercentStr =
-          trendPercent !== null && !isNaN(trendPercent)
-            ? ` (${_helpers.formatValue(trendPercent, 1)}%/wk)`
+          tdeeDiffAvg != null
+            ? ` (Avg Trend-GFit Diff: ${fv(tdeeDiffAvg, 0)} kcal)`
             : "";
 
-        if (trendAbs < 0.05) {
-          trendDesc = `Weight is <span class="stable">stable</span> (${trendValStr}).`;
-        } else if (currentTrendWeekly > 0) {
-          trendDesc = `Actively <span class="gaining">gaining</span> at ${trendValStr}${trendPercentStr}.`;
-          if (currentTrendWeekly > CONFIG.MAX_RECOMMENDED_GAIN_RATE_KG_WEEK) {
-            trendDesc += ` <span class="warn">(Rate exceeds recommended ${CONFIG.MIN_RECOMMENDED_GAIN_RATE_KG_WEEK}-${CONFIG.MAX_RECOMMENDED_GAIN_RATE_KG_WEEK} kg/wk range. Likely includes significant fat gain.)</span>`;
-          } else if (
-            currentTrendWeekly >= CONFIG.MIN_RECOMMENDED_GAIN_RATE_KG_WEEK
-          ) {
-            trendDesc += ` <span class="good">(Rate within recommended lean gain range.)</span>`;
-          } else {
-            trendDesc += ` <span class="warn">(Rate slow for typical lean gain. Ensure adequate surplus?)</span>`;
-          }
-        } else {
-          // Losing weight
-          trendDesc = `Actively <span class="losing">losing</span> at ${trendValStr}${trendPercentStr}.`;
-          trendDesc += ` <span class="warn">(Adjust intake for gain goals.)</span>`;
-        }
-
-        const basis = regressionUsed
-          ? "linear regression"
-          : `smoothed SMA rate`;
-        insight += `<p><strong>Weight Trend:</strong> ${trendDesc} <small>(Based on ${basis} in analysis range)</small></p>`;
-      } else {
+        let comparisonMsg = `Comparing to GFit Avg (~${fv(gfitEstimate.value, 0)} kcal/d): `;
+        if (Math.abs(diffPercent) < 10)
+          comparisonMsg += `<span class="good">Good alignment (&lt;10% diff).</span>${diffAvgStr}`;
+        else if (diff > 0)
+          comparisonMsg += `<span class="warn">Estimate is notably higher (+${diffPercent.toFixed(0)}%) than GFit.${diffAvgStr}</span> Check GFit accuracy or intake logging.`;
+        else
+          comparisonMsg += `<span class="warn">Estimate is notably lower (${diffPercent.toFixed(0)}%) than GFit.${diffAvgStr}</span> Check GFit accuracy or intake logging.`;
+        insight += `<p>${comparisonMsg}</p>`;
+      } else if (!gfitEstimate && primaryTDEE.label !== "GFit Avg TDEE") {
         insight +=
-          "<p><strong>Weight Trend:</strong> Cannot determine trend in selected analysis range (check data consistency?).</p>";
+          "<p>Google Fit average TDEE data missing or incomplete in range for comparison.</p>";
+      }
+
+      // Mention other available estimates
+      if (estimates.length > 1) {
+        insight += `<p><small>Other estimates: ${estimates
+          .slice(1)
+          .map((e) => `${e.label} ≈ ${fv(e.value, 0)}`)
+          .join(", ")}</small></p>`;
+      }
+
+      return insight;
+    },
+
+    _getTrendInsight(
+      currentTrendWeekly,
+      currentWeight,
+      regressionUsed,
+      regressionCI,
+    ) {
+      let insight = "<h4>Current Weight Trend</h4>";
+      const fv = Utils.formatValue;
+
+      if (currentTrendWeekly == null || isNaN(currentTrendWeekly)) {
+        return (
+          insight +
+          "<p>Cannot determine weight trend in selected analysis range (check data consistency).</p>"
+        );
+      }
+
+      let trendDesc = "";
+      const trendAbs = Math.abs(currentTrendWeekly);
+      // Calculate % change relative to current weight (use SMA if available)
+      const weightForPct =
+        currentWeight ??
+        state.processedData.filter((d) => d.value != null).slice(-1)[0]?.value;
+      const trendPercent =
+        weightForPct && weightForPct > 0
+          ? (currentTrendWeekly / weightForPct) * 100
+          : null;
+      const trendValStr = `<strong>${fv(currentTrendWeekly, 2)} kg/wk</strong>`;
+      const trendPercentStr =
+        trendPercent != null ? ` (${fv(trendPercent, 1)}%/wk)` : "";
+      const basis = regressionUsed ? "linear regression" : "smoothed SMA rate";
+
+      if (trendAbs < CONFIG.plateauRateThresholdKgWeek) {
+        // Use plateau threshold for stable
+        trendDesc = `Weight appears <span class="stable">stable</span> (${trendValStr}).`;
+      } else if (currentTrendWeekly > 0) {
+        trendDesc = `Actively <span class="gaining">gaining</span> at ${trendValStr}${trendPercentStr}.`;
+        if (currentTrendWeekly > CONFIG.MAX_RECOMMENDED_GAIN_RATE_KG_WEEK)
+          trendDesc += ` <span class="warn">(Rate may exceed recommended ${CONFIG.MIN_RECOMMENDED_GAIN_RATE_KG_WEEK}-${CONFIG.MAX_RECOMMENDED_GAIN_RATE_KG_WEEK} kg/wk range for lean gain.)</span>`;
+        else if (currentTrendWeekly >= CONFIG.MIN_RECOMMENDED_GAIN_RATE_KG_WEEK)
+          trendDesc += ` <span class="good">(Rate within typical lean gain range.)</span>`;
+        else
+          trendDesc += ` <span class="warn">(Rate is slow for typical lean gain goals. Ensure adequate surplus?)</span>`;
+      } else {
+        // Losing weight
+        trendDesc = `Actively <span class="losing">losing</span> at ${trendValStr}${trendPercentStr}.`;
+        // Add context if goal is gaining? (Requires goal info)
+        if (state.goal.targetRate != null && state.goal.targetRate > 0) {
+          trendDesc += ` <span class="warn">(Adjust intake/activity for gain goals.)</span>`;
+        }
+      }
+      insight += `<p><strong>Trend Estimate:</strong> ${trendDesc} <small>(Based on ${basis} in analysis range)</small></p>`;
+
+      // Confidence Interval Insight
+      if (regressionUsed && regressionCI && regressionCI.length > 0) {
+        const lastCI = regressionCI[regressionCI.length - 1];
+        if (lastCI && lastCI.lowerCI != null && lastCI.upperCI != null) {
+          const ciWidth = lastCI.upperCI - lastCI.lowerCI;
+          const ciMsg = `The 95% CI for the regression line endpoint is approx. ${fv(lastCI.lowerCI, 1)} - ${fv(lastCI.upperCI, 1)} kg (width: ${fv(ciWidth, 1)} kg). A narrower interval indicates higher confidence in the trend line's position.`;
+          insight += `<p><small><strong>Regression Confidence:</strong> ${ciMsg}</small></p>`;
+        }
       }
       return insight;
     },
 
-    // --- Feature #6: Plateau Insight ---
-    getPlateauInsight(analysisStartDate, analysisEndDate) {
+    _getGoalProgressInsight(stats) {
+      let insight = "<h4>Goal Progress & Guidance</h4>";
+      const fv = Utils.formatValue;
+      const fd = Utils.formatDateShort;
+
+      if (stats.targetWeight == null) {
+        return (
+          insight +
+          "<p>No weight goal set. Use the Goal Tracker section to set one.</p>"
+        );
+      }
+
+      const currentTrend =
+        stats.regressionSlopeWeekly ?? stats.currentWeeklyRate;
+      const timeEst = stats.estimatedTimeToGoal;
+
+      insight += `<p><strong>Target:</strong> ${fv(stats.targetWeight, 1)} kg`;
+      if (stats.targetDate) insight += ` by ${fd(stats.targetDate)}`;
+      if (stats.weightToGoal != null)
+        insight += `. <span class="${stats.weightToGoal > 0 ? "positive" : "negative"}">${fv(Math.abs(stats.weightToGoal), 1)} kg ${stats.weightToGoal >= 0 ? "to gain" : "to lose"}.</span>`;
+      insight += `</p>`;
+
+      // Projection based on current trend
+      if (
+        timeEst &&
+        timeEst !== "N/A" &&
+        timeEst !== "Trending away" &&
+        timeEst !== "Trend flat" &&
+        timeEst !== "Goal Achieved!"
+      ) {
+        insight += `<p><strong>Projection (Current Trend):</strong> Estimated time to goal: <span class="good">${timeEst}</span>.</p>`;
+      } else if (timeEst === "Goal Achieved!") {
+        insight += `<p><strong>Projection:</strong> <span class="good">Goal Achieved!</span></p>`;
+      } else if (timeEst === "Trending away") {
+        insight += `<p><strong>Projection:</strong> <span class="bad">Currently trending away from the goal weight.</span></p>`;
+      } else if (timeEst === "Trend flat") {
+        insight += `<p><strong>Projection:</strong> <span class="warn">Current trend is flat, goal unlikely at this rate.</span></p>`;
+      } else {
+        insight += `<p><strong>Projection:</strong> Cannot estimate time to goal with current trend data.</p>`;
+      }
+
+      // Target Rate vs Current Rate
+      if (stats.targetRate != null) {
+        insight += `<p><strong>Target Rate:</strong> ${fv(stats.targetRate, 2)} kg/wk. `;
+        if (stats.targetRateFeedback) {
+          insight += `<span class="feedback ${stats.targetRateFeedback.class || ""}">${stats.targetRateFeedback.text}</span>`;
+        } else {
+          insight += `(Comparison unavailable)`;
+        }
+        insight += `</p>`;
+      }
+
+      // Guidance for Target Date
+      if (stats.targetDate) {
+        if (stats.requiredRateForGoal != null) {
+          insight += `<p><strong>Required Rate (for Target Date):</strong> ${fv(stats.requiredRateForGoal, 2)} kg/wk. `;
+          if (currentTrend != null) {
+            const diff = currentTrend - stats.requiredRateForGoal;
+            const goalDirection =
+              stats.requiredRateForGoal > 0 ? "gain" : "loss"; // Determine goal direction
+            const currentDirection = currentTrend > 0 ? "gain" : "loss";
+
+            if (Math.abs(diff) < 0.05) {
+              // Close enough
+              insight += `<span class="good">Current rate is on track.</span>`;
+            } else if (goalDirection === "gain") {
+              if (diff > 0)
+                insight += `<span class="warn">Current rate (${fv(currentTrend, 2)}) is faster than required.</span>`;
+              else
+                insight += `<span class="warn">Current rate (${fv(currentTrend, 2)}) is slower than required.</span>`;
+            } else {
+              // Goal is loss
+              if (diff < 0)
+                insight += `<span class="warn">Current rate (${fv(currentTrend, 2)}) is faster (more loss) than required.</span>`;
+              else
+                insight += `<span class="warn">Current rate (${fv(currentTrend, 2)}) is slower (less loss) than required.</span>`;
+            }
+          } else {
+            insight += `Cannot compare to current rate.`;
+          }
+          insight += `</p>`;
+
+          if (stats.suggestedIntakeRange) {
+            const baselineTDEE =
+              stats.avgTDEE_Adaptive ??
+              stats.avgTDEE_WgtChange ??
+              stats.avgExpenditureGFit;
+            const tdeeSource =
+              baselineTDEE === stats.avgTDEE_Adaptive
+                ? "Adaptive"
+                : baselineTDEE === stats.avgTDEE_WgtChange
+                  ? "Trend"
+                  : "GFit";
+            insight += `<p><strong>Guidance (for Target Date):</strong> Suggested intake ≈ ${stats.suggestedIntakeRange.min}-${stats.suggestedIntakeRange.max} kcal/d <small>(based on ${tdeeSource} TDEE ≈ ${fv(baselineTDEE ?? 0, 0)})</small>.</p>`;
+          } else {
+            insight += `<p><strong>Guidance:</strong> Cannot suggest intake range (TDEE estimate unavailable).</p>`;
+          }
+        } else {
+          insight += `<p><strong>Guidance:</strong> Cannot calculate required rate for target date (check dates/weights).</p>`;
+        }
+      }
+
+      return insight;
+    },
+
+    _getDetectedFeaturesInsight(analysisStartDate, analysisEndDate) {
       let insight = "";
-      // Filter plateaus detected on the *full* dataset to only show those overlapping the analysis range
+      // Ensure dates are valid before filtering
+      if (
+        !(analysisStartDate instanceof Date) ||
+        !(analysisEndDate instanceof Date)
+      )
+        return "";
+
       const plateausInRange = state.plateaus.filter(
         (p) => p.endDate >= analysisStartDate && p.startDate <= analysisEndDate,
       );
-      if (plateausInRange.length > 0) {
-        insight += `<h4>Detected Plateaus</h4>`;
-        plateausInRange.forEach((p) => {
-          insight += `<p><span class="warn">Potential Plateau:</span> ${_helpers.formatDateShort(p.startDate)} - ${_helpers.formatDateShort(p.endDate)}</p>`;
-        });
-      }
-      return insight;
-    },
-
-    // --- Feature #7: Trend Change Insight ---
-    getTrendChangeInsight(analysisStartDate, analysisEndDate) {
-      let insight = "";
-      // Filter trend changes detected on the *full* dataset
       const changesInRange = state.trendChangePoints.filter(
         (p) => p.date >= analysisStartDate && p.date <= analysisEndDate,
       );
-      if (changesInRange.length > 0) {
-        insight += `<h4>Potential Trend Changes</h4>`;
-        changesInRange.forEach((p) => {
-          const direction = p.magnitude > 0 ? "acceleration" : "deceleration";
-          const rateChange = Math.abs(p.magnitude * 7); // Weekly rate change
-          insight += `<p><span class="warn">Significant ${direction}</span> detected around ${_helpers.formatDateShort(p.date)}. (Rate Δ ~${_helpers.formatValue(rateChange, 2)} kg/wk)</p>`; // Added magnitude
-        });
+
+      if (plateausInRange.length > 0 || changesInRange.length > 0) {
+        insight += `<h4>Detected Events in Range</h4>`;
+        if (plateausInRange.length > 0) {
+          insight += `<p><span class="warn">Potential Plateau(s):</span> `;
+          insight += plateausInRange
+            .map(
+              (p) =>
+                `${Utils.formatDateShort(p.startDate)} - ${Utils.formatDateShort(p.endDate)}`,
+            )
+            .join(", ");
+          insight += `.</p>`;
+        }
+        if (changesInRange.length > 0) {
+          insight += `<p><span class="warn">Potential Trend Change(s):</span> Around `;
+          insight += changesInRange
+            .map((p) => {
+              const direction =
+                p.magnitude > 0 ? "acceleration" : "deceleration";
+              return `${Utils.formatDateShort(p.date)} (${direction})`;
+            })
+            .join(", ");
+          insight += `.</p>`;
+        }
       }
       return insight;
     },
 
+    // --- Public Method ---
     updateSummary(stats) {
-      if (!selections.insightSummaryContainer) return;
+      if (!ui.insightSummaryContainer || ui.insightSummaryContainer.empty())
+        return;
 
       const currentTrend =
-        stats.regressionSlopeWeekly ?? stats.rollingSmaWeeklyChange;
-      const regressionUsedForTrend = stats.regressionSlopeWeekly !== null;
-      const analysisRange = _handlers.getAnalysisDateRange();
+        stats.regressionSlopeWeekly ?? stats.currentWeeklyRate;
+      const regressionUsedForTrend = stats.regressionSlopeWeekly != null;
+      const analysisRange = EventHandlers.getAnalysisDateRange();
 
-      let summaryHtml = _insights.getConsistencyInsight(
-        stats.netCalRateCorrelation,
-        stats.weightDataConsistency,
-        stats.calorieDataConsistency,
-      );
-      summaryHtml += _insights.getTDEEInsight(
-        stats.avgTDEE_GFit,
-        stats.avgTDEE_WgtChange,
-        stats.avgTDEE_Difference,
-      );
-      summaryHtml += _insights.getTrendInsight(
-        currentTrend,
-        stats.currentSma ?? stats.currentWeight,
-        regressionUsedForTrend,
-      );
-      summaryHtml += _insights.getPlateauInsight(
-        analysisRange.start,
-        analysisRange.end,
-      );
-      summaryHtml += _insights.getTrendChangeInsight(
-        analysisRange.start,
-        analysisRange.end,
-      );
+      let summaryHtml = "";
+      try {
+        summaryHtml += InsightsGenerator._getConsistencyInsight(
+          stats.netCalRateCorrelation,
+          stats.weightDataConsistency,
+          stats.calorieDataConsistency,
+        );
+        summaryHtml += InsightsGenerator._getTDEEInsight(
+          stats.avgExpenditureGFit,
+          stats.avgTDEE_WgtChange,
+          stats.avgTDEE_Difference,
+          stats.avgTDEE_Adaptive,
+        );
+        summaryHtml += InsightsGenerator._getTrendInsight(
+          currentTrend,
+          stats.currentSma,
+          regressionUsedForTrend,
+          stats.regressionPointsWithCI,
+        );
+        summaryHtml += InsightsGenerator._getGoalProgressInsight(stats);
+        summaryHtml += InsightsGenerator._getDetectedFeaturesInsight(
+          analysisRange.start,
+          analysisRange.end,
+        );
+      } catch (error) {
+        console.error(
+          "InsightsGenerator: Error generating insights HTML",
+          error,
+        );
+        summaryHtml =
+          "<p class='error'>Error generating insights. Check console.</p>";
+      }
 
-      selections.insightSummaryContainer.html(
-        summaryHtml || "<p>Analysis requires more data.</p>",
+      ui.insightSummaryContainer.html(
+        summaryHtml ||
+          "<p>Analysis requires more data or a different range.</p>",
       );
     },
   };
 
   // ========================================================================
-  // Event Handlers (`_handlers`)
+  // Event Handlers (`EventHandlers`)
   // ========================================================================
-  const _handlers = {
-    mouseOver(event, d) {
-      if (!selections.tooltip || !d) return;
-      const selection = d3.select(event.currentTarget);
-      selection.raise(); // Bring dot to front
-      selection
+  const EventHandlers = {
+    _isZooming: false, // Flag to help differentiate brush/zoom events
+    _isBrushing: false, // Flag for context brush
+
+    dotMouseOver(event, d) {
+      if (!ui.tooltip || !d || !d.date) return;
+      state.activeHoverData = d; // Store for crosshair
+
+      d3.select(event.currentTarget)
+        .raise() // Bring dot to front
         .transition()
         .duration(50)
         .attr("r", CONFIG.dotHoverRadius)
         .style("opacity", 1);
 
-      let tt = `<strong>${_helpers.formatDateLong(d.date)}</strong>Weight: ${_helpers.formatValue(d.value, 1)} KG`; // Use long date format
-      if (d.sma !== null) {
-        tt += `<br/>SMA (${CONFIG.movingAverageWindow}d): ${_helpers.formatValue(d.sma, 1)} KG`;
-      }
-      if (d.value !== null && d.sma !== null) {
+      // --- Tooltip Content ---
+      let tt = `<strong>${Utils.formatDateLong(d.date)}</strong><br/>Weight: ${Utils.formatValue(d.value, 1)} KG`;
+      if (d.sma != null)
+        tt += `<br/>SMA (${CONFIG.movingAverageWindow}d): ${Utils.formatValue(d.sma, 1)} KG`;
+      if (state.seriesVisibility.bf && d.bfPercent != null)
+        tt += `<br/>Body Fat: ${Utils.formatValue(d.bfPercent, 1)} %`;
+      if (d.value != null && d.sma != null) {
         const dev = d.value - d.sma;
-        tt += `<br/>Deviation: <span class="${dev >= 0 ? "positive" : "negative"}">${dev >= 0 ? "+" : ""}${_helpers.formatValue(dev, 1)} KG</span>`;
+        tt += `<br/>Deviation: <span class="${dev >= 0 ? "positive" : "negative"}">${dev >= 0 ? "+" : ""}${Utils.formatValue(dev, 1)} KG</span>`;
       }
-      if (d.isOutlier) {
+      if (d.isOutlier)
         tt += `<br/><span class="note outlier-note">Potential Outlier</span>`;
-      }
-      // Add other data if available
-      if (
-        d.calorieIntake !== null ||
-        d.googleFitTDEE !== null ||
-        d.netBalance !== null ||
-        d.expectedWeightChange !== null ||
-        d.smoothedWeeklyRate !== null ||
-        d.avgTdeeDifference !== null
-      ) {
+
+      // Calorie/Rate Data (Show if *any* related data exists)
+      const hasCalData = [
+        d.calorieIntake,
+        d.googleFitTDEE,
+        d.netBalance,
+        d.adaptiveTDEE,
+        d.smoothedWeeklyRate,
+        d.avgTdeeDifference,
+      ].some((v) => v != null);
+      if (hasCalData) {
         tt += `<hr class="tooltip-hr">`;
-        if (d.calorieIntake !== null)
-          tt += `Intake: ${_helpers.formatValue(d.calorieIntake, 0)} kcal<br/>`;
-        if (d.googleFitTDEE !== null)
-          tt += `Expend (GFit): ${_helpers.formatValue(d.googleFitTDEE, 0)} kcal<br/>`;
-        if (d.netBalance !== null)
-          tt += `Net Balance: ${_helpers.formatValue(d.netBalance, 0)} kcal<br/>`;
-        if (d.smoothedWeeklyRate !== null)
-          tt += `Smoothed Rate: ${_helpers.formatValue(d.smoothedWeeklyRate, 2)} kg/wk<br/>`; // Feature #5
-        if (d.avgTdeeDifference !== null)
-          tt += `Avg TDEE Diff: ${_helpers.formatValue(d.avgTdeeDifference, 0)} kcal`; // Feature #8
-        // if (d.expectedWeightChange !== null) tt += `Est. Wgt Δ (Day): ${_helpers.formatValue(d.expectedWeightChange * 1000, 0)} g`;
-      }
-      // Add Annotation text if available (Feature #1)
-      const annotation = state.annotations.find(
-        (a) => new Date(a.date).getTime() === d.date.getTime(),
-      );
-      if (annotation) {
-        tt += `<hr class="tooltip-hr"><span class="note annotation-note">${annotation.text}</span>`;
+        if (d.calorieIntake != null)
+          tt += `Intake: ${Utils.formatValue(d.calorieIntake, 0)} kcal<br/>`;
+        if (d.googleFitTDEE != null)
+          tt += `GFit TDEE: ${Utils.formatValue(d.googleFitTDEE, 0)} kcal<br/>`;
+        if (d.netBalance != null)
+          tt += `Net: ${Utils.formatValue(d.netBalance, 0)} kcal<br/>`;
+        if (d.adaptiveTDEE != null)
+          tt += `Adaptive TDEE: ${Utils.formatValue(d.adaptiveTDEE, 0)} kcal<br/>`;
+        if (d.smoothedWeeklyRate != null)
+          tt += `Smoothed Rate: ${Utils.formatValue(d.smoothedWeeklyRate, 2)} kg/wk<br/>`;
+        if (d.avgTdeeDifference != null)
+          tt += `Avg TDEE Diff: ${Utils.formatValue(d.avgTdeeDifference, 0)} kcal`;
       }
 
-      selections.tooltip
+      // Annotation Note
+      const annotation = AnnotationManager.findAnnotationByDate(d.date);
+      if (annotation)
+        tt += `<hr class="tooltip-hr"><span class="note annotation-note">${annotation.text}</span>`;
+
+      // Pinned Status Note
+      const isPinned = state.pinnedTooltipData?.id === d.date.getTime();
+      tt += `<hr class="tooltip-hr"><span class="note pinned-note">${isPinned ? "Click dot to unpin." : "Click dot to pin tooltip."}</span>`;
+
+      // --- Display Tooltip ---
+      // Calculate position relative to the viewport
+      const svgNode = ui.svg?.node();
+      if (!svgNode) return; // Need SVG node for calculations
+
+      // Use pageX/pageY for positioning relative to the document
+      const tooltipX = event.pageX + 15;
+      const tooltipY = event.pageY - 28;
+
+      // Position tooltip relative to the page
+      ui.tooltip
         .html(tt)
-        // Position tooltip carefully relative to the page, not the SVG element
-        .style("left", `${event.pageX + 15}px`)
-        .style("top", `${event.pageY - 28}px`)
+        .style("left", `${tooltipX}px`) // Use page coordinates for tooltip positioning
+        .style("top", `${tooltipY}px`)
         .transition()
         .duration(100)
         .style("opacity", 0.95);
+
+      FocusChartUpdater.updateCrosshair(d); // Show/update crosshair
     },
 
-    mouseOut(event, d) {
-      if (!selections.tooltip || !d) return; // Added check for 'd'
+    dotMouseOut(event, d) {
+      if (!ui.tooltip || !d || !d.date) return;
+      state.activeHoverData = null; // Clear hover data
+
+      // Hide tooltip *only if this dot is not the pinned one*
+      if (
+        !state.pinnedTooltipData ||
+        state.pinnedTooltipData.id !== d.date.getTime()
+      ) {
+        ui.tooltip.transition().duration(300).style("opacity", 0);
+      }
+
+      // Revert dot appearance, considering highlight state
       const isHighlighted =
         state.highlightedDate &&
-        d?.date.getTime() === state.highlightedDate.getTime();
+        d.date.getTime() === state.highlightedDate.getTime();
+      const targetRadius = isHighlighted
+        ? CONFIG.dotRadius * 1.2
+        : CONFIG.dotRadius;
+      const targetOpacity = isHighlighted ? 1 : 0.7;
+
       d3.select(event.currentTarget)
         .transition()
         .duration(150)
-        // Restore radius, check if it's currently highlighted
-        .attr("r", isHighlighted ? CONFIG.dotRadius * 1.2 : CONFIG.dotRadius)
-        // Reset opacity based on highlight status
-        .style("opacity", isHighlighted ? 1 : 0.7);
-      selections.tooltip.transition().duration(300).style("opacity", 0);
+        .attr("r", targetRadius)
+        .style("opacity", targetOpacity);
+
+      FocusChartUpdater.updateCrosshair(null); // Hide crosshair
     },
 
-    // --- Feature #1: Annotation Tooltip ---
+    dotClick(event, d) {
+      if (!d || !d.date) return;
+      event.stopPropagation(); // Prevent background click handler
+
+      const dataId = d.date.getTime();
+
+      if (state.pinnedTooltipData?.id === dataId) {
+        // Unpin: Clear pinned data and hide tooltip immediately
+        state.pinnedTooltipData = null;
+        ui.tooltip.style("opacity", 0);
+      } else {
+        // Pin: Store data and position, refresh tooltip content
+        state.pinnedTooltipData = {
+          id: dataId,
+          data: d,
+          pageX: event.pageX,
+          pageY: event.pageY, // Store page coords for potential repositioning
+        };
+        EventHandlers.dotMouseOver(event, d); // Refresh tooltip content & style
+        ui.tooltip.style("opacity", 0.95); // Ensure visible
+      }
+      EventHandlers.updatePinnedTooltipDisplay(); // Update the static pinned display area
+    },
+
+    updatePinnedTooltipDisplay() {
+      if (!ui.pinnedTooltipContainer) return;
+      if (state.pinnedTooltipData) {
+        const d = state.pinnedTooltipData.data;
+        let pinnedHtml = `<strong>Pinned: ${Utils.formatDateShort(d.date)}</strong><br/>
+                              Wgt: ${Utils.formatValue(d.value, 1)}`;
+        if (d.sma != null)
+          pinnedHtml += ` | SMA: ${Utils.formatValue(d.sma, 1)}`;
+        // Add more details if needed
+
+        ui.pinnedTooltipContainer.html(pinnedHtml).style("display", "block");
+      } else {
+        ui.pinnedTooltipContainer.html("").style("display", "none");
+      }
+    },
+
     annotationMouseOver(event, d) {
-      if (!selections.tooltip || !d) return;
-      d3.select(event.currentTarget)
-        .select("circle")
+      if (!ui.tooltip || !d) return;
+      d3.select(event.currentTarget) // Select the group
+        .select("circle") // Select the circle within
         .transition()
         .duration(50)
-        .attr("r", CONFIG.annotationMarkerRadius * 1.5);
+        .attr("r", CONFIG.annotationMarkerRadius * 1.5); // Enlarge circle
 
-      let tt = `<strong>Annotation: ${_helpers.formatDateLong(new Date(d.date))}</strong>`;
-      tt += `<span class="note annotation-note">${d.text}</span>`;
-
-      selections.tooltip
+      let tt = `<strong>Annotation (${Utils.formatDateShort(new Date(d.date))})</strong><br/>${d.text}`;
+      ui.tooltip
         .html(tt)
         .style("left", `${event.pageX + 15}px`)
         .style("top", `${event.pageY - 28}px`)
@@ -4329,32 +5311,30 @@ const WeightTrackerChart = (function () {
         .duration(100)
         .style("opacity", 0.95);
     },
+
     annotationMouseOut(event, d) {
-      if (!selections.tooltip) return;
+      if (!ui.tooltip) return;
       d3.select(event.currentTarget)
         .select("circle")
         .transition()
         .duration(150)
-        .attr("r", CONFIG.annotationMarkerRadius);
-      selections.tooltip.transition().duration(300).style("opacity", 0);
+        .attr("r", CONFIG.annotationMarkerRadius); // Return to normal size
+      ui.tooltip.transition().duration(300).style("opacity", 0);
     },
 
-    // --- Feature #7: Trend Change Tooltip ---
     trendChangeMouseOver(event, d) {
-      if (!selections.tooltip || !d) return;
-      d3.select(event.currentTarget)
-        .select("path")
+      if (!ui.tooltip || !d) return;
+      d3.select(event.currentTarget) // Select the group
+        .select("path") // Select the path within
         .transition()
         .duration(50)
-        .style("opacity", 1);
+        .attr("transform", "scale(1.5)"); // Scale the path
 
       const direction = d.magnitude > 0 ? "acceleration" : "deceleration";
       const rateChange = Math.abs(d.magnitude * 7); // Weekly rate change
+      let tt = `<strong>Trend Change (${Utils.formatDateShort(d.date)})</strong><br/>Significant ${direction} detected.<br/>Rate Δ ≈ ${Utils.formatValue(rateChange, 2)} kg/wk`;
 
-      let tt = `<strong>Trend Change: ${_helpers.formatDateLong(d.date)}</strong>`;
-      tt += `<span class="note warn">Significant ${direction} detected.<br/>Approx. weekly rate change: ${_helpers.formatValue(rateChange, 2)} kg/wk</span>`;
-
-      selections.tooltip
+      ui.tooltip
         .html(tt)
         .style("left", `${event.pageX + 15}px`)
         .style("top", `${event.pageY - 28}px`)
@@ -4362,529 +5342,987 @@ const WeightTrackerChart = (function () {
         .duration(100)
         .style("opacity", 0.95);
     },
+
     trendChangeMouseOut(event, d) {
-      if (!selections.tooltip) return;
+      if (!ui.tooltip) return;
       d3.select(event.currentTarget)
         .select("path")
         .transition()
         .duration(150)
-        .style("opacity", 0.8);
-      selections.tooltip.transition().duration(300).style("opacity", 0);
+        .attr("transform", "scale(1)"); // Return to normal scale
+      ui.tooltip.transition().duration(300).style("opacity", 0);
     },
 
-    brushed(event) {
-      // Only react to user interactions ("end" event), not programmatic moves or zoom-triggered moves
+    contextBrushed(event) {
+      // Ignore brushes triggered by zoom or internal calls
       if (
+        !event ||
         !event.sourceEvent ||
-        (event.sourceEvent &&
-          (event.sourceEvent.type === "brush" ||
-            event.sourceEvent.type === "zoom"))
-      ) {
-        // If zoom triggered the brush move, update scales silently but don't redraw here (zoom handler does it)
-        if (event.sourceEvent && event.sourceEvent.type === "zoom") {
-          const selection = event.selection;
-          if (scales.x && scales.xContext) {
-            const newXDomain = selection
-              ? selection.map(scales.xContext.invert)
-              : scales.xContext.domain();
-            scales.x.domain(newXDomain);
-            // Sync other X scales silently
-            scales.xBalance?.domain(newXDomain);
-            scales.xRate?.domain(newXDomain);
-            scales.xTdeeDiff?.domain(newXDomain);
-          }
-        }
+        event.sourceEvent.type === "zoom" ||
+        EventHandlers._isBrushing
+      )
+        return;
+      // Ignore empty selections unless it's the final 'end' event after clearing
+      if (!event.selection && event.type !== "end") return;
+
+      EventHandlers._isBrushing = true; // Set flag
+
+      // Clear interaction states
+      state.pinnedTooltipData = null;
+      EventHandlers.updatePinnedTooltipDisplay();
+      state.highlightedDate = null;
+      state.interactiveRegressionRange = { start: null, end: null };
+
+      const selection = event.selection;
+      // Ensure context scale is available
+      if (!scales.xContext) {
+        EventHandlers._isBrushing = false;
         return;
       }
 
-      const selection = event.selection;
-      if (scales.x && scales.xContext) {
-        const newXDomain = selection
-          ? selection.map(scales.xContext.invert)
-          : scales.xContext.domain();
-        scales.x.domain(newXDomain);
+      const newXDomain = selection
+        ? selection.map(scales.xContext.invert)
+        : scales.xContext.domain();
 
-        // Feature #3: Update zoom transform to match brush
-        if (
-          zoom &&
-          selections.zoomCaptureRect &&
-          !selections.zoomCaptureRect.empty()
-        ) {
-          const [startPixel, endPixel] = selection
-            ? selection
-            : scales.xContext.range();
-          const k =
-            endPixel - startPixel > 0
-              ? scales.xContext.range()[1] / (endPixel - startPixel)
-              : 1; // Avoid division by zero
-          const tx = -startPixel * k;
-          const newTransform = d3.zoomIdentity.translate(tx, 0).scale(k);
-          state.lastZoomTransform = newTransform;
-          // Apply transform without triggering zoom event
-          selections.zoomCaptureRect.call(zoom.transform, newTransform);
-        }
+      // Update focus chart domain
+      scales.x.domain(newXDomain);
 
-        state.analysisRange.isCustom = false; // Brushing resets analysis to chart view
-        state.highlightedDate = null; // Clear highlight on brush/zoom
-        _update.runAll();
-        _stats.updateAll();
-      }
-    },
-
-    // --- Feature #3: Zoom Handler ---
-    zoomed(event) {
-      // Only react to user zoom/pan gestures
+      // Update zoom transform to match brush, without triggering zoom event
       if (
-        !event.sourceEvent ||
-        (event.sourceEvent && event.sourceEvent.type === "brush")
+        zoom &&
+        ui.zoomCaptureRect &&
+        !ui.zoomCaptureRect.empty() &&
+        UISetup._dimensions?.focus?.valid
       ) {
-        return; // Ignore brush-triggered zoom updates
+        const [x0Pixel, x1Pixel] = selection || scales.xContext.range();
+        // Avoid division by zero or invalid scale factor
+        const pixelDiff = x1Pixel - x0Pixel;
+        if (pixelDiff <= 0) {
+          EventHandlers._isBrushing = false;
+          return;
+        } // Prevent invalid transform
+
+        const k = UISetup._dimensions.focus.width / pixelDiff;
+        const tx = -x0Pixel * k;
+        state.lastZoomTransform = d3.zoomIdentity.translate(tx, 0).scale(k);
+
+        // Temporarily disable zoom listener, apply transform, re-enable
+        ui.zoomCaptureRect.on("zoom.handler", null); // Use namespaced listener
+        ui.zoomCaptureRect.call(zoom.transform, state.lastZoomTransform);
+        ui.zoomCaptureRect.on("zoom.handler", EventHandlers.zoomed);
       }
-      const transform = event.transform;
-      state.lastZoomTransform = transform; // Store the latest transform
 
-      // Update the main X scale based on the zoom transform applied to the context scale
-      if (scales.x && scales.xContext) {
-        const newXDomain = transform.rescaleX(scales.xContext).domain();
-        scales.x.domain(newXDomain);
+      state.analysisRange.isCustom = false; // Brushing resets custom analysis range
+      MasterUpdater.updateAllCharts();
+      StatsManager.update();
 
-        // Update the brush selection to match the new zoomed domain
-        if (selections.brushGroup?.node() && brush) {
-          const newBrushPixels = [
-            scales.xContext(newXDomain[0]),
-            scales.xContext(newXDomain[1]),
-          ];
-          // Move the brush programmatically WITHOUT triggering the 'brushed' handler's redraw logic again
-          // Pass a custom sourceEvent to indicate it's from zoom
-          selections.brushGroup.call(brush.move, newBrushPixels, event); // Pass event as source
+      // Reset flag after a short delay to allow event queue to clear
+      setTimeout(() => {
+        EventHandlers._isBrushing = false;
+      }, 50);
+    },
+
+    zoomed(event) {
+      // Ignore zoom events triggered by brush or internal calls
+      if (
+        !event ||
+        !event.sourceEvent ||
+        event.sourceEvent.type === "brush" ||
+        EventHandlers._isZooming
+      )
+        return;
+
+      EventHandlers._isZooming = true; // Set flag
+
+      // Clear interaction states
+      state.pinnedTooltipData = null;
+      EventHandlers.updatePinnedTooltipDisplay();
+      state.highlightedDate = null;
+      state.interactiveRegressionRange = { start: null, end: null };
+
+      state.lastZoomTransform = event.transform; // Store the latest transform
+
+      // Ensure context scale is available
+      if (!scales.xContext || !scales.x) {
+        EventHandlers._isZooming = false;
+        return;
+      }
+
+      // Update focus chart domain based on zoom transform applied to context scale
+      const newXDomain = state.lastZoomTransform
+        .rescaleX(scales.xContext)
+        .domain();
+      scales.x.domain(newXDomain);
+
+      // Update brush selection to reflect zoom, without triggering brush event
+      if (ui.brushGroup?.node() && brushes.context) {
+        const newBrushSelection = newXDomain.map(scales.xContext);
+        // Temporarily disable brush listener, move brush, re-enable
+        ui.brushGroup.on("brush.handler", null); // Namespaced listener
+        ui.brushGroup.on("end.handler", null);
+        // Ensure selection is valid before moving
+        if (newBrushSelection.every((v) => !isNaN(v))) {
+          ui.brushGroup.call(brushes.context.move, newBrushSelection);
+        }
+        ui.brushGroup.on("brush.handler", EventHandlers.contextBrushed);
+        ui.brushGroup.on("end.handler", EventHandlers.contextBrushed);
+      }
+
+      state.analysisRange.isCustom = false; // Zooming resets custom analysis range
+      MasterUpdater.updateAllCharts();
+      StatsManager.update();
+
+      // Reset flag after a short delay
+      setTimeout(() => {
+        EventHandlers._isZooming = false;
+      }, 50);
+    },
+
+    regressionBrushed(event) {
+      // Ignore programmatic calls, calls not from user, or calls during zoom/brush
+      if (
+        !event ||
+        !event.sourceEvent ||
+        event.sourceEvent.type === "zoom" ||
+        event.sourceEvent.type === "brush"
+      )
+        return;
+      // Only react on 'end' event for stability
+      if (event.type !== "end") return;
+
+      const selection = event.selection;
+      let rangeUpdated = false;
+
+      if (selection && selection[0] !== selection[1]) {
+        // Valid brush selection
+        // Ensure focus scale is available for inversion
+        if (!scales.x) return;
+
+        const startDate = scales.x.invert(selection[0]);
+        const endDate = scales.x.invert(selection[1]);
+        // Ensure inversion resulted in valid dates
+        if (
+          !(startDate instanceof Date) ||
+          !(endDate instanceof Date) ||
+          isNaN(startDate) ||
+          isNaN(endDate)
+        )
+          return;
+
+        const currentRange = state.interactiveRegressionRange;
+
+        // Check if range significantly changed (e.g., by more than a day)
+        const startTime = startDate.getTime();
+        const endTime = endDate.getTime();
+        const currentStartTime = currentRange.start?.getTime();
+        const currentEndTime = currentRange.end?.getTime();
+
+        if (
+          currentStartTime === undefined ||
+          Math.abs(currentStartTime - startTime) > 86400000 ||
+          currentEndTime === undefined ||
+          Math.abs(currentEndTime - endTime) > 86400000
+        ) {
+          state.interactiveRegressionRange = { start: startDate, end: endDate };
+          Utils.showStatusMessage("Regression range updated.", "info", 1000);
+          rangeUpdated = true;
+        }
+      } else {
+        // Brush cleared by user click/drag
+        if (
+          state.interactiveRegressionRange.start ||
+          state.interactiveRegressionRange.end
+        ) {
+          state.interactiveRegressionRange = { start: null, end: null };
+          Utils.showStatusMessage(
+            "Regression range reset to default.",
+            "info",
+            1000,
+          );
+          rangeUpdated = true;
         }
       }
 
-      state.analysisRange.isCustom = false; // Zooming resets analysis to chart view
-      state.highlightedDate = null; // Clear highlight on brush/zoom
-      _update.runAll(); // Redraw everything based on the new domain
-      _stats.updateAll(); // Update stats for the new view
+      if (rangeUpdated) {
+        state.pinnedTooltipData = null;
+        EventHandlers.updatePinnedTooltipDisplay(); // Clear pin
+        MasterUpdater.updateAllCharts(); // Redraw regression line
+        StatsManager.update(); // Recalculate stats using new range
+      }
+      // Ensure brush visual matches state (might be needed if clearing interactively)
+      FocusChartUpdater.updateRegressionBrushDisplay();
     },
 
-    resize: (() => {
-      let timeoutId = null;
-      return () => {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => {
-          console.log("Resize detected, re-rendering chart...");
-          state.highlightedDate = null; // Clear highlight on resize
-          if (_setup.runAll()) {
-            // Recreates SVGs, scales, axes, brush, zoom
-            if (state.isInitialized && state.processedData?.length > 0) {
-              _domains.initialize(); // Re-initialize domains, initial brush/zoom based on new dimensions
-              _update.runAll();
-              _stats.updateAll();
-              _legend.build();
-              _annotations.renderList(); // Re-render annotation list if dimensions change
-            } else if (state.isInitialized) {
-              // Handle case where chart is initialized but no data yet
-              _update.domainsAndAxes(); // Redraw axes for new size
-              _update.contextChart();
-              _update.balanceChart([]);
-              _update.rateOfChangeChart([]);
-              _update.tdeeDifferenceChart([]);
-              _update.weeklySummary([]);
-              _stats.updateAll(); // Update stats display (will show N/A)
-              _legend.build(); // Rebuild legend
-              _annotations.renderList();
-            }
-          } else {
-            console.error("Chart redraw on resize failed during setup phase.");
+    // --- Control Panel Handlers ---
+    handleResize: Utils.debounce(() => {
+      console.log("EventHandlers: Resize detected, re-rendering chart...");
+      state.highlightedDate = null;
+      state.pinnedTooltipData = null;
+      EventHandlers.updatePinnedTooltipDisplay();
+      state.interactiveRegressionRange = { start: null, end: null };
+
+      if (UISetup.runAll()) {
+        // Re-run setup (calculates new dimensions, etc.)
+        if (state.isInitialized && state.processedData?.length > 0) {
+          DomainManager.initializeDomains(state.processedData); // Re-initialize domains with new size
+          // Restore last zoom/brush state visually
+          EventHandlers.restoreViewAfterResize();
+          MasterUpdater.updateAllCharts();
+          StatsManager.update();
+          LegendManager.build();
+          AnnotationManager.renderList();
+        } else if (state.isInitialized) {
+          console.warn(
+            "EventHandlers: Resize handler - No data to display after setup.",
+          );
+          // Ensure axes etc. are drawn even with no data
+          MasterUpdater.updateAllCharts(); // Will use empty data
+          StatsManager.update();
+          LegendManager.build();
+          AnnotationManager.renderList();
+        }
+      } else {
+        console.error(
+          "EventHandlers: Chart redraw on resize failed during setup phase.",
+        );
+        Utils.showStatusMessage(
+          "Chart resize failed. Check console.",
+          "error",
+          5000,
+        );
+      }
+    }, CONFIG.debounceResizeMs),
+
+    restoreViewAfterResize() {
+      // Ensure components are ready before restoring view
+      if (
+        !zoom ||
+        !ui.zoomCaptureRect ||
+        ui.zoomCaptureRect.empty() ||
+        !state.lastZoomTransform ||
+        !scales.xContext
+      ) {
+        console.warn(
+          "EventHandlers: Cannot restore view, zoom or scales not ready.",
+        );
+        return;
+      }
+
+      // Re-apply last zoom transform to the zoom behavior instance
+      ui.zoomCaptureRect.call(zoom.transform, state.lastZoomTransform);
+
+      // Re-apply brush position based on the potentially new context scale range
+      if (brushes.context && ui.brushGroup && !ui.brushGroup.empty()) {
+        const currentFocusDomain = state.lastZoomTransform
+          .rescaleX(scales.xContext)
+          .domain();
+        // Ensure domain is valid before mapping
+        if (currentFocusDomain.every((d) => d instanceof Date && !isNaN(d))) {
+          const brushSelection = currentFocusDomain.map(scales.xContext);
+          // Move brush without triggering event
+          ui.brushGroup.on("brush.handler", null);
+          ui.brushGroup.on("end.handler", null);
+          // Ensure selection is valid numbers before moving
+          if (brushSelection.every((v) => !isNaN(v))) {
+            ui.brushGroup.call(brushes.context.move, brushSelection);
           }
-        }, CONFIG.debounceResizeMs);
-      };
-    })(),
-
-    themeToggle() {
-      _setTheme(state.currentTheme === "light" ? "dark" : "light");
+          ui.brushGroup.on("brush.handler", EventHandlers.contextBrushed);
+          ui.brushGroup.on("end.handler", EventHandlers.contextBrushed);
+        }
+      }
+      // Re-apply regression brush if active
+      FocusChartUpdater.updateRegressionBrushDisplay();
     },
 
-    goalSubmit(event) {
+    handleThemeToggle() {
+      ThemeManager.toggleTheme();
+    },
+
+    handleDynamicYAxisToggle(event) {
+      state.useDynamicYAxis = event.target.checked;
+      localStorage.setItem(
+        CONFIG.localStorageKeys.dynamicYAxis,
+        state.useDynamicYAxis,
+      );
+      Utils.showStatusMessage(
+        `Dynamic Y-Axis ${state.useDynamicYAxis ? "Enabled" : "Disabled"}.`,
+        "info",
+        1500,
+      );
+      MasterUpdater.updateAllCharts(); // Trigger redraw which recalculates Y domain
+      // Stats don't change based on Y-axis view
+    },
+
+    handleGoalSubmit(event) {
       event.preventDefault();
-      const goalWeightVal = selections.goalWeightInput?.property("value");
-      const goalDateVal = selections.goalDateInput?.property("value");
-      const targetRateVal = selections.goalTargetRateInput?.property("value");
-      let isValid = true;
-      let tempGoal = { weight: null, date: null, targetRate: null };
+      const weightVal = ui.goalWeightInput?.property("value");
+      const dateVal = ui.goalDateInput?.property("value");
+      const rateVal = ui.goalTargetRateInput?.property("value");
 
-      if (goalWeightVal) {
-        const pW = parseFloat(goalWeightVal);
-        if (!isNaN(pW) && pW > 0) tempGoal.weight = pW;
-        else {
-          _helpers.showStatusMessage("Invalid goal weight.", "error");
-          isValid = false;
-        }
-      }
-      if (goalDateVal) {
-        const pD = new Date(goalDateVal);
-        if (!isNaN(pD.getTime())) {
-          pD.setHours(0, 0, 0, 0); // Normalize date
-          tempGoal.date = pD;
-        } else {
-          _helpers.showStatusMessage("Invalid goal date.", "error");
-          isValid = false;
-        }
-      }
-      if (targetRateVal) {
-        const pR = parseFloat(targetRateVal);
-        if (!isNaN(pR)) tempGoal.targetRate = pR;
-        else {
-          _helpers.showStatusMessage("Invalid target rate.", "error");
-          isValid = false;
-        }
-      }
+      state.goal.weight = weightVal ? parseFloat(weightVal) : null;
+      state.goal.date = dateVal ? new Date(dateVal) : null;
+      state.goal.targetRate = rateVal ? parseFloat(rateVal) : null;
 
-      if (isValid) {
-        state.goal = tempGoal;
-        _data.saveGoal();
-        _update.runAll(); // Redraw might affect goal line or domain
-        _stats.updateAll(); // Recalculate goal stats
-        _legend.build(); // Update legend if goal line appears/disappears
-      }
+      // Validate inputs
+      if (state.goal.weight != null && isNaN(state.goal.weight))
+        state.goal.weight = null;
+      if (state.goal.date instanceof Date && isNaN(state.goal.date))
+        state.goal.date = null;
+      if (state.goal.targetRate != null && isNaN(state.goal.targetRate))
+        state.goal.targetRate = null;
+
+      DataService.saveGoal(); // Persist goal
+      StatsManager.update(); // Recalculate goal stats
+      MasterUpdater.updateAllCharts(); // Redraw goal line
+      LegendManager.build(); // Update legend if goal line visibility changes
     },
 
-    trendlineChange() {
-      state.highlightedDate = null; // Clear highlight if params change
-      _update.runAll(); // Redraw trend lines and potentially Y domain
-      _stats.updateAll(); // Recalculate stats based on new regression start date if changed
+    handleTrendlineChange() {
+      // Trendline inputs might affect the regression start date if linked
+      // Update regression start date state if the UI element changed
+      const newRegStartDate = DataService.getRegressionStartDateFromUI();
+      // Check if the date actually changed
+      const datesDiffer =
+        (!state.regressionStartDate && newRegStartDate) || // Was null, now set
+        (state.regressionStartDate && !newRegStartDate) || // Was set, now null
+        (state.regressionStartDate &&
+          newRegStartDate &&
+          state.regressionStartDate.getTime() !== newRegStartDate.getTime()); // Both set but different
+
+      if (datesDiffer) {
+        state.regressionStartDate = newRegStartDate;
+        // Recalculate stats which might depend on the regression slope (e.g., TDEE trend)
+        StatsManager.update();
+      }
+      // Redraw trend lines and potentially the regression line/CI (always redraw on input change)
+      MasterUpdater.updateAllCharts();
     },
 
-    regressionToggle(event) {
-      _legend.toggleSeriesVisibility("regression", event.target.checked);
+    handleRegressionToggle(event) {
+      const isVisible = event.target.checked;
+      // Update both the general flag and specific series visibility
+      state.seriesVisibility.regression = isVisible;
+      state.seriesVisibility.regressionCI = isVisible; // Link CI visibility
+
+      LegendManager.updateAppearance("regression", isVisible);
+      LegendManager.updateAppearance("regressionCI", isVisible);
+
+      MasterUpdater.updateAllCharts(); // Redraw charts
+      StatsManager.update(); // Recalculate stats (trend & insights depend on regression)
     },
 
-    analysisRangeUpdate() {
-      const startVal = selections.analysisStartDateInput?.property("value");
-      const endVal = selections.analysisEndDateInput?.property("value");
+    handleAnalysisRangeUpdate() {
+      state.pinnedTooltipData = null;
+      EventHandlers.updatePinnedTooltipDisplay();
+      state.interactiveRegressionRange = { start: null, end: null }; // Clear interactive selection
+
+      const startVal = ui.analysisStartDateInput?.property("value");
+      const endVal = ui.analysisEndDateInput?.property("value");
       const startDate = startVal ? new Date(startVal) : null;
       const endDate = endVal ? new Date(endVal) : null;
 
-      let isValid = true;
-      let errorMsg = "";
-
-      if (!startDate || isNaN(startDate.getTime())) {
-        isValid = false;
-        errorMsg = "Invalid start date.";
-      }
-      if (!endDate || isNaN(endDate.getTime())) {
-        isValid = false;
-        errorMsg = errorMsg
-          ? "Invalid start and end dates."
-          : "Invalid end date.";
-      }
-      if (isValid && startDate > endDate) {
-        isValid = false;
-        errorMsg = "Start date cannot be after end date.";
-      }
-
-      if (isValid) {
+      if (
+        startDate instanceof Date &&
+        !isNaN(startDate) &&
+        endDate instanceof Date &&
+        !isNaN(endDate) &&
+        startDate <= endDate
+      ) {
         startDate.setHours(0, 0, 0, 0);
-        endDate.setHours(0, 0, 0, 0);
-        state.analysisRange.start = startDate;
-        state.analysisRange.end = endDate;
-        state.analysisRange.isCustom = true;
-        state.highlightedDate = null; // Clear highlight on range change
-        _handlers.updateAnalysisRangeDisplay(); // Update UI display
-        _stats.updateAll(); // Update stats based on new custom range
-        // _update.weeklySummary(state.weeklySummaryData); // Update weekly summary table (done within stats update)
-        // _update.plateauRegions(); // Redraw plateaus (done within stats update)
-        // _update.trendChangeMarkers(); // Redraw trend changes (done within stats update)
-        _helpers.showStatusMessage("Analysis range updated.", "info", 1500);
+        endDate.setHours(23, 59, 59, 999); // Include full end day
+
+        state.analysisRange = {
+          start: startDate,
+          end: endDate,
+          isCustom: true,
+        };
+        state.highlightedDate = null; // Clear highlight
+
+        // Update chart view to match the new analysis range
+        scales.x.domain([startDate, endDate]);
+        EventHandlers.syncBrushAndZoomToFocus(); // Sync brush/zoom to new domain
+
+        EventHandlers.updateAnalysisRangeDisplay();
+        StatsManager.update(); // Calculate stats for the NEW range
+        MasterUpdater.updateAllCharts(); // Redraw everything
+
+        Utils.showStatusMessage("Analysis range updated.", "info", 1500);
       } else {
-        _helpers.showStatusMessage(errorMsg, "error");
+        Utils.showStatusMessage("Invalid date range selected.", "error");
+        // Optionally revert inputs to current view
+        EventHandlers.updateAnalysisRangeInputsFromCurrentView();
       }
     },
 
-    analysisRangeReset() {
+    handleAnalysisRangeReset() {
+      state.pinnedTooltipData = null;
+      EventHandlers.updatePinnedTooltipDisplay();
+      state.interactiveRegressionRange = { start: null, end: null };
+      state.highlightedDate = null;
+
       state.analysisRange.isCustom = false;
-      state.analysisRange.start = null; // Will be derived from chart view now
-      state.analysisRange.end = null;
-      state.highlightedDate = null; // Clear highlight
-      _handlers.updateAnalysisRangeInputsFromCurrentView();
-      _handlers.updateAnalysisRangeDisplay();
-      _stats.updateAll(); // Update stats based on current chart view
-      // _update.weeklySummary(state.weeklySummaryData); // Done in stats update
-      // _update.plateauRegions(); // Done in stats update
-      // _update.trendChangeMarkers(); // Done in stats update
-      _helpers.showStatusMessage(
+      // Restore view based on last zoom/brush state before custom range was applied
+      if (state.lastZoomTransform && scales.xContext) {
+        const domainBeforeCustom = state.lastZoomTransform
+          .rescaleX(scales.xContext)
+          .domain();
+        // Ensure domain is valid before setting
+        if (domainBeforeCustom.every((d) => d instanceof Date && !isNaN(d))) {
+          scales.x.domain(domainBeforeCustom);
+        } else {
+          // Fallback if rescale failed
+          DomainManager.initializeDomains(state.processedData);
+        }
+      } else {
+        // Fallback: Reset to initial domain if no transform saved
+        DomainManager.initializeDomains(state.processedData);
+      }
+      EventHandlers.syncBrushAndZoomToFocus(); // Sync brush/zoom to restored domain
+
+      EventHandlers.updateAnalysisRangeInputsFromCurrentView();
+      EventHandlers.updateAnalysisRangeDisplay();
+      StatsManager.update();
+      MasterUpdater.updateAllCharts();
+      Utils.showStatusMessage(
         "Analysis range reset to chart view.",
         "info",
         1500,
       );
     },
 
-    // --- Feature #4: Stat Date Click Handler ---
-    statDateClick(date) {
-      if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
-        state.highlightedDate = null; // Clear if invalid date provided
-      } else {
-        const normalizedDate = new Date(date);
-        normalizedDate.setHours(0, 0, 0, 0); // Ensure time part is zeroed
-        state.highlightedDate = normalizedDate; // Set the date to highlight
+    syncBrushAndZoomToFocus() {
+      // Ensure components are ready
+      if (!scales.x || !scales.xContext || !UISetup._dimensions?.focus?.valid)
+        return;
+
+      const currentFocusDomain = scales.x.domain();
+      // Ensure domain is valid before proceeding
+      if (!currentFocusDomain.every((d) => d instanceof Date && !isNaN(d)))
+        return;
+
+      // Update Zoom Transform
+      if (zoom && ui.zoomCaptureRect && !ui.zoomCaptureRect.empty()) {
+        const [x0Pixel, x1Pixel] = currentFocusDomain.map(scales.xContext);
+        // Ensure pixel values are valid
+        if (isNaN(x0Pixel) || isNaN(x1Pixel)) return;
+
+        const pixelDiff = x1Pixel - x0Pixel;
+        // Avoid division by zero or invalid scale factor
+        if (pixelDiff <= 0) return;
+
+        const k = UISetup._dimensions.focus.width / pixelDiff;
+        const tx = -x0Pixel * k;
+        state.lastZoomTransform = d3.zoomIdentity.translate(tx, 0).scale(k);
+
+        // Apply transform silently
+        ui.zoomCaptureRect.on("zoom.handler", null);
+        ui.zoomCaptureRect.call(zoom.transform, state.lastZoomTransform);
+        ui.zoomCaptureRect.on("zoom.handler", EventHandlers.zoomed);
       }
-      // console.log("Highlighting date:", state.highlightedDate);
-      _update.chartDots(); // Trigger redraw of dots to show/hide highlight marker
+
+      // Update Brush Selection
+      if (ui.brushGroup?.node() && brushes.context) {
+        const newBrushSelection = currentFocusDomain.map(scales.xContext);
+        // Ensure selection is valid before moving
+        if (newBrushSelection.every((v) => !isNaN(v))) {
+          // Move brush silently
+          ui.brushGroup.on("brush.handler", null);
+          ui.brushGroup.on("end.handler", null);
+          ui.brushGroup.call(brushes.context.move, newBrushSelection);
+          ui.brushGroup.on("brush.handler", EventHandlers.contextBrushed);
+          ui.brushGroup.on("end.handler", EventHandlers.contextBrushed);
+        }
+      }
+      // Update regression brush display
+      FocusChartUpdater.updateRegressionBrushDisplay();
     },
 
-    // --- Feature #10: What-If Handler ---
-    whatIfSubmit(event) {
-      event?.preventDefault(); // Prevent form submission if triggered by form
-      const intakeVal = selections.whatIfIntakeInput?.property("value");
-      const durationVal = selections.whatIfDurationInput?.property("value");
-      const displayEl = selections.whatIfResultDisplay;
+    // Wrapper function for stat date click handler to access event target's stored date
+    statDateClickWrapper(event) {
+      if (event.currentTarget && event.currentTarget.__highlightDate) {
+        EventHandlers.statDateClick(event.currentTarget.__highlightDate);
+      }
+    },
 
-      if (!displayEl) return;
+    statDateClick(date) {
+      if (!(date instanceof Date) || isNaN(date.getTime())) return;
 
-      const intake = intakeVal ? parseInt(intakeVal, 10) : null;
-      const duration = durationVal ? parseInt(durationVal, 10) : 30; // Default 30 days
+      // Find the closest data point in processedData (necessary if date comes from all-time stats)
+      const dateMs = date.getTime();
+      let closestPoint = null;
+      let minDiff = Infinity;
+      state.processedData.forEach((p) => {
+        if (p.date instanceof Date && !isNaN(p.date)) {
+          // Ensure point date is valid
+          const diff = Math.abs(p.date.getTime() - dateMs);
+          if (diff < minDiff) {
+            minDiff = diff;
+            closestPoint = p;
+          }
+        }
+      });
+
+      if (!closestPoint) return; // No matching point found
+
+      // Toggle highlight state
+      if (state.highlightedDate?.getTime() === closestPoint.date.getTime()) {
+        state.highlightedDate = null; // Turn off highlight
+        state.pinnedTooltipData = null;
+        EventHandlers.updatePinnedTooltipDisplay(); // Unpin if it was pinned
+        ui.tooltip.style("opacity", 0);
+      } else {
+        state.highlightedDate = closestPoint.date; // Set highlight
+
+        // --- Pan/Zoom to the highlighted date ---
+        if (!scales.x || !scales.xContext || !UISetup._dimensions?.focus?.valid)
+          return; // Scales needed
+
+        const xDomain = scales.x.domain();
+        // Ensure domain is valid before calculating width
+        if (!xDomain.every((d) => d instanceof Date && !isNaN(d))) return;
+
+        const viewWidthMs = xDomain[1].getTime() - xDomain[0].getTime();
+        const halfViewMs = viewWidthMs / 2;
+
+        // Calculate new domain centered on the point's time
+        const targetStartTime = closestPoint.date.getTime() - halfViewMs;
+        const targetEndTime = targetStartTime + viewWidthMs;
+
+        // Clamp to the full data range allowed by the context scale
+        const [minDate, maxDate] = scales.xContext.domain();
+        // Ensure context domain is valid
+        if (
+          !(minDate instanceof Date) ||
+          !(maxDate instanceof Date) ||
+          isNaN(minDate) ||
+          isNaN(maxDate)
+        )
+          return;
+
+        const minTime = minDate.getTime();
+        const maxTime = maxDate.getTime();
+
+        let clampedStartTime = Math.max(minTime, targetStartTime);
+        let clampedEndTime = clampedStartTime + viewWidthMs;
+
+        // If adjusting start pushed end beyond max, clamp end and recalculate start
+        if (clampedEndTime > maxTime) {
+          clampedEndTime = maxTime;
+          clampedStartTime = clampedEndTime - viewWidthMs;
+          // Re-clamp start if necessary
+          clampedStartTime = Math.max(minTime, clampedStartTime);
+        }
+        // Final domain check
+        if (clampedEndTime < clampedStartTime)
+          clampedEndTime = clampedStartTime; // Avoid inverted domain
+
+        const finalDomain = [
+          new Date(clampedStartTime),
+          new Date(clampedEndTime),
+        ];
+
+        scales.x.domain(finalDomain); // Set new domain on focus scale
+        state.analysisRange.isCustom = false; // Panning resets custom analysis range flag
+        EventHandlers.syncBrushAndZoomToFocus(); // Update brush/zoom to match new domain
+      }
+
+      MasterUpdater.updateAllCharts(); // Redraw chart with new view/highlight
+      StatsManager.update(); // Update stats for the new view range
+    },
+
+    handleWhatIfSubmit(event) {
+      event.preventDefault();
+      if (
+        !ui.whatIfIntakeInput ||
+        !ui.whatIfDurationInput ||
+        !ui.whatIfResultDisplay
+      )
+        return;
+
+      const futureIntake = parseFloat(ui.whatIfIntakeInput.property("value"));
+      const durationDays = parseInt(
+        ui.whatIfDurationInput.property("value"),
+        10,
+      );
+      const resultDisplay = ui.whatIfResultDisplay;
+
+      resultDisplay.classed("error", false).text("Calculating..."); // Clear previous result
+
+      if (isNaN(futureIntake) || isNaN(durationDays) || durationDays <= 0) {
+        resultDisplay
+          .classed("error", true)
+          .text("Please enter valid intake and duration > 0.");
+        return;
+      }
+
+      // Get current stats to find best TDEE estimate and starting weight
+      const currentStats = StatsManager.calculateAllStats(); // Use the main calc function
+      const tdeeEstimate =
+        currentStats.avgTDEE_Adaptive ??
+        currentStats.avgTDEE_WgtChange ??
+        currentStats.avgExpenditureGFit;
+      const tdeeSource =
+        tdeeEstimate === currentStats.avgTDEE_Adaptive
+          ? "Adaptive"
+          : tdeeEstimate === currentStats.avgTDEE_WgtChange
+            ? "Trend"
+            : "GFit";
+
+      if (tdeeEstimate == null || isNaN(tdeeEstimate)) {
+        resultDisplay
+          .classed("error", true)
+          .text(
+            `Cannot project: TDEE estimate unavailable for the current analysis range.`,
+          );
+        return;
+      }
+
+      const dailyNetBalance = futureIntake - tdeeEstimate;
+      const dailyWeightChangeKg = dailyNetBalance / CONFIG.KCALS_PER_KG;
+      const totalWeightChangeKg = dailyWeightChangeKg * durationDays;
+
+      // Use latest SMA or raw weight as starting point
+      const startWeight = currentStats.currentSma ?? currentStats.currentWeight;
+
+      if (startWeight == null || isNaN(startWeight)) {
+        resultDisplay
+          .classed("error", true)
+          .text("Cannot project: Current weight unknown.");
+        return;
+      }
+
+      const projectedWeight = startWeight + totalWeightChangeKg;
+      const fv = Utils.formatValue;
+      resultDisplay.html(`Based on ${tdeeSource} TDEE ≈ ${fv(tdeeEstimate, 0)} kcal:<br/>
+              Est. change: ${fv(totalWeightChangeKg, 1)} kg in ${durationDays} days.<br/>
+              Projected Weight: <strong>${fv(projectedWeight, 1)} kg</strong>.`);
+    },
+
+    handleBackgroundClick(event) {
+      const targetNode = event.target;
+
+      // Determine if click was on an interactive element we *don't* want to clear state for
+      const isInteractiveDot = d3.select(targetNode).classed("dot");
+      const isAnnotation =
+        d3.select(targetNode.closest(".annotation-marker-group")).size() > 0;
+      const isTrendMarker =
+        d3.select(targetNode.closest(".trend-change-marker-group")).size() > 0;
+      const isLegendItem =
+        d3.select(targetNode.closest(".legend-item")).size() > 0;
+      const isBrushElement =
+        d3.select(targetNode).classed("handle") ||
+        d3.select(targetNode).classed("selection") ||
+        d3.select(targetNode).classed("overlay");
+      const isStatDate = d3.select(targetNode).classed("highlightable"); // Click on highlightable stat date
+
+      // Check if click is on SVG background or zoom capture rectangle
+      const isBackground =
+        targetNode === ui.zoomCaptureRect?.node() ||
+        targetNode === ui.svg?.node() ||
+        targetNode === ui.focus?.node() ||
+        targetNode === ui.chartArea?.node();
 
       if (
-        intake === null ||
-        isNaN(intake) ||
-        intake <= 0 ||
-        isNaN(duration) ||
-        duration <= 0
+        isBackground &&
+        !isInteractiveDot &&
+        !isAnnotation &&
+        !isTrendMarker &&
+        !isLegendItem &&
+        !isBrushElement &&
+        !isStatDate
       ) {
-        displayEl
-          .text("Please enter a valid positive daily intake.")
-          .classed("error", true);
-        return;
+        let redrawNeeded = false; // Track if redraw is necessary
+
+        // Clear highlight
+        if (state.highlightedDate) {
+          state.highlightedDate = null;
+          redrawNeeded = true; // Need to redraw dots/marker
+        }
+        // Clear pin
+        if (state.pinnedTooltipData) {
+          state.pinnedTooltipData = null;
+          EventHandlers.updatePinnedTooltipDisplay();
+          ui.tooltip.style("opacity", 0);
+          // No redraw needed just for clearing pin display
+        }
+        // Clear interactive regression brush via its handler
+        if (
+          state.interactiveRegressionRange.start ||
+          state.interactiveRegressionRange.end
+        ) {
+          if (
+            brushes.regression &&
+            ui.regressionBrushGroup &&
+            !ui.regressionBrushGroup.empty()
+          ) {
+            // Programmatically move the brush to null to trigger the clearing logic in its handler
+            // The regressionBrushed handler will trigger necessary updates if the range changed.
+            ui.regressionBrushGroup.on("end.handler", null); // Prevent loop
+            ui.regressionBrushGroup.call(brushes.regression.move, null);
+            ui.regressionBrushGroup.on(
+              "end.handler",
+              EventHandlers.regressionBrushed,
+            );
+            // Explicitly update display in case handler doesn't run (e.g., already null)
+            FocusChartUpdater.updateRegressionBrushDisplay();
+            // Assume stats/insights need update if regression range changed
+            if (
+              state.interactiveRegressionRange.start ||
+              state.interactiveRegressionRange.end
+            ) {
+              // Check if it actually cleared
+              state.interactiveRegressionRange = { start: null, end: null };
+              MasterUpdater.updateAllCharts(); // Redraw regression line
+              StatsManager.update(); // Recalculate stats
+              redrawNeeded = false; // Updates handled by MasterUpdater
+            }
+          }
+        }
+        // Redraw necessary parts if highlight was cleared
+        if (redrawNeeded) {
+          FocusChartUpdater.updateDots(state.filteredData);
+          FocusChartUpdater.updateHighlightMarker(state.filteredData);
+        }
       }
-
-      // Get current best TDEE estimate from stats
-      const stats = _stats.getAll(); // Recalculate stats to get latest TDEE
-      const tdee = stats.avgTDEE_WgtChange ?? stats.avgTDEE_GFit; // Prioritize trend TDEE
-
-      if (tdee === null || isNaN(tdee)) {
-        displayEl
-          .text(
-            "Cannot project: TDEE estimation unavailable for the current analysis range.",
-          )
-          .classed("error", true);
-        return;
-      }
-
-      const dailyNet = intake - tdee;
-      const dailyWeightChange = dailyNet / CONFIG.KCALS_PER_KG;
-      const totalWeightChange = dailyWeightChange * duration;
-      const currentWeight = stats.currentSma ?? stats.currentWeight; // Use SMA if available
-      const projectedWeight =
-        currentWeight !== null ? currentWeight + totalWeightChange : null;
-
-      let resultText = `Projection based on Est. TDEE of ${_helpers.formatValue(tdee, 0)} kcal: `;
-      resultText += `Net ${_helpers.formatValue(dailyNet, 0)} kcal/day → ~${_helpers.formatValue(dailyWeightChange * 1000, 0)} g/day. `;
-      resultText += `After ${duration} days: ~${_helpers.formatValue(totalWeightChange, 1)} kg change.`;
-      if (projectedWeight !== null) {
-        resultText += ` Est. weight: ${_helpers.formatValue(projectedWeight, 1)} kg.`;
-      }
-
-      displayEl.text(resultText).classed("error", false);
+      // Let specific handlers for dots, annotations, etc., manage their own state.
     },
 
     getAnalysisDateRange() {
-      // If custom range is set and valid, use it
+      // Priority 1: Custom range set via UI
       if (
         state.analysisRange.isCustom &&
+        state.analysisRange.start &&
+        state.analysisRange.end &&
         state.analysisRange.start instanceof Date &&
-        !isNaN(state.analysisRange.start) &&
         state.analysisRange.end instanceof Date &&
-        !isNaN(state.analysisRange.end) &&
-        state.analysisRange.start <= state.analysisRange.end
+        !isNaN(state.analysisRange.start) &&
+        !isNaN(state.analysisRange.end)
       ) {
         return {
           start: state.analysisRange.start,
           end: state.analysisRange.end,
         };
       }
-      // Otherwise, use the current chart view domain
+      // Priority 2: Current chart view (focus scale domain)
       const chartDomain = scales.x?.domain();
       if (
         chartDomain?.length === 2 &&
         chartDomain[0] instanceof Date &&
-        chartDomain[1] instanceof Date
+        chartDomain[1] instanceof Date &&
+        !isNaN(chartDomain[0]) &&
+        !isNaN(chartDomain[1])
       ) {
-        return { start: chartDomain[0], end: chartDomain[1] };
+        // Return dates clamped to midnight start/end of the view day
+        const start = new Date(chartDomain[0]);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(chartDomain[1]);
+        end.setHours(23, 59, 59, 999);
+        return { start: start, end: end };
       }
-      // Absolute fallback (shouldn't normally be needed if data exists)
+      // Fallback (e.g., if chart not initialized)
+      console.warn(
+        "EventHandlers: Could not determine analysis range from chart view. Using fallback.",
+      );
       const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      today.setHours(23, 59, 59, 999);
       const yesterday = new Date(today);
       yesterday.setDate(today.getDate() - 1);
+      yesterday.setHours(0, 0, 0, 0);
       return { start: yesterday, end: today };
     },
 
-    updateAnalysisRangeInputsFromCurrentView() {
+    getEffectiveRegressionRange() {
+      // Priority 1: Interactive brush selection (if valid)
       if (
-        scales.x &&
-        selections.analysisStartDateInput &&
-        selections.analysisEndDateInput
+        state.interactiveRegressionRange.start instanceof Date &&
+        !isNaN(state.interactiveRegressionRange.start) &&
+        state.interactiveRegressionRange.end instanceof Date &&
+        !isNaN(state.interactiveRegressionRange.end)
       ) {
-        const currentDomain = scales.x.domain();
-        if (
-          currentDomain?.length === 2 &&
-          currentDomain[0] instanceof Date &&
-          currentDomain[1] instanceof Date
-        ) {
-          const startStr = _helpers.formatDate(currentDomain[0]);
-          const endStr = _helpers.formatDate(currentDomain[1]);
-          selections.analysisStartDateInput.property(
-            "value",
-            startStr === "N/A" ? "" : startStr,
-          );
-          selections.analysisEndDateInput.property(
-            "value",
-            endStr === "N/A" ? "" : endStr,
-          );
-        } else {
-          selections.analysisStartDateInput.property("value", "");
-          selections.analysisEndDateInput.property("value", "");
-        }
+        return { ...state.interactiveRegressionRange };
       }
+      // Priority 2: UI-defined start date within the current analysis range
+      const analysisRange = EventHandlers.getAnalysisDateRange();
+      // Ensure analysis range is valid before proceeding
+      if (
+        !(analysisRange.start instanceof Date) ||
+        !(analysisRange.end instanceof Date)
+      ) {
+        console.warn("EventHandlers: Invalid analysis range for regression.");
+        return { start: null, end: null }; // Return invalid range
+      }
+
+      const uiRegressionStart = state.regressionStartDate; // Use the state value updated by DataService/EventHandlers
+
+      // Use UI start date only if it's valid and falls within the analysis range
+      const start =
+        uiRegressionStart instanceof Date &&
+        !isNaN(uiRegressionStart) &&
+        uiRegressionStart >= analysisRange.start &&
+        uiRegressionStart <= analysisRange.end
+          ? uiRegressionStart
+          : analysisRange.start; // Otherwise, use the start of the analysis range
+
+      return { start: start, end: analysisRange.end };
+    },
+
+    updateAnalysisRangeInputsFromCurrentView() {
+      const range = EventHandlers.getAnalysisDateRange();
+      ui.analysisStartDateInput?.property(
+        "value",
+        Utils.formatDate(range.start),
+      );
+      ui.analysisEndDateInput?.property("value", Utils.formatDate(range.end));
     },
 
     updateAnalysisRangeDisplay() {
-      // Updates display text AND heading (Feature #11)
-      const range = _handlers.getAnalysisDateRange();
-      const startStr = _helpers.formatDateShort(range.start);
-      const endStr = _helpers.formatDateShort(range.end);
-      const rangeText = state.analysisRange.isCustom
-        ? `${startStr} to ${endStr}`
-        : "Current Chart View";
+      const range = EventHandlers.getAnalysisDateRange();
+      const displayStr =
+        range.start && range.end
+          ? `${Utils.formatDateShort(range.start)} - ${Utils.formatDateShort(range.end)}`
+          : "Full Range";
+      ui.analysisRangeDisplay?.text(displayStr);
 
-      if (selections.analysisRangeDisplay) {
-        selections.analysisRangeDisplay.text(rangeText);
-      }
-      // Update heading of the analysis results card (Feature #11)
-      if (selections.analysisResultsHeading) {
-        selections.analysisResultsHeading
-          .select("small")
-          .text(`(${rangeText})`);
+      // Update the small text in the analysis results heading
+      if (ui.analysisResultsHeading) {
+        const headingSmallText = state.analysisRange.isCustom
+          ? "(Custom Range)"
+          : "(Chart View)";
+        ui.analysisResultsHeading.select("small").text(headingSmallText);
       }
     },
 
+    // --- Setup All Handlers ---
     setupAll() {
-      window.addEventListener("resize", _handlers.resize);
-      if (selections.themeToggle)
-        selections.themeToggle.on("click", _handlers.themeToggle);
+      console.log("EventHandlers: Setting up event listeners...");
+      window.addEventListener("resize", EventHandlers.handleResize);
+      ui.themeToggle?.on("click", EventHandlers.handleThemeToggle);
+      ui.dynamicYAxisToggle?.on(
+        "change",
+        EventHandlers.handleDynamicYAxisToggle,
+      );
 
-      const goalForm = _helpers.getElementByIdSafe("goal-setting-form");
-      if (goalForm) goalForm.addEventListener("submit", _handlers.goalSubmit);
+      // Form submissions
+      d3.select("#goal-setting-form").on(
+        "submit",
+        EventHandlers.handleGoalSubmit,
+      );
+      ui.annotationForm?.on("submit", AnnotationManager.handleSubmit);
 
+      // Input changes
       const trendInputs = [
-        selections.trendStartDateInput,
-        selections.trendInitialWeightInput,
-        selections.trendWeeklyIncrease1Input,
-        selections.trendWeeklyIncrease2Input,
+        ui.trendStartDateInput,
+        ui.trendInitialWeightInput,
+        ui.trendWeeklyIncrease1Input,
+        ui.trendWeeklyIncrease2Input,
       ];
-      trendInputs.forEach((input) => {
-        if (input?.node())
-          input.node().addEventListener("input", _handlers.trendlineChange);
+      trendInputs.forEach((input) =>
+        input?.on("input", EventHandlers.handleTrendlineChange),
+      );
+      ui.regressionToggle?.on("change", EventHandlers.handleRegressionToggle);
+
+      // Button clicks
+      ui.updateAnalysisRangeBtn?.on(
+        "click",
+        EventHandlers.handleAnalysisRangeUpdate,
+      );
+      ui.resetAnalysisRangeBtn?.on(
+        "click",
+        EventHandlers.handleAnalysisRangeReset,
+      );
+      ui.whatIfSubmitBtn?.on("click", EventHandlers.handleWhatIfSubmit);
+
+      // What-If Enter key press
+      ui.whatIfIntakeInput?.on("keydown", (event) => {
+        if (event.key === "Enter") EventHandlers.handleWhatIfSubmit(event);
+      });
+      ui.whatIfDurationInput?.on("keydown", (event) => {
+        if (event.key === "Enter") EventHandlers.handleWhatIfSubmit(event);
       });
 
-      if (selections.regressionToggle?.node())
-        selections.regressionToggle
-          .node()
-          .addEventListener("change", _handlers.regressionToggle);
+      // Background click for clearing interactions
+      ui.svg?.on("click", EventHandlers.handleBackgroundClick);
 
-      if (selections.updateAnalysisRangeBtn)
-        selections.updateAnalysisRangeBtn.on(
-          "click",
-          _handlers.analysisRangeUpdate,
+      // Attach brush/zoom handlers using namespacing for easier removal/management
+      if (brushes.context && ui.brushGroup) {
+        ui.brushGroup.on(
+          "brush.handler end.handler",
+          EventHandlers.contextBrushed,
         );
-      if (selections.resetAnalysisRangeBtn)
-        selections.resetAnalysisRangeBtn.on(
-          "click",
-          _handlers.analysisRangeReset,
+      }
+      if (zoom && ui.zoomCaptureRect) {
+        ui.zoomCaptureRect.on("zoom.handler", EventHandlers.zoomed);
+      }
+      if (brushes.regression && ui.regressionBrushGroup) {
+        ui.regressionBrushGroup.on(
+          "end.handler",
+          EventHandlers.regressionBrushed,
         );
+      }
 
-      // Feature #1: Annotation form handler
-      if (selections.annotationForm)
-        selections.annotationForm.on("submit", _annotations.handleSubmit);
-
-      // Feature #10: What-If handler
-      if (selections.whatIfSubmitBtn)
-        selections.whatIfSubmitBtn.on("click", _handlers.whatIfSubmit);
-      // Also trigger on Enter key in inputs
-      if (selections.whatIfIntakeInput)
-        selections.whatIfIntakeInput.on("keydown", (event) => {
-          if (event.key === "Enter") _handlers.whatIfSubmit(event);
-        });
-      if (selections.whatIfDurationInput)
-        selections.whatIfDurationInput.on("keydown", (event) => {
-          if (event.key === "Enter") _handlers.whatIfSubmit(event);
-        });
-
-      // Feature #4: Clear highlight on background click (SVG or zoom rect)
-      // Attach to SVG, check target
-      selections.svg?.on("click", (event) => {
-        // Check if the click target is the zoom rect OR the SVG background itself,
-        // and NOT something interactive like a dot or marker.
-        const targetNode = event.target;
-        const isInteractive =
-          d3.select(targetNode).classed("dot") ||
-          d3.select(targetNode).classed("annotation-marker") || // Assuming markers have this class
-          d3.select(targetNode).classed("trend-change-marker") || // Assuming markers have this class
-          d3.select(targetNode.parentNode).classed("annotation-marker") || // Check parent group
-          d3.select(targetNode.parentNode).classed("trend-change-marker"); // Check parent group
-
-        if (
-          !isInteractive &&
-          (targetNode === selections.zoomCaptureRect?.node() ||
-            targetNode === selections.svg?.node())
-        ) {
-          if (state.highlightedDate) {
-            state.highlightedDate = null;
-            _update.chartDots(); // Redraw to remove highlight marker and style
-          }
-        }
-      });
-
-      console.log("Event handlers set up.");
+      console.log("EventHandlers: Setup complete.");
     },
   };
 
   // ========================================================================
-  // Legend & Visibility (`_legend`)
+  // Legend Manager (`LegendManager`)
   // ========================================================================
-  const _legend = {
+  const LegendManager = {
     toggleSeriesVisibility(seriesId, isVisible) {
-      if (state.seriesVisibility.hasOwnProperty(seriesId)) {
-        state.seriesVisibility[seriesId] = isVisible;
-        if (seriesId === "regression") {
-          state.showRegression = isVisible;
-          if (selections.regressionToggle)
-            selections.regressionToggle.property("checked", isVisible);
-        }
-        state.highlightedDate = null; // Clear highlight when toggling series
-        _update.runAll(); // Redraw visuals (will re-calculate Y domain)
-        _stats.updateAll(); // Recalculate stats (domain might change)
-        _legend.updateAppearance(seriesId, isVisible);
-      } else {
-        console.warn(`Attempted to toggle unknown series: ${seriesId}`);
+      if (!state.seriesVisibility.hasOwnProperty(seriesId)) {
+        console.warn(
+          `LegendManager: Attempted to toggle unknown series: ${seriesId}`,
+        );
+        return;
       }
+
+      state.seriesVisibility[seriesId] = isVisible;
+
+      // Special handling for linked visibilities
+      if (seriesId === "regression") {
+        // Link Regression CI visibility to main regression line
+        state.seriesVisibility.regressionCI = isVisible;
+        LegendManager.updateAppearance("regressionCI", isVisible);
+        // Also update the toggle input state if it exists
+        ui.regressionToggle?.property("checked", isVisible);
+      } else if (seriesId === "bf") {
+        // Toggle visibility of the second Y axis label with BF line
+        ui.svg
+          ?.select(".y-axis-label2")
+          .style("display", isVisible ? null : "none");
+      }
+
+      // Clear interactions that might become invalid
+      state.highlightedDate = null;
+      state.pinnedTooltipData = null;
+      EventHandlers.updatePinnedTooltipDisplay();
+
+      // Update the specific legend item's appearance
+      LegendManager.updateAppearance(seriesId, isVisible);
+
+      // Trigger necessary updates
+      MasterUpdater.updateAllCharts(); // Redraw charts with new visibility
+      StatsManager.update(); // Recalculate stats if visibility affects insights/trends
     },
 
     updateAppearance(seriesId, isVisible) {
-      if (selections.legendContainer)
-        selections.legendContainer
-          .selectAll(`.legend-item[data-id='${seriesId}']`)
-          .classed("hidden", !isVisible);
+      ui.legendContainer
+        ?.selectAll(`.legend-item[data-id='${seriesId}']`)
+        .classed("hidden", !isVisible);
     },
 
     build() {
-      if (!selections.legendContainer?.node()) {
-        console.warn("Legend container not found.");
+      if (!ui.legendContainer || ui.legendContainer.empty()) {
+        console.warn("LegendManager: Legend container not found.");
         return;
       }
-      selections.legendContainer.html(""); // Clear existing legend items
+      ui.legendContainer.html(""); // Clear existing items
 
       if (Object.keys(colors).length === 0 || !state.processedData?.length) {
-        selections.legendContainer.append("span").text("No data for legend.");
+        ui.legendContainer
+          .append("span")
+          .attr("class", "legend-empty-msg")
+          .text("Legend unavailable.");
         return;
       }
 
@@ -4893,22 +6331,22 @@ const WeightTrackerChart = (function () {
           id: "raw",
           label: "Raw Data",
           type: "dot",
-          color: colors.rawDot,
+          colorKey: "rawDot",
           styleClass: "raw-dot",
         },
         {
           id: "sma",
           label: `Weight (${CONFIG.movingAverageWindow}d SMA & Band)`,
           type: "area+line",
-          color: colors.sma,
-          areaColor: colors.band,
+          colorKey: "sma",
+          areaColorKey: "band",
           styleClass: "sma-line",
         },
         {
           id: "expected",
           label: "Expected Wgt (Net Cal)",
           type: "line",
-          color: colors.expectedLineColor,
+          colorKey: "expectedLineColor",
           styleClass: "expected-weight-line",
           dash: "2, 3",
         },
@@ -4916,15 +6354,21 @@ const WeightTrackerChart = (function () {
           id: "regression",
           label: "Lin. Regression",
           type: "line",
-          color: colors.regression,
+          colorKey: "regression",
           styleClass: "regression-line",
-          dash: "",
+        },
+        {
+          id: "regressionCI",
+          label: "Regression 95% CI",
+          type: "area",
+          colorKey: "regressionCI",
+          styleClass: "regression-ci-area",
         },
         {
           id: "trend1",
           label: "Manual Trend 1",
           type: "line",
-          color: colors.trend1,
+          colorKey: "trend1",
           styleClass: "manual-trend-1",
           dash: "4, 4",
         },
@@ -4932,323 +6376,304 @@ const WeightTrackerChart = (function () {
           id: "trend2",
           label: "Manual Trend 2",
           type: "line",
-          color: colors.trend2,
+          colorKey: "trend2",
           styleClass: "manual-trend-2",
           dash: "4, 4",
         },
-        ...(state.goal.weight !== null
+        // Conditionally add goal line item
+        ...(state.goal.weight != null
           ? [
               {
                 id: "goal",
                 label: "Goal Path",
                 type: "line",
-                color: colors.goal,
+                colorKey: "goal",
                 styleClass: "goal-line",
                 dash: "6, 3",
               },
             ]
           : []),
+        // Body Fat placeholder - uncomment if BF% feature is fully added
+        {
+          id: "bf",
+          label: "Body Fat %",
+          type: "line",
+          colorKey: "secondAxisColor",
+          styleClass: "bf-line",
+          dash: "1, 2",
+        },
         {
           id: "annotations",
           label: "Annotations",
           type: "marker",
-          color: colors.annotationMarker,
+          colorKey: "annotationMarker",
           styleClass: "annotation-marker",
-        }, // Feature #1
+        },
         {
           id: "plateaus",
           label: "Plateaus",
           type: "area",
-          color: colors.plateauColor,
+          colorKey: "plateauColor",
           styleClass: "plateau-region",
-        }, // Feature #6
+        },
         {
           id: "trendChanges",
           label: "Trend Δ",
           type: "marker",
-          color: colors.trendChangeColor,
+          colorKey: "trendChangeColor",
           styleClass: "trend-change-marker",
-        }, // Feature #7
+        },
       ];
 
       legendItemsConfig.forEach((item) => {
-        const isVisible = state.seriesVisibility[item.id] ?? true;
-        const itemDiv = selections.legendContainer
-          .append("div")
-          .attr("class", `legend-item ${item.styleClass}`)
-          .attr("data-id", item.id)
-          .classed("hidden", !isVisible)
-          .on("click", () =>
-            _legend.toggleSeriesVisibility(item.id, !isVisible),
-          );
+        // Only create item if its visibility state is defined
+        if (state.seriesVisibility.hasOwnProperty(item.id)) {
+          const isVisible = state.seriesVisibility[item.id];
+          const itemColor = colors[item.colorKey] || "#000"; // Fallback color
+          const areaColor = colors[item.areaColorKey] || "rgba(0,0,0,0.1)";
 
-        const swatch = itemDiv
-          .append("span")
-          .attr("class", `legend-swatch ${item.type}`);
+          const itemDiv = ui.legendContainer
+            .append("div")
+            .attr("class", `legend-item ${item.styleClass}`)
+            .attr("data-id", item.id)
+            .classed("hidden", !isVisible)
+            .on("click", () =>
+              LegendManager.toggleSeriesVisibility(item.id, !isVisible),
+            ); // Toggle on click
 
-        if (item.type === "dot") {
-          swatch
-            .style("background-color", item.color)
-            .style("border-radius", "50%");
-        } else if (item.type === "marker") {
-          swatch
-            .style("background-color", item.color)
-            .style("border-radius", "50%");
-        } else if (item.type === "area") {
-          swatch.style("background-color", item.color).style("opacity", 0.6);
-        } else if (item.type === "line") {
-          swatch.style("background-color", item.color);
-          if (item.dash) {
-            const dashArray = item.dash.split(",").map(Number);
-            if (
-              dashArray.length === 2 &&
-              dashArray[0] > 0 &&
-              dashArray[1] >= 0
-            ) {
-              const total = dashArray[0] + dashArray[1];
-              const solidPercent = (dashArray[0] / total) * 100;
-              swatch
-                .style(
-                  "background-image",
-                  `linear-gradient(to right, ${item.color} ${solidPercent}%, transparent ${solidPercent}%)`,
-                )
-                .style("background-size", `${total}px 100%`)
-                .style("background-color", "transparent"); // Clear solid color if using gradient
-            }
+          const swatch = itemDiv
+            .append("span")
+            .attr("class", `legend-swatch type-${item.type}`); // Add type class
+
+          // Style swatch based on type
+          switch (item.type) {
+            case "dot":
+            case "marker":
+              swatch.style("background-color", itemColor);
+              break;
+            case "area":
+              swatch.style("background-color", itemColor).style("opacity", 0.6);
+              break;
+            case "line":
+              swatch.style("background-color", itemColor);
+              if (item.dash) swatch.classed("dashed", true); // Use CSS for dashes if possible
+              break;
+            case "area+line":
+              swatch.style("background-color", areaColor);
+              swatch.style("border", `1px solid ${itemColor}`); // Line color as border
+              // Add inner element to represent the line more clearly if needed
+              // swatch.append("span").attr("class", "line-inside").style("background-color", itemColor);
+              break;
           }
-        } else if (item.type === "area+line") {
-          swatch
-            .style("background-color", item.areaColor || colors.band)
-            .style("border", `2px solid ${item.color}`)
-            .style("height", "10px"); // Adjust height for visual balance
-        }
 
-        itemDiv.append("span").attr("class", "legend-text").text(item.label);
+          itemDiv.append("span").attr("class", "legend-text").text(item.label);
+        }
       });
     },
   };
 
   // ========================================================================
-  // Annotations Management (`_annotations`) Feature #1
+  // Annotation Manager (`AnnotationManager`)
   // ========================================================================
-  const _annotations = {
+  const AnnotationManager = {
     load() {
-      try {
-        const stored = localStorage.getItem(
-          CONFIG.localStorageKeys.annotations,
-        );
-        state.annotations = stored ? JSON.parse(stored) : [];
-        // Basic validation/parsing
-        state.annotations = state.annotations.filter(
-          (a) => a && a.date && a.text && a.id,
-        ); // Filter out invalid entries
-        state.annotations.forEach((a) => {
-          if (
-            !(new Date(a.date) instanceof Date) ||
-            isNaN(new Date(a.date).getTime())
-          ) {
-            console.warn(
-              "Invalid date found in stored annotation, removing:",
-              a,
-            );
-            // Ideally remove this specific invalid annotation, requires filtering logic change
+      const stored = localStorage.getItem(CONFIG.localStorageKeys.annotations);
+      state.annotations = []; // Reset before loading
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          // Validate and potentially migrate old format
+          if (Array.isArray(parsed)) {
+            state.annotations = parsed
+              .map((a) => ({
+                // Ensure required fields and add ID if missing
+                id: a.id ?? Date.now() + Math.random(), // Simple unique ID fallback
+                date: a.date, // Expecting YYYY-MM-DD string
+                text: a.text || "", // Ensure text is at least empty string
+                type: a.type === "range" ? "range" : "point", // Default to 'point'
+              }))
+              .filter(
+                (a) =>
+                  a.date &&
+                  typeof a.text === "string" &&
+                  /^\d{4}-\d{2}-\d{2}$/.test(a.date),
+              ); // Basic validation including date format
           }
-          a.date = new Date(a.date).toISOString().slice(0, 10); // Normalize date format
-        });
-        state.annotations.sort((a, b) => new Date(a.date) - new Date(b.date)); // Ensure sorted
-      } catch (e) {
-        console.error("Error loading annotations:", e);
-        localStorage.removeItem(CONFIG.localStorageKeys.annotations); // Clear corrupted data
-        state.annotations = [];
+        } catch (e) {
+          console.error(
+            "AnnotationManager: Error loading/parsing annotations:",
+            e,
+          );
+          // Keep state.annotations as empty array
+        }
       }
-      this.renderList(); // Update UI list
+      state.annotations.sort((a, b) => new Date(a.date) - new Date(b.date)); // Sort after loading/parsing
+      AnnotationManager.renderList(); // Update UI list after loading
     },
+
     save() {
       try {
+        // Only save essential fields
+        const annotationsToSave = state.annotations.map(
+          ({ id, date, text, type }) => ({ id, date, text, type }),
+        );
         localStorage.setItem(
           CONFIG.localStorageKeys.annotations,
-          JSON.stringify(state.annotations),
+          JSON.stringify(annotationsToSave),
         );
       } catch (e) {
-        console.error("Error saving annotations:", e);
-        _helpers.showStatusMessage("Could not save annotations.", "error");
-      }
-    },
-    add(dateStr, text, type = "point") {
-      const date = new Date(dateStr);
-      if (isNaN(date.getTime()) || !text || text.trim() === "") {
-        _helpers.showStatusMessage(
-          "Invalid date or empty text for annotation.",
+        console.error("AnnotationManager: Error saving annotations:", e);
+        Utils.showStatusMessage(
+          "Could not save annotations due to storage error.",
           "error",
         );
-        return;
+      }
+    },
+
+    add(dateStr, text, type = "point") {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime()) || !text || text.trim().length === 0) {
+        Utils.showStatusMessage(
+          "Annotation requires a valid date and non-empty text.",
+          "error",
+        );
+        return false; // Indicate failure
       }
       date.setHours(0, 0, 0, 0); // Normalize date
 
       const newAnnotation = {
-        id: `ann_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`, // Simple unique ID
+        id: Date.now(), // Use timestamp as simple unique ID
         date: date.toISOString().slice(0, 10), // Store as YYYY-MM-DD string
         text: text.trim(),
-        type: type, // 'point' or 'range' (range not fully implemented visually)
+        type: type === "range" ? "range" : "point", // Sanitize type
       };
+
       state.annotations.push(newAnnotation);
       state.annotations.sort((a, b) => new Date(a.date) - new Date(b.date)); // Keep sorted
-      this.save();
-      this.renderList();
-      _update.annotations(state.filteredData); // Redraw annotations on chart
-      _helpers.showStatusMessage("Annotation added.", "success", 1500);
+
+      AnnotationManager.save();
+      AnnotationManager.renderList();
+      FocusChartUpdater.updateAnnotations(state.filteredData); // Redraw markers
+
+      Utils.showStatusMessage("Annotation added.", "success", 1500);
+      return true; // Indicate success
     },
+
     remove(id) {
-      state.annotations = state.annotations.filter((ann) => ann.id !== id);
-      this.save();
-      this.renderList();
-      _update.annotations(state.filteredData); // Redraw annotations on chart
-      _helpers.showStatusMessage("Annotation removed.", "info", 1500);
+      const initialLength = state.annotations.length;
+      state.annotations = state.annotations.filter((a) => a.id !== id);
+
+      if (state.annotations.length < initialLength) {
+        AnnotationManager.save();
+        AnnotationManager.renderList();
+        FocusChartUpdater.updateAnnotations(state.filteredData);
+        Utils.showStatusMessage("Annotation removed.", "info", 1500);
+      }
     },
+
+    findAnnotationByDate(targetDate) {
+      if (!(targetDate instanceof Date) || isNaN(targetDate)) return null;
+      const targetTime = new Date(targetDate).setHours(0, 0, 0, 0); // Normalize target date
+      // Find the first annotation matching the date (ignoring time)
+      return state.annotations.find((a) => {
+        const annoDate = new Date(a.date); // Assumes date is YYYY-MM-DD
+        // Check if annoDate is valid before setting hours
+        return (
+          !isNaN(annoDate.getTime()) &&
+          annoDate.setHours(0, 0, 0, 0) === targetTime
+        );
+      });
+    },
+
     handleSubmit(event) {
-      event.preventDefault();
-      const dateVal = selections.annotationDateInput?.property("value");
-      const textVal = selections.annotationTextInput?.property("value");
-      // const typeVal = selections.annotationTypeInput?.property('value'); // Add if using types
+      event.preventDefault(); // Prevent default form submission
+      const dateVal = ui.annotationDateInput?.property("value");
+      const textVal = ui.annotationTextInput?.property("value");
+      // const typeVal = ui.annotationTypeInput?.property("value") || "point"; // If type selector exists
 
-      _annotations.add(dateVal, textVal);
-
-      // Clear form
-      if (selections.annotationDateInput)
-        selections.annotationDateInput.property("value", "");
-      if (selections.annotationTextInput)
-        selections.annotationTextInput.property("value", "");
+      if (AnnotationManager.add(dateVal, textVal /*, typeVal */)) {
+        // Clear form on successful addition
+        ui.annotationDateInput?.property("value", "");
+        ui.annotationTextInput?.property("value", "");
+      }
     },
+
     renderList() {
-      if (!selections.annotationList) return;
-      selections.annotationList.html(""); // Clear list
+      const list = ui.annotationList;
+      if (!list || list.empty()) return; // Don't proceed if list container doesn't exist
+
+      list.html(""); // Clear previous entries
 
       if (state.annotations.length === 0) {
-        selections.annotationList
+        list
           .append("li")
-          .text("No annotations added yet.")
-          .classed("empty-msg", true);
+          .attr("class", "empty-msg")
+          .text("No annotations added yet.");
         return;
       }
 
-      state.annotations.forEach((ann) => {
-        const li = selections.annotationList.append("li");
-        li.append("span")
-          .attr("class", "annotation-date")
-          .text(_helpers.formatDateShort(new Date(ann.date)) + ":");
-        li.append("span").attr("class", "annotation-text").text(ann.text);
-        li.append("button")
-          .attr("class", "remove-annotation")
-          .attr("title", "Remove annotation")
-          .html("&times;") // Use × symbol
-          .on("click", () => _annotations.remove(ann.id));
-      });
+      const items = list
+        .selectAll("li.annotation-list-item") // Use specific class
+        .data(state.annotations, (d) => d.id) // Key by unique ID
+        .join("li") // Use join pattern for enter/update/exit
+        .attr("class", "annotation-list-item");
+
+      // Add content structure (can be refined with more complex HTML if needed)
+      items
+        .append("span")
+        .attr("class", "annotation-date")
+        .text((d) => {
+          const dateObj = new Date(d.date); // Assumes YYYY-MM-DD
+          return Utils.formatDateShort(dateObj); // Format date
+        });
+
+      items
+        .append("span")
+        .attr("class", "annotation-text")
+        .text((d) => d.text); // Display text
+
+      items
+        .append("button")
+        .attr("class", "remove-annotation")
+        .attr("aria-label", "Remove annotation") // Accessibility
+        .html("&times;") // Use HTML entity for 'x' button
+        .on("click", (event, d) => {
+          event.stopPropagation(); // Prevent triggering potential li click listeners
+          AnnotationManager.remove(d.id); // Call remove function with ID
+        });
     },
   };
 
   // ========================================================================
   // Initialization & Public Interface
   // ========================================================================
+
+  // Cache D3 selections for UI elements
   function _cacheSelectors() {
-    const idsToCache = [
+    console.log("Initialization: Caching UI element selections...");
+    ui.body = d3.select("body");
+
+    // Define elements and their corresponding keys in the 'ui' object
+    // Use a map for easier management and potential renaming
+    const elementIdMap = {
       // Containers
-      "chart-container",
-      "context-chart-container",
-      "balance-chart-container",
-      "legend-container",
-      "rate-of-change-container",
-      "tdee-reconciliation-container",
-      "weekly-summary-container",
-      // Sidebar Cards & Headings
-      "controls-section",
-      "analysis-settings-card",
-      "all-time-stats-card",
-      "analysis-results-card",
-      "analysis-results-heading",
-      "goal-tracker-card",
-      // Tooltip & Status
-      "tooltip",
-      "status-message",
-      "theme-toggle",
-      // Controls
-      "toggleRegression",
-      "trendStartDate",
-      "trendInitialWeight",
-      "trendWeeklyIncrease",
-      "trendWeeklyIncrease_2",
-      // Analysis Settings
-      "analysisStartDate",
-      "analysisEndDate",
-      "updateAnalysisRange",
-      "resetAnalysisRange",
-      "analysis-range-display",
-      "regression-start-date-label",
-      // Goal Tracker Form & Stats
-      "goalWeight",
-      "goalDate",
-      "goalTargetRate",
-      "goal-setting-form",
-      "target-weight-stat",
-      "target-rate-stat",
-      "weight-to-goal",
-      "current-rate-feedback",
-      "estimated-time-to-goal",
-      "required-rate-for-goal",
-      "required-net-calories",
-      "suggested-intake-range", // Feature #9
-      // All-Time Stats
-      "starting-weight",
-      "current-weight",
-      "current-sma",
-      "total-change",
-      "max-weight",
-      "max-weight-date",
-      "min-weight",
-      "min-weight-date",
-      // Analysis Results Stats
-      "volatility-score",
-      "avg-intake",
-      "avg-expenditure",
-      "avg-net-balance",
-      "estimated-deficit-surplus",
-      "avg-tdee-gfit",
-      "avg-tdee-wgt-change",
-      "rolling-weekly-change-sma",
-      "regression-slope",
-      "netcal-rate-correlation",
-      "weight-consistency",
-      "weight-consistency-details",
-      "calorie-consistency",
-      "calorie-consistency-details",
-      "avg-tdee-difference", // Feature #8
-      // Insights
-      "insight-summary",
-      // Annotations (Feature #1)
-      "annotations-section",
-      "annotation-form",
-      "annotation-date",
-      "annotation-text",
-      "annotation-list", //'annotation-type',
-      // What-If (Feature #10)
-      "what-if-controls",
-      "what-if-intake",
-      "what-if-duration",
-      "what-if-submit",
-      "what-if-result",
-    ];
-
-    selections.body = d3.select("body");
-    console.log("_cacheSelectors (v2): Starting selection process.");
-
-    // Mapping for complex ID -> camelCase key changes
-    const keyMap = {
+      "chart-container": "chartContainer",
       "context-chart-container": "contextContainer",
       "balance-chart-container": "balanceChartContainer",
-      "rate-of-change-container": "rateChartContainer", // Feature #5
-      "tdee-reconciliation-container": "tdeeDiffContainer", // Feature #8
-      "weekly-summary-container": "weeklySummaryContainer", // Feature #2
       "legend-container": "legendContainer",
-      "chart-container": "chartContainer",
+      "rate-of-change-container": "rateChartContainer",
+      "tdee-reconciliation-container": "tdeeDiffContainer",
+      "weekly-summary-container": "weeklySummaryContainer",
+      "correlation-scatter-container": "correlationScatterContainer",
+      tooltip: "tooltip",
+      "pinned-tooltip-container": "pinnedTooltipContainer",
+      "status-message": "statusMessage",
+      "annotation-list": "annotationList",
+      "insight-summary": "insightSummaryContainer",
+      "analysis-results-heading": "analysisResultsHeading",
+      // Controls & Inputs
+      "theme-toggle": "themeToggle",
+      "dynamic-y-axis-toggle": "dynamicYAxisToggle",
       goalWeight: "goalWeightInput",
       goalDate: "goalDateInput",
       goalTargetRate: "goalTargetRateInput",
@@ -5263,217 +6688,222 @@ const WeightTrackerChart = (function () {
       updateAnalysisRange: "updateAnalysisRangeBtn",
       resetAnalysisRange: "resetAnalysisRangeBtn",
       "analysis-range-display": "analysisRangeDisplay",
-      "analysis-results-heading": "analysisResultsHeading", // Feature #11
-      "insight-summary": "insightSummaryContainer",
-      "annotation-form": "annotationForm", // Feature #1
-      "annotation-date": "annotationDateInput", // Feature #1
-      "annotation-text": "annotationTextInput", // Feature #1
-      //'annotation-type': 'annotationTypeInput', // Feature #1
-      "annotation-list": "annotationList", // Feature #1
-      "what-if-intake": "whatIfIntakeInput", // Feature #10
-      "what-if-duration": "whatIfDurationInput", // Feature #10
-      "what-if-submit": "whatIfSubmitBtn", // Feature #10
-      "what-if-result": "whatIfResultDisplay", // Feature #10
+      "annotation-form": "annotationForm",
+      "annotation-date": "annotationDateInput",
+      "annotation-text": "annotationTextInput",
+      "what-if-intake": "whatIfIntakeInput",
+      "what-if-duration": "whatIfDurationInput",
+      "what-if-submit": "whatIfSubmitBtn",
+      "what-if-result": "whatIfResultDisplay",
+      // Stat Display Elements (IDs match keys in statElements cache)
+      "starting-weight": "startingWeight",
+      "current-weight": "currentWeight",
+      "current-sma": "currentSma",
+      "total-change": "totalChange",
+      "max-weight": "maxWeight",
+      "max-weight-date": "maxWeightDate",
+      "min-weight": "minWeight",
+      "min-weight-date": "minWeightDate",
+      "volatility-score": "volatilityScore",
+      "rolling-weekly-change-sma": "rollingWeeklyChangeSma",
+      "regression-slope": "regressionSlope",
+      "netcal-rate-correlation": "netcalRateCorrelation",
+      "weight-consistency": "weightConsistency",
+      "weight-consistency-details": "weightConsistencyDetails",
+      "calorie-consistency": "calorieConsistency",
+      "calorie-consistency-details": "calorieConsistencyDetails",
+      "avg-intake": "avgIntake",
+      "avg-expenditure": "avgExpenditure",
+      "avg-net-balance": "avgNetBalance",
+      "estimated-deficit-surplus": "estimatedDeficitSurplus",
+      "avg-tdee-gfit": "avgTdeeGfit",
+      "avg-tdee-wgt-change": "avgTdeeWgtChange",
+      "avg-tdee-difference": "avgTdeeDifference",
+      "avg-tdee-adaptive": "avgTdeeAdaptive",
+      "target-weight-stat": "targetWeightStat",
+      "target-rate-stat": "targetRateStat",
+      "weight-to-goal": "weightToGoal",
+      "estimated-time-to-goal": "estimatedTimeToGoal",
+      "required-rate-for-goal": "requiredRateForGoal",
+      "required-net-calories": "requiredNetCalories",
+      "suggested-intake-range": "suggestedIntakeRange",
+      "current-rate-feedback": "currentRateFeedback",
     };
 
-    idsToCache.forEach((id) => {
-      // Convert kebab-case to camelCase unless mapped
-      const camelCaseKey =
-        keyMap[id] || id.replace(/-([a-z0-9])/g, (g) => g[1].toUpperCase());
+    let missingCritical = false;
+    const criticalIds = [
+      "chart-container",
+      "context-chart-container",
+      "tooltip",
+    ]; // IDs essential for basic operation
 
-      let elementNode = null;
-      let d3Selection = null;
-      try {
-        // Use querySelector for potentially more complex selectors if needed, though ID is fine
-        elementNode = document.querySelector(`#${id}`);
-        d3Selection = elementNode ? d3.select(elementNode) : d3.select(null);
-      } catch (e) {
-        console.error(`Error selecting #${id}:`, e);
-        d3Selection = d3.select(null);
-      }
+    // Clear statElements cache before populating
+    ui.statElements = {};
 
-      if (d3Selection && !d3Selection.empty()) {
-        selections[camelCaseKey] = d3Selection;
-        const nodeClasses = d3Selection.attr("class") || "";
-        // Cache direct node references for stat elements for faster updates
+    for (const [id, key] of Object.entries(elementIdMap)) {
+      const elementNode = Utils.getElementByIdSafe(id);
+      if (elementNode) {
+        ui[key] = d3.select(elementNode); // Store D3 selection
+
+        // Cache direct node reference for elements that need frequent text updates (stats)
         if (
-          nodeClasses.includes("stat-value") ||
-          nodeClasses.includes("stat-date") ||
-          nodeClasses.includes("stat-details") ||
-          nodeClasses.includes("feedback")
+          elementNode.classList.contains("stat-value") ||
+          elementNode.classList.contains("stat-date") ||
+          elementNode.classList.contains("stat-details") ||
+          elementNode.classList.contains("feedback") ||
+          elementNode.classList.contains("what-if-result") ||
+          elementNode.classList.contains("analysis-range-display") ||
+          id === "regression-start-date-label"
         ) {
-          selections.statElements[camelCaseKey] = d3Selection.node();
-        }
-        // Also store the D3 selection for date elements for potential future use
-        if (id === "max-weight-date" || id === "min-weight-date") {
-          // selections[camelCaseKey] is already set above
+          ui.statElements[key] = elementNode;
         }
       } else {
-        selections[camelCaseKey] = null; // Store null if not found
-        // Reduce console noise: Only warn for critical elements later
-        // if (!elementNode) console.warn(`_cacheSelectors: Could not find element #${id}. JS key: ${camelCaseKey}`);
-        // else console.warn(`_cacheSelectors: Found node for #${id} but d3.select failed. JS key: ${camelCaseKey}`);
+        ui[key] = d3.select(null); // Store empty selection if not found
+        if (criticalIds.includes(id)) {
+          console.error(
+            `Initialization Error: Critical UI element #${id} not found.`,
+          );
+          missingCritical = true;
+        } else {
+          // console.warn(`Initialization Warning: UI element #${id} not found.`); // Optional warning for non-critical elements
+        }
       }
-    });
-
-    // Critical check
-    const critical = {
-      chartContainer: selections.chartContainer,
-      contextContainer: selections.contextContainer,
-      balanceChartContainer: selections.balanceChartContainer,
-      legendContainer: selections.legendContainer,
-      // Add new required chart containers if they are critical for basic operation
-      rateChartContainer: selections.rateChartContainer, // F5
-      tdeeDiffContainer: selections.tdeeDiffContainer, // F8
-      tooltip: selections.tooltip, // Tooltip is critical
-    };
-    const missing = Object.entries(critical).filter(
-      ([key, selection]) => !selection || selection.empty(),
-    );
-    if (missing.length > 0) {
-      const missingKeys = missing.map(([key]) => key).join(", ");
-      const missingHtmlIds = missing
-        .map(([key]) => {
-          // Try to find the original ID from the map or by reversing kebab->camel
-          const originalId =
-            Object.keys(keyMap).find((k) => keyMap[k] === key) ||
-            key.replace(/([A-Z])/g, "-$1").toLowerCase();
-          return `#${originalId}`;
-        })
-        .join(", ");
-      console.error(
-        `Missing critical D3 selection(s): ${missingKeys} (Expected HTML IDs: ${missingHtmlIds})`,
-      );
-      throw new Error(
-        `Failed to cache essential D3 selections. Check HTML for: ${missingHtmlIds}`,
-      );
     }
 
-    // Set initial regression toggle state
-    if (selections.regressionToggle?.node()) {
-      state.showRegression = selections.regressionToggle.property("checked");
-      state.seriesVisibility.regression = state.showRegression;
+    // Set initial regression visibility state based on toggle (if it exists)
+    if (ui.regressionToggle && !ui.regressionToggle.empty()) {
+      state.seriesVisibility.regression =
+        ui.regressionToggle.property("checked");
+      state.seriesVisibility.regressionCI = state.seriesVisibility.regression; // Link CI
     } else {
-      console.warn(
-        "Regression toggle (#toggleRegression) not found. Defaulting to show.",
-      );
-      state.showRegression = true;
+      // Default if toggle doesn't exist
       state.seriesVisibility.regression = true;
+      state.seriesVisibility.regressionCI = true;
     }
-    console.log("_cacheSelectors (v2): Finished selection process.");
+    // Set initial dynamic Y axis state based on toggle
+    state.useDynamicYAxis =
+      ui.dynamicYAxisToggle?.property("checked") ??
+      localStorage.getItem(CONFIG.localStorageKeys.dynamicYAxis) === "true"; // Fallback to localStorage
+
+    if (missingCritical) {
+      throw new Error(
+        "Missing critical UI elements required for chart initialization. Check console for details.",
+      );
+    }
+    console.log("Initialization: UI element caching finished.");
   }
 
-  function _loadTheme() {
-    const savedTheme =
-      localStorage.getItem(CONFIG.localStorageKeys.theme) || "light";
-    _setTheme(savedTheme);
-  }
-
-  function _setTheme(theme) {
-    state.currentTheme = theme;
-    selections.body?.classed("dark-theme", theme === "dark");
-    if (selections.themeToggle) {
-      selections.themeToggle
-        .text(theme === "dark" ? "☀️" : "🌙")
-        .attr(
-          "aria-label",
-          `Switch to ${theme === "dark" ? "Light" : "Dark"} Theme`,
-        );
-    }
-    localStorage.setItem(CONFIG.localStorageKeys.theme, theme);
-    _helpers.updateColors(); // Update color cache
-    if (state.isInitialized) {
-      _legend.build(); // Rebuild legend with new colors
-      _update.runAll(); // Redraw chart with new theme styles/colors
-      // Stats don't need recalculating on theme change
-    }
-  }
-
-  function initialize() {
-    console.log("Initializing Weight Insights - Advanced (v2)...");
+  // Main initialization function
+  async function initialize() {
+    console.log(
+      "Initialization: Starting Weight Insights Chart (v3.1 Refactored)...",
+    );
     try {
-      if (typeof d3 === "undefined" || typeof d3.select !== "function") {
-        throw new Error("D3 library is invalid or not loaded correctly.");
-      }
-      _cacheSelectors();
-      _loadTheme();
-      _data.load();
-      _data.loadGoal();
-      _annotations.load(); // Feature #1: Load annotations
-      _data.processRawData(); // Includes SMA, rate, TDEE diff calcs
+      // 1. Cache UI Elements & Basic Setup
+      _cacheSelectors(); // Find and store references to DOM elements
+      ThemeManager.init(); // Load theme preference and colors
 
-      if (!_setup.runAll()) {
-        // Includes setup for new charts, zoom
-        throw new Error("Chart setup failed.");
-      }
-      _handlers.setupAll(); // Includes handlers for annotations, what-if
+      // Update state based on UI potentially before data loading (e.g., regression start date)
+      state.regressionStartDate = DataService.getRegressionStartDateFromUI();
 
+      // 2. Load & Process Data
+      const rawDataObjects = await DataService.fetchData(); // Fetch from data.json
+      state.rawData = DataService.mergeRawData(rawDataObjects); // Merge sources
+      state.processedData = DataService.processData(state.rawData); // Calculate SMA, rates, etc.
+
+      // 3. Load Persisted State
+      DataService.loadGoal(); // Load goal from localStorage
+      AnnotationManager.load(); // Load annotations
+
+      // 4. Setup D3 Chart Structure (SVG, Scales, Axes, etc.)
+      if (!UISetup.runAll()) {
+        throw new Error("Chart UI setup failed. Dimensions might be invalid.");
+      }
+
+      // 5. Initialize Domains & View
       if (state.processedData?.length > 0) {
-        _domains.initialize(); // Sets initial view, brush, zoom
+        DomainManager.initializeDomains(state.processedData);
+        EventHandlers.syncBrushAndZoomToFocus(); // Set initial brush/zoom state
       } else {
-        console.warn("No processed data available. Chart will be empty.");
-        if (selections.insightSummaryContainer)
-          selections.insightSummaryContainer.html("<p>No data loaded.</p>");
-        // Still setup axes etc for empty state
-        _update.domainsAndAxes();
-        _update.contextChart();
-        _update.balanceChart([]);
-        _update.rateOfChangeChart?.([]); // F5, F8
-        _update.tdeeDifferenceChart?.([]);
-        _update.weeklySummary([]); // F2
+        console.warn(
+          "Initialization: No data available. Chart will be mostly empty.",
+        );
+        // Set placeholder domains if no data?
+        DomainManager.setXDomains([]);
+        DomainManager.setContextYDomain([]);
+        DomainManager.setFocusYDomains([], null);
+        DomainManager.setSecondaryYDomains([]);
+        DomainManager.setScatterPlotDomains([]);
       }
 
-      _legend.build(); // Includes new legend items
-      _annotations.renderList(); // Feature #1: Initial list render
+      // 6. Build Legend
+      LegendManager.build();
 
+      // 7. Setup Event Handlers
+      EventHandlers.setupAll();
+
+      // 8. Initial Render & Stats Calculation
       state.isInitialized = true;
-      _update.runAll(); // Initial draw of everything
-      _stats.updateAll(); // Initial calculation and DOM update for stats
+      MasterUpdater.updateAllCharts(); // Perform the first full draw
+      StatsManager.update(); // Calculate and display initial stats & insights
 
-      console.log("Initialization complete (v2).");
+      console.log(
+        "Initialization: Chart successfully initialized (v3.1 Refactored).",
+      );
     } catch (error) {
-      console.error("CRITICAL INITIALIZATION ERROR (v2):", error);
-      if (selections.chartContainer && !selections.chartContainer.empty()) {
-        selections.chartContainer.html(
-          `<div class="init-error"><h2>Chart Initialization Failed</h2><p>${error.message}</p><p>Check console for details.</p></div>`,
+      console.error("CRITICAL INITIALIZATION ERROR:", error);
+      state.isInitialized = false; // Ensure state reflects failure
+      // Display a user-friendly error message in the chart container
+      if (ui.chartContainer && !ui.chartContainer.empty()) {
+        ui.chartContainer.html(
+          `<div class="init-error"><h2>Chart Initialization Failed</h2><p>Could not render the chart due to an error:</p><pre>${error.message}</pre><p>Please check the browser console for more details.</p></div>`,
         );
       }
-      // Attempt to hide other potentially broken elements
-      d3.selectAll(".dashboard-container > *:not(.chart-section), .sidebar > *")
-        .style("opacity", 0.2)
+      // Optionally dim other parts of the UI to highlight the error
+      d3.selectAll(
+        ".dashboard-container > *:not(#chart-container), .sidebar > *",
+      )
+        .style("opacity", 0.3)
         .style("pointer-events", "none");
-      if (selections.chartContainer)
-        selections.chartContainer
-          .style("opacity", 1)
-          .style("pointer-events", "auto"); // Ensure error is visible
+      ui.chartContainer?.style("opacity", 1).style("pointer-events", "auto");
     }
   }
 
-  // Return Public Interface
+  // --- Public Interface ---
   return {
     initialize: initialize,
+    // Expose other methods if needed for external control, e.g.:
+    // refreshData: async () => { /* logic to reload and redraw */ },
+    // setTheme: ThemeManager.setTheme,
   };
 })(); // End of IIFE
 
-// --- Run Initialization ---
-console.log("chart.js (v2): Setting up DOMContentLoaded listener.");
+// --- Run Initialization on DOMContentLoaded ---
+console.log(
+  "chart.js (v3.1 Refactored): Setting up DOMContentLoaded listener.",
+);
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("chart.js (v2): DOMContentLoaded fired.");
-  // Use setTimeout to ensure the browser has finished layout/parsing,
-  // especially if scripts are loaded async/defer or placed in the head.
+  console.log("chart.js (v3.1 Refactored): DOMContentLoaded fired.");
+  // Use setTimeout to ensure the browser has definitely finished layout/parsing, even with defer
   setTimeout(() => {
-    console.log("chart.js (v2): setTimeout(0) callback executing.");
+    console.log(
+      "chart.js (v3.1 Refactored): setTimeout(0) callback executing.",
+    );
     if (
       typeof WeightTrackerChart !== "undefined" &&
       WeightTrackerChart.initialize
     ) {
-      console.log("chart.js (v2): Calling WeightTrackerChart.initialize().");
-      WeightTrackerChart.initialize();
+      console.log(
+        "chart.js (v3.1 Refactored): Calling WeightTrackerChart.initialize().",
+      );
+      WeightTrackerChart.initialize(); // Call the async init function
     } else {
       console.error(
-        "chart.js (v2): ERROR - WeightTrackerChart or initialize is not defined!",
+        "chart.js (v3.1 Refactored): ERROR - WeightTrackerChart or initialize is not defined!",
       );
+      document.body.innerHTML =
+        '<div class="init-error"><h2>Initialization Failed</h2><p>The chart script (WeightTrackerChart) did not load or define correctly. Check the console.</p></div>';
     }
-  }, 0);
+  }, 0); // Timeout 0 yields execution briefly
 });
-console.log("chart.js (v2): Script parsing finished.");
+console.log("chart.js (v3.1 Refactored): Script parsing finished.");

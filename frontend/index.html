@@ -3,7 +3,8 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Weight Insights - Advanced v2</title>
+        <title>Weight Insights - Advanced v3</title>
+        <!-- Version Bump -->
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <link
@@ -18,7 +19,8 @@
         <header>
             <h1>
                 <span class="logo-icon" aria-hidden="true">📊</span> Weight
-                Insights <span class="edition">Advanced v2</span>
+                Insights <span class="edition">Advanced v3</span>
+                <!-- Version Bump -->
             </h1>
             <button
                 id="theme-toggle"
@@ -64,6 +66,22 @@
                                 id="toggleRegression"
                                 checked
                             />
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    <!-- NEW: Dynamic Y-Axis Toggle -->
+                    <div class="control-group toggle-group">
+                        <label
+                            for="dynamic-y-axis-toggle"
+                            class="switch-label"
+                            title="Automatically adjust Y-Axis range based only on currently visible data points. Can make small changes easier to see but cause jumps when panning/zooming."
+                            >Dynamic Y-Axis:</label
+                        >
+                        <label
+                            class="switch"
+                            aria-label="Toggle Dynamic Y-Axis Calculation"
+                        >
+                            <input type="checkbox" id="dynamic-y-axis-toggle" />
                             <span class="slider round"></span>
                         </label>
                     </div>
@@ -115,8 +133,9 @@
                             />
                         </div>
                         <small class="control-note"
-                            >Regression start date also uses 'Start Date'
-                            above.</small
+                            >Regression start date also uses 'Start Date' above.
+                            (Can be overridden by interactive brush on
+                            chart)</small
                         >
                     </div>
                     <hr class="subtle-hr" />
@@ -328,7 +347,7 @@
                             Trends & Consistency
                             <span
                                 class="info-icon"
-                                title="Trends based on data within the Analysis Range. Correlation measures how well reported net calories match the weight trend (SMA changes) on a weekly basis. Closer to -1.0 is ideal."
+                                title="Trends based on data within the Analysis Range. Correlation measures how well reported net calories match the weight trend (SMA changes) on a weekly basis. Closer to -1.0 is ideal. Regression CI shows 95% confidence interval."
                                 >ⓘ</span
                             >
                         </h4>
@@ -356,7 +375,7 @@
                         </div>
                         <div class="stat-item">
                             <span
-                                title="Slope of the linear regression line calculated using non-outlier weight data within the Analysis Range, starting from the date set in Controls (if within range), otherwise range start."
+                                title="Slope of the linear regression line calculated using non-outlier weight data within the Effective Regression Range (Interactive or Controls > Analysis). CI shown on chart."
                                 >Lin. Reg. Slope
                                 <small
                                     >(from
@@ -485,7 +504,17 @@
                             >
                             kcal/d
                         </div>
-                        <!-- Feature #8: TDEE Diff Stat -->
+                        <!-- NEW: Adaptive TDEE Stat -->
+                        <div
+                            class="stat-item"
+                            title="TDEE estimated using a rolling window (e.g., 28 days) of average intake and average SMA change. Can adapt faster than range-based Trend TDEE."
+                        >
+                            <span>Est. TDEE (Adaptive):</span>
+                            <span id="avg-tdee-adaptive" class="stat-value"
+                                >N/A</span
+                            >
+                            kcal/d
+                        </div>
                         <div
                             class="stat-item"
                             title="Average difference between Trend TDEE and GFit TDEE over the Analysis Range (using smoothed daily differences). Positive means Trend TDEE > GFit TDEE."
@@ -636,26 +665,34 @@
                 <div
                     id="chart-container"
                     role="img"
-                    aria-label="Main weight chart showing raw data, smoothed trend (SMA), bands, regression, expected weight, manual trends, goal line, annotations, and highlighted points. Use mouse wheel or trackpad to zoom/pan."
+                    aria-label="Main weight chart showing raw data, smoothed trend (SMA), bands, regression, expected weight, manual trends, goal line, annotations, and highlighted points. Use mouse wheel or trackpad to zoom/pan. Drag horizontally on chart to select regression range."
                 ></div>
-                <!-- Feature #3 note added -->
+                <!-- Updated aria-label -->
                 <div
                     id="balance-chart-container"
                     role="img"
                     aria-label="Daily calorie balance chart (Intake - GFit TDEE)."
                 ></div>
-                <!-- Feature #5: Rate of Change Chart -->
                 <div
                     id="rate-of-change-container"
                     role="img"
                     aria-label="Smoothed weekly rate of weight change chart (kg/week)."
                 ></div>
-                <!-- Feature #8: TDEE Reconciliation Chart -->
                 <div
                     id="tdee-reconciliation-container"
                     role="img"
                     aria-label="Smoothed difference between Trend-Estimated TDEE and Google Fit TDEE (kcal/day)."
                 ></div>
+
+                <!-- NEW FEATURE: Correlation Scatter Plot -->
+                <div
+                    id="correlation-scatter-container"
+                    role="img"
+                    aria-label="Scatter plot showing Weekly Net Calories vs. Weekly Rate of Change from the Analysis Range."
+                >
+                    <!-- SVG generated by JS -->
+                </div>
+
                 <!-- Feature #2: Weekly Summary Table -->
                 <div
                     id="weekly-summary-container"
@@ -664,6 +701,11 @@
                     <!-- Table generated by JS -->
                     <h4>Weekly Summary <small>(Analysis Range)</small></h4>
                     <p class="loading-msg">Loading weekly summary...</p>
+                    <!-- Empty message will be added by JS if needed -->
+                    <p class="empty-msg" style="display: none">
+                        No weekly data available for the selected analysis
+                        range.
+                    </p>
                 </div>
 
                 <div
@@ -678,6 +720,9 @@
             </div>
             <!-- ================== END CHART AREA ================== -->
         </main>
+
+        <!-- NEW FEATURE: Optional Pinned Tooltip Area -->
+        <div id="pinned-tooltip-container"></div>
 
         <div
             id="tooltip"
