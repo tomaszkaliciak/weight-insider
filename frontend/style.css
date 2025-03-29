@@ -58,7 +58,7 @@
 
     /* Chart Specific */
     --sma-color: var(--primary-color);
-    --band-color: hsla(var(--hue-primary), 70%, 55%, 0.08);
+    --band-color: hsla(var(--hue-primary), 70%, 55%, 0.25);
     --raw-dot-color: hsl(var(--hue-neutral), 15%, 78%);
     --dot-color: var(--primary-color);
     --trend1-color: var(--secondary-color);
@@ -129,7 +129,7 @@ body.dark-theme {
     --tooltip-text: hsl(var(--hue-neutral), 15%, 15%);
     --scrollbar-thumb: hsl(var(--hue-neutral), 15%, 35%);
     --scrollbar-track: hsl(var(--hue-neutral), 15%, 20%);
-    --band-color: hsla(var(--hue-primary), 60%, 65%, 0.08);
+    --band-color: hsla(var(--hue-primary), 60%, 65%, 0.25);
     --raw-dot-color: hsl(var(--hue-neutral), 10%, 35%);
     --outlier-color: var(--tertiary-color);
     --deficit-color: hsl(var(--hue-secondary), 55%, 55%);

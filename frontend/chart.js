@@ -3561,7 +3561,6 @@ const WeightTrackerChart = (function () {
             d.smoothedWeeklyRate != null &&
             !isNaN(d.smoothedWeeklyRate),
         );
-        // MODIFIED: Reduced min points for scatter slightly to get more data points
         if (validPoints.length >= 3) {
           const avgNetCal = d3.mean(validPoints, (d) => d.netBalance);
           const avgWeeklyRate = d3.mean(
@@ -4528,8 +4527,6 @@ const WeightTrackerChart = (function () {
         .attr("transform", "scale(1)");
       EventHandlers._hideTooltip();
     },
-
-    // --- Rest of Event Handlers (Unchanged from previous versions) ---
 
     updatePinnedTooltipDisplay() {
       if (!ui.pinnedTooltipContainer) return;
