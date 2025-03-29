@@ -1,4 +1,3 @@
-// Log script parsing start for timing checks
 console.log("chart.js (v3.1 Refactored): Script parsing started.");
 
 const WeightTrackerChart = (function () {
@@ -156,7 +155,9 @@ const WeightTrackerChart = (function () {
     seriesVisibility: {
       // Visibility toggles for different chart series
       raw: true,
-      sma: true,
+      // sma: true, // REMOVED combined flag
+      smaLine: true, // ADDED
+      smaBand: true, // ADDED
       regression: true,
       regressionCI: true,
       trend1: true,
@@ -1907,15 +1908,23 @@ const WeightTrackerChart = (function () {
     },
 
     setContextYDomain(processedData) {
-      const dataForExtent = state.seriesVisibility.sma
+      const dataForExtent = state.seriesVisibility.smaLine // Use smaLine now
         ? processedData.filter((d) => d.sma != null)
         : processedData.filter((d) => d.value != null);
 
-      let yMin = d3.min(dataForExtent, (d) =>
-        state.seriesVisibility.sma ? (d.lowerBound ?? d.sma) : d.value,
+      let yMin = d3.min(
+        dataForExtent,
+        (d) =>
+          state.seriesVisibility.smaBand
+            ? (d.lowerBound ?? d.sma)
+            : (d.sma ?? d.value), // Check band visibility for bounds
       );
-      let yMax = d3.max(dataForExtent, (d) =>
-        state.seriesVisibility.sma ? (d.upperBound ?? d.sma) : d.value,
+      let yMax = d3.max(
+        dataForExtent,
+        (d) =>
+          state.seriesVisibility.smaBand
+            ? (d.upperBound ?? d.sma)
+            : (d.sma ?? d.value), // Check band visibility for bounds
       );
 
       if (yMin == null || yMax == null || isNaN(yMin) || isNaN(yMax)) {
@@ -1982,12 +1991,29 @@ const WeightTrackerChart = (function () {
 
       calculationDataArray.forEach((d) => {
         if (!d.date || !isWithinBufferedView(d.date)) return;
-        if (state.seriesVisibility.sma && d.sma != null) {
+
+        // --- ADJUSTED SMA/BAND LOGIC ---
+        // Include SMA line value if the line is visible
+        if (state.seriesVisibility.smaLine && d.sma != null) {
+          updateExtent(d.sma);
+        }
+        // Include SMA band bounds ONLY if the band itself is visible
+        if (
+          state.seriesVisibility.smaBand &&
+          d.lowerBound != null &&
+          d.upperBound != null
+        ) {
           updateExtent(d.lowerBound);
           updateExtent(d.upperBound);
-        } else if (state.seriesVisibility.raw && d.value != null) {
+        }
+        // --- END ADJUSTED LOGIC ---
+
+        // Original Raw Data Logic (keep as is or adjust if needed)
+        if (state.seriesVisibility.raw && d.value != null && !d.isOutlier) {
+          // Optionally exclude outliers from domain calc too
           updateExtent(d.value);
         }
+        // Original BF% Logic
         if (state.seriesVisibility.bf && d.bfPercent != null) {
           updateExtentY2(d.bfPercent);
         }
@@ -2406,18 +2432,22 @@ const WeightTrackerChart = (function () {
             !isNaN(scales.y2(d.bfPercent)),
         );
 
-      // Update Selections
+      // --- Update Selections ---
+
+      // Update SMA Band Area visibility
       ui.bandArea
-        ?.datum(state.seriesVisibility.sma ? visibleValidSmaData : [])
+        ?.datum(visibleValidSmaData) // Still need data for calculation even if hidden
         .transition()
         .duration(dur)
-        .style("display", state.seriesVisibility.sma ? null : "none")
+        .style("display", state.seriesVisibility.smaBand ? null : "none") // Use smaBand state
         .attr("d", smaBandAreaGen);
+
+      // Update SMA Line visibility
       ui.smaLine
-        ?.datum(state.seriesVisibility.sma ? visibleValidSmaData : [])
+        ?.datum(visibleValidSmaData) // Still need data
         .transition()
         .duration(dur)
-        .style("display", state.seriesVisibility.sma ? null : "none")
+        .style("display", state.seriesVisibility.smaLine ? null : "none") // Use smaLine state
         .attr("d", smaLineGen);
 
       const showReg = state.seriesVisibility.regression;
@@ -2530,7 +2560,7 @@ const WeightTrackerChart = (function () {
         return;
 
       const showRaw = state.seriesVisibility.raw;
-      const showSmaDots = state.seriesVisibility.sma;
+      const showSmaDots = state.seriesVisibility.smaLine; // Dots visibility tied to smaLine visibility
 
       ui.rawDotsGroup?.style("display", showRaw ? null : "none");
       if (showRaw && ui.rawDotsGroup) {
@@ -2578,7 +2608,8 @@ const WeightTrackerChart = (function () {
       if (showSmaDots && ui.smaDotsGroup) {
         const smaDotsDataValid = visibleRawWeightData.filter(
           (d) =>
-            d.value != null &&
+            d.value != null && // Show dot if raw value exists
+            d.sma != null && // And if SMA exists (implicitly tied to line visibility)
             d.date instanceof Date &&
             !isNaN(d.date) &&
             !isNaN(scales.x(d.date)) &&
@@ -2595,7 +2626,7 @@ const WeightTrackerChart = (function () {
               .classed("outlier", (d) => d.isOutlier)
               .attr("r", CONFIG.dotRadius)
               .attr("cx", (d) => scales.x(d.date))
-              .attr("cy", (d) => scales.y(d.value))
+              .attr("cy", (d) => scales.y(d.value)) // Position based on raw value
               .style("fill", (d) => (d.isOutlier ? colors.outlier : colors.dot))
               .style("opacity", 0)
               .on("mouseover", EventHandlers.dotMouseOver) // Attach main chart hover
@@ -2618,7 +2649,7 @@ const WeightTrackerChart = (function () {
                   .transition()
                   .duration(dur)
                   .attr("cx", (d) => scales.x(d.date))
-                  .attr("cy", (d) => scales.y(d.value))
+                  .attr("cy", (d) => scales.y(d.value)) // Position based on raw value
                   .style("fill", (d) =>
                     d.isOutlier ? colors.outlier : colors.dot,
                   )
@@ -4363,41 +4394,48 @@ const WeightTrackerChart = (function () {
         (p) => p.date >= analysisStartDate && p.date <= analysisEndDate,
       );
 
-      if (plateausInRange.length > 0 || changesInRange.length > 0) {
-        insight += `<h4 class="detected-events-heading">Detected Events</h4>`; // Added class
+      if (plateausInRange.length === 0 && changesInRange.length === 0) {
+        return ""; // No events detected
+      }
 
-        if (plateausInRange.length > 0) {
-          insight += `<p class="detected-plateaus"><span class="warn">Plateau(s):</span> ${plateausInRange.map((p) => `${Utils.formatDateShort(p.startDate)} - ${Utils.formatDateShort(p.endDate)}`).join(", ")}.</p>`; // Added class
+      insight += `<h4 class="detected-events-heading">Detected Events</h4>`;
+      insight += `<ul>`; // Start list
+
+      if (plateausInRange.length > 0) {
+        plateausInRange.forEach((p) => {
+          insight += `<li><span class="insight-icon">⏸️</span> <div><span class="warn">Plateau:</span> ${Utils.formatDateShort(p.startDate)} - ${Utils.formatDateShort(p.endDate)}</div></li>`;
+        });
+      }
+
+      if (changesInRange.length > 0) {
+        // Decide if we need the <details> wrapper
+        const useDetails = changesInRange.length > 4; // Threshold for using details
+
+        if (useDetails) {
+          insight += `<li><span class="insight-icon">⚠️</span> <details class="trend-change-details"><summary><span class="warn">Trend Changes:</span> ${changesInRange.length} detected</summary><ul class="trend-change-list">`; // Nested list
+        } else {
+          insight += `<li><span class="insight-icon">⚠️</span> <div><span class="warn">Trend Changes:</span><ul class="trend-change-list short-list">`; // Nested list
         }
 
-        if (changesInRange.length > 0) {
-          const changeItemsHtml = changesInRange
-            .map((p) => {
-              const direction = p.magnitude > 0 ? "accel" : "decel";
-              // Calculate and format the rate change per week
-              const rateChangeKgWeek = Math.abs(p.magnitude * 7);
-              const rateChangeString = `(Rate Δ ≈ ${Utils.formatValue(rateChangeKgWeek, 2)} kg/wk)`;
-              // Use different classes for styling based on direction
-              const directionClass =
-                direction === "accel" ? "trend-accel" : "trend-decel";
-              // Combine date, direction, and rate change
-              return `<span class="trend-change-item ${directionClass}">${Utils.formatDateShort(p.date)} (${direction}) <small>${rateChangeString}</small></span>`; // Added rateChangeString in small tag
-            })
-            .join("");
+        changesInRange.forEach((p) => {
+          const direction = p.magnitude > 0 ? "acceleration" : "deceleration";
+          const rateChangeKgWeek = Math.abs(p.magnitude * 7);
+          const rateChangeString = `(Δ ≈ ${Utils.formatValue(rateChangeKgWeek, 2)} kg/wk)`;
+          const directionClass =
+            direction === "accel" ? "trend-accel" : "trend-decel";
+          const icon = direction === "accel" ? "📈" : "📉";
+          insight += `<li><span class="insight-icon">${icon}</span> <span class="trend-change-item ${directionClass}">${Utils.formatDateShort(p.date)} (${direction}) <small>${rateChangeString}</small></span></li>`;
+        });
 
-          // Use <details> for long lists
-          if (changesInRange.length > 5) {
-            // Threshold to use details
-            insight += `<details class="trend-change-details">`;
-            insight += `<summary><span class="warn">Trend Δ(s):</span> ${changesInRange.length} detected (click to view)</summary>`;
-            insight += `<div class="trend-change-list">${changeItemsHtml}</div>`; // Changed p to div for better flex styling
-            insight += `</details>`;
-          } else {
-            // Simpler paragraph for short lists
-            insight += `<div class="trend-change-list short-list"><span class="warn">Trend Δ(s):</span> ${changeItemsHtml}</div>`;
-          }
+        insight += `</ul>`; // End nested list
+        if (useDetails) {
+          insight += `</details></li>`;
+        } else {
+          insight += `</div></li>`;
         }
       }
+
+      insight += `</ul>`; // End main list
       return insight;
     },
 
@@ -4410,9 +4448,10 @@ const WeightTrackerChart = (function () {
       const regressionUsedForTrend = stats.regressionSlopeWeekly != null;
       const analysisRange = EventHandlers.getAnalysisDateRange();
 
-      let summaryHtml = ""; // Initialize summaryHtml as an empty string
+      let summaryHtml = "";
 
       try {
+        // Generate individual insight strings (these functions might return HTML)
         const trendStatus = InsightsGenerator._getTrendStatus(
           currentTrendWeekly,
           stats.currentSma,
@@ -4434,11 +4473,13 @@ const WeightTrackerChart = (function () {
             analysisRange.end,
           );
 
+        // Combine them - Wrap each main insight in a <p> for spacing
         summaryHtml += `<p>${trendStatus}</p>`;
         summaryHtml += `<p>${tdeeStatus}</p>`;
         summaryHtml += `<p>${goalStatus}</p>`;
         summaryHtml += `<p>${consistencyStatus}</p>`;
-        summaryHtml += detectedFeaturesHtml; // Append detected features HTML
+        // detectedFeaturesHtml already includes <h4> and <ul> structure
+        summaryHtml += detectedFeaturesHtml;
       } catch (error) {
         console.error(
           "InsightsGenerator: Error generating summary box HTML",
@@ -4558,124 +4599,26 @@ const WeightTrackerChart = (function () {
       FocusChartUpdater.updateCrosshair(d);
     },
 
-    // --- Inside InsightsGenerator ---
+    dotMouseOut(event, d) {
+      if (!ui.tooltip || !d || !d.date) return;
+      state.activeHoverData = null; // Clear active hover
+      EventHandlers._hideTooltip(); // Use helper to hide tooltip
 
-    // Modify _getDetectedFeaturesInsightHTML to use lists and icons
-    _getDetectedFeaturesInsightHTML(analysisStartDate, analysisEndDate) {
-      let insight = "";
-      if (
-        !(analysisStartDate instanceof Date) ||
-        !(analysisEndDate instanceof Date)
-      )
-        return "";
+      // Reset dot appearance
+      const isHighlighted =
+        state.highlightedDate &&
+        d.date.getTime() === state.highlightedDate.getTime();
+      const targetRadius = isHighlighted
+        ? CONFIG.dotRadius * 1.2
+        : CONFIG.dotRadius;
+      const targetOpacity = isHighlighted ? 1 : 0.7;
+      d3.select(event.currentTarget)
+        .transition()
+        .duration(150)
+        .attr("r", targetRadius)
+        .style("opacity", targetOpacity);
 
-      const plateausInRange = state.plateaus.filter(
-        (p) => p.endDate >= analysisStartDate && p.startDate <= analysisEndDate,
-      );
-      const changesInRange = state.trendChangePoints.filter(
-        (p) => p.date >= analysisStartDate && p.date <= analysisEndDate,
-      );
-
-      if (plateausInRange.length === 0 && changesInRange.length === 0) {
-        return ""; // No events detected
-      }
-
-      insight += `<h4 class="detected-events-heading">Detected Events</h4>`;
-      insight += `<ul>`; // Start list
-
-      if (plateausInRange.length > 0) {
-        plateausInRange.forEach((p) => {
-          insight += `<li><span class="insight-icon">⏸️</span> <div><span class="warn">Plateau:</span> ${Utils.formatDateShort(p.startDate)} - ${Utils.formatDateShort(p.endDate)}</div></li>`;
-        });
-      }
-
-      if (changesInRange.length > 0) {
-        // Decide if we need the <details> wrapper
-        const useDetails = changesInRange.length > 4; // Threshold for using details
-
-        if (useDetails) {
-          insight += `<li><span class="insight-icon">⚠️</span> <details class="trend-change-details"><summary><span class="warn">Trend Changes:</span> ${changesInRange.length} detected</summary><ul class="trend-change-list">`; // Nested list
-        } else {
-          insight += `<li><span class="insight-icon">⚠️</span> <div><span class="warn">Trend Changes:</span><ul class="trend-change-list short-list">`; // Nested list
-        }
-
-        changesInRange.forEach((p) => {
-          const direction = p.magnitude > 0 ? "acceleration" : "deceleration";
-          const rateChangeKgWeek = Math.abs(p.magnitude * 7);
-          const rateChangeString = `(Δ ≈ ${Utils.formatValue(rateChangeKgWeek, 2)} kg/wk)`;
-          const directionClass =
-            direction === "accel" ? "trend-accel" : "trend-decel";
-          const icon = direction === "accel" ? "📈" : "📉";
-          insight += `<li><span class="insight-icon">${icon}</span> <span class="trend-change-item ${directionClass}">${Utils.formatDateShort(p.date)} (${direction}) <small>${rateChangeString}</small></span></li>`;
-        });
-
-        insight += `</ul>`; // End nested list
-        if (useDetails) {
-          insight += `</details></li>`;
-        } else {
-          insight += `</div></li>`;
-        }
-      }
-
-      insight += `</ul>`; // End main list
-      return insight;
-    },
-
-    // Modify updateSummary to use the new structure if needed (it should work with the HTML string)
-    updateSummary(stats) {
-      if (!ui.insightSummaryContainer || ui.insightSummaryContainer.empty())
-        return;
-
-      const currentTrendWeekly =
-        stats.regressionSlopeWeekly ?? stats.currentWeeklyRate;
-      const regressionUsedForTrend = stats.regressionSlopeWeekly != null;
-      const analysisRange = EventHandlers.getAnalysisDateRange();
-
-      let summaryHtml = "";
-
-      try {
-        // Generate individual insight strings (these functions might return HTML)
-        const trendStatus = InsightsGenerator._getTrendStatus(
-          currentTrendWeekly,
-          stats.currentSma,
-          regressionUsedForTrend,
-        );
-        const tdeeStatus = InsightsGenerator._getPrimaryTDEEStatus(
-          stats.avgExpenditureGFit,
-          stats.avgTDEE_WgtChange,
-          stats.avgTDEE_Adaptive,
-        );
-        const goalStatus = InsightsGenerator._getGoalStatus(stats);
-        const consistencyStatus = InsightsGenerator._getConsistencyStatus(
-          stats.weightDataConsistency,
-          stats.calorieDataConsistency,
-        );
-        const detectedFeaturesHtml =
-          InsightsGenerator._getDetectedFeaturesInsightHTML(
-            analysisRange.start,
-            analysisRange.end,
-          );
-
-        // Combine them - Wrap each main insight in a <p> for spacing
-        summaryHtml += `<p>${trendStatus}</p>`;
-        summaryHtml += `<p>${tdeeStatus}</p>`;
-        summaryHtml += `<p>${goalStatus}</p>`;
-        summaryHtml += `<p>${consistencyStatus}</p>`;
-        // detectedFeaturesHtml already includes <h4> and <ul> structure
-        summaryHtml += detectedFeaturesHtml;
-      } catch (error) {
-        console.error(
-          "InsightsGenerator: Error generating summary box HTML",
-          error,
-        );
-        summaryHtml =
-          "<p class='error'>Error generating summary. Check console.</p>";
-      }
-
-      ui.insightSummaryContainer.html(
-        summaryHtml ||
-          "<p>Analysis requires more data or a different range.</p>", // Fallback text
-      );
+      FocusChartUpdater.updateCrosshair(null); // Hide crosshair
     },
 
     dotClick(event, d) {
@@ -5512,20 +5455,22 @@ const WeightTrackerChart = (function () {
       }
       state.seriesVisibility[seriesId] = isVisible;
       if (seriesId === "regression") {
+        // Also toggle CI and the checkbox if toggling the main regression line
         state.seriesVisibility.regressionCI = isVisible;
         LegendManager.updateAppearance("regressionCI", isVisible);
         ui.regressionToggle?.property("checked", isVisible);
       } else if (seriesId === "bf") {
+        // Toggle Y2 axis label visibility
         ui.svg
           ?.select(".y-axis-label2")
           .style("display", isVisible ? null : "none");
       }
-      state.highlightedDate = null;
+      state.highlightedDate = null; // Clear highlights on visibility change
       state.pinnedTooltipData = null;
       EventHandlers.updatePinnedTooltipDisplay();
       LegendManager.updateAppearance(seriesId, isVisible);
       MasterUpdater.updateAllCharts();
-      StatsManager.update();
+      StatsManager.update(); // Re-run stats as visibility might affect calculations (e.g., involving regression)
     },
     updateAppearance(seriesId, isVisible) {
       ui.legendContainer
@@ -5553,13 +5498,21 @@ const WeightTrackerChart = (function () {
           colorKey: "rawDot",
           styleClass: "raw-dot",
         },
+        // ADD Separate SMA Line item:
         {
-          id: "sma",
-          label: `Weight (${CONFIG.movingAverageWindow}d SMA & Band)`,
-          type: "area+line",
+          id: "smaLine",
+          label: `Weight SMA (${CONFIG.movingAverageWindow}d)`,
+          type: "line",
           colorKey: "sma",
-          areaColorKey: "band",
           styleClass: "sma-line",
+        },
+        // ADD Separate SMA Band item:
+        {
+          id: "smaBand",
+          label: "SMA Band (±SD)",
+          type: "area",
+          colorKey: "band", // Use the band color for the swatch
+          styleClass: "band-area",
         },
         {
           id: "regression",
@@ -5634,44 +5587,64 @@ const WeightTrackerChart = (function () {
         },
       ];
       legendItemsConfig.forEach((item) => {
+        // Check if the specific ID exists in the state
         if (state.seriesVisibility.hasOwnProperty(item.id)) {
-          const isVisible = state.seriesVisibility[item.id];
+          const isVisible = state.seriesVisibility[item.id]; // Get initial state
           const itemColor = colors[item.colorKey] || "#000";
-          const areaColor = colors[item.areaColorKey] || "rgba(0,0,0,0.1)";
+          // Use band color specifically for the smaBand swatch fill
+          const swatchFillColor =
+            item.id === "smaBand"
+              ? colors["band"] || "rgba(0,0,0,0.1)"
+              : itemColor;
+          const areaColor = colors[item.areaColorKey] || "rgba(0,0,0,0.1)"; // Keep for potential area+line types
+
           const itemDiv = ui.legendContainer
             .append("div")
             .attr("class", `legend-item ${item.styleClass}`)
             .attr("data-id", item.id)
-            .classed("hidden", !isVisible)
+            .classed("hidden", !isVisible) // Set initial hidden state correctly
             .on("click", () => {
+              // <<<<<<< THE FIX IS HERE
+              // Get the CURRENT visibility state when clicked
               const currentVisibility = state.seriesVisibility[item.id];
+              // Toggle based on the CURRENT state
               LegendManager.toggleSeriesVisibility(item.id, !currentVisibility);
-            });
+            }); // <<<<<<< END FIX
+
           const swatch = itemDiv
             .append("span")
             .attr("class", `legend-swatch type-${item.type}`);
+
+          // Adjust swatch styling
           switch (item.type) {
             case "dot":
             case "marker":
               swatch.style("background-color", itemColor);
               break;
             case "area":
-              swatch.style("background-color", itemColor).style("opacity", 0.6);
+              // Use the calculated swatchFillColor which defaults to band color for smaBand
+              swatch
+                .style("background-color", swatchFillColor)
+                .style("opacity", 0.6);
               break;
             case "line":
               swatch.style("background-color", itemColor);
               if (item.dash) swatch.classed("dashed", true);
               break;
-            case "area+line":
+            case "area+line": // Keep for potential future use, but not for current SMA
               swatch.style("background-color", areaColor);
               swatch.style("border", `1px solid ${itemColor}`);
               break;
           }
           itemDiv.append("span").attr("class", "legend-text").text(item.label);
+        } else {
+          console.warn(
+            `LegendManager: seriesVisibility state missing for key: ${item.id}`,
+          );
         }
       });
     },
-  };
+  }; // End LegendManager
 
   // ========================================================================
   // Annotation Manager (`AnnotationManager`)
