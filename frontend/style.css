@@ -16,11 +16,11 @@
     --stable-color: hsl(var(--hue-neutral), 15%, 55%); /* For stable trend */
 
     /* Light Theme (Default) */
-    --bg-primary: hsl(var(--hue-neutral), 30%, 97%);
-    --bg-secondary: hsl(var(--hue-neutral), 30%, 100%);
-    --bg-tertiary: hsl(var(--hue-neutral), 25%, 94%); /* Subtle contrast bg */
-    --text-primary: hsl(var(--hue-neutral), 25%, 15%);
-    --text-secondary: hsl(var(--hue-neutral), 15%, 40%);
+    --bg-primary: hsl(var(--hue-neutral), 30%, 98%); /* Slightly lighter */
+    --bg-secondary: hsl(var(--hue-neutral), 40%, 100%);
+    --bg-tertiary: hsl(var(--hue-neutral), 30%, 95%); /* Slightly adjusted */
+    --text-primary: hsl(var(--hue-neutral), 25%, 10%); /* Slightly darker */
+    --text-secondary: hsl(var(--hue-neutral), 15%, 35%); /* Slightly darker */
     --text-muted: hsl(var(--hue-neutral), 15%, 60%);
     --border-color: hsl(var(--hue-neutral), 25%, 85%);
     --border-color-light: hsl(
@@ -30,21 +30,30 @@
     ); /* Lighter border */
     --shadow-color: hsla(
         var(--hue-neutral),
-        30%,
-        40%,
-        0.08
-    ); /* Softer shadow */
-    --shadow-hover: hsla(var(--hue-neutral), 30%, 40%, 0.12);
+        25%,
+        50%,
+        0.06
+    ); /* Even softer shadow */
+    --shadow-hover: hsla(
+        var(--hue-neutral),
+        25%,
+        50%,
+        0.1
+    ); /* Softer hover shadow */
     --primary-color: hsl(var(--hue-primary), 65%, 55%);
     --primary-color-darker: hsl(var(--hue-primary), 65%, 45%);
     --secondary-color: hsl(var(--hue-secondary), 50%, 50%);
     --tertiary-color: hsl(var(--hue-tertiary), 70%, 58%);
     --accent-color: hsl(var(--hue-accent), 75%, 55%);
     --goal-color: hsl(var(--hue-goal), 50%, 60%);
-    --tooltip-bg: hsla(var(--hue-neutral), 25%, 10%, 0.92);
-    --tooltip-text: hsl(var(--hue-neutral), 20%, 95%);
-    --scrollbar-thumb: hsl(var(--hue-neutral), 15%, 70%);
-    --scrollbar-track: hsl(var(--hue-neutral), 15%, 92%);
+    --tooltip-bg: hsla(var(--hue-neutral), 30%, 15%, 0.94); /* Darker tooltip */
+    --tooltip-text: hsl(var(--hue-neutral), 20%, 96%);
+    --scrollbar-thumb: hsl(
+        var(--hue-neutral),
+        15%,
+        75%
+    ); /* Slightly lighter thumb */
+    --scrollbar-track: hsl(var(--hue-neutral), 15%, 94%); /* Lighter track */
     --outlier-color: var(--tertiary-color);
     --deficit-color: hsl(
         var(--hue-secondary),
@@ -103,21 +112,25 @@ body.dark-theme {
     --success-color: hsl(var(--hue-secondary), 45%, 60%);
     --danger-color: hsl(var(--hue-tertiary), 60%, 65%);
     --stable-color: hsl(var(--hue-neutral), 10%, 55%);
-    --bg-primary: hsl(var(--hue-neutral), 15%, 10%);
-    --bg-secondary: hsl(var(--hue-neutral), 15%, 15%);
-    --bg-tertiary: hsl(var(--hue-neutral), 15%, 12%);
-    --text-primary: hsl(var(--hue-neutral), 15%, 92%);
-    --text-secondary: hsl(var(--hue-neutral), 10%, 68%);
+    --bg-primary: hsl(var(--hue-neutral), 15%, 8%); /* Slightly darker */
+    --bg-secondary: hsl(var(--hue-neutral), 15%, 14%); /* Slightly adjusted */
+    --bg-tertiary: hsl(var(--hue-neutral), 15%, 11%); /* Slightly adjusted */
+    --text-primary: hsl(var(--hue-neutral), 15%, 94%); /* Slightly lighter */
+    --text-secondary: hsl(var(--hue-neutral), 10%, 72%); /* Slightly lighter */
     --text-muted: hsl(var(--hue-neutral), 10%, 50%);
-    --border-color: hsl(var(--hue-neutral), 15%, 25%);
-    --border-color-light: hsl(var(--hue-neutral), 15%, 30%);
+    --border-color: hsl(var(--hue-neutral), 15%, 28%); /* Slightly lighter */
+    --border-color-light: hsl(
+        var(--hue-neutral),
+        15%,
+        33%
+    ); /* Slightly lighter */
     --shadow-color: hsla(
         var(--hue-neutral),
         0%,
         0%,
-        0.15
-    ); /* Slightly darker shadow */
-    --shadow-hover: hsla(var(--hue-neutral), 0%, 0%, 0.25);
+        0.18
+    ); /* Slightly darker */
+    --shadow-hover: hsla(var(--hue-neutral), 0%, 0%, 0.28);
     --primary-color: hsl(var(--hue-primary), 60%, 65%);
     --primary-color-darker: hsl(var(--hue-primary), 60%, 55%);
     --secondary-color: hsl(var(--hue-secondary), 50%, 60%);
@@ -127,12 +140,12 @@ body.dark-theme {
     --tooltip-bg: hsla(
         var(--hue-neutral),
         15%,
-        90%,
-        0.93
-    ); /* Light tooltip in dark mode */
-    --tooltip-text: hsl(var(--hue-neutral), 15%, 15%);
-    --scrollbar-thumb: hsl(var(--hue-neutral), 15%, 35%);
-    --scrollbar-track: hsl(var(--hue-neutral), 15%, 20%);
+        92%,
+        0.95
+    ); /* Slightly more opaque */
+    --tooltip-text: hsl(var(--hue-neutral), 15%, 12%); /* Slightly darker */
+    --scrollbar-thumb: hsl(var(--hue-neutral), 15%, 40%); /* Slightly lighter */
+    --scrollbar-track: hsl(var(--hue-neutral), 15%, 18%); /* Slightly lighter */
 
     --optimal-gain-zone-color: hsla(var(--hue-optimal), 40%, 70%, 0.1);
 
@@ -173,7 +186,7 @@ body {
     font-family: var(--font-sans);
     background-color: var(--bg-primary);
     color: var(--text-primary);
-    padding: clamp(15px, 3vw, 30px);
+    padding: clamp(20px, 4vw, 40px); /* Slightly more padding */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -182,7 +195,7 @@ body {
     transition:
         background-color var(--transition-speed) var(--transition-ease),
         color var(--transition-speed) var(--transition-ease);
-    font-size: 15px; /* Adjusted base font size */
+    font-size: 15.5px; /* Slightly larger base */
 }
 
 /* --- Scrollbar --- */
@@ -307,9 +320,8 @@ header h1 .edition {
 /* --- Dashboard Layout --- */
 .dashboard-container {
     display: grid;
-    /* CHANGED: Added third column */
     grid-template-columns: clamp(320px, 25%, 400px) 1fr clamp(320px, 25%, 400px);
-    gap: clamp(18px, 2vw, 25px);
+    gap: clamp(20px, 2.5vw, 30px); /* Slightly increased gap */
     width: 100%;
     max-width: 1800px; /* Wider max width */
     align-items: flex-start;
@@ -320,7 +332,7 @@ header h1 .edition {
 .right-sidebar {
     display: flex;
     flex-direction: column;
-    gap: clamp(15px, 2vw, 22px);
+    gap: clamp(18px, 2.2vw, 25px); /* Slightly increased gap */
     /* Allow sidebars to scroll independently if content overflows */
     max-height: calc(100vh - 100px); /* Adjust height based on header/padding */
     overflow-y: auto;
@@ -330,29 +342,31 @@ header h1 .edition {
 /* --- Cards --- */
 .card {
     background-color: var(--bg-secondary);
-    border-radius: 10px; /* Slightly smaller radius */
-    padding: clamp(15px, 2vw, 22px);
-    box-shadow: 0 2px 6px var(--shadow-color); /* Softer shadow */
-    border: 1px solid var(--border-color-light); /* Lighter border */
+    border-radius: 12px; /* Softer corners */
+    padding: clamp(18px, 2.2vw, 25px); /* Slightly more padding */
+    box-shadow: 0 3px 8px var(--shadow-color); /* Adjusted shadow */
+    border: 1px solid var(--border-color-light);
     transition:
         box-shadow var(--transition-speed) var(--transition-ease),
-        border-color var(--transition-speed) var(--transition-ease);
+        border-color var(--transition-speed) var(--transition-ease),
+        transform var(--transition-speed) var(--transition-ease); /* Add transform transition */
     display: flex;
     flex-direction: column;
 }
 .card:hover {
-    box-shadow: 0 4px 10px var(--shadow-hover); /* Subtle hover shadow */
+    box-shadow: 0 5px 15px var(--shadow-hover); /* Adjusted hover shadow */
+    transform: translateY(-2px); /* Subtle lift on hover */
 }
 
 .card h2,
 .card h3,
 .card h4 {
     margin-top: 0;
-    margin-bottom: 0.9em;
+    margin-bottom: 1em; /* Slightly more space */
     color: var(--text-primary); /* Use text primary */
     font-weight: 600;
-    border-bottom: 1px solid var(--border-color-light); /* Lighter border */
-    padding-bottom: 0.5em;
+    border-bottom: 1px solid var(--border-color-light);
+    padding-bottom: 0.6em; /* Slightly more space */
     font-size: 1.05rem; /* Slightly smaller h2 */
     display: flex;
     align-items: center;
@@ -360,7 +374,6 @@ header h1 .edition {
     flex-shrink: 0; /* Prevent headers from shrinking in flex card */
 }
 .card h2 small {
-    /* Style for small text in h2 */
     font-size: 0.7em;
     color: var(--text-muted);
     font-weight: 400;
@@ -370,14 +383,14 @@ header h1 .edition {
     font-size: 0.95rem; /* Smaller h3 */
     color: var(--text-secondary);
     border-bottom: none;
-    margin-bottom: 0.8em;
+    margin-bottom: 0.9em; /* Slightly more space */
     font-weight: 600; /* Make h3 bolder */
 }
 .card h4 {
     font-size: 0.85rem; /* Smaller h4 */
     color: var(--primary-color); /* Use primary color for h4 */
     border-bottom: none;
-    margin-bottom: 0.7em;
+    margin-bottom: 0.8em; /* Slightly more space */
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -389,14 +402,13 @@ header h1 .edition {
     opacity: 0.8;
 }
 .info-icon {
-    /* Style for info icons in headings */
-    font-size: 0.9em;
+    font-size: 0.85em; /* Adjust icon size if needed */
     color: var(--text-muted);
     cursor: help;
     border: 1px solid var(--border-color);
     border-radius: 50%;
-    width: 1.4em;
-    height: 1.4em;
+    width: 1.5em; /* Slightly larger */
+    height: 1.5em;
     display: inline-flex;
     justify-content: center;
     align-items: center;
@@ -413,9 +425,9 @@ header h1 .edition {
 hr.subtle-hr {
     border: 0;
     height: 1px;
-    background-color: var(--border-color-light); /* Lighter HR */
+    background-color: var(--border-color-light);
     opacity: 0.7;
-    margin: 1.2em 0; /* Reduced margin */
+    margin: 1.4em 0; /* Slightly more margin */
     flex-shrink: 0; /* Prevent HR from shrinking in flex card */
 }
 
@@ -423,18 +435,18 @@ hr.subtle-hr {
 form {
     display: flex;
     flex-direction: column;
-    gap: 12px; /* Reduced gap */
+    gap: 14px; /* Slightly increased gap */
     flex-shrink: 0; /* Prevent forms from shrinking in flex card */
 }
 .form-row {
     display: grid;
     grid-template-columns: minmax(90px, 1fr) 1fr;
-    gap: 8px 12px;
+    gap: 8px 14px; /* Slightly increased column gap */
     align-items: center;
 }
 form label {
     font-weight: 500;
-    font-size: 0.85em; /* Smaller labels */
+    font-size: 0.88em; /* Slightly larger */
     color: var(--text-secondary);
     margin-bottom: 0;
     text-align: right;
@@ -446,14 +458,14 @@ form input[type="date"],
 form input[type="number"],
 form input[type="text"],
 #analysis-range-controls input[type="date"] {
-    padding: 8px 12px; /* Reduced padding */
+    padding: 9px 13px; /* Slightly more padding */
     border: 1px solid var(--border-color);
     background-color: var(--bg-tertiary);
     color: var(--text-primary);
-    border-radius: 6px; /* Slightly smaller radius */
+    border-radius: 6px;
     width: 100%;
     font-family: inherit;
-    font-size: 0.9em; /* Smaller input text */
+    font-size: 0.92em; /* Slightly larger */
     transition:
         border-color var(--transition-speed) var(--transition-ease),
         box-shadow var(--transition-speed) var(--transition-ease);
@@ -476,7 +488,7 @@ form button[type="submit"],
 #analysis-range-controls button,
 #what-if-controls button {
     /* Include what-if button */
-    padding: 9px 16px; /* Adjusted padding */
+    padding: 9px 16px;
     background-color: var(--primary-color);
     color: white;
     border: none;
@@ -485,7 +497,7 @@ form button[type="submit"],
     transition: all var(--transition-speed) var(--transition-ease);
     width: 100%;
     font-weight: 500;
-    margin-top: 8px; /* Reduced margin */
+    margin-top: 10px; /* Slightly more space */
     font-size: 0.9em;
     letter-spacing: 0.02em;
     text-align: center;
@@ -728,12 +740,13 @@ input:checked + .slider:before {
 .stat-item {
     display: grid;
     grid-template-columns: 1fr auto;
-    gap: 5px 15px;
+    gap: 6px 15px; /* Slightly increased row gap */
     align-items: baseline;
     margin: 0.5em 0;
     font-size: 0.9rem;
     line-height: 1.4;
     color: var(--text-secondary);
+    padding-bottom: 0.3em; /* Add slight bottom padding */
 }
 .stat-item span:first-child {
     line-height: 1.3;
@@ -754,7 +767,7 @@ input:checked + .slider:before {
     font-family: var(--font-mono);
     font-size: 0.95em;
     background-color: var(--bg-tertiary);
-    padding: 2px 6px;
+    padding: 3px 7px; /* Adjusted padding */
     border-radius: 4px;
     white-space: nowrap;
     border: 1px solid var(--border-color-light);
@@ -825,28 +838,31 @@ body.dark-theme .stat-value.feedback.warn {
 .insight-summary {
     background-color: var(--bg-tertiary);
     border-left: 3px solid var(--primary-color);
-    padding: 10px 15px;
+    padding: 12px 18px; /* Increased padding */
     border-radius: 0 4px 4px 0;
-    margin: 1em 0;
+    margin: 1.2em 0; /* Increased margin */
     font-size: 0.88rem;
     color: var(--text-secondary);
     flex-shrink: 0;
 }
 .insight-summary h4.detected-events-heading {
-    /* Style for the Detected Events heading */
     font-size: 0.85em; /* Slightly smaller */
     color: var(--primary-color);
-    margin-bottom: 0.5em; /* Reduced space */
+    margin-bottom: 0.6em; /* More space */
     padding-bottom: 0;
     border: none;
     text-transform: uppercase;
     letter-spacing: 0.04em;
 }
-.insight-summary p {
-    margin: 0 0 0.6em 0;
-    line-height: 1.5;
+.insight-summary p,
+.insight-summary ul {
+    /* Target ul lists too */
+    margin: 0 0 0.8em 0; /* Increased paragraph/list spacing */
+    line-height: 1.55;
 }
-.insight-summary p:last-child {
+.insight-summary p:last-child,
+.insight-summary ul:last-of-type {
+    /* Target last list too */
     margin-bottom: 0;
 }
 .insight-summary strong {
@@ -881,29 +897,38 @@ body.dark-theme .stat-value.feedback.warn {
     font-size: 0.9em;
     color: var(--text-muted);
 }
-.insight-summary .detected-plateaus {
-    margin-top: 0.4em;
+/* NEW styles for list-based insights */
+.insight-summary ul {
+    list-style: none;
+    padding-left: 0;
+}
+.insight-summary li {
+    display: flex;
+    align-items: flex-start; /* Align icon with first line of text */
+    gap: 0.6em;
     margin-bottom: 0.4em;
-    line-height: 1.4;
+}
+.insight-summary li .insight-icon {
+    font-size: 0.9em;
+    margin-top: 0.2em; /* Adjust vertical alignment */
+    flex-shrink: 0;
+    opacity: 0.8;
+}
+.insight-summary .trend-change-list li .insight-icon {
+    margin-top: 0.1em; /* Fine-tune for trend change */
 }
 .insight-summary .trend-change-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 2px 8px; /* Vertical and horizontal gap */
-    line-height: 1.4;
-    margin-top: 0.4em;
-}
-.insight-summary .trend-change-list.short-list {
-    /* For non-details lists */
-    margin-bottom: 0.6em; /* Maintain bottom margin for non-collapsible */
+    /* Override flex settings if needed now it's a list */
+    display: block; /* Let list items stack */
+    margin-top: 0.6em;
+    padding-left: 0; /* Remove default ul padding */
 }
 .insight-summary .trend-change-item {
-    display: inline-block;
-    font-size: 0.9em; /* Slightly smaller */
-    padding: 1px 4px;
-    border-radius: 3px;
-    white-space: nowrap;
-    color: var(--text-secondary);
+    /* Now likely inside an li, adjust if needed */
+    display: inline-block; /* Keep inline-block for background */
+    font-size: 0.9em;
+    padding: 2px 5px; /* Slightly more padding */
+    border-radius: 4px;
 }
 .insight-summary .trend-change-item.trend-accel {
     color: var(--surplus-color);
@@ -917,6 +942,8 @@ body.dark-theme .stat-value.feedback.warn {
     cursor: pointer;
     margin-bottom: 0.4em;
     outline: none; /* Remove default browser outline */
+    display: list-item; /* Ensure marker shows */
+    list-style-position: inside; /* Marker inside */
 }
 .insight-summary .trend-change-details summary::marker {
     /* Style the arrow */
@@ -926,6 +953,7 @@ body.dark-theme .stat-value.feedback.warn {
 .insight-summary .trend-change-details[open] summary {
     margin-bottom: 0.6em; /* Slightly more space when open */
 }
+/* --- End Insight Summary --- */
 
 /* --- Annotations --- */
 #annotations-section h3 {
@@ -1026,7 +1054,6 @@ body.dark-theme .stat-value.feedback.warn {
     display: flex;
     flex-direction: column;
     height: auto;
-    /* CHANGED: Slightly increased min-height to accommodate potential width reduction */
     min-height: clamp(780px, 85vh, 1100px);
     position: relative;
     padding: 15px;
@@ -1289,10 +1316,17 @@ body.dark-theme .stat-value.feedback.warn {
 .balance-bar:hover {
     opacity: 1;
 }
+/* Balance Axis styles moved to combined block above */
 
 /* Rate of Change Chart */
 .optimal-gain-zone {
     fill: var(--optimal-gain-zone-color);
+    pointer-events: none;
+    /* Optional: add a subtle dashed stroke */
+    /* stroke: hsl(var(--hue-optimal), 40%, 60%);
+    stroke-width: 0.5px;
+    stroke-dasharray: 2, 4;
+    stroke-opacity: 0.5; */
 }
 
 /* Data Points */
@@ -1358,36 +1392,37 @@ body.dark-theme .stat-value.feedback.warn {
     text-align: left;
     width: auto;
     max-width: 260px;
-    padding: 10px 12px;
-    font: 11.5px var(--font-sans);
+    padding: 12px 15px; /* Increased padding */
+    font: 11px var(--font-sans); /* Slightly smaller font */
     background: var(--tooltip-bg);
     color: var(--tooltip-text);
     border: 1px solid hsla(0, 0%, 50%, 0.1);
-    border-radius: 6px;
+    border-radius: 8px; /* Slightly larger radius */
     pointer-events: none; /* Tooltip itself shouldn't block events */
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
-    line-height: 1.5;
+    box-shadow: 0 4px 12px hsla(0, 0%, 0%, 0.15); /* Adjusted shadow */
+    line-height: 1.55; /* Slightly more spacing */
     transition: opacity 0.1s ease-out;
     z-index: 10; /* Ensure tooltip is on top */
-    backdrop-filter: blur(3px);
+    backdrop-filter: blur(4px); /* Add blur */
 }
 body.dark-theme .tooltip {
-    border-color: hsla(0, 0%, 0%, 0.2);
+    box-shadow: 0 4px 12px hsla(0, 0%, 0%, 0.25);
+    border-color: hsla(0, 0%, 0%, 0.3);
 }
 .tooltip strong {
     color: var(--primary-color);
     font-weight: 600;
     display: block;
-    margin-bottom: 4px;
+    margin-bottom: 3px; /* Reduced space */
     font-size: 1.05em;
 }
 .tooltip .note {
     display: block;
-    margin-top: 6px;
+    margin-top: 5px;
     font-style: italic;
     color: var(--text-muted);
-    padding-top: 6px;
-    font-size: 0.95em;
+    padding-top: 5px;
+    font-size: 0.9em; /* Slightly smaller notes */
 }
 .tooltip .note.outlier-note {
     color: var(--outlier-color);
@@ -1401,21 +1436,35 @@ body.dark-theme .tooltip {
     color: var(--info-color);
     font-style: normal;
     font-size: 0.9em;
-    border-top: 1px dashed hsla(var(--hue-neutral), 10%, 50%, 0.2);
+    border-top: 1px dashed hsla(var(--hue-neutral), 10%, 50%, 0.15); /* More subtle */
+    margin-top: 3px;
+    padding-top: 3px;
 }
 .tooltip .note.annotation-note {
     color: var(--annotation-marker-color);
     font-style: normal;
-    border-top: 1px dashed hsla(var(--hue-neutral), 10%, 50%, 0.2);
-    margin-top: 4px;
-    padding-top: 4px;
+    border-top: 1px dashed hsla(var(--hue-neutral), 10%, 50%, 0.15); /* More subtle */
+    margin-top: 3px;
+    padding-top: 3px;
+}
+.tooltip div {
+    /* Added for div-based line breaks */
+    margin-bottom: 2px;
+}
+.tooltip div:last-child {
+    margin-bottom: 0;
 }
 
 hr.tooltip-hr {
     border: 0;
     height: 1px;
-    background-color: hsla(var(--hue-neutral), 10%, 50%, 0.2);
-    margin: 6px 0;
+    background-color: hsla(
+        var(--hue-neutral),
+        10%,
+        50%,
+        0.15
+    ); /* More subtle */
+    margin: 5px 0; /* Adjusted margin */
 }
 .tooltip .positive {
     color: var(--surplus-color);
@@ -1677,13 +1726,13 @@ svg .focus {
 
 /* Responsive */
 @media (max-width: 1100px) {
-    /* CHANGED: Stack all three columns */
+    /* Stack all three columns */
     .dashboard-container {
         grid-template-columns: 1fr;
-        padding: 10px;
+        padding: 15px; /* Adjusted padding */
     }
 
-    /* CHANGED: Apply sidebar stacking rules to both */
+    /* Apply sidebar stacking rules to both */
     .left-sidebar,
     .right-sidebar {
         max-height: none;
@@ -1691,7 +1740,7 @@ svg .focus {
         padding-right: 0;
     }
     .chart-section {
-        min-height: 700px; /* Adjusted min-height */
+        min-height: 700px;
     }
     #correlation-scatter-container {
         height: 180px;
@@ -1699,19 +1748,18 @@ svg .focus {
 }
 @media (max-width: 768px) {
     body {
-        padding: 10px;
-        font-size: 14px;
-    } /* Smaller base */
+        padding: 15px; /* Adjusted padding */
+        font-size: 14.5px; /* Adjusted base */
+    }
     header h1 {
         font-size: 1.2rem;
     }
     .card {
-        padding: 12px;
+        padding: 15px; /* Adjusted padding */
     }
-    /* CHANGED: Apply gap to both sidebars */
     .left-sidebar,
     .right-sidebar {
-        gap: 12px;
+        gap: 15px; /* Adjusted gap */
     }
     .stat-item {
         font-size: 0.85rem;
@@ -1791,7 +1839,8 @@ svg .focus {
 }
 @media (max-width: 480px) {
     body {
-        font-size: 13px;
+        padding: 10px; /* Revert padding for smallest */
+        font-size: 13.5px; /* Adjusted base */
     }
     header h1 {
         font-size: 1.1rem;

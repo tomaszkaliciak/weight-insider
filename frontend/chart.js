@@ -1,36 +1,3 @@
-/**
- * Weight Insights - Advanced Chart Module (v3.1 - Refactored)
- *
- * Description:
- * Renders an interactive multi-chart dashboard for weight tracking analysis.
- * Incorporates features like SMA bands, regression analysis (with CI),
- * manual trend lines, goal tracking, calorie balance visualization,
- * rate of change display, TDEE reconciliation, annotations, plateau/trend
- * detection, weekly summaries, correlation analysis, dynamic axes,
- * interactive elements (hover, click-to-pin, highlighting), and more.
- * Fetches data from `data.json`.
- *
- * Structure:
- * - Configuration (CONFIG)
- * - State Management (state)
- * - D3 Selections Cache (ui)
- * - D3 Constructs (scales, axes, brushes, zoom)
- * - Color Management (colors)
- * - Utility Functions (Utils)
- * - Data Service (DataService) - Loading, processing, calculations
- * - UI Setup (UISetup) - Creating DOM/SVG elements
- * - Domain Manager (DomainManager) - Calculating scale domains
- * - Chart Updaters (FocusChartUpdater, ContextChartUpdater, etc.) - Rendering logic
- * - Statistics Manager (StatsManager) - Calculating and displaying stats
- * - Insights Generator (InsightsGenerator) - Creating textual summaries
- * - Event Handlers (EventHandlers) - User interactions
- * - Legend Manager (LegendManager) - Legend rendering and visibility
- * - Annotation Manager (AnnotationManager) - Handling user annotations
- * - Theme Manager (ThemeManager) - Light/Dark mode
- * - Initialization Logic
- * - Public Interface
- */
-
 // Log script parsing start for timing checks
 console.log("chart.js (v3.1 Refactored): Script parsing started.");
 
@@ -4542,72 +4509,173 @@ const WeightTrackerChart = (function () {
         .style("opacity", 1);
 
       // --- Build Tooltip Content ---
-      let tt = `<strong>${Utils.formatDateLong(d.date)}</strong><br/>Weight: ${Utils.formatValue(d.value, 1)} KG`;
+      let tt = `<strong>${Utils.formatDateLong(d.date)}</strong>`; // Removed <br/> initially
+      tt += `<div style="margin-top: 4px;">Weight: ${Utils.formatValue(d.value, 1)} KG</div>`; // Use div for spacing
       if (d.sma != null)
-        tt += `<br/>SMA (${CONFIG.movingAverageWindow}d): ${Utils.formatValue(d.sma, 1)} KG`;
+        tt += `<div>SMA (${CONFIG.movingAverageWindow}d): ${Utils.formatValue(d.sma, 1)} KG</div>`;
       if (state.seriesVisibility.bf && d.bfPercent != null)
-        tt += `<br/>Body Fat: ${Utils.formatValue(d.bfPercent, 1)} %`;
+        tt += `<div>Body Fat: ${Utils.formatValue(d.bfPercent, 1)} %</div>`;
       if (d.value != null && d.sma != null) {
         const dev = d.value - d.sma;
-        tt += `<br/>Deviation: <span class="${dev >= 0 ? "positive" : "negative"}">${dev >= 0 ? "+" : ""}${Utils.formatValue(dev, 1)} KG</span>`;
+        tt += `<div>Deviation: <span class="${dev >= 0 ? "positive" : "negative"}">${dev >= 0 ? "+" : ""}${Utils.formatValue(dev, 1)} KG</span></div>`;
       }
       if (d.isOutlier)
-        tt += `<br/><span class="note outlier-note">Potential Outlier</span>`;
+        tt += `<div class="note outlier-note" style="margin-top: 4px;">Potential Outlier</div>`; // Adjusted margin
 
       // Add secondary chart data (if available for this date)
-      const hasSecondaryData = [
-        d.netBalance,
-        d.smoothedWeeklyRate,
-        d.avgTdeeDifference,
-        d.calorieIntake,
-        d.googleFitTDEE,
-        d.adaptiveTDEE,
-      ].some((v) => v != null);
+      const secondaryDataLines = [];
+      if (d.netBalance != null)
+        secondaryDataLines.push(
+          `Balance: ${Utils.formatValue(d.netBalance, 0)} kcal`,
+        );
+      if (d.smoothedWeeklyRate != null)
+        secondaryDataLines.push(
+          `Smoothed Rate: ${Utils.formatValue(d.smoothedWeeklyRate, 2)} kg/wk`,
+        );
+      if (d.avgTdeeDifference != null)
+        secondaryDataLines.push(
+          `Avg TDEE Diff: ${Utils.formatValue(d.avgTdeeDifference, 0)} kcal`,
+        );
+      // Optionally add Intake/GFit/Adaptive here too if desired
+      // if (d.calorieIntake != null) secondaryDataLines.push(`Intake: ${Utils.formatValue(d.calorieIntake, 0)} kcal`);
+      // if (d.googleFitTDEE != null) secondaryDataLines.push(`GFit TDEE: ${Utils.formatValue(d.googleFitTDEE, 0)} kcal`);
+      // if (d.adaptiveTDEE != null) secondaryDataLines.push(`Adaptive TDEE: ${Utils.formatValue(d.adaptiveTDEE, 0)} kcal`);
 
-      if (hasSecondaryData) {
+      if (secondaryDataLines.length > 0) {
         tt += `<hr class="tooltip-hr">`;
-        if (d.netBalance != null)
-          tt += `Balance: ${Utils.formatValue(d.netBalance, 0)} kcal<br/>`;
-        if (d.smoothedWeeklyRate != null)
-          tt += `Smoothed Rate: ${Utils.formatValue(d.smoothedWeeklyRate, 2)} kg/wk<br/>`;
-        if (d.avgTdeeDifference != null)
-          tt += `Avg TDEE Diff: ${Utils.formatValue(d.avgTdeeDifference, 0)} kcal<br/>`;
-        // Optionally add Intake/GFit/Adaptive here too if desired
-        // if (d.calorieIntake != null) tt += `Intake: ${Utils.formatValue(d.calorieIntake, 0)} kcal<br/>`;
-        // if (d.googleFitTDEE != null) tt += `GFit TDEE: ${Utils.formatValue(d.googleFitTDEE, 0)} kcal<br/>`;
-        // if (d.adaptiveTDEE != null) tt += `Adaptive TDEE: ${Utils.formatValue(d.adaptiveTDEE, 0)} kcal<br/>`;
+        tt += secondaryDataLines.join("<br/>"); // Join with <br/>
       }
 
       const annotation = AnnotationManager.findAnnotationByDate(d.date);
-      if (annotation)
-        tt += `<hr class="tooltip-hr"><span class="note annotation-note">${annotation.text}</span>`;
+      if (annotation) {
+        tt += `<hr class="tooltip-hr"><div class="note annotation-note">${annotation.text}</div>`; // Use div
+      }
+
       const isPinned = state.pinnedTooltipData?.id === d.date.getTime();
-      tt += `<hr class="tooltip-hr"><span class="note pinned-note">${isPinned ? "Click dot to unpin." : "Click dot to pin tooltip."}</span>`;
+      tt += `<hr class="tooltip-hr"><div class="note pinned-note">${isPinned ? "Click dot to unpin." : "Click dot to pin tooltip."}</div>`; // Use div
 
       EventHandlers._showTooltip(tt, event);
       FocusChartUpdater.updateCrosshair(d);
     },
 
-    dotMouseOut(event, d) {
-      if (!ui.tooltip || !d || !d.date) return;
-      state.activeHoverData = null; // Clear active hover
-      EventHandlers._hideTooltip(); // Use helper to hide tooltip
+    // --- Inside InsightsGenerator ---
 
-      // Reset dot appearance
-      const isHighlighted =
-        state.highlightedDate &&
-        d.date.getTime() === state.highlightedDate.getTime();
-      const targetRadius = isHighlighted
-        ? CONFIG.dotRadius * 1.2
-        : CONFIG.dotRadius;
-      const targetOpacity = isHighlighted ? 1 : 0.7;
-      d3.select(event.currentTarget)
-        .transition()
-        .duration(150)
-        .attr("r", targetRadius)
-        .style("opacity", targetOpacity);
+    // Modify _getDetectedFeaturesInsightHTML to use lists and icons
+    _getDetectedFeaturesInsightHTML(analysisStartDate, analysisEndDate) {
+      let insight = "";
+      if (
+        !(analysisStartDate instanceof Date) ||
+        !(analysisEndDate instanceof Date)
+      )
+        return "";
 
-      FocusChartUpdater.updateCrosshair(null); // Hide crosshair
+      const plateausInRange = state.plateaus.filter(
+        (p) => p.endDate >= analysisStartDate && p.startDate <= analysisEndDate,
+      );
+      const changesInRange = state.trendChangePoints.filter(
+        (p) => p.date >= analysisStartDate && p.date <= analysisEndDate,
+      );
+
+      if (plateausInRange.length === 0 && changesInRange.length === 0) {
+        return ""; // No events detected
+      }
+
+      insight += `<h4 class="detected-events-heading">Detected Events</h4>`;
+      insight += `<ul>`; // Start list
+
+      if (plateausInRange.length > 0) {
+        plateausInRange.forEach((p) => {
+          insight += `<li><span class="insight-icon">⏸️</span> <div><span class="warn">Plateau:</span> ${Utils.formatDateShort(p.startDate)} - ${Utils.formatDateShort(p.endDate)}</div></li>`;
+        });
+      }
+
+      if (changesInRange.length > 0) {
+        // Decide if we need the <details> wrapper
+        const useDetails = changesInRange.length > 4; // Threshold for using details
+
+        if (useDetails) {
+          insight += `<li><span class="insight-icon">⚠️</span> <details class="trend-change-details"><summary><span class="warn">Trend Changes:</span> ${changesInRange.length} detected</summary><ul class="trend-change-list">`; // Nested list
+        } else {
+          insight += `<li><span class="insight-icon">⚠️</span> <div><span class="warn">Trend Changes:</span><ul class="trend-change-list short-list">`; // Nested list
+        }
+
+        changesInRange.forEach((p) => {
+          const direction = p.magnitude > 0 ? "acceleration" : "deceleration";
+          const rateChangeKgWeek = Math.abs(p.magnitude * 7);
+          const rateChangeString = `(Δ ≈ ${Utils.formatValue(rateChangeKgWeek, 2)} kg/wk)`;
+          const directionClass =
+            direction === "accel" ? "trend-accel" : "trend-decel";
+          const icon = direction === "accel" ? "📈" : "📉";
+          insight += `<li><span class="insight-icon">${icon}</span> <span class="trend-change-item ${directionClass}">${Utils.formatDateShort(p.date)} (${direction}) <small>${rateChangeString}</small></span></li>`;
+        });
+
+        insight += `</ul>`; // End nested list
+        if (useDetails) {
+          insight += `</details></li>`;
+        } else {
+          insight += `</div></li>`;
+        }
+      }
+
+      insight += `</ul>`; // End main list
+      return insight;
+    },
+
+    // Modify updateSummary to use the new structure if needed (it should work with the HTML string)
+    updateSummary(stats) {
+      if (!ui.insightSummaryContainer || ui.insightSummaryContainer.empty())
+        return;
+
+      const currentTrendWeekly =
+        stats.regressionSlopeWeekly ?? stats.currentWeeklyRate;
+      const regressionUsedForTrend = stats.regressionSlopeWeekly != null;
+      const analysisRange = EventHandlers.getAnalysisDateRange();
+
+      let summaryHtml = "";
+
+      try {
+        // Generate individual insight strings (these functions might return HTML)
+        const trendStatus = InsightsGenerator._getTrendStatus(
+          currentTrendWeekly,
+          stats.currentSma,
+          regressionUsedForTrend,
+        );
+        const tdeeStatus = InsightsGenerator._getPrimaryTDEEStatus(
+          stats.avgExpenditureGFit,
+          stats.avgTDEE_WgtChange,
+          stats.avgTDEE_Adaptive,
+        );
+        const goalStatus = InsightsGenerator._getGoalStatus(stats);
+        const consistencyStatus = InsightsGenerator._getConsistencyStatus(
+          stats.weightDataConsistency,
+          stats.calorieDataConsistency,
+        );
+        const detectedFeaturesHtml =
+          InsightsGenerator._getDetectedFeaturesInsightHTML(
+            analysisRange.start,
+            analysisRange.end,
+          );
+
+        // Combine them - Wrap each main insight in a <p> for spacing
+        summaryHtml += `<p>${trendStatus}</p>`;
+        summaryHtml += `<p>${tdeeStatus}</p>`;
+        summaryHtml += `<p>${goalStatus}</p>`;
+        summaryHtml += `<p>${consistencyStatus}</p>`;
+        // detectedFeaturesHtml already includes <h4> and <ul> structure
+        summaryHtml += detectedFeaturesHtml;
+      } catch (error) {
+        console.error(
+          "InsightsGenerator: Error generating summary box HTML",
+          error,
+        );
+        summaryHtml =
+          "<p class='error'>Error generating summary. Check console.</p>";
+      }
+
+      ui.insightSummaryContainer.html(
+        summaryHtml ||
+          "<p>Analysis requires more data or a different range.</p>", // Fallback text
+      );
     },
 
     dotClick(event, d) {

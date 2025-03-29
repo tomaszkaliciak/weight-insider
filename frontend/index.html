@@ -107,7 +107,9 @@
                     </div>
 
                     <hr class="subtle-hr" />
+                    <!-- Added HR for separation -->
 
+                    <!-- Body Composition Stats -->
                     <h4>
                         Body Composition <small>(Est. from BF%)</small>
                         <span
@@ -161,9 +163,12 @@
                             KG
                         </div>
                     </div>
+                    <!-- End Body Composition Stats -->
 
                     <hr />
+                    <!-- Existing HR -->
 
+                    <!-- Trends & Correlation Section -->
                     <div class="insight-group">
                         <h4>
                             Trends & Correlation
@@ -305,6 +310,7 @@
                                 title="Average daily calorie intake, expenditure reported by Google Fit, and the resulting net balance within the analysis range. Estimated Daily Balance is calculated from the weight trend (smoothed rate or regression)."
                                 >ⓘ</span
                             >
+                            <!-- This one exists -->
                         </h4>
                         <div class="stat-item">
                             <span>Avg Intake:</span>
@@ -337,7 +343,15 @@
                             class="stat-item"
                             title="Estimated average daily calorie surplus (+) or deficit (-) based on the calculated weekly rate of weight change (Smoothed Rate or Regression Slope). Assumes 7700 kcal per kg of weight change."
                         >
-                            <span>Est. Daily Balance (from Trend):</span>
+                            <span
+                                >Est. Daily Balance (from Trend):
+                                <span
+                                    class="info-icon"
+                                    title="Calculated from the primary weight trend (Smoothed Rate or Regression) using 7700 kcal/kg."
+                                    >ⓘ</span
+                                ></span
+                            >
+                            <!-- ADDED ICON -->
                             <div>
                                 <span
                                     id="estimated-deficit-surplus"
@@ -358,6 +372,7 @@
                                 title="Comparison of different Total Daily Energy Expenditure (TDEE) estimates within the analysis range. GFit: Average from Google Fit. Weight Trend: Calculated from average intake and weight change rate (using 7700 kcal/kg). Adaptive: Calculated over a longer window (typically 28 days) using intake and SMA change, potentially more robust to short-term fluctuations. Difference: Smoothed average difference between Trend TDEE and GFit TDEE."
                                 >ⓘ</span
                             >
+                            <!-- This one exists -->
                         </h4>
                         <div class="stat-item">
                             <span>Avg TDEE (GFit):</span>
@@ -372,7 +387,15 @@
                             class="stat-item"
                             title="TDEE estimated based on average calorie intake and the rate of weight change (smoothed or regression) within the analysis range."
                         >
-                            <span>Est. TDEE (from Weight Trend):</span>
+                            <span
+                                >Est. TDEE (from Weight Trend):
+                                <span
+                                    class="info-icon"
+                                    title="Calculated as: Avg Intake - Est. Daily Balance (from Trend)."
+                                    >ⓘ</span
+                                ></span
+                            >
+                            <!-- ADDED ICON -->
                             <div>
                                 <span
                                     id="avg-tdee-wgt-change"
@@ -386,7 +409,15 @@
                             class="stat-item"
                             title="TDEE estimated over a longer window (28 days) using average intake and the change in the smoothed weight average (SMA). This method aims to be more stable against daily noise."
                         >
-                            <span>Est. TDEE (Adaptive):</span>
+                            <span
+                                >Est. TDEE (Adaptive):
+                                <span
+                                    class="info-icon"
+                                    title="Calculated over ~28 days using avg intake and SMA change. More robust to noise."
+                                    >ⓘ</span
+                                ></span
+                            >
+                            <!-- ADDED ICON -->
                             <div>
                                 <span id="avg-tdee-adaptive" class="stat-value"
                                     >N/A</span
@@ -757,7 +788,15 @@
                             class="stat-item"
                             title="The estimated average daily net calorie balance (surplus or deficit) needed to achieve the Required Rate for Target Date."
                         >
-                            <span>Required Net Calories for Date:</span>
+                            <span
+                                >Required Net Calories for Date:
+                                <span
+                                    class="info-icon"
+                                    title="Estimated surplus/deficit needed per day to hit the Required Rate."
+                                    >ⓘ</span
+                                ></span
+                            >
+                            <!-- ADDED ICON -->
                             <div>
                                 <span
                                     id="required-net-calories"
@@ -771,7 +810,15 @@
                             class="stat-item"
                             title="A suggested daily calorie intake range (based on your estimated TDEE and the Required Net Calories) to help you reach your goal by the Target Date."
                         >
-                            <span>Suggested Intake for Date:</span>
+                            <span
+                                >Suggested Intake for Date:
+                                <span
+                                    class="info-icon"
+                                    title="Calculated as: Est. TDEE + Required Net Calories ± 100 kcal buffer."
+                                    >ⓘ</span
+                                ></span
+                            >
+                            <!-- ADDED ICON -->
                             <div>
                                 <span
                                     id="suggested-intake-range"
