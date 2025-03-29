@@ -2757,7 +2757,7 @@ const WeightTrackerChart = (function () {
           update
             .transition()
             .duration(dur)
-            .style("opacity", 1)
+            .style("opacity", 0.8)
             .attr("transform", (d) => {
               const yValue = findYValue(new Date(d.date));
               return yValue != null
@@ -2855,7 +2855,7 @@ const WeightTrackerChart = (function () {
       const visibleMarkers = markerData.filter(
         (p) => p.date >= xDomain[0] && p.date <= xDomain[1],
       );
-      const markerSize = 6;
+      const markerSize = 4;
       const markerPath = d3
         .symbol()
         .type(d3.symbolTriangle)
@@ -2884,7 +2884,7 @@ const WeightTrackerChart = (function () {
           group
             .on("mouseover", EventHandlers.trendChangeMouseOver)
             .on("mouseout", EventHandlers.trendChangeMouseOut);
-          group.transition().duration(dur).style("opacity", 1);
+          group.transition().duration(dur).style("opacity", 0.8);
           return group;
         },
         (update) =>
