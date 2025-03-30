@@ -1,173 +1,144 @@
-/* style.css */
+/* style.css - Consolidated Improvements, Layout Fix & Discoverability Enhancements */
+
 :root {
-    --hue-primary: 210; /* Slightly desaturated blue */
-    --hue-secondary: 160; /* Teal/Green */
-    --hue-tertiary: 0; /* Red */
-    --hue-accent: 40; /* Gold/Orange */
-    --hue-neutral: 220; /* Cooler neutral */
-    --hue-goal: 275; /* Purple */
-    --hue-optimal: 110; /* Green-ish for optimal zone */
+    /* Slightly desaturated hues */
+    --hue-primary: 212; /* Cooler Blue */
+    --hue-secondary: 165; /* Cooler Teal/Green */
+    --hue-tertiary: 355; /* Slightly softer Red */
+    --hue-accent: 45; /* Slightly warmer Gold/Orange */
+    --hue-neutral: 220; /* Keep cool neutral */
+    --hue-goal: 270; /* Keep Purple */
+    --hue-optimal: 115; /* Keep Green-ish */
+    --hue-accent-strong: 205; /* A distinct bright blue for accents */
 
-    /* Color Variables */
-    --info-color: hsl(var(--hue-primary), 60%, 60%);
-    --warning-color: hsl(var(--hue-accent), 70%, 55%);
-    --success-color: hsl(var(--hue-secondary), 50%, 50%);
-    --danger-color: hsl(var(--hue-tertiary), 70%, 58%);
-    --stable-color: hsl(var(--hue-neutral), 15%, 55%); /* For stable trend */
+    /* --- Color Variables --- */
+    /* Base UI Feedback (Slightly softer) */
+    --info-color: hsl(var(--hue-primary), 55%, 60%);
+    --warning-color: hsl(var(--hue-accent), 70%, 60%);
+    --success-color: hsl(var(--hue-secondary), 50%, 55%);
+    --danger-color: hsl(var(--hue-tertiary), 70%, 60%);
+    --stable-color: hsl(var(--hue-neutral), 15%, 55%);
 
-    /* Light Theme (Default) */
-    --bg-primary: hsl(var(--hue-neutral), 30%, 98%); /* Slightly lighter */
-    --bg-secondary: hsl(var(--hue-neutral), 40%, 100%);
-    --bg-tertiary: hsl(var(--hue-neutral), 30%, 95%); /* Slightly adjusted */
-    --text-primary: hsl(var(--hue-neutral), 25%, 10%); /* Slightly darker */
-    --text-secondary: hsl(var(--hue-neutral), 15%, 35%); /* Slightly darker */
+    /* --- Light Theme --- */
+    --bg-primary: hsl(var(--hue-neutral), 25%, 99%); /* Lighter */
+    --bg-secondary: hsl(var(--hue-neutral), 35%, 100%);
+    --bg-tertiary: hsl(var(--hue-neutral), 25%, 96%);
+    --text-primary: hsl(var(--hue-neutral), 20%, 15%); /* Darker Text */
+    --text-secondary: hsl(var(--hue-neutral), 15%, 38%);
     --text-muted: hsl(var(--hue-neutral), 15%, 60%);
-    --border-color: hsl(var(--hue-neutral), 25%, 85%);
-    --border-color-light: hsl(
-        var(--hue-neutral),
-        25%,
-        90%
-    ); /* Lighter border */
-    --shadow-color: hsla(
-        var(--hue-neutral),
-        25%,
-        50%,
-        0.06
-    ); /* Even softer shadow */
-    --shadow-hover: hsla(
-        var(--hue-neutral),
-        25%,
-        50%,
-        0.1
-    ); /* Softer hover shadow */
-    --primary-color: hsl(var(--hue-primary), 65%, 55%);
-    --primary-color-darker: hsl(var(--hue-primary), 65%, 45%);
-    --secondary-color: hsl(var(--hue-secondary), 50%, 50%);
-    --tertiary-color: hsl(var(--hue-tertiary), 70%, 58%);
-    --accent-color: hsl(var(--hue-accent), 75%, 55%);
-    --goal-color: hsl(var(--hue-goal), 50%, 60%);
-    --tooltip-bg: hsla(var(--hue-neutral), 30%, 15%, 0.94); /* Darker tooltip */
-    --tooltip-text: hsl(var(--hue-neutral), 20%, 96%);
-    --scrollbar-thumb: hsl(
-        var(--hue-neutral),
-        15%,
-        75%
-    ); /* Slightly lighter thumb */
-    --scrollbar-track: hsl(var(--hue-neutral), 15%, 94%); /* Lighter track */
+    --border-color: hsl(var(--hue-neutral), 25%, 88%); /* Lighter border */
+    --border-color-light: hsl(var(--hue-neutral), 25%, 92%);
+    --shadow-color: hsla(var(--hue-neutral), 25%, 50%, 0.05);
+    --shadow-hover: hsla(var(--hue-neutral), 25%, 50%, 0.07);
+    --primary-color: hsl(var(--hue-primary), 60%, 58%); /* Slightly softer */
+    --primary-color-darker: hsl(var(--hue-primary), 60%, 48%);
+    --secondary-color: hsl(var(--hue-secondary), 45%, 55%); /* Softer */
+    --tertiary-color: hsl(var(--hue-tertiary), 65%, 60%); /* Softer */
+    --accent-color: hsl(var(--hue-accent), 70%, 60%);
+    --accent-strong: hsl(
+        var(--hue-accent-strong),
+        75%,
+        55%
+    ); /* Strong accent */
+    --goal-color: hsl(var(--hue-goal), 45%, 65%); /* Softer */
+    --tooltip-bg: hsla(var(--hue-neutral), 25%, 18%, 0.95); /* Darker tooltip */
+    --tooltip-text: hsl(var(--hue-neutral), 20%, 97%);
+    --scrollbar-thumb: hsl(var(--hue-neutral), 15%, 78%);
+    --scrollbar-track: hsl(var(--hue-neutral), 15%, 95%);
     --outlier-color: var(--tertiary-color);
-    --deficit-color: hsl(
-        var(--hue-secondary),
-        60%,
-        45%
-    ); /* Made deficit greener */
-    --surplus-color: hsl(
-        var(--hue-tertiary),
-        70%,
-        58%
-    ); /* Made surplus redder */
-
-    /* Optimal Gain Zone */
-    --optimal-gain-zone-color: hsla(var(--hue-optimal), 40%, 50%, 0.08);
+    --deficit-color: hsl(var(--hue-secondary), 55%, 50%);
+    --surplus-color: hsl(var(--hue-tertiary), 70%, 60%);
+    --optimal-gain-zone-color: hsla(var(--hue-optimal), 45%, 50%, 0.08);
 
     /* Chart Specific */
     --sma-color: var(--primary-color);
-    --band-color: hsla(var(--hue-primary), 70%, 55%, 0.25);
-    --raw-dot-color: hsl(var(--hue-neutral), 15%, 78%);
+    --band-color: hsla(var(--hue-primary), 60%, 60%, 0.2); /* Adjust alpha */
+    --raw-dot-color: hsl(var(--hue-neutral), 15%, 80%);
     --dot-color: var(--primary-color);
     --trend1-color: var(--secondary-color);
-    --trend2-color: hsl(var(--hue-tertiary), 60%, 65%);
+    --trend2-color: hsl(var(--hue-tertiary), 55%, 70%);
     --regression-color: var(--accent-color);
-    --regression-ci-color: hsla(var(--hue-accent), 75%, 55%, 0.1);
+    --regression-ci-color: hsla(var(--hue-accent), 70%, 60%, 0.1);
     --goal-line-color: var(--goal-color);
-    --second-axis-color: hsl(var(--hue-secondary), 50%, 50%);
+    --rate-line-color: hsl(var(--hue-goal), 45%, 60%);
+    --tdee-diff-line-color: hsl(var(--hue-secondary), 50%, 65%);
+    --annotation-marker-color: hsl(var(--hue-accent), 70%, 65%);
+    --annotation-range-color: hsla(var(--hue-accent), 70%, 65%, 0.08);
+    --plateau-color: hsla(var(--hue-neutral), 15%, 55%, 0.1);
+    --trend-change-color: var(--danger-color);
+    --highlight-stroke-color: hsl(var(--hue-accent), 85%, 68%);
+    --table-header-bg: hsl(var(--hue-neutral), 25%, 94%);
+    --table-row-hover: hsl(var(--hue-neutral), 25%, 96%);
+    --crosshair-color: hsl(var(--hue-neutral), 20%, 55%);
+    --scatter-dot-color: hsl(var(--hue-neutral), 30%, 45%);
 
     /* Transitions & Fonts */
-    --transition-speed: 0.2s; /* Slightly faster transitions */
+    --transition-speed-fast: 0.15s; /* Faster for quick feedback */
+    --transition-speed: 0.2s;
     --transition-ease: cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-ease-out: ease-out;
     --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
         Helvetica, Arial, sans-serif;
     --font-mono: "Fira Code", SFMono-Regular, Menlo, Monaco, Consolas,
         "Liberation Mono", "Courier New", monospace;
-
-    --rate-line-color: hsl(var(--hue-goal), 50%, 55%); /* Use goal hue */
-    --tdee-diff-line-color: hsl(var(--hue-secondary), 55%, 60%); /* Tealish */
-    --annotation-marker-color: hsl(var(--hue-accent), 70%, 60%);
-    --annotation-range-color: hsla(var(--hue-accent), 70%, 60%, 0.08);
-    --plateau-color: hsla(var(--hue-neutral), 15%, 55%, 0.1); /* Subtle gray */
-    --trend-change-color: var(--danger-color);
-    --highlight-stroke-color: hsl(
-        var(--hue-accent),
-        90%,
-        65%
-    ); /* Brighter highlight */
-    --table-header-bg: hsl(var(--hue-neutral), 25%, 92%);
-    --table-row-hover: hsl(var(--hue-neutral), 25%, 95%);
-    --crosshair-color: hsl(var(--hue-neutral), 20%, 50%); /* NEW Crosshair */
-    --scatter-dot-color: hsl(var(--hue-neutral), 30%, 40%);
 }
 
 body.dark-theme {
-    --info-color: hsl(var(--hue-primary), 55%, 70%);
-    --warning-color: hsl(var(--hue-accent), 65%, 65%);
-    --success-color: hsl(var(--hue-secondary), 45%, 60%);
-    --danger-color: hsl(var(--hue-tertiary), 60%, 65%);
-    --stable-color: hsl(var(--hue-neutral), 10%, 55%);
-    --bg-primary: hsl(var(--hue-neutral), 15%, 8%); /* Slightly darker */
-    --bg-secondary: hsl(var(--hue-neutral), 15%, 14%); /* Slightly adjusted */
-    --bg-tertiary: hsl(var(--hue-neutral), 15%, 11%); /* Slightly adjusted */
-    --text-primary: hsl(var(--hue-neutral), 15%, 94%); /* Slightly lighter */
-    --text-secondary: hsl(var(--hue-neutral), 10%, 72%); /* Slightly lighter */
-    --text-muted: hsl(var(--hue-neutral), 10%, 50%);
-    --border-color: hsl(var(--hue-neutral), 15%, 28%); /* Slightly lighter */
-    --border-color-light: hsl(
-        var(--hue-neutral),
-        15%,
-        33%
-    ); /* Slightly lighter */
-    --shadow-color: hsla(
-        var(--hue-neutral),
-        0%,
-        0%,
-        0.18
-    ); /* Slightly darker */
-    --shadow-hover: hsla(var(--hue-neutral), 0%, 0%, 0.28);
-    --primary-color: hsl(var(--hue-primary), 60%, 65%);
-    --primary-color-darker: hsl(var(--hue-primary), 60%, 55%);
-    --secondary-color: hsl(var(--hue-secondary), 50%, 60%);
-    --tertiary-color: hsl(var(--hue-tertiary), 65%, 65%);
-    --accent-color: hsl(var(--hue-accent), 70%, 60%);
-    --goal-color: hsl(var(--hue-goal), 50%, 70%);
-    --tooltip-bg: hsla(
-        var(--hue-neutral),
-        15%,
-        92%,
-        0.95
-    ); /* Slightly more opaque */
-    --tooltip-text: hsl(var(--hue-neutral), 15%, 12%); /* Slightly darker */
-    --scrollbar-thumb: hsl(var(--hue-neutral), 15%, 40%); /* Slightly lighter */
-    --scrollbar-track: hsl(var(--hue-neutral), 15%, 18%); /* Slightly lighter */
+    /* Slightly softer hues for dark mode */
+    --info-color: hsl(var(--hue-primary), 50%, 70%);
+    --warning-color: hsl(var(--hue-accent), 60%, 70%);
+    --success-color: hsl(var(--hue-secondary), 40%, 65%);
+    --danger-color: hsl(var(--hue-tertiary), 55%, 70%);
+    --stable-color: hsl(var(--hue-neutral), 10%, 60%);
 
+    /* Dark Theme Backgrounds/Text */
+    --bg-primary: hsl(var(--hue-neutral), 15%, 10%); /* Slightly darker */
+    --bg-secondary: hsl(var(--hue-neutral), 15%, 16%);
+    --bg-tertiary: hsl(var(--hue-neutral), 15%, 13%);
+    --text-primary: hsl(var(--hue-neutral), 15%, 95%); /* Off-white */
+    --text-secondary: hsl(var(--hue-neutral), 10%, 75%);
+    --text-muted: hsl(var(--hue-neutral), 10%, 55%);
+    --border-color: hsl(var(--hue-neutral), 15%, 30%); /* Lighter border */
+    --border-color-light: hsl(var(--hue-neutral), 15%, 35%);
+    --shadow-color: hsla(var(--hue-neutral), 0%, 0%, 0.2); /* Darker shadow */
+    --shadow-hover: hsla(var(--hue-neutral), 0%, 0%, 0.3);
+
+    /* Dark Theme Palette */
+    --primary-color: hsl(var(--hue-primary), 55%, 70%); /* Lighter primary */
+    --primary-color-darker: hsl(var(--hue-primary), 55%, 60%);
+    --secondary-color: hsl(var(--hue-secondary), 45%, 65%);
+    --tertiary-color: hsl(var(--hue-tertiary), 60%, 70%);
+    --accent-color: hsl(var(--hue-accent), 65%, 65%);
+    --accent-strong: hsl(
+        var(--hue-accent-strong),
+        70%,
+        65%
+    ); /* Lighter strong accent */
+    --goal-color: hsl(var(--hue-goal), 45%, 75%);
+    --tooltip-bg: hsla(var(--hue-neutral), 15%, 95%, 0.96); /* Light tooltip */
+    --tooltip-text: hsl(var(--hue-neutral), 15%, 15%); /* Dark text */
+    --scrollbar-thumb: hsl(var(--hue-neutral), 15%, 45%);
+    --scrollbar-track: hsl(var(--hue-neutral), 15%, 20%);
+    --outlier-color: var(--tertiary-color);
+    --deficit-color: hsl(var(--hue-secondary), 50%, 60%);
+    --surplus-color: hsl(var(--hue-tertiary), 60%, 65%);
     --optimal-gain-zone-color: hsla(var(--hue-optimal), 40%, 70%, 0.1);
 
-    --band-color: hsla(var(--hue-primary), 60%, 65%, 0.25);
-    --raw-dot-color: hsl(var(--hue-neutral), 10%, 35%);
-    --outlier-color: var(--tertiary-color);
-    --deficit-color: hsl(var(--hue-secondary), 55%, 55%);
-    --surplus-color: hsl(var(--hue-tertiary), 65%, 60%);
-    --regression-ci-color: hsla(var(--hue-accent), 70%, 60%, 0.1);
-    --second-axis-color: hsl(var(--hue-secondary), 50%, 65%);
-
-    --rate-line-color: hsl(var(--hue-goal), 50%, 70%);
-    --tdee-diff-line-color: hsl(var(--hue-secondary), 50%, 70%);
-    --annotation-marker-color: hsl(var(--hue-accent), 70%, 70%);
-    --annotation-range-color: hsla(var(--hue-accent), 70%, 70%, 0.1);
+    /* Dark Chart Specific */
+    --band-color: hsla(var(--hue-primary), 55%, 70%, 0.2);
+    --raw-dot-color: hsl(var(--hue-neutral), 10%, 40%);
+    --regression-ci-color: hsla(var(--hue-accent), 65%, 65%, 0.1);
+    --rate-line-color: hsl(var(--hue-goal), 45%, 75%);
+    --tdee-diff-line-color: hsl(var(--hue-secondary), 45%, 75%);
+    --annotation-marker-color: hsl(var(--hue-accent), 65%, 75%);
+    --annotation-range-color: hsla(var(--hue-accent), 65%, 75%, 0.1);
     --plateau-color: hsla(var(--hue-neutral), 10%, 55%, 0.12);
-    --trend-change-color: hsl(var(--hue-tertiary), 60%, 70%);
-    --highlight-stroke-color: hsl(var(--hue-accent), 85%, 75%);
-    --table-header-bg: hsl(var(--hue-neutral), 15%, 20%);
-    --table-row-hover: hsl(var(--hue-neutral), 15%, 25%);
-    --crosshair-color: hsl(var(--hue-neutral), 15%, 55%);
-    --scatter-dot-color: hsl(var(--hue-neutral), 15%, 70%);
+    --trend-change-color: hsl(var(--hue-tertiary), 55%, 75%);
+    --highlight-stroke-color: hsl(var(--hue-accent), 80%, 78%);
+    --table-header-bg: hsl(var(--hue-neutral), 15%, 22%);
+    --table-row-hover: hsl(var(--hue-neutral), 15%, 27%);
+    --crosshair-color: hsl(var(--hue-neutral), 15%, 60%);
+    --scatter-dot-color: hsl(var(--hue-neutral), 15%, 75%);
 }
 
 /* --- General Styles & Resets --- */
@@ -180,22 +151,22 @@ body.dark-theme {
 }
 html {
     scroll-behavior: smooth;
-    font-size: 16px; /* Base font size */
+    font-size: 16px;
 }
 body {
     font-family: var(--font-sans);
     background-color: var(--bg-primary);
     color: var(--text-primary);
-    padding: clamp(20px, 4vw, 40px); /* Slightly more padding */
+    padding: clamp(25px, 4vh, 40px) clamp(25px, 5vw, 60px);
     display: flex;
     flex-direction: column;
     align-items: center;
     min-height: 100vh;
-    line-height: 1.6;
+    line-height: 1.65;
+    font-size: 16px;
     transition:
         background-color var(--transition-speed) var(--transition-ease),
         color var(--transition-speed) var(--transition-ease);
-    font-size: 15.5px; /* Slightly larger base */
 }
 
 /* --- Scrollbar --- */
@@ -213,45 +184,53 @@ body {
     border: 2px solid var(--scrollbar-track);
 }
 ::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--hue-neutral), 15%, 60%);
+    background: hsl(var(--hue-neutral), 15%, 65%);
 }
 body.dark-theme ::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--hue-neutral), 15%, 45%);
+    background: hsl(var(--hue-neutral), 15%, 50%);
 }
 
 /* --- Header --- */
 header {
     width: 100%;
-    max-width: 1800px; /* Match dashboard max width */
+    max-width: 1800px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: clamp(25px, 5vh, 40px);
-    padding: 0 5px;
+    margin-bottom: clamp(35px, 6vh, 50px);
+    padding: 0;
+    flex-shrink: 0;
 }
 header h1 {
-    color: var(--text-primary); /* Use text primary for header */
-    font-weight: 600; /* Slightly less bold */
-    font-size: clamp(1.5rem, 4vw, 1.9rem);
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: clamp(1.7rem, 4.5vw, 2.1rem);
     margin: 0;
     display: flex;
     align-items: center;
-    gap: 0.5em;
+    gap: 0.6em;
 }
-header h1 .logo-icon {
-    font-size: 1.1em; /* Slightly smaller icon */
-    color: var(--primary-color); /* Color the icon */
+header h1 .icon svg {
+    width: 1.1em;
+    height: 1.1em;
+    color: var(--primary-color);
+    stroke-width: 2;
+    transition: color var(--transition-speed) var(--transition-ease);
 }
 header h1 .edition {
     font-size: 0.6em;
-    font-weight: 500; /* Medium weight */
+    font-weight: 500;
     color: var(--text-muted);
-    vertical-align: baseline; /* Align better */
-    margin-left: -0.3em; /* Tuck in slightly */
+    vertical-align: baseline;
+    margin-left: -0.3em;
     background-color: var(--bg-tertiary);
-    padding: 1px 6px;
+    padding: 2px 7px;
     border-radius: 4px;
     border: 1px solid var(--border-color-light);
+    transition:
+        background-color var(--transition-speed) var(--transition-ease),
+        color var(--transition-speed) var(--transition-ease),
+        border-color var(--transition-speed) var(--transition-ease);
 }
 
 /* --- Theme Toggle --- */
@@ -259,45 +238,58 @@ header h1 .edition {
     background: none;
     border: 1px solid var(--border-color);
     color: var(--text-secondary);
-    padding: 8px 10px; /* Slightly smaller */
+    padding: 9px 11px;
     border-radius: 8px;
     cursor: pointer;
-    font-size: 1.1em; /* Slightly smaller */
+    font-size: 1.2em;
     transition: all var(--transition-speed) var(--transition-ease);
     line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 #theme-toggle:hover {
     background-color: var(--bg-tertiary);
     color: var(--text-primary);
-    box-shadow: 0 1px 4px var(--shadow-hover); /* Subtle shadow */
+    box-shadow: 0 2px 6px var(--shadow-hover);
     border-color: var(--text-secondary);
     transform: translateY(-1px);
+}
+#theme-toggle:active {
+    transform: translateY(0) scale(0.95);
+    box-shadow: none;
+}
+#theme-toggle svg {
+    width: 1em;
+    height: 1em;
+    stroke-width: 2;
+    transition: color var(--transition-speed) var(--transition-ease);
 }
 
 /* --- Status Message --- */
 .status-message {
-    width: calc(100% - 40px); /* Responsive width */
-    max-width: 500px; /* Max width */
+    width: calc(100% - 40px);
+    max-width: 500px;
     padding: 10px 15px;
     margin-bottom: 15px;
-    border-radius: 6px; /* Slightly smaller radius */
+    border-radius: 6px;
     text-align: center;
     font-weight: 500;
     opacity: 0;
-    transform: translateY(-15px); /* Start higher */
+    transform: translateY(-15px);
     transition:
         opacity 0.3s ease-out,
         transform 0.3s ease-out;
     pointer-events: none;
     position: fixed;
-    top: 15px; /* Closer to top */
+    top: 15px;
     left: 50%;
     transform: translateX(-50%) translateY(-15px);
     z-index: 1000;
     color: white;
-    box-shadow: 0 3px 8px hsla(0, 0%, 0%, 0.15); /* Softer shadow */
+    box-shadow: 0 3px 8px hsla(0, 0%, 0%, 0.15);
     font-size: 0.9rem;
-    backdrop-filter: blur(2px); /* Subtle blur */
+    backdrop-filter: blur(2px);
 }
 .status-message.show {
     opacity: 1;
@@ -316,109 +308,225 @@ header h1 .edition {
 .status-message.warn {
     background-color: hsla(var(--hue-accent), 70%, 50%, 0.9);
 }
-
-/* --- Dashboard Layout --- */
-.dashboard-container {
-    display: grid;
-    grid-template-columns: clamp(320px, 25%, 400px) 1fr clamp(320px, 25%, 400px);
-    gap: clamp(20px, 2.5vw, 30px); /* Slightly increased gap */
-    width: 100%;
-    max-width: 1800px; /* Wider max width */
-    align-items: flex-start;
+body.dark-theme .status-message.success {
+    background-color: hsla(var(--hue-secondary), 50%, 55%, 0.92);
+}
+body.dark-theme .status-message.error {
+    background-color: hsla(var(--hue-tertiary), 60%, 60%, 0.92);
+}
+body.dark-theme .status-message.info {
+    background-color: hsla(var(--hue-primary), 60%, 60%, 0.92);
+}
+body.dark-theme .status-message.warn {
+    background-color: hsla(var(--hue-accent), 65%, 60%, 0.92);
 }
 
-/* --- Sidebar Styling (Common for Left & Right) --- */
-.left-sidebar,
-.right-sidebar {
+/* --- Dashboard Layout (Using Grid Areas) --- */
+.dashboard-container {
+    display: grid;
+    grid-template-columns: clamp(330px, 26%, 420px) 1fr clamp(330px, 26%, 420px);
+    grid-template-areas: "sidebarL main     sidebarR" "sidebarL secondary sidebarR";
+    gap: clamp(25px, 3.5vw, 40px);
+    width: 100%;
+    max-width: 1800px;
+    align-items: stretch;
+    flex-grow: 1;
+}
+.left-sidebar {
+    grid-area: sidebarL;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    padding-right: 8px;
     display: flex;
     flex-direction: column;
-    gap: clamp(18px, 2.2vw, 25px); /* Slightly increased gap */
-    /* Allow sidebars to scroll independently if content overflows */
-    max-height: calc(100vh - 100px); /* Adjust height based on header/padding */
+    gap: clamp(22px, 2.8vw, 30px);
+    min-height: 0;
+}
+.chart-section {
+    grid-area: main;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+.right-sidebar {
+    grid-area: sidebarR;
+    max-height: calc(100vh - 120px);
     overflow-y: auto;
-    padding-right: 5px; /* Space for scrollbar */
+    padding-right: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(22px, 2.8vw, 30px);
+    min-height: 0;
+}
+.secondary-analysis-section {
+    grid-area: secondary;
+    background-color: var(--bg-secondary);
+    border-radius: 16px;
+    padding: 0;
+    box-shadow: 0 4px 15px var(--shadow-color);
+    border: 1px solid var(--border-color-light);
+    transition: all var(--transition-speed) var(--transition-ease);
+    overflow: hidden;
+    min-height: 0;
+}
+.secondary-analysis-section summary {
+    padding: clamp(18px, 2.5vw, 25px);
+    cursor: pointer;
+    outline: none;
+    list-style: none;
+    position: relative;
+    transition: background-color var(--transition-speed) ease-out;
+}
+.secondary-analysis-section summary::-webkit-details-marker {
+    display: none;
+}
+.secondary-analysis-section summary:hover {
+    background-color: var(--bg-tertiary);
+}
+.secondary-analysis-section summary h2 {
+    margin: 0;
+    padding: 0;
+    border: none;
+    display: inline-block;
+    font-size: 1.1rem;
+}
+.secondary-analysis-section summary::after {
+    content: "▼";
+    position: absolute;
+    right: clamp(18px, 2.5vw, 25px);
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.9em;
+    color: var(--text-muted);
+    transition: transform 0.2s ease-out;
+}
+.secondary-analysis-section[open] summary::after {
+    transform: translateY(-50%) rotate(-180deg);
+}
+.secondary-analysis-content {
+    padding: 0 clamp(18px, 2.5vw, 25px) clamp(18px, 2.5vw, 25px);
+    border-top: 1px solid var(--border-color-light);
+}
+.secondary-analysis-content > div:first-child {
+    margin-top: 0;
+    padding-top: 15px;
+    border-top: none;
 }
 
 /* --- Cards --- */
 .card {
     background-color: var(--bg-secondary);
-    border-radius: 12px; /* Softer corners */
-    padding: clamp(18px, 2.2vw, 25px); /* Slightly more padding */
-    box-shadow: 0 3px 8px var(--shadow-color); /* Adjusted shadow */
+    border-radius: 16px;
+    padding: clamp(22px, 2.8vw, 30px);
+    box-shadow: 0 4px 15px var(--shadow-color);
     border: 1px solid var(--border-color-light);
     transition:
         box-shadow var(--transition-speed) var(--transition-ease),
         border-color var(--transition-speed) var(--transition-ease),
-        transform var(--transition-speed) var(--transition-ease); /* Add transform transition */
+        transform var(--transition-speed) var(--transition-ease),
+        background-color var(--transition-speed) var(--transition-ease);
     display: flex;
     flex-direction: column;
 }
-.card:hover {
-    box-shadow: 0 5px 15px var(--shadow-hover); /* Adjusted hover shadow */
-    transform: translateY(-2px); /* Subtle lift on hover */
+.secondary-analysis-section.card {
+    padding: 0;
 }
-
+.chart-section.card {
+    padding: 15px;
+}
+.card:not(.secondary-analysis-section):not(.chart-section):hover {
+    box-shadow: 0 6px 20px var(--shadow-hover);
+    transform: translateY(-3px);
+}
 .card h2,
 .card h3,
 .card h4 {
-    margin-top: 0;
-    margin-bottom: 1em; /* Slightly more space */
-    color: var(--text-primary); /* Use text primary */
+    margin-block-start: 0;
     font-weight: 600;
-    border-bottom: 1px solid var(--border-color-light);
-    padding-bottom: 0.6em; /* Slightly more space */
-    font-size: 1.05rem; /* Slightly smaller h2 */
     display: flex;
     align-items: center;
-    gap: 0.5em;
-    flex-shrink: 0; /* Prevent headers from shrinking in flex card */
+    gap: 0.6em;
+    flex-shrink: 0;
+    transition: color var(--transition-speed) var(--transition-ease);
+}
+.card h2 {
+    margin-block-end: 0;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-color-light);
+    padding-bottom: 0.8em;
+    font-size: 1.2rem;
+    transition:
+        color var(--transition-speed) var(--transition-ease),
+        border-color var(--transition-speed) var(--transition-ease);
+}
+.card:not(.collapsible):not(.secondary-analysis-section) h2 {
+    margin-block-end: 1.3em;
 }
 .card h2 small {
     font-size: 0.7em;
     color: var(--text-muted);
     font-weight: 400;
     margin-left: 0.5em;
+    transition: color var(--transition-speed) var(--transition-ease);
 }
 .card h3 {
-    font-size: 0.95rem; /* Smaller h3 */
-    color: var(--text-secondary);
+    font-size: 1.05rem;
+    color: var(--text-primary);
     border-bottom: none;
-    margin-bottom: 0.9em; /* Slightly more space */
-    font-weight: 600; /* Make h3 bolder */
+    margin-block-end: 1.1em;
+    margin-block-start: 0.5em;
 }
 .card h4 {
-    font-size: 0.85rem; /* Smaller h4 */
-    color: var(--primary-color); /* Use primary color for h4 */
+    font-size: 0.85rem;
+    color: var(--text-secondary);
     border-bottom: none;
-    margin-bottom: 0.8em; /* Slightly more space */
-    font-weight: 600;
+    margin-block-end: 1.2em;
+    margin-block-start: 1.2em;
+    font-weight: 500;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.07em;
     opacity: 0.9;
 }
-.card .icon {
-    font-size: 1em; /* Match heading size */
-    color: var(--primary-color); /* Color icon */
-    opacity: 0.8;
+
+/* Icon Styling */
+.icon svg,
+.info-icon svg {
+    width: 1.1em;
+    height: 1.1em;
+    stroke-width: 2;
+    flex-shrink: 0;
+    vertical-align: middle;
+    transition: color var(--transition-speed) var(--transition-ease);
+}
+.card h2 .icon svg {
+    color: var(--primary-color);
+    opacity: 0.9;
 }
 .info-icon {
-    font-size: 0.85em; /* Adjust icon size if needed */
+    font-size: 0.85em;
     color: var(--text-muted);
     cursor: help;
     border: 1px solid var(--border-color);
     border-radius: 50%;
-    width: 1.5em; /* Slightly larger */
-    height: 1.5em;
+    width: 1.7em;
+    height: 1.7em;
     display: inline-flex;
     justify-content: center;
     align-items: center;
-    margin-left: 0.3em;
+    margin-left: 0.4em;
     transition: all var(--transition-speed) ease-out;
 }
 .info-icon:hover {
     background-color: var(--bg-tertiary);
     color: var(--text-primary);
     border-color: var(--text-muted);
+    transform: scale(1.1);
+}
+.info-icon svg {
+    width: 0.95em;
+    height: 0.95em;
+    stroke-width: 2.5;
 }
 
 /* --- Subtle HR --- */
@@ -426,280 +534,252 @@ hr.subtle-hr {
     border: 0;
     height: 1px;
     background-color: var(--border-color-light);
-    opacity: 0.7;
-    margin: 1.4em 0; /* Slightly more margin */
-    flex-shrink: 0; /* Prevent HR from shrinking in flex card */
+    opacity: 0.8;
+    margin-block-start: 1.6em;
+    margin-block-end: 1.6em;
+    flex-shrink: 0;
+    transition: background-color var(--transition-speed) var(--transition-ease);
 }
 
-/* --- Forms (General + Goal + Analysis Range) --- */
+/* --- Collapsible Card Styles --- */
+.card.collapsible h2 {
+    position: relative;
+    cursor: pointer;
+    padding-right: 35px;
+    margin-bottom: 0;
+    border-bottom: none;
+    padding-bottom: 0;
+    user-select: none;
+} /* Added user-select: none */
+.card.collapsible:not(.collapsed) h2 {
+    border-bottom: 1px solid var(--border-color-light);
+    padding-bottom: 0.8em;
+}
+/* Subtle background on H2 hover when collapsible */
+.card.collapsible > h2:hover {
+    background-color: hsla(var(--hue-neutral), 20%, 50%, 0.03);
+    border-radius: 6px;
+}
+body.dark-theme .card.collapsible > h2:hover {
+    background-color: hsla(var(--hue-neutral), 15%, 50%, 0.08);
+}
+
+.card-toggle-btn {
+    position: absolute;
+    right: 0px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.1em;
+    padding: 5px;
+    cursor: pointer;
+    line-height: 1;
+    border-radius: 4px;
+    transition:
+        transform 0.2s ease-out,
+        background-color 0.2s ease-out;
+}
+.card-toggle-btn:hover {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+.card-toggle-btn .toggle-icon {
+    display: inline-block;
+    transition: transform 0.2s ease-out;
+}
+.card-content {
+    overflow: hidden;
+    max-height: 2000px;
+    transition:
+        max-height 0.35s ease-in-out,
+        padding 0.35s ease-in-out,
+        margin 0.35s ease-in-out,
+        opacity 0.3s ease-in-out,
+        border-top-color 0.35s ease-in-out;
+    border-top: 1px solid var(--border-color-light);
+    margin-top: 0.8em;
+    padding-top: 1.3em;
+    opacity: 1;
+}
+.card.collapsed .card-content {
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-top: 0;
+    border-top-color: transparent;
+    opacity: 0;
+    visibility: hidden;
+}
+.card.collapsed .card-toggle-btn .toggle-icon {
+    transform: rotate(-90deg);
+}
+
+/* ========================================= */
+/* --- Forms & Controls START --- */
+/* ========================================= */
 form {
     display: flex;
     flex-direction: column;
-    gap: 14px; /* Slightly increased gap */
-    flex-shrink: 0; /* Prevent forms from shrinking in flex card */
+    gap: 18px;
+    flex-shrink: 0;
 }
 .form-row {
     display: grid;
-    grid-template-columns: minmax(90px, 1fr) 1fr;
-    gap: 8px 14px; /* Slightly increased column gap */
+    grid-template-columns: minmax(95px, auto) 1fr;
+    gap: 6px 14px;
     align-items: center;
 }
 form label {
     font-weight: 500;
-    font-size: 0.88em; /* Slightly larger */
+    font-size: 0.88rem;
     color: var(--text-secondary);
-    margin-bottom: 0;
     text-align: right;
-    line-height: 1.3; /* Ensure label vertical align */
+    line-height: 1.4;
+    padding-right: 5px;
+    transition: color var(--transition-speed) var(--transition-ease);
 }
-
-/* Input styles */
 form input[type="date"],
 form input[type="number"],
 form input[type="text"],
 #analysis-range-controls input[type="date"] {
-    padding: 9px 13px; /* Slightly more padding */
+    padding: 11px 15px;
     border: 1px solid var(--border-color);
-    background-color: var(--bg-tertiary);
+    background-color: var(--bg-primary);
     color: var(--text-primary);
-    border-radius: 6px;
+    border-radius: 8px;
     width: 100%;
     font-family: inherit;
-    font-size: 0.92em; /* Slightly larger */
+    font-size: 0.95rem;
     transition:
         border-color var(--transition-speed) var(--transition-ease),
-        box-shadow var(--transition-speed) var(--transition-ease);
-    min-width: 0; /* Prevent input overflow */
+        box-shadow var(--transition-speed) var(--transition-ease),
+        background-color var(--transition-speed) var(--transition-ease),
+        color var(--transition-speed) var(--transition-ease);
+    min-width: 0;
+    line-height: 1.4;
+    appearance: none;
+    -webkit-appearance: none;
 }
-form input:focus,
-#analysis-range-controls input:focus {
+form input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0.6;
+    cursor: pointer;
+    transition: opacity var(--transition-speed) var(--transition-ease);
+}
+form input[type="date"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 0.9;
+}
+form input:focus-visible,
+#analysis-range-controls input:focus-visible {
     outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px hsla(var(--hue-primary), 65%, 55%, 0.15); /* Smaller focus ring */
+    border-color: var(--accent-strong);
+    box-shadow: 0 0 0 3px hsla(var(--hue-accent-strong), 75%, 55%, 0.15);
+    background-color: var(--bg-secondary);
 }
 form input::placeholder {
-    color: var(--text-muted); /* Use muted text */
-    opacity: 0.8; /* Slightly less than full opacity */
+    color: var(--text-muted);
+    opacity: 0.7;
 }
-
-/* Button styles */
 form button[type="submit"],
-#trendline-controls button,
-#analysis-range-controls button,
+.button-group button,
 #what-if-controls button {
-    /* Include what-if button */
-    padding: 9px 16px;
-    background-color: var(--primary-color);
-    color: white;
+    padding: 10px 18px;
     border: none;
-    border-radius: 6px;
+    border-radius: 8px;
     cursor: pointer;
     transition: all var(--transition-speed) var(--transition-ease);
-    width: 100%;
-    font-weight: 500;
-    margin-top: 10px; /* Slightly more space */
-    font-size: 0.9em;
-    letter-spacing: 0.02em;
+    font-weight: 600;
+    margin-top: 10px;
+    font-size: 0.92rem;
+    letter-spacing: 0.04em;
     text-align: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5em;
+    width: auto;
+    min-width: 100px;
 }
-
+form button[type="submit"],
+#updateAnalysisRange {
+    background-color: var(--accent-strong);
+    color: white;
+    border: 1px solid transparent;
+}
 form button[type="submit"]:hover,
-#trendline-controls button:hover,
-#analysis-range-controls button:hover,
-#what-if-controls button:hover {
-    background-color: var(--primary-color-darker);
+#updateAnalysisRange:hover {
+    background-color: hsl(var(--hue-accent-strong), 75%, 50%);
     transform: translateY(-1px);
-    box-shadow: 0 2px 5px hsla(var(--hue-primary), 65%, 45%, 0.1); /* Softer shadow */
+    box-shadow: 0 3px 10px hsla(var(--hue-accent-strong), 75%, 45%, 0.2);
+}
+form button[type="submit"]:active,
+#updateAnalysisRange:active {
+    transform: translateY(0) scale(0.98);
+    background-color: hsl(var(--hue-accent-strong), 75%, 45%);
+    box-shadow: none;
+}
+body.dark-theme form button[type="submit"]:hover,
+body.dark-theme #updateAnalysisRange:hover {
+    background-color: hsl(var(--hue-accent-strong), 70%, 58%);
+    box-shadow: 0 2px 8px hsla(var(--hue-accent-strong), 70%, 55%, 0.25);
+}
+body.dark-theme form button[type="submit"]:active,
+body.dark-theme #updateAnalysisRange:active {
+    background-color: hsl(var(--hue-accent-strong), 70%, 55%);
 }
 .button-secondary {
-    background-color: var(--bg-tertiary);
-    color: var(--text-secondary);
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
     border: 1px solid var(--border-color);
 }
 .button-secondary:hover {
-    background-color: var(--border-color);
+    background-color: var(--bg-tertiary);
+    border-color: var(--text-secondary);
     color: var(--text-primary);
     transform: translateY(-1px);
-    box-shadow: 0 1px 4px var(--shadow-hover); /* Subtle shadow */
+    box-shadow: 0 2px 6px var(--shadow-hover);
+}
+.button-secondary:active {
+    transform: translateY(0) scale(0.98);
+    background-color: var(--border-color);
+    box-shadow: none;
 }
 .button-group {
-    /* For grouping buttons like Apply/Reset */
     display: flex;
-    gap: 10px;
-    margin-top: 5px;
+    gap: 12px;
+    margin-top: 10px;
 }
 .button-group button {
-    width: auto; /* Allow buttons to size naturally */
-    flex-grow: 1; /* Make buttons share space */
+    width: 100%;
+    flex-grow: 1;
     margin-top: 0;
+    padding: 9px 15px;
+    font-size: 0.88rem;
 }
-
-/* Goal Stats */
-.goal-stats {
-    margin-top: 1.2em;
-    padding-top: 0.8em;
-    border-top: 1px dashed var(--border-color-light);
-    flex-shrink: 0; /* Prevent shrinking */
-}
-.goal-stats div.stat-item {
-    margin: 4px 0; /* Reduced margin */
-}
-
-/* --- Controls Section Specific --- */
-#controls-section .toggle-group {
+.toggle-group {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    flex-shrink: 0; /* Prevent shrinking */
+    flex-shrink: 0;
+    padding: 5px 0;
 }
-#controls-section .toggle-group + .toggle-group {
-    margin-top: 15px;
-    padding-top: 10px;
-    border-top: 1px dashed var(--border-color-light);
-}
-
-#trendline-controls {
-    flex-shrink: 0; /* Prevent shrinking */
-}
-
-#trendline-controls h3 {
-    margin-bottom: 0.8em; /* Reduced margin */
-}
-
-.trendline-input-group {
-    display: grid;
-    grid-template-columns: minmax(90px, auto) 1fr;
-    gap: 8px 10px; /* Row gap, Column gap */
-    align-items: center; /* Vertical centering */
-    margin-bottom: 0; /* Remove bottom margin if any */
-}
-.trendline-input-group label {
-    text-align: right;
-    font-weight: 500;
-    font-size: 0.8em; /* Smaller label */
-    color: var(--text-secondary);
-    margin-bottom: 0;
-    white-space: nowrap; /* Prevent label wrapping */
-    line-height: 1.3; /* Better vertical align with input */
-}
-.trendline-input-group label .trend-color-1 {
-    color: var(--trend1-color);
-}
-.trendline-input-group label .trend-color-2 {
-    color: var(--trend2-color);
-}
-
-#trendline-controls input[type="date"],
-#trendline-controls input[type="number"] {
-    padding: 6px 8px; /* Smaller padding */
-    font-size: 0.85em;
-    background-color: var(--bg-tertiary);
-    border-radius: 5px;
-    border: 1px solid var(--border-color);
-    width: 100%;
-    min-width: 0;
-    color: var(--text-primary);
-    font-family: inherit;
-    transition:
-        border-color var(--transition-speed) var(--transition-ease),
-        box-shadow var(--transition-speed) var(--transition-ease);
-}
-#trendline-controls input:focus {
-    outline: none;
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 2px hsla(var(--hue-primary), 65%, 55%, 0.15);
-}
-#controls-section .control-note {
-    display: block;
-    font-size: 0.75em;
-    color: var(--text-muted);
-    margin-top: 8px; /* Increased space slightly */
-    margin-left: calc(90px + 10px);
-    text-align: left;
-    line-height: 1.4;
-}
-
-/* --- What-If Controls --- */
-#what-if-controls {
-    flex-shrink: 0; /* Prevent shrinking */
-}
-#what-if-controls h3 {
-    margin-bottom: 0.7em;
-}
-#what-if-controls .form-row {
-    grid-template-columns: minmax(90px, auto) 1fr; /* Match other forms */
-    gap: 8px 10px;
-}
-#what-if-controls button {
-    margin-top: 5px;
-    width: auto; /* Don't force full width */
-    grid-column: 1 / -1; /* Span full width */
-}
-.what-if-result {
-    font-size: 0.85em;
-    color: var(--text-secondary);
-    margin-top: 10px;
-    padding: 8px 10px;
-    background-color: var(--bg-tertiary);
-    border-radius: 4px;
-    border: 1px solid var(--border-color-light);
-    min-height: 2.5em; /* Ensure space even when empty */
-    line-height: 1.4;
-}
-.what-if-result.error {
-    color: var(--danger-color);
-    border-color: hsla(var(--hue-tertiary), 70%, 58%, 0.3);
-}
-
-/* --- Analysis Range Settings Card --- */
-#analysis-settings-card h2 {
-    margin-bottom: 0.8em;
-    flex-shrink: 0; /* Prevent header from shrinking */
-}
-
-#analysis-range-controls {
-    flex-grow: 1; /* Allow this div to take up remaining space in the card */
-    display: flex; /* Use flex internally for its own children */
-    flex-direction: column;
-    min-height: 0; /* Often needed for nested flex scrolling/growing */
-}
-
-#analysis-range-controls .form-row {
-    margin-bottom: 8px;
-    grid-template-columns: minmax(90px, auto) 1fr;
-    flex-shrink: 0; /* Prevent form rows from shrinking */
-}
-#analysis-range-controls .button-group {
-    margin-top: 10px;
-    flex-shrink: 0; /* Prevent button group from shrinking */
-}
-#analysis-range-controls .button-group button {
-    padding: 7px 12px;
-    font-size: 0.85em;
-}
-.current-range-display {
-    font-size: 0.8em;
-    color: var(--text-muted);
-    margin-top: auto; /* Push to bottom if extra space */
-    padding-top: 10px; /* Add some space above it */
-    text-align: center;
-    flex-shrink: 0; /* Prevent shrinking */
-}
-
-/* --- Toggle Switch --- */
 .switch-label {
     font-weight: 500;
     color: var(--text-secondary);
-    margin-right: 10px; /* Reduced margin */
-    font-size: 0.9em;
-}
+    margin-right: 15px;
+    font-size: 0.9rem;
+    transition: color var(--transition-speed) var(--transition-ease);
+    cursor: default;
+} /* Removed pointer */
 .switch {
     position: relative;
     display: inline-block;
-    width: 40px;
-    height: 20px;
+    width: 44px;
+    height: 24px;
     flex-shrink: 0;
-}
+    cursor: pointer;
+} /* Add cursor */
 .switch input {
     opacity: 0;
     width: 0;
@@ -709,80 +789,228 @@ form button[type="submit"]:hover,
     position: absolute;
     cursor: pointer;
     inset: 0;
-    background-color: hsl(var(--hue-neutral), 15%, 65%);
-    transition: 0.3s var(--transition-ease);
+    background-color: hsl(var(--hue-neutral), 15%, 75%);
+    transition: background-color 0.3s var(--transition-ease);
+    border-radius: 24px;
 }
 .slider:before {
     position: absolute;
     content: "";
-    height: 14px;
-    width: 14px;
+    height: 18px;
+    width: 18px;
     left: 3px;
     bottom: 3px;
     background-color: white;
-    transition: 0.3s var(--transition-ease);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    transition: transform 0.3s var(--transition-ease);
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 input:checked + .slider {
     background-color: var(--success-color);
 }
+input:focus-visible + .slider {
+    box-shadow: 0 0 0 3px hsla(var(--hue-secondary), 50%, 50%, 0.25);
+    transition:
+        background-color 0.3s var(--transition-ease),
+        box-shadow var(--transition-speed-fast) var(--transition-ease-out);
+}
 input:checked + .slider:before {
     transform: translateX(20px);
 }
-.slider.round {
-    border-radius: 20px;
+#trendline-controls h3 {
+    margin-bottom: 1em;
 }
-.slider.round:before {
-    border-radius: 50%;
+.trendline-input-group {
+    display: grid;
+    grid-template-columns: 95px 1fr;
+    gap: 6px 12px;
+    align-items: center;
+    margin-bottom: 5px;
 }
+.trendline-input-group label {
+    text-align: right;
+    font-weight: 400;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.3;
+}
+.trendline-input-group label .trend-color-1 {
+    color: var(--trend1-color);
+}
+.trendline-input-group label .trend-color-2 {
+    color: var(--trend2-color);
+}
+#trendline-controls input[type="date"],
+#trendline-controls input[type="number"] {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    border-radius: 6px;
+}
+#controls-section .control-note {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 12px;
+    margin-left: calc(95px + 14px);
+    text-align: left;
+    line-height: 1.4;
+    max-width: calc(100% - (95px + 14px));
+    transition: color var(--transition-speed) var(--transition-ease);
+}
+.control-note.full-width-note {
+    grid-column: 1 / -1;
+    margin-left: 5px;
+    margin-top: -2px;
+    text-align: left;
+    max-width: none;
+} /* Position below toggles */
+#what-if-controls h3 {
+    margin-bottom: 0.7em;
+}
+#what-if-controls .form-row {
+    grid-template-columns: minmax(90px, auto) 1fr;
+    gap: 8px 10px;
+}
+#what-if-controls button {
+    margin-top: 5px;
+    width: auto;
+    grid-column: 1 / -1;
+}
+.what-if-result {
+    font-size: 0.85em;
+    color: var(--text-secondary);
+    margin-top: 10px;
+    padding: 8px 10px;
+    background-color: var(--bg-tertiary);
+    border-radius: 4px;
+    border: 1px solid var(--border-color-light);
+    min-height: 2.5em;
+    line-height: 1.4;
+    transition: all var(--transition-speed) var(--transition-ease);
+}
+.what-if-result.error {
+    color: var(--danger-color);
+    border-color: hsla(var(--hue-tertiary), 70%, 58%, 0.3);
+}
+#analysis-settings-card h2 {
+    margin-bottom: 0.8em;
+    flex-shrink: 0;
+}
+#analysis-range-controls {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+#analysis-range-controls .form-row {
+    margin-bottom: 8px;
+    grid-template-columns: minmax(90px, auto) 1fr;
+    flex-shrink: 0;
+}
+#analysis-range-controls .button-group {
+    margin-top: 10px;
+    flex-shrink: 0;
+}
+#analysis-range-controls .button-group button {
+    padding: 7px 12px;
+    font-size: 0.85em;
+}
+.current-range-display {
+    font-size: 0.8em;
+    color: var(--text-muted);
+    margin-top: auto;
+    padding-top: 10px;
+    text-align: center;
+    flex-shrink: 0;
+    transition: color var(--transition-speed) var(--transition-ease);
+}
+.current-range-display strong {
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: color var(--transition-speed) var(--transition-ease);
+}
+/* ======================================= */
+/* --- Forms & Controls Improvements END --- */
+/* ======================================= */
 
 /* --- Statistics & Insights Layout --- */
 .stat-item {
     display: grid;
     grid-template-columns: 1fr auto;
-    gap: 6px 15px; /* Slightly increased row gap */
+    gap: 5px 12px;
     align-items: baseline;
     margin: 0.5em 0;
-    font-size: 0.9rem;
-    line-height: 1.4;
+    font-size: 0.98rem;
+    line-height: 1.5;
     color: var(--text-secondary);
-    padding-bottom: 0.3em; /* Add slight bottom padding */
+    padding-bottom: 0.5em;
+    border-bottom: 1px solid var(--border-color-light);
+    transition: border-color var(--transition-speed) var(--transition-ease);
+}
+.stat-item:last-child {
+    border-bottom: none;
 }
 .stat-item span:first-child {
-    line-height: 1.3;
+    line-height: 1.4;
     text-align: left;
     padding-right: 5px;
+    font-weight: 400;
+    font-size: 0.92em;
+    transition: color var(--transition-speed) var(--transition-ease);
 }
 .stat-item div {
     text-align: right;
     justify-self: end;
-    display: inline-flex;
+    display: flex;
     align-items: baseline;
     gap: 0.4em;
 }
 .stat-item span.stat-value,
 .stat-item div > span.stat-value {
-    font-weight: 500;
+    font-weight: 600;
+    font-family: var(--font-sans);
+    font-size: 1em;
+    background-color: transparent;
+    padding: 0;
+    border-radius: 0;
+    border: none;
     color: var(--text-primary);
-    font-family: var(--font-mono);
-    font-size: 0.95em;
-    background-color: var(--bg-tertiary);
-    padding: 3px 7px; /* Adjusted padding */
-    border-radius: 4px;
     white-space: nowrap;
-    border: 1px solid var(--border-color-light);
-    display: inline-block;
+    line-height: 1;
+    transition: color var(--transition-speed) var(--transition-ease);
+}
+.stat-unit {
+    font-size: 0.8em;
+    color: var(--text-muted);
+    font-weight: 400;
+    line-height: 1;
+    padding-left: 1px;
+    transition: color var(--transition-speed) var(--transition-ease);
 }
 .stat-item span.stat-date {
     font-size: 0.85em;
     color: var(--text-muted);
     font-family: var(--font-sans);
     white-space: nowrap;
+    margin-left: 0.3em;
+    transition: color var(--transition-speed) var(--transition-ease);
 }
 .stat-item span.stat-details {
     font-size: 0.8em;
     color: var(--text-muted);
     font-family: var(--font-sans);
+    transition: color var(--transition-speed) var(--transition-ease);
+}
+.stat-value.feedback {
+    font-weight: 500;
+    padding: 2px 6px;
+    border-radius: 4px;
+    display: inline-block;
+    line-height: 1.3;
+    transition:
+        background-color var(--transition-speed) var(--transition-ease),
+        border-color var(--transition-speed) var(--transition-ease),
+        color var(--transition-speed) var(--transition-ease);
 }
 .stat-value.feedback.good {
     background-color: hsla(var(--hue-secondary), 50%, 50%, 0.1);
@@ -804,18 +1032,30 @@ body.dark-theme .stat-value.feedback.warn {
     background-color: hsla(var(--hue-accent), 65%, 65%, 0.1);
     border-color: hsla(var(--hue-accent), 65%, 65%, 0.3);
 }
-.highlightable {
+.stat-date.highlightable {
     cursor: pointer;
     text-decoration: underline dotted;
-    transition: color 0.2s ease;
+    transition:
+        color var(--transition-speed-fast) ease-out,
+        background-color var(--transition-speed-fast) ease-out;
+    border-radius: 3px;
+    padding: 0 2px;
+    margin: 0 -2px;
 }
-.highlightable:hover {
+.stat-date.highlightable:hover {
     color: var(--highlight-stroke-color);
+    background-color: hsla(var(--hue-accent), 80%, 70%, 0.1);
 }
-.highlight-trigger:hover .highlightable {
+body.dark-theme .stat-date.highlightable:hover {
+    background-color: hsla(var(--hue-accent), 80%, 78%, 0.12);
+}
+.highlight-trigger:hover .stat-date.highlightable {
     color: var(--highlight-stroke-color);
+    background-color: hsla(var(--hue-accent), 80%, 70%, 0.1);
 }
-
+body.dark-theme .highlight-trigger:hover .stat-date.highlightable {
+    background-color: hsla(var(--hue-accent), 80%, 78%, 0.12);
+}
 #all-time-stats-card hr,
 #analysis-results-card hr {
     border: 0;
@@ -837,33 +1077,45 @@ body.dark-theme .stat-value.feedback.warn {
 /* --- Insight Summary --- */
 .insight-summary {
     background-color: var(--bg-tertiary);
-    border-left: 3px solid var(--primary-color);
-    padding: 12px 18px; /* Increased padding */
-    border-radius: 0 4px 4px 0;
-    margin: 1.2em 0; /* Increased margin */
-    font-size: 0.88rem;
+    border-left: 4px solid var(--primary-color);
+    padding: 15px 20px;
+    border-radius: 0 6px 6px 0;
+    margin-bottom: 1.5em; /* Added margin */
+    font-size: 0.92rem;
     color: var(--text-secondary);
     flex-shrink: 0;
+    transition:
+        background-color var(--transition-speed) var(--transition-ease),
+        border-color var(--transition-speed) var(--transition-ease);
 }
 .insight-summary h4.detected-events-heading {
-    font-size: 0.85em; /* Slightly smaller */
+    font-size: 0.85em;
     color: var(--primary-color);
-    margin-bottom: 0.6em; /* More space */
+    margin-bottom: 0.6em;
     padding-bottom: 0;
     border: none;
     text-transform: uppercase;
     letter-spacing: 0.04em;
+    transition: color var(--transition-speed) var(--transition-ease);
 }
 .insight-summary p,
 .insight-summary ul {
-    /* Target ul lists too */
-    margin: 0 0 0.8em 0; /* Increased paragraph/list spacing */
-    line-height: 1.55;
+    margin: 0 0 1em 0;
+    line-height: 1.6;
 }
 .insight-summary p:last-child,
 .insight-summary ul:last-of-type {
-    /* Target last list too */
     margin-bottom: 0;
+}
+.insight-summary strong,
+.insight-summary .good,
+.insight-summary .warn,
+.insight-summary .bad,
+.insight-summary .stable,
+.insight-summary .gaining,
+.insight-summary .losing,
+.insight-summary small {
+    transition: color var(--transition-speed) var(--transition-ease);
 }
 .insight-summary strong {
     color: var(--text-primary);
@@ -897,38 +1149,38 @@ body.dark-theme .stat-value.feedback.warn {
     font-size: 0.9em;
     color: var(--text-muted);
 }
-/* NEW styles for list-based insights */
 .insight-summary ul {
     list-style: none;
     padding-left: 0;
 }
 .insight-summary li {
     display: flex;
-    align-items: flex-start; /* Align icon with first line of text */
+    align-items: flex-start;
     gap: 0.6em;
     margin-bottom: 0.4em;
 }
 .insight-summary li .insight-icon {
     font-size: 0.9em;
-    margin-top: 0.2em; /* Adjust vertical alignment */
+    margin-top: 0.2em;
     flex-shrink: 0;
     opacity: 0.8;
 }
 .insight-summary .trend-change-list li .insight-icon {
-    margin-top: 0.1em; /* Fine-tune for trend change */
+    margin-top: 0.1em;
 }
 .insight-summary .trend-change-list {
-    /* Override flex settings if needed now it's a list */
-    display: block; /* Let list items stack */
+    display: block;
     margin-top: 0.6em;
-    padding-left: 0; /* Remove default ul padding */
+    padding-left: 0;
 }
 .insight-summary .trend-change-item {
-    /* Now likely inside an li, adjust if needed */
-    display: inline-block; /* Keep inline-block for background */
+    display: inline-block;
     font-size: 0.9em;
-    padding: 2px 5px; /* Slightly more padding */
+    padding: 2px 5px;
     border-radius: 4px;
+    transition:
+        background-color var(--transition-speed) var(--transition-ease),
+        color var(--transition-speed) var(--transition-ease);
 }
 .insight-summary .trend-change-item.trend-accel {
     color: var(--surplus-color);
@@ -941,67 +1193,128 @@ body.dark-theme .stat-value.feedback.warn {
 .insight-summary .trend-change-details summary {
     cursor: pointer;
     margin-bottom: 0.4em;
-    outline: none; /* Remove default browser outline */
-    display: list-item; /* Ensure marker shows */
-    list-style-position: inside; /* Marker inside */
+    outline: none;
+    display: list-item;
+    list-style-position: inside;
 }
 .insight-summary .trend-change-details summary::marker {
-    /* Style the arrow */
     font-size: 0.8em;
     color: var(--text-muted);
+    transition: color var(--transition-speed) var(--transition-ease);
 }
 .insight-summary .trend-change-details[open] summary {
-    margin-bottom: 0.6em; /* Slightly more space when open */
+    margin-bottom: 0.6em;
 }
-/* --- End Insight Summary --- */
+
+/* --- Actionable Insights Styling --- */
+.actionable-insights {
+    margin-top: 1.8em;
+    padding-top: 1.2em;
+    border-top: 1px dashed var(--border-color);
+    transition: border-color var(--transition-speed) var(--transition-ease);
+}
+.actionable-insights h4 {
+    font-size: 0.9rem;
+    color: var(--primary-color);
+    margin-bottom: 1em;
+    padding-bottom: 0;
+    border: none;
+    text-transform: none;
+    letter-spacing: 0.02em;
+    opacity: 1;
+    font-weight: 600;
+}
+.actionable-insights h4::before {
+    content: "💡";
+    display: inline-block;
+    margin-right: 0.6em;
+    font-size: 1.1em;
+    opacity: 0.9;
+}
+#actionable-insights-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 0.9rem;
+}
+#actionable-insights-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.7em;
+    margin-bottom: 0.8em;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    padding: 10px 12px;
+    border-radius: 4px;
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--border-color-light);
+    transition: background-color var(--transition-speed) var(--transition-ease);
+}
+#actionable-insights-list li:last-child {
+    margin-bottom: 0;
+}
+#actionable-insights-list .insight-icon {
+    font-size: 1.1em;
+    margin-top: 0.1em;
+    flex-shrink: 0;
+    opacity: 0.9;
+}
+#actionable-insights-list li strong {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+#actionable-insights-list li.insight-suggestion {
+    border-left: 3px solid var(--info-color);
+}
+#actionable-insights-list li.insight-warning {
+    border-left: 3px solid var(--warning-color);
+    background-color: hsla(var(--hue-accent), 60%, 60%, 0.05);
+}
+body.dark-theme #actionable-insights-list li.insight-warning {
+    background-color: hsla(var(--hue-accent), 60%, 70%, 0.07);
+}
+#actionable-insights-list li.insight-info {
+    border-left: 3px solid var(--stable-color);
+}
+#actionable-insights-list .loading-msg {
+    color: var(--text-muted);
+    font-style: italic;
+    border: none;
+    background: none;
+    padding: 5px 0;
+}
 
 /* --- Annotations --- */
 #annotations-section h3 {
-    margin-top: 1em;
-    margin-bottom: 0.5em;
-    font-size: 0.9rem;
-    flex-shrink: 0;
+    margin-block-start: 1.2em;
+    margin-block-end: 0.8em;
+    font-size: 1rem;
 }
-#annotation-form .form-row {
-    grid-template-columns: minmax(60px, auto) 1fr;
-    gap: 6px 10px;
-    align-items: center;
-}
-#annotation-form label {
-    text-align: right;
-    font-size: 0.8em;
-}
-#annotation-form input[type="date"],
-#annotation-form input[type="text"] {
-    font-size: 0.9em;
-    padding: 7px 10px;
-}
-#annotation-form button[type="submit"] {
-    grid-column: 1 / -1;
-    margin-top: 8px;
-    font-size: 0.85em;
-    padding: 8px 14px;
-}
-.annotation-list {
+#annotation-list {
     list-style: none;
     padding: 0;
     margin: 0;
     max-height: 200px;
     overflow-y: auto;
-    font-size: 0.85em;
+    font-size: 0.9rem;
     border: 1px solid var(--border-color-light);
     border-radius: 4px;
-    padding: 5px;
-    background-color: var(--bg-tertiary);
+    padding: 8px;
+    background-color: var(--bg-primary);
     flex-shrink: 0;
+    transition:
+        background-color var(--transition-speed) var(--transition-ease),
+        border-color var(--transition-speed) var(--transition-ease);
 }
 .annotation-list li {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 5px 8px;
+    padding: 7px 10px;
     border-bottom: 1px solid var(--border-color-light);
-    gap: 10px;
+    gap: 12px;
+    transition: background-color var(--transition-speed-fast)
+        var(--transition-ease-out);
 }
 .annotation-list li:last-child {
     border-bottom: none;
@@ -1014,6 +1327,7 @@ body.dark-theme .stat-value.feedback.warn {
     color: var(--text-secondary);
     white-space: nowrap;
     flex-shrink: 0;
+    transition: color var(--transition-speed) var(--transition-ease);
 }
 .annotation-list .annotation-text {
     flex-grow: 1;
@@ -1022,6 +1336,7 @@ body.dark-theme .stat-value.feedback.warn {
     word-break: break-word;
     min-width: 0;
     text-align: left;
+    transition: color var(--transition-speed) var(--transition-ease);
 }
 .annotation-list .remove-annotation {
     background: none;
@@ -1034,8 +1349,8 @@ body.dark-theme .stat-value.feedback.warn {
     opacity: 0.6;
     flex-shrink: 0;
     transition:
-        color var(--transition-speed),
-        opacity var(--transition-speed);
+        color var(--transition-speed) var(--transition-ease),
+        opacity var(--transition-speed) var(--transition-ease);
 }
 .annotation-list .remove-annotation:hover {
     color: var(--danger-color);
@@ -1049,63 +1364,67 @@ body.dark-theme .stat-value.feedback.warn {
     font-style: italic;
 }
 
-/* --- Chart Section --- */
-.chart-section {
-    display: flex;
-    flex-direction: column;
-    height: auto;
-    min-height: clamp(780px, 85vh, 1100px);
-    position: relative;
-    padding: 15px;
-}
+/* --- Chart Section Elements (Inside .chart-section) --- */
 #chart-container {
     position: relative;
-    flex-grow: 3;
+    flex-grow: 1;
     min-height: 280px;
 }
-#balance-chart-container,
-#rate-of-change-container,
-#tdee-reconciliation-container {
+#context-chart-container {
     position: relative;
-    height: 75px;
+    height: 65px;
+    min-height: 40px;
     flex-shrink: 0;
-    margin-top: 8px;
-    padding-top: 8px;
-    border-top: 1px solid var(--border-color-light);
-}
-#correlation-scatter-container {
-    position: relative;
-    height: 180px;
-    flex-shrink: 0;
-    margin-top: 15px;
-    padding-top: 10px;
-    border-top: 1px solid var(--border-color-light);
+    margin-top: 5px;
+    padding-bottom: 0;
 }
 #legend-container {
     display: flex;
     justify-content: center;
     flex-wrap: wrap;
-    gap: 8px 15px;
-    padding: 6px 5px;
-    font-size: 0.8rem;
+    gap: 8px 18px;
+    padding: 12px 5px;
+    font-size: 0.9rem;
     border-top: 1px solid var(--border-color-light);
-    margin-top: 10px;
+    margin-top: 15px;
     flex-shrink: 0;
-}
-#context-chart-container {
-    position: relative;
-    height: 65px;
-    flex-shrink: 0;
-    margin-top: 5px; /* Added margin to separate from main chart */
-    padding-bottom: 0;
+    transition: border-color var(--transition-speed) var(--transition-ease);
 }
 
-/* --- Weekly Summary Table --- */
+/* --- Secondary Analysis Section Elements (Inside .secondary-analysis-content) --- */
+#balance-chart-container,
+#rate-of-change-container,
+#tdee-reconciliation-container,
+#correlation-scatter-container {
+    position: relative;
+    flex-shrink: 0;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-color-light);
+    transition: border-color var(--transition-speed) var(--transition-ease);
+}
+#balance-chart-container {
+    height: 75px;
+}
+#rate-of-change-container {
+    height: 75px;
+}
+#tdee-reconciliation-container {
+    height: 75px;
+}
+#correlation-scatter-container {
+    height: 180px;
+    margin-top: 15px;
+    padding-top: 10px;
+}
+
+/* --- Weekly Summary Table (Inside .secondary-analysis-content) --- */
 .weekly-summary-section {
     margin-top: 15px;
     padding-top: 10px;
     border-top: 1px solid var(--border-color-light);
     flex-shrink: 0;
+    transition: border-color var(--transition-speed) var(--transition-ease);
 }
 .weekly-summary-section h4 {
     font-size: 0.9rem;
@@ -1113,10 +1432,12 @@ body.dark-theme .stat-value.feedback.warn {
     margin-bottom: 8px;
     border: none;
     padding: 0;
+    transition: color var(--transition-speed) var(--transition-ease);
 }
 .weekly-summary-section h4 small {
     font-weight: 400;
     color: var(--text-muted);
+    transition: color var(--transition-speed) var(--transition-ease);
 }
 .weekly-summary-section .loading-msg,
 .weekly-summary-section .empty-msg {
@@ -1126,39 +1447,88 @@ body.dark-theme .stat-value.feedback.warn {
     padding: 10px;
 }
 .table-wrapper {
-    max-height: 180px;
-    overflow-y: auto;
     border: 1px solid var(--border-color-light);
     border-radius: 4px;
+    transition: border-color var(--transition-speed) var(--transition-ease);
+    overflow-x: auto;
 }
 .weekly-summary-section table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.8rem;
+    font-size: 0.88rem;
 }
 .weekly-summary-section th,
 .weekly-summary-section td {
-    padding: 5px 8px;
+    padding: 8px 12px;
     text-align: left;
     border-bottom: 1px solid var(--border-color-light);
     white-space: nowrap;
+    transition: border-color var(--transition-speed) var(--transition-ease);
 }
 .weekly-summary-section th {
     background-color: var(--table-header-bg);
-    font-weight: 600;
+    font-weight: 500;
     position: sticky;
     top: 0;
     z-index: 1;
+    transition: background-color var(--transition-speed) var(--transition-ease);
 }
 .weekly-summary-section td.number {
     text-align: right;
-    font-family: var(--font-mono);
+    font-family: var(--font-sans);
+}
+.weekly-summary-section tbody tr {
+    transition: background-color var(--transition-speed-fast)
+        var(--transition-ease-out);
 }
 .weekly-summary-section tbody tr:hover {
     background-color: var(--table-row-hover);
 }
 .weekly-summary-section tbody tr:last-child td {
     border-bottom: none;
+}
+/* Weekly Summary Sortable Header Styles */
+.weekly-summary-section th.sortable {
+    cursor: pointer;
+    position: relative;
+    padding-right: 22px;
+}
+.weekly-summary-section th.sortable:hover {
+    background-color: var(--table-row-hover);
+}
+.weekly-summary-section th.sortable::after {
+    content: " \2195";
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.4;
+    color: var(--text-muted);
+    font-size: 0.9em;
+    font-weight: normal;
+    transition:
+        opacity 0.2s ease-out,
+        color 0.2s ease-out;
+}
+.weekly-summary-section th.sortable:hover::after {
+    opacity: 0.7;
+}
+.weekly-summary-section th.sorted-asc::after {
+    content: "";
+    border: 4px solid transparent;
+    border-bottom-color: var(--text-secondary);
+    margin-top: -2px;
+    opacity: 0.9;
+}
+.weekly-summary-section th.sorted-desc::after {
+    content: "";
+    border: 4px solid transparent;
+    border-top-color: var(--text-secondary);
+    margin-top: -6px;
+    opacity: 0.9;
+}
+.weekly-summary-section th.sortable.numeric {
+    text-align: right;
 }
 
 /* --- D3 Chart Elements --- */
@@ -1168,67 +1538,60 @@ body.dark-theme .stat-value.feedback.warn {
     shape-rendering: crispEdges;
     fill: none;
     stroke-width: 1px;
+    transition: stroke var(--transition-speed) var(--transition-ease);
 }
 .axis text {
     fill: var(--text-muted);
     font-size: 0.75rem;
     font-family: var(--font-sans);
+    transition: fill var(--transition-speed) var(--transition-ease);
 }
-
+.axis-label {
+    transition: fill var(--transition-speed) var(--transition-ease);
+}
 .axis-label.y-axis-label,
-.axis-label.y-axis-label2,
-.axis-label.scatter-axis-label-x,
 .axis-label.scatter-axis-label-y,
 .axis-label.y-axis-label-small {
-    font-size: 0.8rem; /* Base size for labels */
+    font-size: 0.8rem;
     fill: var(--text-secondary);
-    font-weight: 600; /* Increased emphasis */
+    font-weight: 600;
 }
-
 .grid line {
     stroke: var(--border-color);
     stroke-opacity: 0.3;
     shape-rendering: crispEdges;
+    transition: stroke var(--transition-speed) var(--transition-ease);
 }
 .grid path {
     stroke-width: 0;
 }
-
 .axis-label.y-axis-label-small {
-    font-size: 0.65rem; /* REDUCED for small charts */
-    /* Inherits fill and weight from the combined rule above */
+    font-size: 0.65rem;
 }
-
-.axis-label.scatter-axis-label-y {
-    font-size: 0.7rem; /* Optional: slightly smaller than main labels */
-}
-
-/* Second Y Axis Styling */
-.axis--y2 .domain {
-    stroke: var(--second-axis-color);
-}
+.axis--y2 .domain,
 .axis--y2 line {
-    stroke: var(--second-axis-color);
-    stroke-opacity: 0.5;
+    stroke: transparent;
 }
-.axis--y2 text {
-    fill: var(--second-axis-color);
-    font-weight: 500;
-    font-size: 0.75rem;
-}
-.axis-label.y-axis-label2 {
-    fill: var(--second-axis-color);
-    /* Inherits font-size from combined rule */
-}
-.line.bf-line {
-    stroke: var(--second-axis-color);
-    stroke-width: 1.5px;
-    stroke-dasharray: 1, 3;
+.line.sma-line,
+.trend-line.manual-trend-1,
+.trend-line.manual-trend-2,
+.trend-line.regression-line,
+.trend-line.goal-line,
+.line.rate-line,
+.line.tdee-diff-line {
+    transition:
+        stroke var(--transition-speed) var(--transition-ease),
+        opacity var(--transition-speed) var(--transition-ease);
     fill: none;
-    opacity: 0.8;
 }
-
-/* Chart Lines/Areas */
+.area.band-area,
+.area.regression-ci-area,
+.optimal-gain-zone,
+.plateau-group .plateau-region {
+    transition:
+        fill var(--transition-speed) var(--transition-ease),
+        opacity var(--transition-speed) var(--transition-ease);
+}
 .line.sma-line {
     stroke: var(--sma-color);
     stroke-width: 2px;
@@ -1266,7 +1629,6 @@ body.dark-theme .stat-value.feedback.warn {
     stroke-width: 1.75px;
     stroke-dasharray: 5, 2;
 }
-
 .line.rate-line {
     stroke: var(--rate-line-color);
     stroke-width: 1.75px;
@@ -1282,15 +1644,17 @@ body.dark-theme .stat-value.feedback.warn {
 .rate-axis line,
 .tdee-diff-axis path,
 .tdee-diff-axis line,
-.balance-axis path, /* Include balance axis */
+.balance-axis path,
 .balance-axis line {
     stroke: var(--border-color);
+    transition: stroke var(--transition-speed) var(--transition-ease);
 }
 .rate-axis text,
 .tdee-diff-axis text,
 .balance-axis text {
     fill: var(--text-muted);
-    font-size: 0.65rem; /* REDUCED for small chart tick labels */
+    font-size: 0.65rem;
+    transition: fill var(--transition-speed) var(--transition-ease);
 }
 .rate-zero-line,
 .tdee-diff-zero-line,
@@ -1299,12 +1663,13 @@ body.dark-theme .stat-value.feedback.warn {
     stroke-width: 1px;
     stroke-dasharray: 2, 2;
     opacity: 0.6;
+    transition: stroke var(--transition-speed) var(--transition-ease);
 }
-
-/* Balance Chart Bars */
 .balance-bar {
     shape-rendering: crispEdges;
-    transition: fill 0.2s ease-out;
+    transition:
+        fill 0.2s ease-out,
+        opacity var(--transition-speed-fast) ease-out;
     opacity: 0.8;
 }
 .balance-bar.deficit {
@@ -1316,94 +1681,85 @@ body.dark-theme .stat-value.feedback.warn {
 .balance-bar:hover {
     opacity: 1;
 }
-/* Balance Axis styles moved to combined block above */
-
-/* Rate of Change Chart */
 .optimal-gain-zone {
     fill: var(--optimal-gain-zone-color);
     pointer-events: none;
-    /* Optional: add a subtle dashed stroke */
-    /* stroke: hsl(var(--hue-optimal), 40%, 60%);
-    stroke-width: 0.5px;
-    stroke-dasharray: 2, 4;
-    stroke-opacity: 0.5; */
 }
-
-/* Data Points */
 .raw-dot {
     fill: var(--raw-dot-color);
     opacity: 0.4;
-    pointer-events: none; /* Raw dots are purely visual */
+    pointer-events: none;
+    transition: fill var(--transition-speed) var(--transition-ease);
 }
 .dot {
-    /* These are the interactive dots in smaDotsGroup */
     fill: var(--dot-color);
     opacity: 0.7;
     cursor: pointer;
-    stroke: var(--bg-secondary); /* Background color for halo effect */
+    stroke: var(--bg-secondary);
     stroke-width: 1px;
     transition:
-        r 0.1s ease-out,
-        opacity 0.1s ease-out;
-    pointer-events: all; /* Ensure these are interactive */
+        r var(--transition-speed-fast) var(--transition-ease-out),
+        opacity var(--transition-speed-fast) var(--transition-ease-out),
+        fill var(--transition-speed) var(--transition-ease),
+        stroke var(--transition-speed) var(--transition-ease);
+    pointer-events: all;
 }
 .dot:hover {
     opacity: 1;
 }
 .dot.outlier {
-    fill: var(--bg-secondary); /* Hollow fill */
-    stroke: var(--outlier-color); /* Use outlier color for stroke */
+    fill: var(--bg-secondary);
+    stroke: var(--outlier-color);
     stroke-width: 1.5px;
     opacity: 0.8;
 }
 .dot.outlier:hover {
     opacity: 1;
-    fill: hsla(var(--hue-tertiary), 70%, 58%, 0.1); /* Subtle fill on hover */
+    fill: hsla(var(--hue-tertiary), 70%, 58%, 0.1);
 }
 .dot.highlighted {
     stroke: var(--highlight-stroke-color);
     stroke-width: 2.5px;
-    opacity: 1 !important; /* Use !important to override base opacity */
-    r: calc(var(--dot-radius, 3.5px) * 1.2); /* Slightly larger */
+    opacity: 1 !important;
+    r: calc(var(--dot-radius, 3.5px) * 1.2);
 }
-/* Highlight marker overlay */
 .highlight-marker {
-    pointer-events: none; /* This marker is purely visual */
+    pointer-events: none;
 }
-
-/* Annotations, Plateaus, Trend Changes */
-.annotations-group .annotation-marker circle {
+.annotations-group .annotation-marker-group circle {
     cursor: help;
-    pointer-events: all; /* Ensure markers are interactive */
+    pointer-events: all;
+    transition:
+        fill var(--transition-speed) var(--transition-ease),
+        transform var(--transition-speed-fast) var(--transition-ease-out);
 }
 .plateau-group .plateau-region {
-    pointer-events: none; /* These are visual overlays */
-    /* fill defined in JS */
+    pointer-events: none;
 }
-.trend-change-group .trend-change-marker path {
+.trend-change-group .trend-change-marker-group path {
     cursor: help;
-    pointer-events: all; /* Ensure markers are interactive */
-    /* fill defined in JS */
+    pointer-events: all;
+    transition:
+        fill var(--transition-speed) var(--transition-ease),
+        transform var(--transition-speed-fast) var(--transition-ease-out);
 }
-
-/* Tooltip */
 .tooltip {
     position: absolute;
     text-align: left;
     width: auto;
     max-width: 260px;
-    padding: 12px 15px; /* Increased padding */
-    font: 11px var(--font-sans); /* Slightly smaller font */
+    padding: 12px 15px;
+    font: 11px var(--font-sans);
     background: var(--tooltip-bg);
     color: var(--tooltip-text);
     border: 1px solid hsla(0, 0%, 50%, 0.1);
-    border-radius: 8px; /* Slightly larger radius */
-    pointer-events: none; /* Tooltip itself shouldn't block events */
-    box-shadow: 0 4px 12px hsla(0, 0%, 0%, 0.15); /* Adjusted shadow */
-    line-height: 1.55; /* Slightly more spacing */
-    transition: opacity 0.1s ease-out;
-    z-index: 10; /* Ensure tooltip is on top */
-    backdrop-filter: blur(4px); /* Add blur */
+    border-radius: 8px;
+    pointer-events: none;
+    box-shadow: 0 4px 12px hsla(0, 0%, 0%, 0.15);
+    line-height: 1.55;
+    transition: opacity var(--transition-speed-fast) var(--transition-ease-out);
+    z-index: 10;
+    backdrop-filter: blur(4px);
 }
 body.dark-theme .tooltip {
     box-shadow: 0 4px 12px hsla(0, 0%, 0%, 0.25);
@@ -1413,7 +1769,7 @@ body.dark-theme .tooltip {
     color: var(--primary-color);
     font-weight: 600;
     display: block;
-    margin-bottom: 3px; /* Reduced space */
+    margin-bottom: 3px;
     font-size: 1.05em;
 }
 .tooltip .note {
@@ -1422,7 +1778,7 @@ body.dark-theme .tooltip {
     font-style: italic;
     color: var(--text-muted);
     padding-top: 5px;
-    font-size: 0.9em; /* Slightly smaller notes */
+    font-size: 0.9em;
 }
 .tooltip .note.outlier-note {
     color: var(--outlier-color);
@@ -1436,35 +1792,28 @@ body.dark-theme .tooltip {
     color: var(--info-color);
     font-style: normal;
     font-size: 0.9em;
-    border-top: 1px dashed hsla(var(--hue-neutral), 10%, 50%, 0.15); /* More subtle */
+    border-top: 1px dashed hsla(var(--hue-neutral), 10%, 50%, 0.15);
     margin-top: 3px;
     padding-top: 3px;
 }
 .tooltip .note.annotation-note {
     color: var(--annotation-marker-color);
     font-style: normal;
-    border-top: 1px dashed hsla(var(--hue-neutral), 10%, 50%, 0.15); /* More subtle */
+    border-top: 1px dashed hsla(var(--hue-neutral), 10%, 50%, 0.15);
     margin-top: 3px;
     padding-top: 3px;
 }
 .tooltip div {
-    /* Added for div-based line breaks */
     margin-bottom: 2px;
 }
 .tooltip div:last-child {
     margin-bottom: 0;
 }
-
 hr.tooltip-hr {
     border: 0;
     height: 1px;
-    background-color: hsla(
-        var(--hue-neutral),
-        10%,
-        50%,
-        0.15
-    ); /* More subtle */
-    margin: 5px 0; /* Adjusted margin */
+    background-color: hsla(var(--hue-neutral), 10%, 50%, 0.15);
+    margin: 5px 0;
 }
 .tooltip .positive {
     color: var(--surplus-color);
@@ -1472,7 +1821,6 @@ hr.tooltip-hr {
 .tooltip .negative {
     color: var(--deficit-color);
 }
-
 /* Legend */
 .legend-item {
     display: flex;
@@ -1480,7 +1828,9 @@ hr.tooltip-hr {
     cursor: pointer;
     padding: 3px 5px;
     border-radius: 4px;
-    transition: background-color 0.15s ease-out;
+    transition:
+        background-color var(--transition-speed-fast) var(--transition-ease-out),
+        opacity var(--transition-speed) var(--transition-ease);
     user-select: none;
 }
 .legend-item:hover {
@@ -1496,15 +1846,19 @@ hr.tooltip-hr {
     border: 1px solid rgba(128, 128, 128, 0.1);
     position: relative;
     box-sizing: border-box;
+    transition:
+        background-color var(--transition-speed) var(--transition-ease),
+        opacity var(--transition-speed) var(--transition-ease);
 }
-.legend-swatch.line {
+.legend-swatch.type-line {
     height: 4px;
     width: 18px;
     border-radius: 2px;
     border: none;
-    background-color: currentColor; /* Use text color or define specific */
+    background-color: currentColor;
 }
-.legend-swatch.dot {
+.legend-swatch.type-dot,
+.legend-swatch.type-marker {
     width: 9px;
     height: 9px;
     border-radius: 50%;
@@ -1519,27 +1873,16 @@ hr.tooltip-hr {
     transform: translateY(-50%);
     border-radius: 2px;
 }
-.legend-swatch.area\+line {
-    /* Combined swatch */
-    border-width: 2px;
-    border-style: solid;
-    height: 10px;
-    border-color: transparent; /* Base border transparent */
-    background-clip: padding-box; /* Background covers padding */
-}
 .legend-text {
     color: var(--text-secondary);
-    transition: color var(--transition-speed);
+    transition: color var(--transition-speed) var(--transition-ease);
 }
-.legend-swatch.area {
+.legend-swatch.type-area {
     opacity: 0.6;
 }
 .legend-item.regression-ci-area .legend-swatch {
     background-color: var(--regression-ci-color);
     opacity: 0.8;
-}
-.legend-swatch.marker {
-    border-radius: 50%;
 }
 .legend-item.hidden {
     opacity: 0.5;
@@ -1553,54 +1896,54 @@ hr.tooltip-hr {
 .legend-item.hidden .legend-swatch {
     opacity: 0.6;
 }
-
 /* Context Chart / Brush / Zoom */
 #context-chart-container .line {
     stroke-width: 1px;
     opacity: 0.7;
+    fill: none;
 }
 #context-chart-container .area {
     fill-opacity: 0.3;
+    stroke: none;
 }
 .brush .selection {
-    /* Context chart brush */
     fill: var(--primary-color);
     fill-opacity: 0.15;
     stroke: var(--text-secondary);
     stroke-width: 1px;
     shape-rendering: crispEdges;
-}
+    transition: fill var(--transition-speed) var(--transition-ease);
+    cursor: ew-resize;
+} /* Added cursor */
 .brush .handle {
-    /* Context chart handles */
     fill: var(--text-secondary);
     stroke: var(--bg-secondary);
     stroke-width: 0.5px;
     rx: 2;
     ry: 2;
     opacity: 0.8;
-}
-
+    transition: fill var(--transition-speed) var(--transition-ease);
+    cursor: ew-resize;
+} /* Added cursor */
 .zoom-capture {
-    cursor: move; /* Grab cursor for panning */
-    fill: none; /* Make it invisible */
-    pointer-events: all; /* Needs to capture zoom/pan */
+    cursor: move;
+    fill: none;
+    pointer-events: all;
 }
 svg .focus {
-    pointer-events: none; /* Base focus group doesn't capture */
+    pointer-events: none;
 }
 .dots-group,
 .annotations-group,
 .trend-change-group,
 .regression-brush {
-    pointer-events: all; /* These specific groups *do* capture */
+    pointer-events: all;
 }
 .dot,
-.annotation-marker circle,
-.trend-change-marker path {
-    pointer-events: all; /* Specific elements within groups capture */
+.annotation-marker-group circle,
+.trend-change-marker-group path {
+    pointer-events: all;
 }
-
-/* Crosshair Styling */
 .crosshair-group {
     pointer-events: none;
 }
@@ -1609,37 +1952,33 @@ svg .focus {
     stroke-width: 1px;
     stroke-dasharray: 3, 3;
     opacity: 0.7;
+    transition: stroke var(--transition-speed) var(--transition-ease);
 }
-
 /* Correlation Scatter Plot Styling */
-#correlation-scatter-container {
-    position: relative;
-    height: 200px; /* Adjust as needed */
-    flex-shrink: 0;
-    margin-top: 15px;
-    padding-top: 10px;
-    border-top: 1px solid var(--border-color-light);
-}
 .scatter-axis path,
 .scatter-axis line {
     stroke: var(--border-color);
+    transition: stroke var(--transition-speed) var(--transition-ease);
 }
 .scatter-axis text {
     fill: var(--text-muted);
     font-size: 0.7rem;
+    transition: fill var(--transition-speed) var(--transition-ease);
 }
-/* Scatter axis labels inherit from combined rule earlier */
 .scatter-dot {
     fill: var(--scatter-dot-color);
     opacity: 0.7;
-    transition: opacity 0.1s ease;
-}
+    transition:
+        opacity var(--transition-speed-fast) var(--transition-ease),
+        fill var(--transition-speed) var(--transition-ease),
+        stroke var(--transition-speed-fast) var(--transition-ease);
+    cursor: help;
+} /* Added cursor */
 .scatter-dot:hover {
     opacity: 1;
     stroke: var(--text-primary);
     stroke-width: 1px;
 }
-
 /* Interactive Regression Brush Styling */
 .regression-brush .selection {
     fill: var(--primary-color);
@@ -1658,17 +1997,14 @@ svg .focus {
     ry: 3;
     opacity: 0.8;
     cursor: ew-resize;
-    width: 8px; /* Make handles easier to grab */
-    height: 20px; /* Make handles easier to grab */
-    transform: translateY(-10px); /* Center handle vertically */
+    width: 8px;
 }
 .regression-brush .overlay {
     pointer-events: none;
 }
-
 /* Pinned Tooltip Styling */
 #pinned-tooltip-container {
-    position: fixed; /* Or absolute relative to chart */
+    position: fixed;
     bottom: clamp(10px, 2vh, 20px);
     right: clamp(10px, 2vw, 20px);
     background-color: var(--tooltip-bg);
@@ -1678,16 +2014,18 @@ svg .focus {
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
     font: 11px var(--font-sans);
     z-index: 15;
-    display: none; /* Hidden by default */
+    display: none;
     border: 1px solid hsla(0, 0%, 50%, 0.1);
     max-width: 200px;
     line-height: 1.4;
+    transition:
+        background-color var(--transition-speed) var(--transition-ease),
+        opacity var(--transition-speed) var(--transition-ease);
 }
 #pinned-tooltip-container strong {
     color: var(--primary-color);
     font-weight: 600;
 }
-
 /* Error Message Styling */
 .error-message,
 .init-error {
@@ -1724,23 +2062,85 @@ svg .focus {
     color: var(--text-secondary);
 }
 
-/* Responsive */
-@media (max-width: 1100px) {
-    /* Stack all three columns */
-    .dashboard-container {
-        grid-template-columns: 1fr;
-        padding: 15px; /* Adjusted padding */
-    }
+/* --- Goal Tracking Visuals --- */
+.goal-zone-rect {
+    fill: var(--goal-color);
+    fill-opacity: 0.06;
+    transition: all var(--transition-speed) var(--transition-ease);
+}
+.goal-achieved-marker {
+    fill: var(--goal-color);
+    stroke: var(--bg-secondary);
+    stroke-width: 0.5px;
+    text-shadow: 0 0 2px var(--bg-secondary);
+    transition: all var(--transition-speed) var(--transition-ease);
+}
+.goal-achieved-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.9em;
+    font-weight: 600;
+    margin-left: 5px;
+    vertical-align: middle;
+}
+.goal-achieved-badge.good {
+    background-color: hsla(var(--hue-secondary), 50%, 50%, 0.15);
+    color: var(--success-color);
+}
+body.dark-theme .goal-achieved-badge.good {
+    background-color: hsla(var(--hue-secondary), 45%, 60%, 0.15);
+    color: hsl(var(--hue-secondary), 45%, 70%);
+}
 
-    /* Apply sidebar stacking rules to both */
+/* --- Chart Hints --- */
+.chart-hint {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-align: center;
+    padding: 3px 0;
+    opacity: 0.8;
+    pointer-events: none;
+    transition: color var(--transition-speed) ease-in-out;
+}
+.context-hint {
+    margin-top: -8px;
+    margin-bottom: 5px;
+}
+.focus-controls-hint {
+    margin-top: 8px;
+    padding: 0 10px;
+}
+
+/* --- Responsive Adjustments --- */
+@media (max-width: 1100px) {
+    .dashboard-container {
+        display: flex;
+        flex-direction: column;
+    }
     .left-sidebar,
-    .right-sidebar {
+    .right-sidebar,
+    .chart-section,
+    .secondary-analysis-section {
+        grid-area: auto;
         max-height: none;
         overflow-y: visible;
         padding-right: 0;
+        width: 100%;
+    }
+    .left-sidebar {
+        order: 1;
     }
     .chart-section {
-        min-height: 700px;
+        order: 2;
+        min-height: 500px;
+    }
+    .secondary-analysis-section {
+        order: 3;
+        margin-top: clamp(25px, 3.5vw, 40px);
+    }
+    .right-sidebar {
+        order: 4;
     }
     #correlation-scatter-container {
         height: 180px;
@@ -1748,59 +2148,59 @@ svg .focus {
 }
 @media (max-width: 768px) {
     body {
-        padding: 15px; /* Adjusted padding */
-        font-size: 14.5px; /* Adjusted base */
+        padding: 20px;
+        font-size: 15px;
     }
     header h1 {
         font-size: 1.2rem;
     }
     .card {
-        padding: 15px; /* Adjusted padding */
+        padding: 18px;
+        border-radius: 12px;
     }
     .left-sidebar,
     .right-sidebar {
-        gap: 15px; /* Adjusted gap */
+        gap: 18px;
+    }
+    .secondary-analysis-section {
+        margin-top: 25px;
     }
     .stat-item {
-        font-size: 0.85rem;
+        font-size: 0.9rem;
     }
     .weekly-summary-section table {
-        font-size: 0.75rem;
+        font-size: 0.82rem;
     }
     .weekly-summary-section th,
     .weekly-summary-section td {
-        padding: 4px 6px;
+        padding: 6px 10px;
     }
     .form-row {
-        grid-template-columns: minmax(70px, auto) 1fr;
+        grid-template-columns: minmax(80px, auto) 1fr;
+    }
+    form label {
+        font-size: 0.85rem;
     }
     #annotation-form .form-row {
-        grid-template-columns: 1fr; /* Stack label/input */
+        grid-template-columns: 1fr;
         gap: 4px 8px;
     }
     #annotation-form label {
-        text-align: left; /* Left align label */
+        text-align: left;
         margin-bottom: 3px;
     }
-    #annotation-form button[type="submit"] {
-        grid-column: auto; /* Reset span when stacked */
-    }
-    .annotation-list {
-        max-height: 150px;
-    }
-    .annotation-list li {
-        gap: 6px; /* Reduce gap */
-        padding: 4px 6px;
-    }
-
     #what-if-controls .form-row {
         grid-template-columns: minmax(70px, auto) 1fr;
     }
     .trendline-input-group {
-        grid-template-columns: minmax(70px, auto) 1fr;
+        /* Maintain fixed width for consistency on smaller screens */
+        grid-template-columns: 95px 1fr;
     }
     form label {
         text-align: right;
+    }
+    #annotation-form label {
+        text-align: left;
     }
     .button-group {
         flex-direction: row;
@@ -1819,28 +2219,30 @@ svg .focus {
         height: 160px;
     }
     .axis-label.scatter-axis-label-y {
-        dy: 1.2em; /* Push Y label out slightly more */
+        dy: 1.2em;
     }
     #context-chart-container {
         height: 55px;
     }
-    .table-wrapper {
-        max-height: 160px;
-    }
     .axis text {
-        /* Slightly smaller ticks on mobile */
         font-size: 0.7rem;
     }
-    .balance-axis text, /* Even smaller for small charts */
+    .balance-axis text,
     .rate-axis text,
     .tdee-diff-axis text {
         font-size: 0.6rem;
     }
+    .chart-section {
+        min-height: 450px;
+    }
+    #actionable-insights-list {
+        font-size: 0.85rem;
+    }
 }
 @media (max-width: 480px) {
     body {
-        padding: 10px; /* Revert padding for smallest */
-        font-size: 13.5px; /* Adjusted base */
+        padding: 15px;
+        font-size: 14px;
     }
     header h1 {
         font-size: 1.1rem;
@@ -1850,53 +2252,71 @@ svg .focus {
         display: none;
     }
     #controls-section .control-note {
-        margin-left: 0; /* Remove left margin when stacked */
-        grid-column: 1 / -1; /* Ensure it spans full width if inside grid */
-        margin-top: 5px;
+        margin-left: 0;
+        grid-column: 1 / -1;
+        margin-top: 8px;
+        max-width: 100%;
     }
+    .form-row,
     .trendline-input-group {
-        grid-template-columns: 1fr; /* Stack label and input */
-        gap: 4px 8px;
+        grid-template-columns: 1fr;
+        gap: 5px 10px;
     }
+    form label,
     .trendline-input-group label {
-        text-align: left; /* Align labels left */
-        margin-bottom: 3px;
-        font-size: 0.8em;
-        white-space: normal; /* Allow wrapping on small screens */
-    }
-    form label {
-        text-align: left; /* Align labels left */
-        margin-bottom: 3px;
-        font-size: 0.8em;
+        text-align: left;
+        margin-bottom: 4px;
+        font-size: 0.9em;
+        white-space: normal;
     }
     #annotation-form button[type="submit"],
     #what-if-controls button {
-        grid-column: auto; /* Reset grid span for buttons */
+        grid-column: auto;
     }
-
     .stat-item {
-        grid-template-columns: 1fr; /* Stack label and value div */
-        gap: 2px;
+        grid-template-columns: 1fr;
+        gap: 3px;
+        font-size: 0.9rem;
+        padding-bottom: 0.6em;
     }
     .stat-item span:first-child {
-        text-align: left; /* Keep label left aligned */
+        font-size: 0.9em;
+        margin-bottom: 2px;
+        text-align: left;
         padding-right: 0;
     }
     .stat-item div {
-        /* Value container */
-        justify-self: start; /* Align value container to the start */
-        text-align: left; /* Align content (value+unit) to the left */
-    }
-    .stat-item span.stat-value,
-    .stat-item div {
         justify-self: start;
-        text-align: left;
+        gap: 0.4em;
+    }
+    .stat-unit {
+        font-size: 0.75em;
     }
     .stat-item span.stat-date,
     .stat-item span.stat-details {
         margin-left: 0.5em;
     }
+    .stat-item--value-left {
+        /* 1. Define column sizes: Value(auto) | Label(1fr) */
+        grid-template-columns: auto 1fr;
+    }
 
+    .stat-item--value-left > div {
+        /* 2. Target the Value container (div) */
+        grid-column: 1; /* Place it in the first column */
+        justify-self: start; /* Align the div itself to the START of its column */
+        text-align: left; /* Align text inside the div to the left (overrides default) */
+    }
+
+    .stat-item--value-left > span:first-child {
+        /* 3. Target the Label (span:first-child) */
+        grid-column: 2; /* Place it in the second column */
+        justify-self: end; /* Align the span itself to the END of its column */
+        text-align: right; /* Align text inside the span to the right (overrides default) */
+        padding-right: 0; /* Remove any conflicting default padding */
+        /* Optional: Add padding if needed for spacing */
+        /* padding-left: 5px; */
+    }
     #analysis-range-controls .button-group {
         flex-direction: column;
     }
@@ -1913,9 +2333,6 @@ svg .focus {
     }
     .weekly-summary-section {
         margin-top: 10px;
-    }
-    .table-wrapper {
-        max-height: 150px;
     }
     #balance-chart-container,
     #rate-of-change-container,
@@ -1934,7 +2351,6 @@ svg .focus {
         font-size: 10px;
         padding: 5px 8px;
     }
-    /* Make small chart labels even smaller on tiny screens */
     .axis-label.y-axis-label-small {
         font-size: 0.6rem;
     }
@@ -1943,19 +2359,27 @@ svg .focus {
     .tdee-diff-axis text {
         font-size: 0.55rem;
     }
-
-    .stat-item div > span.stat-value + /* Selects text node immediately after stat-value */ *,
-    .stat-item div > *:not(span.stat-value) /* Selects any element other than stat-value inside div */ {
-        margin-left: 0; /* Ensure no extra left margin on the unit text */
-        line-height: 1; /* Align baseline better with stat-value */
-        font-size: 0.9em; /* Slightly smaller unit text */
-        color: var(--text-secondary); /* Match secondary text color */
+    .chart-section {
+        min-height: 400px;
     }
-
-    .stat-item div > span.stat-value + span.stat-date {
-        margin-left: 0.5em; /* Add back space before the date */
-        font-size: 0.85em; /* Restore original date size */
-        color: var(--text-muted); /* Restore original date color */
-        line-height: inherit; /* Use parent line height */
+    #actionable-insights-list {
+        font-size: 0.8rem;
     }
+    #actionable-insights-list li {
+        gap: 0.5em;
+        padding: 8px 10px;
+        margin-bottom: 0.6em;
+    }
+    #actionable-insights-list .insight-icon {
+        font-size: 1em;
+    }
+    .chart-hint {
+        font-size: 0.7rem;
+    }
+}
+
+/* Ensure fill:none for line paths if not already covered */
+.line,
+.trend-line {
+    fill: none;
 }
