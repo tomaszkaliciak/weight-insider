@@ -30,26 +30,20 @@ async function initialize() {
     state.rawData = DataService.mergeRawData(rawDataObjects);
     state.processedData = DataService.processData(state.rawData);
 
-    // 5. Load Persistent User Settings
-    DataService.loadGoal(); // Loads goal from localStorage into state
-    AnnotationManager.load(); // Loads annotations from localStorage into state
+    DataService.loadGoal();
+    AnnotationManager.load();
 
-    // 6. Initialize Chart SVG Elements, Scales, Axes, Brushes, Zoom
     if (!initializeChartSetup()) {
-      // Creates SVG/D3 constructs
       throw new Error("Chart UI setup failed. Dimensions might be invalid.");
     }
 
-    // 7. Initialize Chart Domains
     if (state.processedData?.length > 0) {
-      DomainManager.initializeDomains(state.processedData); // Sets initial view/domains
-      // Initial sync of brush/zoom after domains are set
+      DomainManager.initializeDomains(state.processedData);
       EventHandlers.syncBrushAndZoomToFocus();
     } else {
       console.warn(
         "Initialization: No data available. Chart will be mostly empty.",
       );
-      // Set empty domains if no data
       DomainManager.setXDomains([]);
       DomainManager.setContextYDomain([]);
       DomainManager.setFocusYDomains([], null);
@@ -57,15 +51,10 @@ async function initialize() {
       DomainManager.setScatterPlotDomains([]);
     }
 
-    // 8. Build UI Components Dependent on Initial State/Data
-    // <<<---- LEGEND BUILD REMOVED FROM HERE ---->>>
-    // LegendManager.build(); // Now handled by StatsManager.update()
-    AnnotationManager.renderList(); // Render annotation list initially
+    AnnotationManager.renderList();
 
-    // 9. Setup Event Handlers
-    EventHandlers.setupAll(); // Attaches listeners to controls, chart elements etc.
+    EventHandlers.setupAll();
 
-    // 10. Mark as Initialized and Perform Initial Render/Update
     state.isInitialized = true;
     MasterUpdater.updateAllCharts(); // Initial draw of all chart elements
     StatsManager.update(); // Initial calculation, display of statistics, AND LEGEND BUILD
@@ -73,17 +62,14 @@ async function initialize() {
     console.error("CRITICAL INITIALIZATION ERROR:", error);
     state.isInitialized = false; // Ensure state reflects failure
 
-    // Display a user-friendly error message in the chart container
     if (ui.chartContainer && !ui.chartContainer.empty()) {
-      ui.chartContainer.html(
-        `<div class="init-error"><h2>Chart Initialization Failed</h2><p>Could not render the chart due to an error:</p><pre>${error.message || "Unknown error"}</pre><p>Please check the browser console for more details or try reloading the page.</p></div>`,
-      );
+
+      Utils.showCriticalErrorMessage(error.message || "Could not render the chart due to an error:${error.message || \"Unknown error\"}",
+        "Please check the browser console for more details or try reloading the page");
     } else {
-      // Fallback if chart container itself isn't available
-      document.body.innerHTML = `<div class="init-error"><h2>Critical Error</h2><p>Chart container not found. ${error.message || ""}</p></div>`;
+      Utils.showCriticalErrorMessage(error.message || "Critical Error. Chart container not found");
     }
 
-    // Optionally disable other parts of the UI
     d3.selectAll(
       ".dashboard-container > *:not(.chart-section), .left-sidebar > *, .right-sidebar > *",
     )

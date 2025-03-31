@@ -141,6 +141,15 @@ export const Utils = {
     }, duration);
   },
 
+  showCriticalErrorMessage(message) {
+    // Create a modal-like overlay
+    const overlay = document.createElement("div");
+    overlay.classList.add("critical-error-overlay");
+    overlay.innerHTML = `<div class="init-error"><h2>Chart Initialization Failed</h2><p>Could not render the chart due to an error:</p><pre>${message}</pre><p>Please check the browser console for more details or try reloading the page.</p></div>`;
+    document.body.appendChild(overlay);
+  },
+
+  
   /**
    * Calculates a rolling average for an array of numbers. Null/NaN values are ignored in the calculation but advance the window.
    * @param {Array<number|null>} data - Array of numbers or nulls.

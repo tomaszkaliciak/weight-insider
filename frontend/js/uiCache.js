@@ -24,8 +24,8 @@ export const ui = {
   annotationForm: null,
   annotationList: null,
   insightSummaryContainer: null,
-  actionableInsightsContainer: null, // <<< ADDED
-  actionableInsightsList: null, // <<< ADDED
+  actionableInsightsContainer: null,
+  actionableInsightsList: null,
   analysisResultsHeading: null,
   // SVG elements & groups (populated during chart setup, not here)
   svg: null,
@@ -137,8 +137,8 @@ export function cacheSelectors() {
     "status-message": "statusMessage",
     "annotation-list": "annotationList",
     "insight-summary": "insightSummaryContainer",
-    "actionable-insights-container": "actionableInsightsContainer", // <<< ADDED
-    "actionable-insights-list": "actionableInsightsList", // <<< ADDED
+    "actionable-insights-container": "actionableInsightsContainer",
+    "actionable-insights-list": "actionableInsightsList",
     "analysis-results-heading": "analysisResultsHeading",
     // Controls
     "theme-toggle": "themeToggle",
@@ -248,7 +248,7 @@ export function cacheSelectors() {
     "whatIfResultDisplay",
     "analysisRangeDisplay",
     "regressionStartDateLabel",
-    "requiredCalorieAdjustment", // Added here too
+    "requiredCalorieAdjustment",
   ];
 
   let missingCritical = false;
