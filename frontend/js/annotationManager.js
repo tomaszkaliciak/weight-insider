@@ -1,38 +1,30 @@
-// annotationManager.js
-// Handles loading, saving, adding, removing, and rendering annotations.
 
 import { state } from "./state.js";
 import { ui } from "./uiCache.js";
 import { CONFIG } from "./config.js";
 import { Utils } from "./utils.js";
-// Import updaters needed when annotations change
 import { FocusChartUpdater } from "./chartUpdaters.js";
-import { LegendManager } from "./legendManager.js"; // Legend might show/hide based on annotations
+import { LegendManager } from "./legendManager.js";
 
 export const AnnotationManager = {
-  /**
-   * Loads annotations from localStorage into the application state.
-   */
   load() {
     const stored = localStorage.getItem(CONFIG.localStorageKeys.annotations);
-    state.annotations = []; // Reset state array
+    state.annotations = [];
 
     if (stored) {
       try {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
-          // Validate and sanitize loaded annotations
           state.annotations = parsed
             .map((a) => ({
-              // Ensure required fields exist and assign default ID if missing
-              id: a.id ?? Date.now() + Math.random(), // Generate unique ID if missing
-              date: a.date, // Expecting 'YYYY-MM-DD' string
-              text: a.text || "", // Ensure text is a string
-              type: a.type === "range" ? "range" : "point", // Default to 'point'
+              id: a.id ?? Date.now() + Math.random(),
+              date: a.date,
+              text: a.text || "",
+              // TODO: implement annotated range in UI
+              type: a.type === "range" ? "range" : "point", 
             }))
             .filter(
               (a) =>
-                // Basic validation: date must be present and look like YYYY-MM-DD
                 a.date &&
                 typeof a.text === "string" &&
                 /^\d{4}-\d{2}-\d{2}$/.test(a.date),
@@ -45,21 +37,15 @@ export const AnnotationManager = {
         );
       }
     }
-    // Sort annotations by date after loading/parsing
     state.annotations.sort((a, b) => new Date(a.date) - new Date(b.date));
-    // Render the list initially
-    this.renderList();
     console.log(
       `AnnotationManager: Loaded ${state.annotations.length} annotations.`,
     );
   },
 
-  /**
-   * Saves the current annotations from the state to localStorage.
-   */
+
   save() {
     try {
-      // Only save relevant fields
       const annotationsToSave = state.annotations.map(
         ({ id, date, text, type }) => ({ id, date, text, type }),
       );
@@ -85,7 +71,7 @@ export const AnnotationManager = {
    */
   add(dateStr, text, type = "point") {
     const date = new Date(dateStr);
-    // Validate date and text
+
     if (isNaN(date.getTime()) || !text || text.trim().length === 0) {
       Utils.showStatusMessage(
         "Annotation requires a valid date and non-empty text.",
@@ -93,33 +79,26 @@ export const AnnotationManager = {
       );
       return false;
     }
-    // Normalize date to midnight UTC for consistent comparison/storage
+
     date.setUTCHours(0, 0, 0, 0);
 
     const newAnnotation = {
-      id: Date.now() + Math.random(), // Simple unique ID
-      date: date.toISOString().slice(0, 10), // Store as 'YYYY-MM-DD'
+      id: Date.now() + Math.random(),
+      date: date.toISOString().slice(0, 10),
       text: text.trim(),
-      type: type === "range" ? "range" : "point", // Validate type
+      type: type === "range" ? "range" : "point",
     };
 
     state.annotations.push(newAnnotation);
-    // Re-sort after adding
     state.annotations.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-    this.save(); // Save changes
-    this.renderList(); // Update the UI list
-    // Update the chart markers (assuming FocusChartUpdater is available)
-    if (
-      typeof FocusChartUpdater !== "undefined" &&
-      FocusChartUpdater.updateAnnotations
-    ) {
-      FocusChartUpdater.updateAnnotations(state.filteredData); // Update markers on chart
-    }
-    // Rebuild legend in case the annotation item needs to appear/disappear
-    if (typeof LegendManager !== "undefined" && LegendManager.build) {
-      LegendManager.build();
-    }
+    this.save();
+    this.renderList();
+
+    // TODO: publish event annotationAdded
+    FocusChartUpdater.updateAnnotations(state.filteredData);
+    LegendManager.build();
+
 
     Utils.showStatusMessage("Annotation added.", "success", 1500);
     return true;
@@ -133,21 +112,14 @@ export const AnnotationManager = {
     const initialLength = state.annotations.length;
     state.annotations = state.annotations.filter((a) => a.id !== id);
 
-    // Check if an annotation was actually removed
     if (state.annotations.length < initialLength) {
-      this.save(); // Save changes
-      this.renderList(); // Update the UI list
-      // Update the chart markers (assuming FocusChartUpdater is available)
-      if (
-        typeof FocusChartUpdater !== "undefined" &&
-        FocusChartUpdater.updateAnnotations
-      ) {
-        FocusChartUpdater.updateAnnotations(state.filteredData); // Update markers on chart
-      }
-      // Rebuild legend in case the annotation item needs to appear/disappear
-      if (typeof LegendManager !== "undefined" && LegendManager.build) {
-        LegendManager.build();
-      }
+      this.save();
+      this.renderList();
+
+      // TODO: publish event annotationRemoved
+      FocusChartUpdater.updateAnnotations(state.filteredData);
+      LegendManager.build();
+      
       Utils.showStatusMessage("Annotation removed.", "info", 1500);
     }
   },
@@ -177,32 +149,25 @@ export const AnnotationManager = {
    * @param {Event} event - The form submission event.
    */
   handleSubmit(event) {
-    event.preventDefault(); // Prevent default form submission
+    event.preventDefault();
     const dateVal = ui.annotationDateInput?.property("value");
     const textVal = ui.annotationTextInput?.property("value");
 
     if (this.add(dateVal, textVal)) {
-      // Use 'this' to call the add method
-      // Clear the form fields on successful addition
       ui.annotationDateInput?.property("value", "");
       ui.annotationTextInput?.property("value", "");
     }
   },
 
-  /**
-   * Renders the list of annotations in the UI.
-   */
   renderList() {
-    const list = ui.annotationList; // Get the cached list element
+    const list = ui.annotationList;
     if (!list || list.empty()) {
       console.warn("AnnotationManager: Annotation list UI element not found.");
       return;
     }
 
-    // Clear current list content
     list.html("");
 
-    // Display message if no annotations
     if (state.annotations.length === 0) {
       list
         .append("li")
@@ -211,34 +176,30 @@ export const AnnotationManager = {
       return;
     }
 
-    // Use D3 data join to render list items
     const items = list
       .selectAll("li.annotation-list-item")
-      .data(state.annotations, (d) => d.id) // Key by unique ID
+      .data(state.annotations, (d) => d.id) 
       .join("li")
-      .attr("class", "annotation-list-item"); // Ensure class for styling
+      .attr("class", "annotation-list-item");
 
-    // Append date span
     items
       .append("span")
       .attr("class", "annotation-date")
-      .text((d) => Utils.formatDateShort(new Date(d.date))); // Format date
+      .text((d) => Utils.formatDateShort(new Date(d.date)));
 
-    // Append text span
     items
       .append("span")
       .attr("class", "annotation-text")
-      .text((d) => d.text); // Display text
+      .text((d) => d.text); 
 
-    // Append remove button
     items
       .append("button")
       .attr("class", "remove-annotation")
       .attr("aria-label", "Remove annotation")
-      .html("×") // 'x' character
+      .html("×")
       .on("click", (event, d) => {
-        event.stopPropagation(); // Prevent potential event bubbling
-        this.remove(d.id); // Use 'this' to call remove method
+        event.stopPropagation();
+        this.remove(d.id);
       });
   },
 };

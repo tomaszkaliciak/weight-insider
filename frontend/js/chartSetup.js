@@ -3,9 +3,8 @@
 
 import { CONFIG } from "./config.js";
 import { ui } from "./uiCache.js";
-import { state } from "./state.js"; // May need for conditional setup later
 import { EventHandlers } from "./eventHandlers.js"; // Needed for brush/zoom callbacks
-import { Utils } from "./utils.js"; // Needed for formatting in axes potentially
+import { Utils } from "./utils.js";
 
 // --- D3 Constructs (Exported, populated by setup) ---
 export const scales = {

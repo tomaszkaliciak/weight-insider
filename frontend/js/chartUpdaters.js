@@ -6,9 +6,7 @@ import { ui } from "./uiCache.js";
 import { scales, axes, brushes } from "./chartSetup.js"; // Import constructs
 import { colors } from "./themeManager.js"; // Import calculated colors
 import { EventHandlers } from "./eventHandlers.js";
-import { AnnotationManager } from "./annotationManager.js"; // Needed for annotation updates
 import { DataService } from "./dataService.js"; // Needed for trend calculation
-import { Utils } from "./utils.js";
 
 // --- Focus Chart Updater ---
 export const FocusChartUpdater = {

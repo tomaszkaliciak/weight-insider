@@ -79,7 +79,6 @@ async function initialize() {
   }
 }
 
-// --- Run Initialization ---
 
 // Use DOMContentLoaded to ensure the DOM is ready before caching selectors and initializing
 if (document.readyState === "loading") {
