@@ -17,6 +17,7 @@ import { DomainManager } from "./domainManager.js"; // Needed for resize domain 
 import { MasterUpdater } from "./masterUpdater.js"; // Central updater
 import { StatsManager } from "./statsManager.js"; // Central stats calculator/updater
 import { DataService } from "./dataService.js"; // For goal/trendline/range logic
+import { GoalManager } from "./goalManager.js";
 import { AnnotationManager } from "./annotationManager.js"; // For annotation form/list interactions
 import { LegendManager } from "./legendManager.js"; // For legend interactions
 import { ThemeManager } from "./themeManager.js"; // Import for theme toggle
@@ -574,7 +575,7 @@ export const EventHandlers = {
     if (rate != null && isNaN(rate)) rate = null;
     state.goal = { weight, date, targetRate: rate };
 
-    DataService.saveGoal();
+    GoalManager.saveGoal();
     StatsManager.update();
     MasterUpdater.updateAllCharts();
     LegendManager.build();

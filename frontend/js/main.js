@@ -14,6 +14,7 @@ import { StatsManager } from "./statsManager.js";
 import { InsightsGenerator } from "./insightsGenerator.js";
 import { LegendManager } from "./legendManager.js";
 import { AnnotationManager } from "./annotationManager.js";
+import { GoalManager } from "./goalManager.js";
 import { EventHandlers } from "./eventHandlers.js";
 import { WeeklySummaryUpdater } from "./weeklySummaryUpdater.js";
 
@@ -30,7 +31,7 @@ async function initialize() {
     state.rawData = DataService.mergeRawData(rawDataObjects);
     state.processedData = DataService.processData(state.rawData);
 
-    DataService.loadGoal();
+    GoalManager.loadGoal();
     AnnotationManager.load();
 
     if (!initializeChartSetup()) {
