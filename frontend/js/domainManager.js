@@ -515,4 +515,12 @@ export const DomainManager = {
     // Note: Scatter plot domain typically doesn't change on zoom/brush of main chart
     // It's usually based on the analysis range set elsewhere.
   },
+
+  setEmptyDomains() {
+      DomainManager.setXDomains([]);
+      DomainManager.setContextYDomain([]);
+      DomainManager.setFocusYDomains([], null);
+      DomainManager.setSecondaryYDomains([]);
+      DomainManager.setScatterPlotDomains([]);
+  },
 };

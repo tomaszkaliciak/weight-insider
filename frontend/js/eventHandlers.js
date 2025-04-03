@@ -64,7 +64,7 @@ export const EventHandlers = {
       show(); // Update content/position immediately
     } else {
       // Use a short delay to show, avoids flickering during fast mouse movements
-      state.tooltipTimeoutId = setTimeout(show, CONFIG.tooltipShowDelayMs);
+      state.tooltipTimeoutId = setTimeout(show, CONFIG.tooltipDelayMs);
     }
   },
 
@@ -82,7 +82,7 @@ export const EventHandlers = {
           // Double check pin status before hiding
           ui.tooltip.style("opacity", 0).style("left", "-1000px"); // Move offscreen too
         }
-      }, CONFIG.tooltipHideDelayMs);
+      }, CONFIG.tooltipDelayMs);
     }
   },
 
@@ -202,7 +202,6 @@ export const EventHandlers = {
     }
 
     // 2. Direct UI Feedback (pinned display & tooltip visibility)
-    EventHandlers.updatePinnedTooltipDisplay(); // Update the fixed pinned display UI
     if (needsTooltipUpdate) {
       if (state.pinnedTooltipData) {
         // Re-trigger mouseover logic ONLY for tooltip content/display if pinning
@@ -291,18 +290,7 @@ export const EventHandlers = {
     EventHandlers._hideTooltip();
   },
 
-  // --- Pinned Tooltip (Direct UI update based on state is OK here) ---
-  updatePinnedTooltipDisplay() {
-    if (!ui.pinnedTooltipContainer) return;
-    if (state.pinnedTooltipData) {
-      const d = state.pinnedTooltipData.data;
-      let pinnedHtml = `<strong>Pinned: ${Utils.formatDateShort(d.date)}</strong><br>Wgt: ${Utils.formatValue(d.value, 1)}`;
-      if (d.sma != null) pinnedHtml += ` | SMA: ${Utils.formatValue(d.sma, 1)}`;
-      ui.pinnedTooltipContainer.html(pinnedHtml).style("display", "block"); // Make visible
-    } else {
-      ui.pinnedTooltipContainer.html("").style("display", "none"); // Hide
-    }
-  },
+
 
   // --- Brush and Zoom Handlers (Mostly manage state and trigger updates) ---
   contextBrushed(event) {
@@ -358,7 +346,7 @@ export const EventHandlers = {
 
     MasterUpdater.updateAllCharts();
     StatsManager.update();
-    EventHandlers.updatePinnedTooltipDisplay();
+    LegendManager.build();
 
     setTimeout(() => {
       EventHandlers._isBrushing = false;
@@ -407,7 +395,7 @@ export const EventHandlers = {
 
     MasterUpdater.updateAllCharts();
     StatsManager.update();
-    EventHandlers.updatePinnedTooltipDisplay();
+    LegendManager.build();
 
     setTimeout(() => {
       EventHandlers._isZooming = false;
@@ -467,9 +455,9 @@ export const EventHandlers = {
 
     if (rangeUpdated) {
       state.pinnedTooltipData = null;
-      EventHandlers.updatePinnedTooltipDisplay();
       MasterUpdater.updateAllCharts();
       StatsManager.update();
+      LegendManager.build();
     }
     MasterUpdater.updateAllCharts(); // Always ensure brush display syncs visually
   },
@@ -490,7 +478,6 @@ export const EventHandlers = {
         StatsManager.update();
         LegendManager.build();
         AnnotationManager.renderList();
-        EventHandlers.updatePinnedTooltipDisplay();
       } else if (state.isInitialized) {
         console.warn(
           "EventHandlers: Resize handler - No data to display after setup.",
@@ -499,7 +486,6 @@ export const EventHandlers = {
         StatsManager.update();
         LegendManager.build();
         AnnotationManager.renderList();
-        EventHandlers.updatePinnedTooltipDisplay();
       }
     } else {
       console.error(
@@ -580,6 +566,7 @@ export const EventHandlers = {
     if (datesDiffer) {
       state.regressionStartDate = newRegStartDate;
       StatsManager.update();
+      LegendManager.build();
     }
     MasterUpdater.updateAllCharts();
   },
@@ -609,7 +596,7 @@ export const EventHandlers = {
 
       MasterUpdater.updateAllCharts();
       StatsManager.update();
-      EventHandlers.updatePinnedTooltipDisplay();
+      LegendManager.build();
       Utils.showStatusMessage("Analysis range updated.", "info", 1500);
     } else {
       Utils.showStatusMessage("Invalid date range selected.", "error");
@@ -644,7 +631,7 @@ export const EventHandlers = {
 
     MasterUpdater.updateAllCharts();
     StatsManager.update();
-    EventHandlers.updatePinnedTooltipDisplay();
+    LegendManager.build();
     Utils.showStatusMessage(
       "Analysis range reset to chart view.",
       "info",
@@ -762,7 +749,7 @@ export const EventHandlers = {
 
     MasterUpdater.updateAllCharts();
     StatsManager.update();
-    EventHandlers.updatePinnedTooltipDisplay();
+    LegendManager.build();
     EventHandlers._hideTooltip();
   },
 
@@ -866,7 +853,6 @@ export const EventHandlers = {
       }
       if (state.pinnedTooltipData) {
         state.pinnedTooltipData = null;
-        EventHandlers.updatePinnedTooltipDisplay();
         EventHandlers._hideTooltip();
       }
       if (
@@ -891,6 +877,7 @@ export const EventHandlers = {
       if (stateChanged) {
         MasterUpdater.updateAllCharts();
         StatsManager.update();
+        LegendManager.build();
       }
     }
   },

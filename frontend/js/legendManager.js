@@ -8,7 +8,6 @@ import { CONFIG } from "./config.js"; // For default window size display
 // Import updaters/managers needed when toggling visibility
 import { MasterUpdater } from "./masterUpdater.js";
 import { StatsManager } from "./statsManager.js"; // Still needed? Keep import for now.
-import { EventHandlers } from "./eventHandlers.js"; // Needed for pinned tooltip updates
 
 export const LegendManager = {
   /**
@@ -32,7 +31,6 @@ export const LegendManager = {
 
     // Update the visibility state
     state.seriesVisibility[seriesId] = isVisible;
-    // <<< --- ADD LOG --- >>>
     console.log(
       `[LM Toggle] State updated: state.seriesVisibility.${seriesId} = ${state.seriesVisibility[seriesId]}`,
     );
@@ -70,39 +68,17 @@ export const LegendManager = {
     // Clear highlights/pins when visibility changes
     state.highlightedDate = null;
     state.pinnedTooltipData = null;
-    if (
-      typeof EventHandlers !== "undefined" &&
-      EventHandlers.updatePinnedTooltipDisplay
-    ) {
-      EventHandlers.updatePinnedTooltipDisplay();
-    }
+
 
     // Update the visual appearance of the legend item itself
     console.log(
       `[LM Toggle] Calling updateAppearance for "${seriesId}" with isVisible=${isVisible}`,
-    ); // <-- ADDED
+    );
     this.updateAppearance(seriesId, isVisible);
 
-    // Trigger necessary chart and stats updates
-    if (typeof MasterUpdater !== "undefined" && MasterUpdater.updateAllCharts) {
-      // <<< --- ADD LOG --- >>>
-      console.log("[LM Toggle] Calling MasterUpdater.updateAllCharts()");
-      MasterUpdater.updateAllCharts();
-    } else {
-      console.warn(
-        "[LM Toggle] MasterUpdater not available to update charts on visibility toggle.",
-      ); // Updated log
-    }
-    // Stats update still needs to run to recalculate things based on visibility
-    if (typeof StatsManager !== "undefined" && StatsManager.update) {
-      // <<< --- ADD LOG --- >>>
-      console.log("[LM Toggle] Calling StatsManager.update()");
-      StatsManager.update();
-    } else {
-      console.warn(
-        "[LM Toggle] StatsManager not available to update stats on visibility toggle.",
-      ); // Updated log
-    }
+    MasterUpdater.updateAllCharts();
+    StatsManager.update();
+    LegendManager.build();
 
     console.log(`[LM Toggle] END: Toggle finished for "${seriesId}"`); // <-- ADDED
   },

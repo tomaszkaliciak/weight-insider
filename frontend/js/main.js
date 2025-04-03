@@ -45,23 +45,19 @@ async function initialize() {
       console.warn(
         "Initialization: No data available. Chart will be mostly empty.",
       );
-      DomainManager.setXDomains([]);
-      DomainManager.setContextYDomain([]);
-      DomainManager.setFocusYDomains([], null);
-      DomainManager.setSecondaryYDomains([]);
-      DomainManager.setScatterPlotDomains([]);
+      DomainManager.setEmptyDomains();
     }
 
     AnnotationManager.renderList();
-
     EventHandlers.setupAll();
 
     state.isInitialized = true;
     MasterUpdater.updateAllCharts(); // Initial draw of all chart elements
-    StatsManager.update(); // Initial calculation, display of statistics, AND LEGEND BUILD
+    StatsManager.update(); // Initial calculation, display of statistics
+    LegendManager.build();
   } catch (error) {
     console.error("CRITICAL INITIALIZATION ERROR:", error);
-    state.isInitialized = false; // Ensure state reflects failure
+    state.isInitialized = false;
 
     if (ui.chartContainer && !ui.chartContainer.empty()) {
 
@@ -70,26 +66,13 @@ async function initialize() {
     } else {
       Utils.showCriticalErrorMessage(error.message || "Critical Error. Chart container not found");
     }
-
-    d3.selectAll(
-      ".dashboard-container > *:not(.chart-section), .left-sidebar > *, .right-sidebar > *",
-    )
-      .style("opacity", 0.3)
-      .style("pointer-events", "none");
-    ui.chartContainer?.style("opacity", 1).style("pointer-events", "auto"); // Ensure error message is interactive
   }
-
-  MasterUpdater.updateAllCharts();
 }
 
-
-// Use DOMContentLoaded to ensure the DOM is ready before caching selectors and initializing
 if (document.readyState === "loading") {
   console.log("main.js: DOM not ready, adding listener.");
   document.addEventListener("DOMContentLoaded", initialize);
 } else {
-  // DOM is already ready, execute immediately
-  // Use setTimeout to ensure it runs after the current JS execution cycle
   console.log("main.js: DOM already ready, initializing.");
   setTimeout(initialize, 0);
 }

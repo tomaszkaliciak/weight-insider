@@ -10,7 +10,6 @@ import { EventHandlers } from "./eventHandlers.js";
 import { InsightsGenerator } from "./insightsGenerator.js";
 import { WeeklySummaryUpdater } from "./weeklySummaryUpdater.js";
 import { ScatterPlotUpdater } from "./chartUpdaters.js";
-import { LegendManager } from "./legendManager.js"; // <<<---- IMPORTED
 
 // Assume simple-statistics (ss) is loaded globally or provide check/fallback
 const ss = window.ss || {
@@ -789,13 +788,6 @@ export const StatsManager = {
     InsightsGenerator.updateSummary(stats);
     WeeklySummaryUpdater.updateTable(state.weeklySummaryData);
     ScatterPlotUpdater.updateChart(state.correlationScatterData);
-    EventHandlers.updatePinnedTooltipDisplay();
-
-    // <<<---- REBUILD LEGEND HERE after stats calc ---->>>
-    // Rebuild legend here ensures conditional items (goal, ann, etc.) appear/disappear correctly
-    // when stats are updated (e.g., goal is added/removed, annotations added/removed).
-    LegendManager.build();
-    // <<<-------------------------------------------->>>
   },
 
   update() {

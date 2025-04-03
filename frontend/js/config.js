@@ -47,11 +47,10 @@ export const CONFIG = Object.freeze({
   transitionDurationMs: 300,
   initialViewMonths: 3,
   statusMessageDurationMs: 3000,
-  tooltipShowDelayMs: 100, // Slight delay before showing tooltip
-  tooltipHideDelayMs: 300, // Delay before hiding tooltip
+  tooltipDelayMs: 100,
   // Goal Guidance & Lean Gain
-  MIN_RECOMMENDED_GAIN_RATE_KG_WEEK: 0.1, // Lower bound for optimal lean gain
-  MAX_RECOMMENDED_GAIN_RATE_KG_WEEK: 0.35, // Upper bound for optimal lean gain
+  MIN_RECOMMENDED_GAIN_RATE_KG_WEEK: 0.1,
+  MAX_RECOMMENDED_GAIN_RATE_KG_WEEK: 0.35,
   // Fallback Colors (referenced if CSS variables fail)
   fallbackColors: {
     sma: "#3498db",
