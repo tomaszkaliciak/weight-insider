@@ -43,7 +43,6 @@ export const LegendManager = {
       console.log(`[LM Toggle] Handling linked series for regression.`); // <-- ADDED
       state.seriesVisibility.regressionCI = isVisible;
       this.updateAppearance("regressionCI", isVisible); // Update CI item appearance
-      ui.regressionToggle?.property("checked", isVisible); // Sync checkbox
       console.log(
         `[LM Toggle] Synced regressionCI state (${state.seriesVisibility.regressionCI}) /appearance and checkbox.`,
       ); // <-- ADDED LOG + state

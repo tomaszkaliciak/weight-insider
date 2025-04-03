@@ -584,24 +584,6 @@ export const EventHandlers = {
     MasterUpdater.updateAllCharts();
   },
 
-  handleRegressionToggle(event) {
-    // <<< --- ADD LOG --- >>>
-    console.log(
-      `[EH Toggle Checkbox] Checkbox changed. Target checked: ${event.target.checked}`,
-    );
-    // Ensure LegendManager is available before calling
-    if (
-      typeof LegendManager !== "undefined" &&
-      LegendManager.toggleSeriesVisibility
-    ) {
-      LegendManager.toggleSeriesVisibility("regression", event.target.checked);
-    } else {
-      console.error(
-        "[EH Toggle Checkbox] LegendManager or toggleSeriesVisibility method not available!",
-      ); // Updated log
-    }
-  },
-
   handleAnalysisRangeUpdate() {
     const startVal = ui.analysisStartDateInput?.property("value");
     const endVal = ui.analysisEndDateInput?.property("value");
@@ -1031,7 +1013,6 @@ export const EventHandlers = {
 
     // Controls
     ui.themeToggle?.on("click", EventHandlers.handleThemeToggle);
-    ui.regressionToggle?.on("change", EventHandlers.handleRegressionToggle);
 
     // Forms & Buttons
     d3.select("#goal-setting-form").on(

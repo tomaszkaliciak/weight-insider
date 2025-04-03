@@ -90,7 +90,6 @@ export const ui = {
   goalWeightInput: null,
   goalDateInput: null,
   goalTargetRateInput: null,
-  regressionToggle: null,
   trendStartDateInput: null,
   trendInitialWeightInput: null,
   trendWeeklyIncrease1Input: null,
@@ -144,7 +143,6 @@ export function cacheSelectors() {
     goalWeight: "goalWeightInput",
     goalDate: "goalDateInput",
     goalTargetRate: "goalTargetRateInput",
-    toggleRegression: "regressionToggle",
     trendStartDate: "trendStartDateInput",
     trendInitialWeight: "trendInitialWeightInput",
     trendWeeklyIncrease: "trendWeeklyIncrease1Input",
@@ -288,13 +286,9 @@ export function cacheSelectors() {
   }
 
   // --- Set Initial State Based on Controls ---
-  if (ui.regressionToggle && !ui.regressionToggle.empty()) {
-    state.seriesVisibility.regression = ui.regressionToggle.property("checked");
-    state.seriesVisibility.regressionCI = state.seriesVisibility.regression;
-  } else {
-    state.seriesVisibility.regression = true;
-    state.seriesVisibility.regressionCI = true;
-  }
+  state.seriesVisibility.regression = true;
+  state.seriesVisibility.regressionCI = true;
+
 
   if (missingCritical) {
     throw new Error(
