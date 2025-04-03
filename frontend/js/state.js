@@ -16,7 +16,6 @@ export const state = {
   analysisRange: { start: null, end: null, isCustom: false }, // Currently analyzed date range
   interactiveRegressionRange: { start: null, end: null }, // Range selected by regression brush
   regressionStartDate: null, // Start date set via UI for regression calculation (if not using interactive brush)
-  useDynamicYAxis: false, // Preference for dynamic Y-axis scaling
   currentTheme: "light", // Current UI theme ('light' or 'dark')
   seriesVisibility: {
     // Visibility toggles for different chart series

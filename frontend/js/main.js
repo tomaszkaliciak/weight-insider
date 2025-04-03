@@ -31,7 +31,7 @@ async function initialize() {
     state.rawData = DataService.mergeRawData(rawDataObjects);
     state.processedData = DataService.processData(state.rawData);
 
-    GoalManager.loadGoal();
+    GoalManager.load();
     AnnotationManager.load();
 
     if (!initializeChartSetup()) {
@@ -78,6 +78,8 @@ async function initialize() {
       .style("pointer-events", "none");
     ui.chartContainer?.style("opacity", 1).style("pointer-events", "auto"); // Ensure error message is interactive
   }
+
+  MasterUpdater.updateAllCharts();
 }
 
 

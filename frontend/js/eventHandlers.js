@@ -546,20 +546,6 @@ export const EventHandlers = {
     ThemeManager.toggleTheme();
   },
 
-  handleDynamicYAxisToggle(event) {
-    state.useDynamicYAxis = event.target.checked;
-    localStorage.setItem(
-      CONFIG.localStorageKeys.dynamicYAxis,
-      state.useDynamicYAxis,
-    );
-    Utils.showStatusMessage(
-      `Dynamic Y-Axis ${state.useDynamicYAxis ? "Enabled" : "Disabled"}.`,
-      "info",
-      1500,
-    );
-    MasterUpdater.updateAllCharts();
-  },
-
   handleGoalSubmit(event) {
     event.preventDefault();
     const weightVal = ui.goalWeightInput?.property("value");
@@ -575,7 +561,7 @@ export const EventHandlers = {
     if (rate != null && isNaN(rate)) rate = null;
     state.goal = { weight, date, targetRate: rate };
 
-    GoalManager.saveGoal();
+    GoalManager.save();
     StatsManager.update();
     MasterUpdater.updateAllCharts();
     LegendManager.build();
@@ -1045,7 +1031,6 @@ export const EventHandlers = {
 
     // Controls
     ui.themeToggle?.on("click", EventHandlers.handleThemeToggle);
-    ui.dynamicYAxisToggle?.on("change", EventHandlers.handleDynamicYAxisToggle);
     ui.regressionToggle?.on("change", EventHandlers.handleRegressionToggle);
 
     // Forms & Buttons

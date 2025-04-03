@@ -143,18 +143,16 @@ export const DomainManager = {
     // Define buffer dates only if dynamic Y is enabled
     const currentXDomain = scales.x.domain();
     const bufferStartDate =
-      state.useDynamicYAxis && currentXDomain[0] instanceof Date
+      currentXDomain[0] instanceof Date
         ? d3.timeDay.offset(currentXDomain[0], -CONFIG.domainBufferDays) // Use global d3
         : null;
     const bufferEndDate =
-      state.useDynamicYAxis && currentXDomain[1] instanceof Date
+      currentXDomain[1] instanceof Date
         ? d3.timeDay.offset(currentXDomain[1], CONFIG.domainBufferDays) // Use global d3
         : null;
 
     // Helper to check if a date is within the potentially buffered view
     const isWithinBufferedView = (date) => {
-      if (!state.useDynamicYAxis || !bufferStartDate || !bufferEndDate)
-        return true; // Always true if not dynamic
       return date >= bufferStartDate && date <= bufferEndDate;
     };
 
@@ -503,12 +501,8 @@ export const DomainManager = {
         pointsWithCI: [],
       }; // Default empty result
     }
-
-    // Determine data for Y calculation based on dynamic setting
-    const dataForYCalc = state.useDynamicYAxis
-      ? state.filteredData
-      : state.processedData;
-    this.setFocusYDomains(dataForYCalc, regressionResult);
+ 
+    this.setFocusYDomains(state.filteredData, regressionResult);
 
     // Update secondary chart X domains to match focus
     scales.xBalance?.domain(currentXDomain);

@@ -7,7 +7,6 @@ export const CONFIG = Object.freeze({
     goal: "weightInsightsGoalV2",
     theme: "weightInsightsThemeV2",
     annotations: "weightInsightsAnnotationsV2",
-    dynamicYAxis: "weightInsightsDynamicYV3",
   },
   // Data Processing & Analysis
   movingAverageWindow: 7,

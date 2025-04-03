@@ -7,7 +7,7 @@ import { FocusChartUpdater } from "./chartUpdaters.js";
 import { LegendManager } from "./legendManager.js";
 
 export const GoalManager = {
-    loadGoal() {
+    load() {
         const storedGoal = localStorage.getItem(CONFIG.localStorageKeys.goal);
         const defaultGoal = { weight: null, date: null, targetRate: null };
         if (storedGoal) {
@@ -34,7 +34,7 @@ export const GoalManager = {
         }
         GoalManager.updateGoalUI();
       },
-      saveGoal() {
+      save() {
         try {
           const goalToStore = {
             weight: state.goal.weight,

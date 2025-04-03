@@ -87,7 +87,6 @@ export const ui = {
   brushGroup: null,
   // Input/Control Elements (Refs to D3 selections)
   themeToggle: null,
-  dynamicYAxisToggle: null,
   goalWeightInput: null,
   goalDateInput: null,
   goalTargetRateInput: null,
@@ -142,7 +141,6 @@ export function cacheSelectors() {
     "analysis-results-heading": "analysisResultsHeading",
     // Controls
     "theme-toggle": "themeToggle",
-    "dynamic-y-axis-toggle": "dynamicYAxisToggle",
     goalWeight: "goalWeightInput",
     goalDate: "goalDateInput",
     goalTargetRate: "goalTargetRateInput",
@@ -297,18 +295,6 @@ export function cacheSelectors() {
     state.seriesVisibility.regression = true;
     state.seriesVisibility.regressionCI = true;
   }
-
-  const storedDynamicY = localStorage.getItem(
-    CONFIG.localStorageKeys.dynamicYAxis,
-  );
-  if (ui.dynamicYAxisToggle && !ui.dynamicYAxisToggle.empty()) {
-    state.useDynamicYAxis = ui.dynamicYAxisToggle.property("checked");
-  } else if (storedDynamicY !== null) {
-    state.useDynamicYAxis = storedDynamicY === "true";
-  } else {
-    state.useDynamicYAxis = false;
-  }
-  ui.dynamicYAxisToggle?.property("checked", state.useDynamicYAxis);
 
   if (missingCritical) {
     throw new Error(
