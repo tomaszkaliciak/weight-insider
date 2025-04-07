@@ -4,6 +4,9 @@
 import { ui } from "./uiCache.js";
 import { state } from "./state.js";
 import { Utils } from "./utils.js";
+import { EventBus } from "./eventBus.js";
+
+EventBus.subscribe("state:statsUpdated", WeeklySummaryUpdater.weeklyData);
 
 export const WeeklySummaryUpdater = {
   /**
@@ -53,11 +56,8 @@ export const WeeklySummaryUpdater = {
     return dataToSort;
   },
 
-  /**
-   * Updates the weekly summary table in the UI.
-   * @param {Array<object>} weeklyData - The array of weekly summary objects (typically state.weeklySummaryData).
-   */
-  updateTable(weeklyData) {
+  weeklyData(data) {
+    weeklyData = data.weeklySummaryData;
     const container = ui.weeklySummaryContainer; // Use cached container
     if (!container || container.empty()) {
       console.warn("WeeklySummaryUpdater: Container element not found.");

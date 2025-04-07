@@ -6,6 +6,9 @@ import { CONFIG } from "./config.js";
 import { state } from "./state.js"; // Needed for plateaus/trend changes
 import { ui } from "./uiCache.js"; // Needed to update the summary container
 import { EventHandlers } from "./eventHandlers.js";
+import { EventBus } from "./eventBus.js";
+
+EventBus.subscribe("state:statsUpdated", InsightsGenerator.updateSummary);
 
 export const InsightsGenerator = {
   // --- Helper Functions for Generating Insight Components ---
