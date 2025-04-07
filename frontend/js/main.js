@@ -17,13 +17,15 @@ import { AnnotationManager } from "./annotationManager.js";
 import { GoalManager } from "./goalManager.js";
 import { EventHandlers } from "./eventHandlers.js";
 import { WeeklySummaryUpdater } from "./weeklySummaryUpdater.js";
+import { StatsManager } from "./stateManager.js";
 
 async function initialize() {
-
   try {
     cacheSelectors();
 
     ThemeManager.init();
+    MasterUpdater.init();
+    LegendManager.init();
 
     state.regressionStartDate = DataService.getRegressionStartDateFromUI();
 
@@ -60,11 +62,15 @@ async function initialize() {
     state.isInitialized = false;
 
     if (ui.chartContainer && !ui.chartContainer.empty()) {
-
-      Utils.showCriticalErrorMessage(error.message || "Could not render the chart due to an error:${error.message || \"Unknown error\"}",
-        "Please check the browser console for more details or try reloading the page");
+      Utils.showCriticalErrorMessage(
+        error.message ||
+          'Could not render the chart due to an error:${error.message || "Unknown error"}',
+        "Please check the browser console for more details or try reloading the page",
+      );
     } else {
-      Utils.showCriticalErrorMessage(error.message || "Critical Error. Chart container not found");
+      Utils.showCriticalErrorMessage(
+        error.message || "Critical Error. Chart container not found",
+      );
     }
   }
 }

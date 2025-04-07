@@ -52,6 +52,11 @@ export const MasterUpdater = {
    * Updates all chart components based on the current state and domains.
    * Typically called after interactions like zoom, brush, or visibility changes.
    */
+
+  init() {
+    EventBus.subscribe("state::themeUpdated", this.updateAllCharts());
+  },
+
   updateAllCharts() {
     if (!state.isInitialized || !scales.x) {
       console.warn(

@@ -21,6 +21,7 @@ import { GoalManager } from "./goalManager.js";
 import { AnnotationManager } from "./annotationManager.js"; // For annotation form/list interactions
 import { LegendManager } from "./legendManager.js"; // For legend interactions
 import { ThemeManager } from "./themeManager.js"; // Import for theme toggle
+import { EventBus } from "./eventBus.js";
 
 export const EventHandlers = {
   _isZooming: false, // Internal flag to prevent re-entry during zoom
@@ -289,8 +290,6 @@ export const EventHandlers = {
       .attr("transform", "scale(1)"); // Restore scale
     EventHandlers._hideTooltip();
   },
-
-
 
   // --- Brush and Zoom Handlers (Mostly manage state and trigger updates) ---
   contextBrushed(event) {

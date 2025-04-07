@@ -3,11 +3,11 @@
 
 import { state } from "./state.js";
 import { ui } from "./uiCache.js";
-import { colors } from "./themeManager.js"; // Import calculated colors
-import { CONFIG } from "./config.js"; // For default window size display
-// Import updaters/managers needed when toggling visibility
+import { colors } from "./themeManager.js";
+import { CONFIG } from "./config.js";
 import { MasterUpdater } from "./masterUpdater.js";
-import { StatsManager } from "./statsManager.js"; // Still needed? Keep import for now.
+import { StatsManager } from "./statsManager.js";
+import { EventBus } from "./eventBus.js";
 
 export const LegendManager = {
   /**
@@ -15,6 +15,10 @@ export const LegendManager = {
    * @param {string} seriesId - The ID of the series to toggle (e.g., 'raw', 'smaLine', 'regression', 'trendChanges').
    * @param {boolean} isVisible - The desired visibility state (true for visible, false for hidden).
    */
+
+  init() {
+    EventBus.subscribe("state::themeUpdated", build);
+  },
   toggleSeriesVisibility(seriesId, isVisible) {
     // <<< --- ADD LOG --- >>>
     console.log(
@@ -69,7 +73,6 @@ export const LegendManager = {
     state.highlightedDate = null;
     state.pinnedTooltipData = null;
 
-
     // Update the visual appearance of the legend item itself
     console.log(
       `[LM Toggle] Calling updateAppearance for "${seriesId}" with isVisible=${isVisible}`,
@@ -111,9 +114,6 @@ export const LegendManager = {
    * Builds the legend items in the legend container based on current state and configuration.
    */
   build() {
-    // <<< --- ADD LOG --- >>>
-    console.log("[LM Build] Starting legend build...");
-
     if (!ui.legendContainer || ui.legendContainer.empty()) {
       console.warn("[LM Build] Legend container not found.");
       return;
