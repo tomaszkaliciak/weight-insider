@@ -1,11 +1,10 @@
 // dataService.js
 // Handles data fetching, processing, calculations
 
-// NO D3 import needed here - uses global d3 from script tag
-import { CONFIG } from "./config.js";
+import { CONFIG } from "../config.js";
 import { Utils } from "./utils.js";
-import { state } from "./state.js";
-import { ui } from "./uiCache.js";
+import { state } from "../state.js";
+import { ui } from "../ui/uiCache.js";
 
 // Assume simple-statistics (ss) is loaded globally or provide check/fallback
 const ss = window.ss || {
@@ -469,8 +468,6 @@ export const DataService = {
       (targetDate.getTime() - startDate.getTime()) / msPerWeek;
     return initialWeight + weeksElapsed * weeklyIncrease;
   },
-
- 
 
   // +++ calculateWeeklyStats Method (Moved Here) +++
   /**

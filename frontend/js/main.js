@@ -1,23 +1,21 @@
 console.log("main.js: Module execution started.");
 
-// --- Module Imports ---
 import { CONFIG } from "./config.js";
 import { state } from "./state.js";
-import { ui, cacheSelectors } from "./uiCache.js";
-import { Utils } from "./utils.js";
-import { DataService } from "./dataService.js";
-import { ThemeManager } from "./themeManager.js";
-import { initializeChartSetup } from "./chartSetup.js";
-import { DomainManager } from "./domainManager.js";
-import { MasterUpdater } from "./masterUpdater.js";
-import { StatsManager } from "./statsManager.js";
-import { InsightsGenerator } from "./insightsGenerator.js";
-import { LegendManager } from "./legendManager.js";
-import { AnnotationManager } from "./annotationManager.js";
-import { GoalManager } from "./goalManager.js";
-import { EventHandlers } from "./eventHandlers.js";
-import { WeeklySummaryUpdater } from "./weeklySummaryUpdater.js";
-import { StatsManager } from "./stateManager.js";
+import { ui, cacheSelectors } from "./ui/uiCache.js";
+import { Utils } from "./core/utils.js";
+import { DataService } from "./core/dataService.js";
+import { ThemeManager } from "./core/themeManager.js";
+import { initializeChartSetup } from "./ui/chartSetup.js";
+import { DomainManager } from "./core/domainManager.js";
+import { MasterUpdater } from "./ui/masterUpdater.js";
+import { StatsManager } from "./core/statsManager.js";
+import { InsightsGenerator } from "./ui/insightsGenerator.js";
+import { LegendManager } from "./ui/legendManager.js";
+import { AnnotationManager } from "./core/annotationManager.js";
+import { GoalManager } from "./core/goalManager.js";
+import { EventHandlers } from "./interactions/eventHandlers.js";
+import { WeeklySummaryUpdater } from "./ui/weeklySummaryUpdater.js";
 
 async function initialize() {
   try {
@@ -25,7 +23,7 @@ async function initialize() {
 
     ThemeManager.init();
     MasterUpdater.init();
-    LegendManager.init();
+    InsightsGenerator.init();
 
     state.regressionStartDate = DataService.getRegressionStartDateFromUI();
 

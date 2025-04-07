@@ -1,11 +1,11 @@
 // masterUpdater.js
 // Orchestrates updates across all chart components.
 
-import { state } from "./state.js";
+import { state } from "../state.js";
 import { scales } from "./chartSetup.js";
 import { ui } from "./uiCache.js";
-import { Utils } from "./utils.js"; // Needed for moved helpers
-import { DomainManager } from "./domainManager.js";
+import { Utils } from "../core/utils.js";
+import { DomainManager } from "../core/domainManager.js";
 import {
   FocusChartUpdater,
   ContextChartUpdater,
@@ -14,8 +14,9 @@ import {
   TDEEDiffChartUpdater,
   ScatterPlotUpdater,
 } from "./chartUpdaters.js";
-import { DataService } from "./dataService.js"; // Needed to calculate regression
-import { EventHandlers } from "./eventHandlers.js"; // Needed for getEffectiveRegressionRange
+import { DataService } from "../core/dataService.js";
+import { EventHandlers } from "../interactions/eventHandlers.js";
+import { EventBus } from "../core/eventBus.js";
 
 // --- UI Helper Functions (Moved from EventHandlers) ---
 

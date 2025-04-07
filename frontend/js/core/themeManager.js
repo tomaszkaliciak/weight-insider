@@ -1,9 +1,9 @@
 // themeManager.js
 // Handles theme switching (light/dark) and CSS variable caching for colors.
 
-import { state } from "./state.js";
-import { ui } from "./uiCache.js";
-import { CONFIG } from "./config.js";
+import { state } from "../state.js";
+import { ui } from "../ui/uiCache.js";
+import { CONFIG } from "../config.js";
 import { EventBus } from "./eventBus.js";
 
 export const colors = {};

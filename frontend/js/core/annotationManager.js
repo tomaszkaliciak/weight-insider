@@ -1,6 +1,6 @@
-import { state } from "./state.js";
-import { ui } from "./uiCache.js";
-import { CONFIG } from "./config.js";
+import { state } from "../state.js";
+import { ui } from "../ui/uiCache.js";
+import { CONFIG } from "../config.js";
 import { Utils } from "./utils.js";
 import { EventBus } from "./eventBus.js";
 

@@ -1,16 +1,17 @@
 // statsManager.js
 // Calculates and updates various statistics based on the processed data and current view/analysis range.
 
-import { CONFIG } from "./config.js";
-import { state } from "./state.js"; // Make sure state is imported
-import { ui } from "./uiCache.js";
-import { Utils } from "./utils.js";
-import { DataService } from "./dataService.js";
-import { EventHandlers } from "./eventHandlers.js";
-import { InsightsGenerator } from "./insightsGenerator.js";
-import { WeeklySummaryUpdater } from "./weeklySummaryUpdater.js";
-import { ScatterPlotUpdater } from "./chartUpdaters.js";
-import { EventBus } from "./eventBus.js";
+import { CONFIG } from "../../config.js";
+import { ui } from "../uiCache.js";
+import { Utils } from "../../core/utils.js";
+import { Utils } from "../../core/utils.js";
+
+import { DataService } from "../../core/dataService.js";
+import { EventHandlers } from "../../interactions/eventHandlers.js";
+import { InsightsGenerator } from "../insightsGenerator.js";
+import { WeeklySummaryUpdater } from "../weeklySummaryUpdater.js";
+import { ScatterPlotUpdater } from "../chartUpdaters.js";
+import { EventBus } from "../../core/eventBus.js";
 
 EventBus.subscribe(
   "state:statsUpdated",

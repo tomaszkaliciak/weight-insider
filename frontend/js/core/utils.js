@@ -2,9 +2,9 @@
 // Provides common utility functions used throughout the application.
 
 // We'll need access to uiCache and config for showStatusMessage
-import { ui } from "./uiCache.js";
-import { CONFIG } from "./config.js";
-import { state } from "./state.js"; // Need state for statusTimeoutId
+import { ui } from "../ui/uiCache.js";
+import { CONFIG } from "../config.js";
+import { state } from "../state.js"; // Need state for statusTimeoutId
 
 // Assume simple-statistics (ss) is loaded globally or provide check/fallback
 const ss = window.ss || {
@@ -149,7 +149,6 @@ export const Utils = {
     document.body.appendChild(overlay);
   },
 
-  
   /**
    * Calculates a rolling average for an array of numbers. Null/NaN values are ignored in the calculation but advance the window.
    * @param {Array<number|null>} data - Array of numbers or nulls.

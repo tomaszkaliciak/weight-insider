@@ -1,9 +1,9 @@
 // uiCache.js
 // Manages the caching of D3 selections for UI elements.
 
-import { Utils } from "./utils.js"; // Needed for getElementByIdSafe
-import { state } from "./state.js"; // Needed for initial state checks (toggles)
-import { CONFIG } from "./config.js"; // Needed for localStorageKeys
+import { Utils } from "../core/utils.js"; // Needed for getElementByIdSafe
+import { state } from "../state.js"; // Needed for initial state checks (toggles)
+import { CONFIG } from "../config.js"; // Needed for localStorageKeys
 
 // Export the ui object immediately, it will be populated by cacheSelectors
 export const ui = {
@@ -288,7 +288,6 @@ export function cacheSelectors() {
   // --- Set Initial State Based on Controls ---
   state.seriesVisibility.regression = true;
   state.seriesVisibility.regressionCI = true;
-
 
   if (missingCritical) {
     throw new Error(

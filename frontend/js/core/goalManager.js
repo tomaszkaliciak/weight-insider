@@ -1,9 +1,7 @@
-import { state } from "./state.js";
-import { ui } from "./uiCache.js";
-import { CONFIG } from "./config.js";
+import { state } from "../state.js";
+import { ui } from "../ui/uiCache.js";
+import { CONFIG } from "../config.js";
 import { Utils } from "./utils.js";
-import { FocusChartUpdater } from "./chartUpdaters.js";
-import { LegendManager } from "./legendManager.js";
 import { EventBus } from "./eventBus.js";
 
 export const GoalManager = {

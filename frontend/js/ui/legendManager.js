@@ -1,13 +1,13 @@
 // legendManager.js
 // Manages the creation and interaction of the chart legend.
 
-import { state } from "./state.js";
+import { state } from "../state.js";
 import { ui } from "./uiCache.js";
-import { colors } from "./themeManager.js";
-import { CONFIG } from "./config.js";
+import { colors } from "../core/themeManager.js";
+import { CONFIG } from "../config.js";
 import { MasterUpdater } from "./masterUpdater.js";
-import { StatsManager } from "./statsManager.js";
-import { EventBus } from "./eventBus.js";
+import { StatsManager } from "../core/statsManager.js";
+import { EventBus } from "../core/eventBus.js";
 
 export const LegendManager = {
   /**
@@ -16,10 +16,6 @@ export const LegendManager = {
    * @param {boolean} isVisible - The desired visibility state (true for visible, false for hidden).
    */
 
-  init() {
-    EventBus.subscribe("state::themeUpdated", build);
-    EventBus.subscribe("state::AnnotationUpdate", build);
-  },
   toggleSeriesVisibility(seriesId, isVisible) {
     // <<< --- ADD LOG --- >>>
     console.log(
@@ -80,6 +76,7 @@ export const LegendManager = {
     );
     this.updateAppearance(seriesId, isVisible);
 
+    // FIXME: publish event
     MasterUpdater.updateAllCharts();
     StatsManager.update();
     LegendManager.build();
@@ -310,3 +307,6 @@ export const LegendManager = {
     console.log("[LM Build] Finished legend build."); // <-- ADDED
   }, // End build method
 }; // End LegendManager object
+
+EventBus.subscribe("state::themeUpdated", LegendManager.build);
+EventBus.subscribe("state::AnnotationUpdate", LegendManager.build);

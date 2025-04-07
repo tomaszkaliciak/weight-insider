@@ -2,11 +2,9 @@
 // Handles rendering and sorting the weekly summary table.
 
 import { ui } from "./uiCache.js";
-import { state } from "./state.js";
-import { Utils } from "./utils.js";
-import { EventBus } from "./eventBus.js";
-
-EventBus.subscribe("state:statsUpdated", WeeklySummaryUpdater.weeklyData);
+import { state } from "../state.js";
+import { Utils } from "../core/utils.js";
+import { EventBus } from "../core/eventBus.js";
 
 export const WeeklySummaryUpdater = {
   /**
@@ -251,3 +249,5 @@ export const WeeklySummaryUpdater = {
     );
   },
 };
+
+EventBus.subscribe("state:statsUpdated", WeeklySummaryUpdater.weeklyData);

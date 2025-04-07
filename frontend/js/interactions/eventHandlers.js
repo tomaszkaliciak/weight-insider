@@ -2,26 +2,26 @@
 // Handles user interactions like mouse hovers, clicks, zoom, brush, form submissions, etc.
 // Primarily updates application state and triggers high-level updates.
 
-import { state } from "./state.js";
-import { ui } from "./uiCache.js";
+import { state } from "../state.js";
+import { ui } from "../ui/uiCache.js";
 import {
   scales,
   axes,
   brushes,
   zoom,
   initializeChartSetup,
-} from "./chartSetup.js"; // Import D3 constructs & chart setup
-import { CONFIG } from "./config.js";
-import { Utils } from "./utils.js";
-import { DomainManager } from "./domainManager.js"; // Needed for resize domain init
-import { MasterUpdater } from "./masterUpdater.js"; // Central updater
-import { StatsManager } from "./statsManager.js"; // Central stats calculator/updater
-import { DataService } from "./dataService.js"; // For goal/trendline/range logic
-import { GoalManager } from "./goalManager.js";
-import { AnnotationManager } from "./annotationManager.js"; // For annotation form/list interactions
-import { LegendManager } from "./legendManager.js"; // For legend interactions
-import { ThemeManager } from "./themeManager.js"; // Import for theme toggle
-import { EventBus } from "./eventBus.js";
+} from "../ui/chartSetup.js";
+import { CONFIG } from "../config.js";
+import { Utils } from "../core/utils.js";
+import { DomainManager } from "../core/domainManager.js";
+import { MasterUpdater } from "../ui/masterUpdater.js";
+import { StatsManager } from "../core/statsManager.js";
+import { DataService } from "../core/dataService.js";
+import { GoalManager } from "../core/goalManager.js";
+import { AnnotationManager } from "../core/annotationManager.js";
+import { LegendManager } from "../ui/legendManager.js";
+import { ThemeManager } from "../core/themeManager.js";
+import { EventBus } from "../core/eventBus.js";
 
 export const EventHandlers = {
   _isZooming: false, // Internal flag to prevent re-entry during zoom

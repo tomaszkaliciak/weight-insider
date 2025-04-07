@@ -1,15 +1,15 @@
 // statsManager.js
 // Calculates and updates various statistics based on the processed data and current view/analysis range.
 
-import { CONFIG } from "./config.js";
-import { state } from "./state.js"; // Make sure state is imported
-import { ui } from "./uiCache.js";
+import { CONFIG } from "../config.js";
+import { state } from "../state.js"; // Make sure state is imported
+import { ui } from "../ui/uiCache.js";
 import { Utils } from "./utils.js";
 import { DataService } from "./dataService.js";
-import { EventHandlers } from "./eventHandlers.js";
-import { InsightsGenerator } from "./insightsGenerator.js";
-import { WeeklySummaryUpdater } from "./weeklySummaryUpdater.js";
-import { ScatterPlotUpdater } from "./chartUpdaters.js";
+import { EventHandlers } from "../interactions/eventHandlers.js";
+import { InsightsGenerator } from "../ui/insightsGenerator.js";
+import { WeeklySummaryUpdater } from "../ui/weeklySummaryUpdater.js";
+import { ScatterPlotUpdater } from "../ui/chartUpdaters.js";
 import { EventBus } from "./eventBus.js";
 
 // Assume simple-statistics (ss) is loaded globally or provide check/fallback

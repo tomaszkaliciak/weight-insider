@@ -2,11 +2,11 @@
 // Manages the calculation and setting of domains for D3 scales.
 
 // NO D3 import needed here - uses global d3 from script tag
-import { scales } from "./chartSetup.js"; // Import the scales object
-import { state } from "./state.js";
-import { CONFIG } from "./config.js";
+import { scales } from "../ui/chartSetup.js"; // Import the scales object
+import { state } from "../state.js";
+import { CONFIG } from "../config.js";
 import { DataService } from "./dataService.js"; // Needed for trend/goal/weekly stats calculations affecting domain
-import { EventHandlers } from "./eventHandlers.js"; // Needed for analysis/regression range
+import { EventHandlers } from "../interactions/eventHandlers.js"; // Needed for analysis/regression range
 
 export const DomainManager = {
   /**
@@ -501,7 +501,7 @@ export const DomainManager = {
         pointsWithCI: [],
       }; // Default empty result
     }
- 
+
     this.setFocusYDomains(state.filteredData, regressionResult);
 
     // Update secondary chart X domains to match focus
@@ -517,10 +517,10 @@ export const DomainManager = {
   },
 
   setEmptyDomains() {
-      DomainManager.setXDomains([]);
-      DomainManager.setContextYDomain([]);
-      DomainManager.setFocusYDomains([], null);
-      DomainManager.setSecondaryYDomains([]);
-      DomainManager.setScatterPlotDomains([]);
+    DomainManager.setXDomains([]);
+    DomainManager.setContextYDomain([]);
+    DomainManager.setFocusYDomains([], null);
+    DomainManager.setSecondaryYDomains([]);
+    DomainManager.setScatterPlotDomains([]);
   },
 };

@@ -1,19 +1,13 @@
 // Contains objects responsible for updating the visual elements of each chart.
 
-import { CONFIG } from "./config.js";
-import { state } from "./state.js";
+import { CONFIG } from "../config.js";
+import { state } from "../state.js";
 import { ui } from "./uiCache.js";
 import { scales, axes, brushes } from "./chartSetup.js"; // Import constructs
-import { colors } from "./themeManager.js"; // Import calculated colors
-import { EventHandlers } from "./eventHandlers.js";
-import { DataService } from "./dataService.js";
-import { EventBus } from "./eventBus.js";
-
-EventBus.subscribe("state:statsUpdated", ScatterPlotUpdater.updateChart);
-EventBus.subscribe(
-  "state:AnnotationUpdate",
-  FocusChartUpdater.updateAnnotations,
-);
+import { colors } from "../core/themeManager.js"; // Import calculated colors
+import { EventHandlers } from "../interactions/eventHandlers.js";
+import { DataService } from "../core/dataService.js";
+import { EventBus } from "../core/eventBus.js";
 
 // --- Focus Chart Updater ---
 export const FocusChartUpdater = {
@@ -465,7 +459,7 @@ export const FocusChartUpdater = {
   },
 
   updateAnnotations(data) {
-    visibleData = data.filteredData;
+    let visibleData = data.filteredData;
     const dur = CONFIG.transitionDurationMs;
     if (!ui.annotationsGroup || !scales.x || !scales.y) return;
     const annotationData = state.seriesVisibility.annotations
@@ -1197,3 +1191,9 @@ export const ScatterPlotUpdater = {
     );
   },
 };
+
+EventBus.subscribe("state:statsUpdated", ScatterPlotUpdater.updateChart);
+EventBus.subscribe(
+  "state:AnnotationUpdate",
+  FocusChartUpdater.updateAnnotations,
+);
