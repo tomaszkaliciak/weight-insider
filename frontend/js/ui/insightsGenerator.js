@@ -327,6 +327,8 @@ export const InsightsGenerator = {
    * @param {object} stats - The calculated statistics object.
    */
   updateSummary(stats) {
+    console.info("InsightsGenerator: updateSummary()");
+
     // --- Update Descriptive Summary (Existing Logic) ---
     if (ui.insightSummaryContainer && !ui.insightSummaryContainer.empty()) {
       const currentTrendWeekly =
@@ -411,6 +413,7 @@ export const InsightsGenerator = {
     }
   },
   init() {
-    EventBus.subscribe("state:statsUpdated", InsightsGenerator.updateSummary);
+    console.info("InsightsGenerator: init()");
+    EventBus.subscribe("state::statsUpdated", this.updateSummary.bind(this));
   },
 };

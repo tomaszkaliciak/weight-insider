@@ -304,9 +304,10 @@ export const LegendManager = {
         );
       }
     });
-    console.log("[LM Build] Finished legend build."); // <-- ADDED
-  }, // End build method
+    console.log("[LM Build] Finished legend build.");
+  },
+  init() {
+    EventBus.subscribe("state::themeUpdated", LegendManager.build);
+    EventBus.subscribe("state::AnnotationUpdate", LegendManager.build);
+  },
 }; // End LegendManager object
-
-EventBus.subscribe("state::themeUpdated", LegendManager.build);
-EventBus.subscribe("state::AnnotationUpdate", LegendManager.build);

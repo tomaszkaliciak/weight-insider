@@ -55,7 +55,7 @@ export const MasterUpdater = {
    */
 
   init() {
-    EventBus.subscribe("state::themeUpdated", this.updateAllCharts());
+    EventBus.subscribe("state::themeUpdated", this.updateAllCharts);
   },
 
   updateAllCharts() {

@@ -661,7 +661,7 @@ export const StatsManager = {
     try {
       // Calculate all stats (including detection of plateaus/trends)
       const statsData = this.calculateAllStats();
-      EventBus.publish("state::StatsUpdate", statsData);
+      EventBus.publish("state::statsUpdated", statsData);
     } catch (error) {
       console.error("StatsManager: Error during statistics update:", error);
       Utils.showStatusMessage("Error updating statistics.", "error");

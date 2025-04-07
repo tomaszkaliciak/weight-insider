@@ -55,8 +55,7 @@ export const GoalManager = {
       );
     }
   },
-  // FIXME: GoalManager shouldn't update UI.
-  // Read how it solved (Proxy | EventSystem)
+
   updateGoalUI() {
     ui.goalWeightInput?.property("value", state.goal.weight ?? "");
     ui.goalDateInput?.property(

@@ -1,4 +1,5 @@
 // eventBus.js
+
 const subscribers = {};
 
 export const EventBus = {
@@ -7,7 +8,9 @@ export const EventBus = {
       subscribers[eventName] = [];
     }
     subscribers[eventName].push(callback);
-    console.log(`[EventBus] Subscribed to ${eventName}`);
+    console.log(
+      `[EventBus] Subscribed to ${eventName}, len is ${subscribers[eventName].length}`,
+    );
 
     // Return an unsubscribe function
     return () => {
@@ -23,6 +26,7 @@ export const EventBus = {
   publish(eventName, data) {
     if (subscribers[eventName]) {
       console.log(`[EventBus] Publishing ${eventName}`, data);
+
       subscribers[eventName].forEach((callback) => {
         try {
           callback(data);

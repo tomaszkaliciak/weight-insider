@@ -4,7 +4,6 @@
 import { CONFIG } from "../../config.js";
 import { ui } from "../uiCache.js";
 import { Utils } from "../../core/utils.js";
-import { Utils } from "../../core/utils.js";
 
 import { DataService } from "../../core/dataService.js";
 import { EventHandlers } from "../../interactions/eventHandlers.js";
@@ -12,11 +11,6 @@ import { InsightsGenerator } from "../insightsGenerator.js";
 import { WeeklySummaryUpdater } from "../weeklySummaryUpdater.js";
 import { ScatterPlotUpdater } from "../chartUpdaters.js";
 import { EventBus } from "../../core/eventBus.js";
-
-EventBus.subscribe(
-  "state:statsUpdated",
-  StatsDisplayRenderer.updateStatsDisplay,
-);
 
 export const StatsDisplayRenderer = {
   updateStatsDisplay(stats) {
@@ -146,5 +140,8 @@ export const StatsDisplayRenderer = {
     );
     updateElement("suggestedIntakeRange"); // Updates based on stats.suggestedIntakeRange
     updateElement("currentRateFeedback"); // Updates based on stats.targetRateFeedback
+  },
+  init() {
+    EventBus.subscribe("state::statsUpdated", this.updateStatsDisplay);
   },
 };

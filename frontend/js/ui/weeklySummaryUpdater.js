@@ -55,7 +55,7 @@ export const WeeklySummaryUpdater = {
   },
 
   weeklyData(data) {
-    weeklyData = data.weeklySummaryData;
+    let weeklyData = data.weeklySummaryData;
     const container = ui.weeklySummaryContainer; // Use cached container
     if (!container || container.empty()) {
       console.warn("WeeklySummaryUpdater: Container element not found.");
@@ -248,6 +248,8 @@ export const WeeklySummaryUpdater = {
       (exit) => exit.remove(), // Remove rows that are no longer in the data
     );
   },
-};
 
-EventBus.subscribe("state:statsUpdated", WeeklySummaryUpdater.weeklyData);
+  init() {
+    EventBus.subscribe("state::statsUpdated", WeeklySummaryUpdater.weeklyData);
+  },
+};

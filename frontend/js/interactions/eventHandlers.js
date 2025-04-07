@@ -477,7 +477,7 @@ export const EventHandlers = {
         MasterUpdater.updateAllCharts();
         StatsManager.update();
         LegendManager.build();
-        AnnotationListRenderer.renderList();
+        AnnotationListRenderer.render();
       } else if (state.isInitialized) {
         console.warn(
           "EventHandlers: Resize handler - No data to display after setup.",
@@ -485,7 +485,7 @@ export const EventHandlers = {
         MasterUpdater.updateAllCharts();
         StatsManager.update();
         LegendManager.build();
-        AnnotationListRenderer.renderList();
+        AnnotationListRenderer.render();
       }
     } else {
       console.error(

@@ -1,5 +1,6 @@
 console.log("main.js: Module execution started.");
 
+import { EventBus } from "./core/eventBus.js";
 import { CONFIG } from "./config.js";
 import { state } from "./state.js";
 import { ui, cacheSelectors } from "./ui/uiCache.js";
@@ -17,6 +18,8 @@ import { GoalManager } from "./core/goalManager.js";
 import { EventHandlers } from "./interactions/eventHandlers.js";
 import { WeeklySummaryUpdater } from "./ui/weeklySummaryUpdater.js";
 import { AnnotationListRenderer } from "./ui/renderers/annotationListRenderer.js";
+import { StatsDisplayRenderer } from "./ui/renderers/statsDisplayRenderer.js";
+import { initChartSubs } from "./ui/chartUpdaters.js";
 
 async function initialize() {
   try {
@@ -24,8 +27,12 @@ async function initialize() {
 
     ThemeManager.init();
     MasterUpdater.init();
-    InsightsGenerator.init();
     AnnotationListRenderer.init();
+    StatsDisplayRenderer.init();
+    initChartSubs();
+    WeeklySummaryUpdater.init();
+    LegendManager.init();
+    InsightsGenerator.init();
 
     state.regressionStartDate = DataService.getRegressionStartDateFromUI();
 

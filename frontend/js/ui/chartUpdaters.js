@@ -1140,7 +1140,7 @@ export const ScatterPlotUpdater = {
       .call(axes.yScatterAxis);
   },
   updateChart(data) {
-    scatterData = data.correlationScatterData;
+    let scatterData = data.correlationScatterData;
     const dur = CONFIG.transitionDurationMs;
     if (!ui.scatterDotsGroup || !scales.xScatter || !scales.yScatter) return;
     const validScatterData = (
@@ -1192,8 +1192,10 @@ export const ScatterPlotUpdater = {
   },
 };
 
-EventBus.subscribe("state:statsUpdated", ScatterPlotUpdater.updateChart);
-EventBus.subscribe(
-  "state:AnnotationUpdate",
-  FocusChartUpdater.updateAnnotations,
-);
+export function initChartSubs() {
+  EventBus.subscribe("state::statsUpdated", ScatterPlotUpdater.updateChart);
+  EventBus.subscribe(
+    "state:AnnotationUpdate",
+    FocusChartUpdater.updateAnnotations,
+  );
+}

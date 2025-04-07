@@ -48,9 +48,6 @@ export const AnnotationListRenderer = {
       });
   },
   init() {
-    EventBus.subscribe(
-      "state:AnnotationUpdate",
-      AnnotationListRenderer.render(),
-    );
+    EventBus.subscribe("state::AnnotationUpdate", this.render);
   },
 };
