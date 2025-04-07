@@ -19,6 +19,7 @@ import { StatsManager } from "../core/statsManager.js";
 import { DataService } from "../core/dataService.js";
 import { GoalManager } from "../core/goalManager.js";
 import { AnnotationManager } from "../core/annotationManager.js";
+import { AnnotationListRenderer } from "../ui/renderers/annotationListRenderer.js";
 import { LegendManager } from "../ui/legendManager.js";
 import { ThemeManager } from "../core/themeManager.js";
 import { EventBus } from "../core/eventBus.js";
@@ -476,7 +477,7 @@ export const EventHandlers = {
         MasterUpdater.updateAllCharts();
         StatsManager.update();
         LegendManager.build();
-        AnnotationManager.renderList();
+        AnnotationListRenderer.renderList();
       } else if (state.isInitialized) {
         console.warn(
           "EventHandlers: Resize handler - No data to display after setup.",
@@ -484,7 +485,7 @@ export const EventHandlers = {
         MasterUpdater.updateAllCharts();
         StatsManager.update();
         LegendManager.build();
-        AnnotationManager.renderList();
+        AnnotationListRenderer.renderList();
       }
     } else {
       console.error(

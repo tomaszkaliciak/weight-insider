@@ -16,6 +16,7 @@ import { AnnotationManager } from "./core/annotationManager.js";
 import { GoalManager } from "./core/goalManager.js";
 import { EventHandlers } from "./interactions/eventHandlers.js";
 import { WeeklySummaryUpdater } from "./ui/weeklySummaryUpdater.js";
+import { AnnotationListRenderer } from "./ui/renderers/annotationListRenderer.js";
 
 async function initialize() {
   try {
@@ -24,6 +25,7 @@ async function initialize() {
     ThemeManager.init();
     MasterUpdater.init();
     InsightsGenerator.init();
+    AnnotationListRenderer.init();
 
     state.regressionStartDate = DataService.getRegressionStartDateFromUI();
 
@@ -48,7 +50,7 @@ async function initialize() {
       DomainManager.setEmptyDomains();
     }
 
-    AnnotationManager.renderList();
+    AnnotationListRenderer.render();
     EventHandlers.setupAll();
 
     state.isInitialized = true;
