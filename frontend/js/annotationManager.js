@@ -1,10 +1,8 @@
-
 import { state } from "./state.js";
 import { ui } from "./uiCache.js";
 import { CONFIG } from "./config.js";
 import { Utils } from "./utils.js";
-import { FocusChartUpdater } from "./chartUpdaters.js";
-import { LegendManager } from "./legendManager.js";
+import { EventBus } from "./eventBus.js";
 
 export const AnnotationManager = {
   load() {
@@ -21,7 +19,7 @@ export const AnnotationManager = {
               date: a.date,
               text: a.text || "",
               // TODO: implement annotated range in UI
-              type: a.type === "range" ? "range" : "point", 
+              type: a.type === "range" ? "range" : "point",
             }))
             .filter(
               (a) =>
@@ -42,7 +40,6 @@ export const AnnotationManager = {
       `AnnotationManager: Loaded ${state.annotations.length} annotations.`,
     );
   },
-
 
   save() {
     try {
@@ -95,10 +92,7 @@ export const AnnotationManager = {
     this.save();
     this.renderList();
 
-    // TODO: publish event annotationAdded
-    FocusChartUpdater.updateAnnotations(state.filteredData);
-    LegendManager.build();
-
+    EventBus.publish("state::AnnotationUpdate", state);
 
     Utils.showStatusMessage("Annotation added.", "success", 1500);
     return true;
@@ -116,10 +110,7 @@ export const AnnotationManager = {
       this.save();
       this.renderList();
 
-      // TODO: publish event annotationRemoved
-      FocusChartUpdater.updateAnnotations(state.filteredData);
-      LegendManager.build();
-      
+      EventBus.publish("state::AnnotationUpdate", state);
       Utils.showStatusMessage("Annotation removed.", "info", 1500);
     }
   },
@@ -178,7 +169,7 @@ export const AnnotationManager = {
 
     const items = list
       .selectAll("li.annotation-list-item")
-      .data(state.annotations, (d) => d.id) 
+      .data(state.annotations, (d) => d.id)
       .join("li")
       .attr("class", "annotation-list-item");
 
@@ -190,7 +181,7 @@ export const AnnotationManager = {
     items
       .append("span")
       .attr("class", "annotation-text")
-      .text((d) => d.text); 
+      .text((d) => d.text);
 
     items
       .append("button")

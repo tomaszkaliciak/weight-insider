@@ -18,6 +18,7 @@ export const LegendManager = {
 
   init() {
     EventBus.subscribe("state::themeUpdated", build);
+    EventBus.subscribe("state::AnnotationUpdate", build);
   },
   toggleSeriesVisibility(seriesId, isVisible) {
     // <<< --- ADD LOG --- >>>

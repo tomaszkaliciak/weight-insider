@@ -6,9 +6,14 @@ import { ui } from "./uiCache.js";
 import { scales, axes, brushes } from "./chartSetup.js"; // Import constructs
 import { colors } from "./themeManager.js"; // Import calculated colors
 import { EventHandlers } from "./eventHandlers.js";
-import { DataService } from "./dataService.js"; // Needed for trend calculation
+import { DataService } from "./dataService.js";
+import { EventBus } from "./eventBus.js";
 
 EventBus.subscribe("state:statsUpdated", ScatterPlotUpdater.updateChart);
+EventBus.subscribe(
+  "state:AnnotationUpdate",
+  FocusChartUpdater.updateAnnotations,
+);
 
 // --- Focus Chart Updater ---
 export const FocusChartUpdater = {
@@ -459,7 +464,8 @@ export const FocusChartUpdater = {
     }
   },
 
-  updateAnnotations(visibleData) {
+  updateAnnotations(data) {
+    visibleData = data.filteredData;
     const dur = CONFIG.transitionDurationMs;
     if (!ui.annotationsGroup || !scales.x || !scales.y) return;
     const annotationData = state.seriesVisibility.annotations
