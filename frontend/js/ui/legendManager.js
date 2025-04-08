@@ -35,7 +35,7 @@ export const LegendManager = {
 
     if (seriesId === "regression") {
       state.seriesVisibility.regressionCI = isVisible;
-      this.updateAppearance("regressionCI", isVisible); // Update CI item appearance
+      this.updateAppearance("regressionCI", isVisible);
       console.log(
         `[LM Toggle] Synced regressionCI state (${state.seriesVisibility.regressionCI}) /appearance and checkbox.`,
       );
@@ -71,7 +71,6 @@ export const LegendManager = {
    * @param {boolean} isVisible - The current visibility state.
    */
   updateAppearance(seriesId, isVisible) {
-    // <<< --- ADD LOG --- >>>
     console.log(
       `[LM Appearance] Updating appearance for "${seriesId}" to visible: ${isVisible}`,
     );
@@ -83,10 +82,6 @@ export const LegendManager = {
       return;
     }
     item.classed("hidden", !isVisible);
-    // <<< --- ADD LOG --- >>>
-    console.log(
-      `[LM Appearance] Applied .hidden=${!isVisible} to item "${seriesId}"`,
-    );
   },
 
   /**
@@ -117,7 +112,6 @@ export const LegendManager = {
       return;
     }
 
-    // Define the structure and properties of each legend item
     const legendItemsConfig = [
       {
         id: "raw",
@@ -217,22 +211,15 @@ export const LegendManager = {
         : []),
     ];
 
-    // <<< --- ADD LOG --- >>>
     console.log(
       "[LM Build] Legend items config generated:",
       legendItemsConfig.map((i) => i.id),
     );
 
-    // Create legend items based on the config
     legendItemsConfig.forEach((item) => {
-      // <<< --- ADD LOG --- >>>
-      // console.log(`[LM Build] Processing item: ${item.id}`);
       if (state.seriesVisibility.hasOwnProperty(item.id)) {
         const isVisible = state.seriesVisibility[item.id];
         const itemColor = colors[item.colorKey] || "#000000";
-
-        // <<< --- ADD LOG --- >>>
-        // console.log(`[LM Build] Item "${item.id}" visibility state: ${isVisible}`);
 
         const itemDiv = ui.legendContainer
           .append("div")
@@ -240,9 +227,7 @@ export const LegendManager = {
           .attr("data-id", item.id)
           .classed("hidden", !isVisible)
           .on("click", () => {
-            // Keep using arrow function for 'this' or use LegendManager directly
             const currentVisibility = state.seriesVisibility[item.id];
-            // <<< --- ADD LOG --- >>>
             console.log(
               `[LM Build Click] Legend item "${item.id}" clicked. Current visibility: ${currentVisibility}. Toggling to ${!currentVisibility}.`,
             );
@@ -289,6 +274,6 @@ export const LegendManager = {
   },
   init() {
     EventBus.subscribe("state::themeUpdated", LegendManager.build);
-    EventBus.subscribe("state::AnnotationUpdate", LegendManager.build);
+    EventBus.subscribe("state::annotationUpdate", LegendManager.build);
   },
-}; // End LegendManager object
+};

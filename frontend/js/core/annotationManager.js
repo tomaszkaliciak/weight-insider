@@ -91,7 +91,7 @@ export const AnnotationManager = {
 
     this.save();
 
-    EventBus.publish("state::AnnotationUpdate", state);
+    EventBus.publish("state::annotationUpdate", state);
 
     Utils.showStatusMessage("Annotation added.", "success", 1500);
     return true;
@@ -108,7 +108,7 @@ export const AnnotationManager = {
     if (state.annotations.length < initialLength) {
       this.save();
 
-      EventBus.publish("state::AnnotationUpdate", state);
+      EventBus.publish("state::annotationUpdate", state);
       Utils.showStatusMessage("Annotation removed.", "info", 1500);
     }
   },
