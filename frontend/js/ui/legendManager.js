@@ -34,11 +34,18 @@ export const LegendManager = {
     );
 
     if (seriesId === "regression") {
-      console.log(`[LM Toggle] Handling linked series for regression.`);
       state.seriesVisibility.regressionCI = isVisible;
       this.updateAppearance("regressionCI", isVisible); // Update CI item appearance
       console.log(
         `[LM Toggle] Synced regressionCI state (${state.seriesVisibility.regressionCI}) /appearance and checkbox.`,
+      );
+    }
+
+    if (seriesId === "regressionCI" && isVisible) {
+      state.seriesVisibility.regression = isVisible;
+      this.updateAppearance("regression", isVisible);
+      console.log(
+        `[LM Toggle] Synced regression state (${state.seriesVisibility.regression}) /appearance and checkbox.`,
       );
     }
 
