@@ -17,12 +17,10 @@ export const LegendManager = {
    */
 
   toggleSeriesVisibility(seriesId, isVisible) {
-    // <<< --- ADD LOG --- >>>
     console.log(
       `[LM Toggle] START: Toggling "${seriesId}" to ${isVisible}. Current state before toggle: ${state.seriesVisibility[seriesId]}`,
-    ); // Updated Log
+    );
 
-    // Ensure the series ID is valid
     if (!state.seriesVisibility.hasOwnProperty(seriesId)) {
       console.warn(
         `[LM Toggle] Attempted to toggle unknown series: ${seriesId}`,
@@ -30,41 +28,19 @@ export const LegendManager = {
       return;
     }
 
-    // Update the visibility state
     state.seriesVisibility[seriesId] = isVisible;
     console.log(
       `[LM Toggle] State updated: state.seriesVisibility.${seriesId} = ${state.seriesVisibility[seriesId]}`,
     );
 
-    // --- Special handling for linked series ---
-    // Regression <-> Regression CI
     if (seriesId === "regression") {
       console.log(`[LM Toggle] Handling linked series for regression.`); // <-- ADDED
       state.seriesVisibility.regressionCI = isVisible;
       this.updateAppearance("regressionCI", isVisible); // Update CI item appearance
       console.log(
         `[LM Toggle] Synced regressionCI state (${state.seriesVisibility.regressionCI}) /appearance and checkbox.`,
-      ); // <-- ADDED LOG + state
+      );
     }
-    // Hiding SMA Line hides SMA Band
-    if (seriesId === "smaLine" && !isVisible) {
-      console.log(
-        `[LM Toggle] Handling linked series for smaLine -> smaBand (hide).`,
-      ); // <-- ADDED
-      state.seriesVisibility.smaBand = false;
-      this.updateAppearance("smaBand", false);
-    }
-    // Showing SMA Band requires showing SMA Line
-    if (seriesId === "smaBand" && isVisible) {
-      if (!state.seriesVisibility.smaLine) {
-        console.log(
-          `[LM Toggle] Handling linked series for smaBand -> smaLine (show).`,
-        ); // <-- ADDED
-        state.seriesVisibility.smaLine = true;
-        this.updateAppearance("smaLine", true);
-      }
-    }
-    // --- End Special Handling ---
 
     // Clear highlights/pins when visibility changes
     state.highlightedDate = null;
