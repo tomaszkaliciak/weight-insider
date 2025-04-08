@@ -1,12 +1,18 @@
-// domainManager.js
-// Manages the calculation and setting of domains for D3 scales.
 
-// NO D3 import needed here - uses global d3 from script tag
-import { scales } from "../ui/chartSetup.js"; // Import the scales object
+import { scales } from "../ui/chartSetup.js"; 
 import { state } from "../state.js";
 import { CONFIG } from "../config.js";
-import { DataService } from "./dataService.js"; // Needed for trend/goal/weekly stats calculations affecting domain
-import { EventHandlers } from "../interactions/eventHandlers.js"; // Needed for analysis/regression range
+import { DataService } from "./dataService.js"; 
+import { EventHandlers } from "../interactions/eventHandlers.js";
+import {
+  calculateContextYDomain,
+  calculateFocusYDomain,
+  calculateBalanceYDomain,
+  calculateRateYDomain,
+  calculateTdeeDiffYDomain,
+  calculateScatterPlotDomains,
+} from "./domainCalculations.js";
+import { Utils } from "./utils.js";
 
 export const DomainManager = {
   /**
@@ -15,7 +21,7 @@ export const DomainManager = {
    * @returns {Array<Date>} The initial domain for the focus chart [startDate, endDate].
    */
   setXDomains(processedData) {
-    const fullDataExtent = d3.extent(processedData, (d) => d.date); // Use global d3
+    const fullDataExtent = d3.extent(processedData, (d) => d.date); 
 
     let initialXDomain = [];
     if (!fullDataExtent[0] || !fullDataExtent[1]) {
@@ -23,7 +29,7 @@ export const DomainManager = {
         "DomainManager: No valid date range found in data. Using fallback.",
       );
       const today = new Date();
-      const past = d3.timeMonth.offset(today, -CONFIG.initialViewMonths); // Use global d3
+      const past = d3.timeMonth.offset(today, -CONFIG.initialViewMonths); 
       fullDataExtent[0] = past;
       fullDataExtent[1] = today;
       initialXDomain = [past, today];
@@ -31,7 +37,7 @@ export const DomainManager = {
       // Calculate default initial view (e.g., last N months)
       const initialEndDate = fullDataExtent[1];
       const initialStartDateDefault = d3.timeMonth.offset(
-        // Use global d3
+        
         initialEndDate,
         -CONFIG.initialViewMonths,
       );
@@ -60,53 +66,12 @@ export const DomainManager = {
   setContextYDomain(processedData) {
     if (!scales.yContext) return;
 
-    // Determine which data series to use for extent based on visibility
-    const dataForExtent = state.seriesVisibility.smaLine // Use smaLine visibility
-      ? processedData.filter((d) => d.sma != null)
-      : processedData.filter((d) => d.value != null);
-
-    // Find min/max considering the band if visible
-    let yMin = d3.min(
-      dataForExtent,
-      (
-        d, // Use global d3
-      ) =>
-        state.seriesVisibility.smaBand // Use smaBand visibility
-          ? (d.lowerBound ?? d.sma ?? d.value) // Fallback: lowerBand -> sma -> value
-          : (d.sma ?? d.value), // Fallback: sma -> value
+    const [yMin, yMax] = calculateContextYDomain(
+      processedData,
+      state.seriesVisibility.smaLine,
+      state.seriesVisibility.smaBand,
     );
-    let yMax = d3.max(
-      dataForExtent,
-      (
-        d, // Use global d3
-      ) =>
-        state.seriesVisibility.smaBand // Use smaBand visibility
-          ? (d.upperBound ?? d.sma ?? d.value) // Fallback: upperBound -> sma -> value
-          : (d.sma ?? d.value), // Fallback: sma -> value
-    );
-
-    if (
-      yMin == null ||
-      yMax == null ||
-      isNaN(yMin) ||
-      isNaN(yMax) ||
-      dataForExtent.length === 0
-    ) {
-      console.warn(
-        "DomainManager: No valid data for context Y domain. Using fallback [60, 80].",
-      );
-      [yMin, yMax] = [60, 80]; // Fallback domain
-    } else if (yMin === yMax) {
-      // Handle case where all values are the same
-      yMin -= 1;
-      yMax += 1;
-    } else {
-      // Add padding
-      const padding = Math.max(0.5, (yMax - yMin) * 0.05); // 5% padding or 0.5kg minimum
-      yMin -= padding;
-      yMax += padding;
-    }
-
+    state.contextYDomain = [yMin, yMax];
     scales.yContext.domain([yMin, yMax]).nice(); // Apply nice() for better ticks
   },
 
@@ -128,174 +93,29 @@ export const DomainManager = {
         ? Math.abs(yRange[0] - yRange[1])
         : 200; // Estimate height
 
-    let yMin = Infinity,
-      yMax = -Infinity;
-    // y2Min, y2Max removed
-
-    const updateExtent = (value) => {
-      if (value != null && !isNaN(value)) {
-        yMin = Math.min(yMin, value);
-        yMax = Math.max(yMax, value);
-      }
-    };
-    // updateExtentY2 removed
-
     // Define buffer dates only if dynamic Y is enabled
     const currentXDomain = scales.x.domain();
+    state.currentXDomain = currentXDomain;
     const bufferStartDate =
       currentXDomain[0] instanceof Date
-        ? d3.timeDay.offset(currentXDomain[0], -CONFIG.domainBufferDays) // Use global d3
+        ? d3.timeDay.offset(currentXDomain[0], -CONFIG.domainBufferDays) 
         : null;
     const bufferEndDate =
       currentXDomain[1] instanceof Date
-        ? d3.timeDay.offset(currentXDomain[1], CONFIG.domainBufferDays) // Use global d3
+        ? d3.timeDay.offset(currentXDomain[1], CONFIG.domainBufferDays) 
         : null;
 
-    // Helper to check if a date is within the potentially buffered view
-    const isWithinBufferedView = (date) => {
-      return date >= bufferStartDate && date <= bufferEndDate;
-    };
-
-    const calculationDataArray = Array.isArray(dataForCalculation)
-      ? dataForCalculation
-      : [];
-
-    // Iterate through the relevant data
-    calculationDataArray.forEach((d) => {
-      if (!d.date || !isWithinBufferedView(d.date)) return; // Skip if outside buffered view (if dynamic)
-
-      // Weight (Y1) Extent Calculation
-      if (state.seriesVisibility.smaLine && d.sma != null) {
-        updateExtent(d.sma);
-      }
-      if (
-        state.seriesVisibility.smaBand &&
-        d.lowerBound != null &&
-        d.upperBound != null
-      ) {
-        updateExtent(d.lowerBound);
-        updateExtent(d.upperBound);
-      }
-      if (state.seriesVisibility.raw && d.value != null && !d.isOutlier) {
-        updateExtent(d.value); // Optionally include non-outlier raw data
-      }
-
-      // BF% (Y2) Extent Calculation Removed
-    });
-
-    // Include Regression and CI if visible
-    if (
-      state.seriesVisibility.regression &&
-      regressionResult?.pointsWithCI?.length > 0
-    ) {
-      regressionResult.pointsWithCI.forEach((d) => {
-        if (!d.date || !isWithinBufferedView(d.date)) return;
-        updateExtent(d.regressionValue);
-        if (
-          state.seriesVisibility.regressionCI &&
-          d.lowerCI != null &&
-          d.upperCI != null
-        ) {
-          updateExtent(d.lowerCI);
-          updateExtent(d.upperCI);
-        }
-      });
-    }
-
-    // Include Manual Trendlines if visible
     const trendConfig = DataService.getTrendlineConfigFromUI();
-    if (trendConfig.isValid) {
-      // Find relevant dates to check trend values (within buffered view)
-      let datesToCheck = calculationDataArray
-        .map((d) => d.date)
-        .filter(isWithinBufferedView);
-      // Fallbacks if no data points are strictly within the view
-      if (datesToCheck.length === 0 && state.processedData.length > 0) {
-        datesToCheck = [
-          state.processedData[0].date,
-          state.processedData[state.processedData.length - 1].date,
-        ].filter(isWithinBufferedView);
-      }
-      if (datesToCheck.length === 0 && state.processedData.length > 0) {
-        if (currentXDomain[0] instanceof Date)
-          datesToCheck.push(currentXDomain[0]);
-        if (currentXDomain[1] instanceof Date)
-          datesToCheck.push(currentXDomain[1]);
-      }
-      // Ensure we check at least the start/end of the buffered view if no other points exist
-      if (datesToCheck.length === 0 && bufferStartDate && bufferEndDate) {
-        datesToCheck.push(bufferStartDate, bufferEndDate);
-      }
 
-      datesToCheck.forEach((date) => {
-        if (state.seriesVisibility.trend1) {
-          updateExtent(
-            DataService.calculateTrendWeight(
-              trendConfig.startDate,
-              trendConfig.initialWeight,
-              trendConfig.weeklyIncrease1,
-              date,
-            ),
-          );
-        }
-        if (state.seriesVisibility.trend2) {
-          updateExtent(
-            DataService.calculateTrendWeight(
-              trendConfig.startDate,
-              trendConfig.initialWeight,
-              trendConfig.weeklyIncrease2,
-              date,
-            ),
-          );
-        }
-      });
-    }
-
-    // Include Goal Line if visible
-    if (state.seriesVisibility.goal && state.goal.weight != null) {
-      updateExtent(state.goal.weight);
-      // Also consider the starting point of the goal line (last SMA) if it's in view
-      const lastSmaPoint = [...state.processedData]
-        .reverse()
-        .find((d) => d.sma != null);
-      if (lastSmaPoint?.date && isWithinBufferedView(lastSmaPoint.date)) {
-        updateExtent(lastSmaPoint.sma);
-      }
-      // And the end point if a goal date is set and in view
-      if (state.goal.date && isWithinBufferedView(state.goal.date)) {
-        updateExtent(state.goal.weight);
-      }
-    }
-
-    // --- Finalize Y1 Domain (Weight) ---
-    if (yMin === Infinity || yMax === -Infinity) {
-      // Fallback: Use context domain or absolute values
-      const contextDomain = scales.yContext?.domain();
-      if (
-        contextDomain &&
-        !isNaN(contextDomain[0]) &&
-        !isNaN(contextDomain[1])
-      ) {
-        [yMin, yMax] = contextDomain;
-      } else {
-        [yMin, yMax] = [60, 80]; // Absolute fallback
-        console.warn(
-          "DomainManager: Using absolute fallback Y domain [60, 80].",
-        );
-      }
-    } else if (yMin === yMax) {
-      // Handle single value case
-      yMin -= CONFIG.yAxisMinPaddingKg * 2;
-      yMax += CONFIG.yAxisMinPaddingKg * 2;
-    } else {
-      // Add padding
-      const padding = Math.max(
-        CONFIG.yAxisMinPaddingKg,
-        (yMax - yMin) * CONFIG.yAxisPaddingFactor,
-      );
-      yMin -= padding;
-      yMax += padding;
-    }
+    const [yMin, yMax] = calculateFocusYDomain(
+      dataForCalculation,
+      regressionResult,
+      CONFIG,
+      state,
+      bufferStartDate,
+      bufferEndDate,
+      trendConfig,
+    );
 
     // Apply the calculated domain, ensuring validity
     if (!isNaN(yMin) && !isNaN(yMax)) {
@@ -308,7 +128,6 @@ export const DomainManager = {
       scales.y.domain([60, 80]).nice(); // Fallback
     }
 
-    // --- Finalize Y2 Domain (Body Fat %) - Removed ---
     // Set a default fixed range for y2 if it exists, even if unused
     scales.y2?.domain([0, 100]);
   },
@@ -320,57 +139,20 @@ export const DomainManager = {
   setSecondaryYDomains(visibleData) {
     // Balance Chart
     if (scales.yBalance) {
-      const maxAbsBalance =
-        d3.max(visibleData, (d) => Math.abs(d.netBalance ?? 0)) ?? 0; // Use global d3
-      // Ensure a minimum visible range even if balance is always zero or near zero
-      const yBalanceDomainMax = Math.max(500, maxAbsBalance * 1.1);
+      const yBalanceDomainMax = calculateBalanceYDomain(visibleData);
       scales.yBalance.domain([-yBalanceDomainMax, yBalanceDomainMax]).nice();
     }
 
     // Rate of Change Chart
     if (scales.yRate) {
-      const rateExtent = d3.extent(visibleData, (d) => d.smoothedWeeklyRate); // Use global d3
-      let [yRateMin, yRateMax] = rateExtent;
-
-      if (
-        yRateMin == null ||
-        yRateMax == null ||
-        isNaN(yRateMin) ||
-        isNaN(yRateMax)
-      ) {
-        [yRateMin, yRateMax] = [-0.5, 0.5]; // Fallback
-      } else if (yRateMin === yRateMax) {
-        yRateMin -= 0.1;
-        yRateMax += 0.1;
-      }
-      // Add padding relative to the range, minimum padding 0.05 kg/wk
-      const yRatePadding = Math.max(0.05, Math.abs(yRateMax - yRateMin) * 0.1);
-      scales.yRate
-        .domain([yRateMin - yRatePadding, yRateMax + yRatePadding])
-        .nice();
+      const [yRateMin, yRateMax] = calculateRateYDomain(visibleData);
+      scales.yRate.domain([yRateMin, yRateMax]).nice();
     }
 
     // TDEE Difference Chart
     if (scales.yTdeeDiff) {
-      const diffExtent = d3.extent(visibleData, (d) => d.avgTdeeDifference); // Use global d3
-      let [yDiffMin, yDiffMax] = diffExtent;
-
-      if (
-        yDiffMin == null ||
-        yDiffMax == null ||
-        isNaN(yDiffMin) ||
-        isNaN(yDiffMax)
-      ) {
-        [yDiffMin, yDiffMax] = [-300, 300]; // Fallback
-      } else if (yDiffMin === yDiffMax) {
-        yDiffMin -= 50;
-        yDiffMax += 50;
-      }
-      // Add padding relative to the range, minimum padding 50 kcal
-      const yDiffPadding = Math.max(50, Math.abs(yDiffMax - yDiffMin) * 0.1);
-      scales.yTdeeDiff
-        .domain([yDiffMin - yDiffPadding, yDiffMax + yDiffPadding])
-        .nice();
+      const [yDiffMin, yDiffMax] = calculateTdeeDiffYDomain(visibleData);
+      scales.yTdeeDiff.domain([yDiffMin, yDiffMax]).nice();
     }
   },
 
@@ -381,31 +163,10 @@ export const DomainManager = {
   setScatterPlotDomains(scatterData) {
     if (!scales.xScatter || !scales.yScatter) return;
 
-    if (!Array.isArray(scatterData) || scatterData.length === 0) {
-      // Set default domains if no data
-      scales.xScatter.domain([-500, 500]).nice();
-      scales.yScatter.domain([-0.5, 0.5]).nice();
-      return;
-    }
+    const { xDomain, yDomain } = calculateScatterPlotDomains(scatterData);
 
-    const [xMinRaw, xMaxRaw] = d3.extent(scatterData, (d) => d.avgNetCal); // Use global d3
-    const [yMinRaw, yMaxRaw] = d3.extent(scatterData, (d) => d.weeklyRate); // Use global d3
-
-    // Handle potential null/NaN from extent if data is sparse/invalid
-    const xMin = xMinRaw == null || isNaN(xMinRaw) ? 0 : xMinRaw;
-    const xMax = xMaxRaw == null || isNaN(xMaxRaw) ? 0 : xMaxRaw;
-    const yMin = yMinRaw == null || isNaN(yMinRaw) ? 0 : yMinRaw;
-    const yMax = yMaxRaw == null || isNaN(yMaxRaw) ? 0 : yMaxRaw;
-
-    const xRange = xMax - xMin;
-    const yRange = yMax - yMin;
-
-    // Add padding, ensuring a minimum range
-    const xPadding = xRange === 0 ? 500 : Math.max(100, xRange * 0.1);
-    const yPadding = yRange === 0 ? 0.5 : Math.max(0.1, yRange * 0.1);
-
-    scales.xScatter.domain([xMin - xPadding, xMax + xPadding]).nice();
-    scales.yScatter.domain([yMin - yPadding, yMax + yPadding]).nice();
+    scales.xScatter.domain(xDomain).nice();
+    scales.yScatter.domain(yDomain).nice();
   },
 
   /**

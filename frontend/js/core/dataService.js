@@ -1,6 +1,3 @@
-// dataService.js
-// Handles data fetching, processing, calculations
-
 import { CONFIG } from "../config.js";
 import { Utils } from "./utils.js";
 import { state } from "../state.js";
