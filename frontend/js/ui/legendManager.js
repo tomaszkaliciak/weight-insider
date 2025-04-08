@@ -34,7 +34,7 @@ export const LegendManager = {
     );
 
     if (seriesId === "regression") {
-      console.log(`[LM Toggle] Handling linked series for regression.`); // <-- ADDED
+      console.log(`[LM Toggle] Handling linked series for regression.`);
       state.seriesVisibility.regressionCI = isVisible;
       this.updateAppearance("regressionCI", isVisible); // Update CI item appearance
       console.log(
@@ -52,12 +52,10 @@ export const LegendManager = {
     );
     this.updateAppearance(seriesId, isVisible);
 
-    // FIXME: publish event
-    MasterUpdater.updateAllCharts();
-    StatsManager.update();
+    EventBus.publish("state::seriesVisibilityUpdate");
     LegendManager.build();
 
-    console.log(`[LM Toggle] END: Toggle finished for "${seriesId}"`); // <-- ADDED
+    console.log(`[LM Toggle] END: Toggle finished for "${seriesId}"`);
   },
 
   /**
@@ -74,7 +72,7 @@ export const LegendManager = {
       `.legend-item[data-id='${seriesId}']`,
     );
     if (!item || item.empty()) {
-      console.warn(`[LM Appearance] Legend item for "${seriesId}" not found.`); // <-- ADDED
+      console.warn(`[LM Appearance] Legend item for "${seriesId}" not found.`);
       return;
     }
     item.classed("hidden", !isVisible);
@@ -104,7 +102,7 @@ export const LegendManager = {
     ) {
       console.warn(
         "[LM Build] Prerequisites not met (colors or data missing).",
-      ); // <-- ADDED log
+      );
       ui.legendContainer
         .append("span")
         .attr("class", "legend-empty-msg")
