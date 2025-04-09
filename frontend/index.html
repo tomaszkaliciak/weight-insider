@@ -218,7 +218,7 @@
                                 Trends & Correlation
                                 <span
                                     class="info-icon"
-                                    title="Trends/correlation calculated based on Analysis Range. Volatility = Std Dev of raw weight around SMA (excl. outliers). Rolling Volatility = Same calculation, but over the last N days (see config). Smoothed Rate = 7d avg daily SMA change. Regression Slope uses selected range. Correlation = Pearson's r (Net Cal vs Rate, min 4 wks)." 
+                                    title="Trends/correlation calculated based on Analysis Range. Volatility = Std Dev of raw weight around SMA (excl. outliers). Rolling Volatility = Same calculation, but over the last N days (see config). Smoothed Rate = 7d avg daily SMA change. Regression Slope uses selected range. Correlation = Pearson's r (Net Cal vs Rate, min 4 wks)."
                                     ><svg
                                         xmlns="http://www.w3.org/2000/svg"
                                         width="16"
@@ -376,13 +376,6 @@
                                 >
                                     Apply Range
                                 </button>
-                                <button
-                                    id="resetAnalysisRange"
-                                    class="button-secondary"
-                                    title="Reset the analysis range to match the current zoom/pan level of the main chart view."
-                                >
-                                    Use Chart View
-                                </button>
                             </div>
                             <div class="current-range-display">
                                 Currently Analyzing:
@@ -397,7 +390,6 @@
                 <section
                     id="analysis-results-card"
                     class="card collapsible"
-                    aria-labelledby="analysis-results-heading"
                 >
                     <h2 id="analysis-results-heading">
                         <button
@@ -427,7 +419,7 @@
                                 <polyline points="17 6 23 6 23 12"></polyline>
                             </svg>
                         </span>
-                        Analysis Results <small>(Loading...)</small>
+                        Analysis Results
                     </h2>
                     <div class="card-content" id="analysis-results-content">
                         <!-- Existing Summary -->

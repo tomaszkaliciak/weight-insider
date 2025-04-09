@@ -308,7 +308,6 @@ export const EventHandlers = {
     state.pinnedTooltipData = null;
     state.highlightedDate = null;
     state.interactiveRegressionRange = { start: null, end: null };
-    state.analysisRange.isCustom = false;
 
     const selection = event.selection;
     if (!scales.xContext || !scales.x || !zoom) {
@@ -367,7 +366,6 @@ export const EventHandlers = {
     state.pinnedTooltipData = null;
     state.highlightedDate = null;
     state.interactiveRegressionRange = { start: null, end: null };
-    state.analysisRange.isCustom = false;
     state.lastZoomTransform = event.transform;
 
     if (!scales.xContext || !scales.x || !brushes.context) {
@@ -586,7 +584,7 @@ export const EventHandlers = {
     ) {
       startDate.setHours(0, 0, 0, 0);
       endDate.setHours(23, 59, 59, 999);
-      state.analysisRange = { start: startDate, end: endDate, isCustom: true };
+      state.analysisRange = { start: startDate, end: endDate };
       state.pinnedTooltipData = null;
       state.highlightedDate = null;
       state.interactiveRegressionRange = { start: null, end: null };
@@ -601,42 +599,6 @@ export const EventHandlers = {
     } else {
       Utils.showStatusMessage("Invalid date range selected.", "error");
     }
-  },
-
-  handleAnalysisRangeReset() {
-    state.analysisRange.isCustom = false;
-    state.pinnedTooltipData = null;
-    state.highlightedDate = null;
-    state.interactiveRegressionRange = { start: null, end: null };
-
-    if (state.lastZoomTransform && scales.xContext && scales.x) {
-      const domainBeforeCustom = state.lastZoomTransform
-        .rescaleX(scales.xContext)
-        .domain();
-      if (domainBeforeCustom.every((d) => d instanceof Date && !isNaN(d))) {
-        scales.x.domain(domainBeforeCustom);
-      } else {
-        console.warn(
-          "Reset Range: Invalid domain from last transform, re-initializing.",
-        );
-        DomainManager.initializeDomains(state.processedData);
-      }
-    } else {
-      console.warn(
-        "Reset Range: No last transform found, re-initializing domains.",
-      );
-      DomainManager.initializeDomains(state.processedData);
-    }
-    EventHandlers.syncBrushAndZoomToFocus();
-
-    MasterUpdater.updateAllCharts();
-    StatsManager.update();
-    LegendManager.build();
-    Utils.showStatusMessage(
-      "Analysis range reset to chart view.",
-      "info",
-      1500,
-    );
   },
 
   syncBrushAndZoomToFocus() {
@@ -744,7 +706,6 @@ export const EventHandlers = {
     const finalDomain = [new Date(clampedStartTime), new Date(clampedEndTime)];
     scales.x.domain(finalDomain);
 
-    state.analysisRange.isCustom = false;
     EventHandlers.syncBrushAndZoomToFocus();
 
     MasterUpdater.updateAllCharts();
@@ -884,15 +845,6 @@ export const EventHandlers = {
 
   // --- Helper to get current analysis range ---
   getAnalysisDateRange() {
-    if (
-      state.analysisRange.isCustom &&
-      state.analysisRange.start instanceof Date &&
-      state.analysisRange.end instanceof Date &&
-      !isNaN(state.analysisRange.start) &&
-      !isNaN(state.analysisRange.end)
-    ) {
-      return { start: state.analysisRange.start, end: state.analysisRange.end };
-    }
     const chartDomain = scales.x?.domain();
     if (
       chartDomain?.length === 2 &&
@@ -991,7 +943,6 @@ export const EventHandlers = {
     }
   },
 
-  // --- Setup Function ---
   setupAll() {
     console.log("EventHandlers: Setting up event listeners...");
 
@@ -1001,7 +952,6 @@ export const EventHandlers = {
     // Controls
     ui.themeToggle?.on("click", EventHandlers.handleThemeToggle);
 
-    // Forms & Buttons
     d3.select("#goal-setting-form").on(
       "submit",
       EventHandlers.handleGoalSubmit,
@@ -1012,10 +962,6 @@ export const EventHandlers = {
     ui.updateAnalysisRangeBtn?.on(
       "click",
       EventHandlers.handleAnalysisRangeUpdate,
-    );
-    ui.resetAnalysisRangeBtn?.on(
-      "click",
-      EventHandlers.handleAnalysisRangeReset,
     );
     ui.whatIfSubmitBtn?.on("click", EventHandlers.handleWhatIfSubmit);
     ui.whatIfIntakeInput?.on("keydown", (event) => {

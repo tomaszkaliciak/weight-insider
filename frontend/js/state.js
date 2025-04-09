@@ -13,7 +13,7 @@ export const state = {
   trendChangePoints: [], // Detected trend change points {date, magnitude}
   goal: { weight: null, date: null, targetRate: null }, // User goal settings
   goalAchievedDate: null, // <<< ADDED: Date goal was first met (based on SMA)
-  analysisRange: { start: null, end: null, isCustom: false }, // Currently analyzed date range
+  analysisRange: { start: null, end: null }, // Currently analyzed date range
   interactiveRegressionRange: { start: null, end: null }, // Range selected by regression brush
   regressionStartDate: null, // Start date set via UI for regression calculation (if not using interactive brush)
   currentTheme: "light", // Current UI theme ('light' or 'dark')

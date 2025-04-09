@@ -26,7 +26,6 @@ export const ui = {
   insightSummaryContainer: null,
   actionableInsightsContainer: null,
   actionableInsightsList: null,
-  analysisResultsHeading: null,
   // SVG elements & groups (populated during chart setup, not here)
   svg: null,
   focus: null,
@@ -98,7 +97,6 @@ export const ui = {
   analysisStartDateInput: null,
   analysisEndDateInput: null,
   updateAnalysisRangeBtn: null,
-  resetAnalysisRangeBtn: null,
   analysisRangeDisplay: null,
   annotationDateInput: null,
   annotationTextInput: null,
@@ -137,7 +135,6 @@ export function cacheSelectors() {
     "insight-summary": "insightSummaryContainer",
     "actionable-insights-container": "actionableInsightsContainer",
     "actionable-insights-list": "actionableInsightsList",
-    "analysis-results-heading": "analysisResultsHeading",
     // Controls
     "theme-toggle": "themeToggle",
     goalWeight: "goalWeightInput",
@@ -151,7 +148,6 @@ export function cacheSelectors() {
     analysisStartDate: "analysisStartDateInput",
     analysisEndDate: "analysisEndDateInput",
     updateAnalysisRange: "updateAnalysisRangeBtn",
-    resetAnalysisRange: "resetAnalysisRangeBtn",
     "analysis-range-display": "analysisRangeDisplay",
     "annotation-form": "annotationForm",
     "annotation-date": "annotationDateInput",

@@ -1,4 +1,3 @@
-
 import { CONFIG } from "../config.js";
 import { DataService } from "./dataService.js";
 
@@ -20,15 +19,15 @@ export function calculateContextYDomain(data, useSma, useBand) {
     dataForExtent,
     (d) =>
       useBand
-        ? d.lowerBound ?? d.sma ?? d.value // Fallback: lowerBand -> sma -> value
-        : d.sma ?? d.value, // Fallback: sma -> value
+        ? (d.lowerBound ?? d.sma ?? d.value) // Fallback: lowerBand -> sma -> value
+        : (d.sma ?? d.value), // Fallback: sma -> value
   );
   let yMax = d3.max(
     dataForExtent,
     (d) =>
       useBand
-        ? d.upperBound ?? d.sma ?? d.value // Fallback: upperBound -> sma -> value
-        : d.sma ?? d.value, // Fallback: sma -> value
+        ? (d.upperBound ?? d.sma ?? d.value) // Fallback: upperBound -> sma -> value
+        : (d.sma ?? d.value), // Fallback: sma -> value
   );
 
   if (
@@ -134,9 +133,7 @@ export function calculateFocusYDomain(
   // Include Manual Trendlines if visible
   if (trendConfig.isValid) {
     // Find relevant dates to check trend values (within buffered view)
-    let datesToCheck = data
-      .map((d) => d.date)
-      .filter(isWithinBufferedView);
+    let datesToCheck = data.map((d) => d.date).filter(isWithinBufferedView);
     // Fallbacks if no data points are strictly within the view
     if (datesToCheck.length === 0 && state.processedData.length > 0) {
       datesToCheck = [
@@ -203,9 +200,7 @@ export function calculateFocusYDomain(
       [yMin, yMax] = contextDomain;
     } else {
       [yMin, yMax] = [60, 80]; // Absolute fallback
-      console.warn(
-        "DomainManager: Using absolute fallback Y domain [60, 80].",
-      );
+      console.warn("DomainManager: Using absolute fallback Y domain [60, 80].");
     }
   } else if (yMin === yMax) {
     // Handle single value case
@@ -230,7 +225,7 @@ export function calculateFocusYDomain(
  * @returns {number} The Y domain max.
  */
 export function calculateBalanceYDomain(data) {
-  const maxAbsBalance = d3.max(data, (d) => Math.abs(d.netBalance ?? 0)) ?? 0; 
+  const maxAbsBalance = d3.max(data, (d) => Math.abs(d.netBalance ?? 0)) ?? 0;
   // Ensure a minimum visible range even if balance is always zero or near zero
   return Math.max(500, maxAbsBalance * 1.1);
 }
@@ -241,7 +236,7 @@ export function calculateBalanceYDomain(data) {
  * @returns {Array<number>} The Y domain [yMin, yMax].
  */
 export function calculateRateYDomain(data) {
-  const rateExtent = d3.extent(data, (d) => d.smoothedWeeklyRate); 
+  const rateExtent = d3.extent(data, (d) => d.smoothedWeeklyRate);
   let [yRateMin, yRateMax] = rateExtent;
 
   if (
@@ -266,7 +261,7 @@ export function calculateRateYDomain(data) {
  * @returns {Array<number>} The Y domain [yMin, yMax].
  */
 export function calculateTdeeDiffYDomain(data) {
-  const diffExtent = d3.extent(data, (d) => d.avgTdeeDifference); 
+  const diffExtent = d3.extent(data, (d) => d.avgTdeeDifference);
   let [yDiffMin, yDiffMax] = diffExtent;
 
   if (
@@ -296,8 +291,8 @@ export function calculateScatterPlotDomains(data) {
     return { xDomain: [-500, 500], yDomain: [-0.5, 0.5] };
   }
 
-  const [xMinRaw, xMaxRaw] = d3.extent(data, (d) => d.avgNetCal); 
-  const [yMinRaw, yMaxRaw] = d3.extent(data, (d) => d.weeklyRate); 
+  const [xMinRaw, xMaxRaw] = d3.extent(data, (d) => d.avgNetCal);
+  const [yMinRaw, yMaxRaw] = d3.extent(data, (d) => d.weeklyRate);
 
   // Handle potential null/NaN from extent if data is sparse/invalid
   const xMin = xMinRaw == null || isNaN(xMinRaw) ? 0 : xMinRaw;
@@ -315,5 +310,5 @@ export function calculateScatterPlotDomains(data) {
   return {
     xDomain: [xMin - xPadding, xMax + xPadding],
     yDomain: [yMin - yPadding, yMax + yPadding],
-  };  
+  };
 }

@@ -1,8 +1,7 @@
-
-import { scales } from "../ui/chartSetup.js"; 
+import { scales } from "../ui/chartSetup.js";
 import { state } from "../state.js";
 import { CONFIG } from "../config.js";
-import { DataService } from "./dataService.js"; 
+import { DataService } from "./dataService.js";
 import { EventHandlers } from "../interactions/eventHandlers.js";
 import {
   calculateContextYDomain,
@@ -21,7 +20,7 @@ export const DomainManager = {
    * @returns {Array<Date>} The initial domain for the focus chart [startDate, endDate].
    */
   setXDomains(processedData) {
-    const fullDataExtent = d3.extent(processedData, (d) => d.date); 
+    const fullDataExtent = d3.extent(processedData, (d) => d.date);
 
     let initialXDomain = [];
     if (!fullDataExtent[0] || !fullDataExtent[1]) {
@@ -29,7 +28,7 @@ export const DomainManager = {
         "DomainManager: No valid date range found in data. Using fallback.",
       );
       const today = new Date();
-      const past = d3.timeMonth.offset(today, -CONFIG.initialViewMonths); 
+      const past = d3.timeMonth.offset(today, -CONFIG.initialViewMonths);
       fullDataExtent[0] = past;
       fullDataExtent[1] = today;
       initialXDomain = [past, today];
@@ -37,7 +36,6 @@ export const DomainManager = {
       // Calculate default initial view (e.g., last N months)
       const initialEndDate = fullDataExtent[1];
       const initialStartDateDefault = d3.timeMonth.offset(
-        
         initialEndDate,
         -CONFIG.initialViewMonths,
       );
@@ -98,11 +96,11 @@ export const DomainManager = {
     state.currentXDomain = currentXDomain;
     const bufferStartDate =
       currentXDomain[0] instanceof Date
-        ? d3.timeDay.offset(currentXDomain[0], -CONFIG.domainBufferDays) 
+        ? d3.timeDay.offset(currentXDomain[0], -CONFIG.domainBufferDays)
         : null;
     const bufferEndDate =
       currentXDomain[1] instanceof Date
-        ? d3.timeDay.offset(currentXDomain[1], CONFIG.domainBufferDays) 
+        ? d3.timeDay.offset(currentXDomain[1], CONFIG.domainBufferDays)
         : null;
 
     const trendConfig = DataService.getTrendlineConfigFromUI();

@@ -39,13 +39,6 @@ function _updateAnalysisRangeDisplay() {
   if (ui.statElements.analysisRangeDisplay) {
     ui.statElements.analysisRangeDisplay.textContent = displayStr;
   }
-  // Update the small text in the results heading
-  if (ui.analysisResultsHeading && !ui.analysisResultsHeading.empty()) {
-    const headingSmallText = state.analysisRange.isCustom
-      ? "(Custom Range)"
-      : "(Chart View)";
-    ui.analysisResultsHeading.select("small").text(headingSmallText);
-  }
 }
 
 export const MasterUpdater = {
@@ -162,11 +155,7 @@ export const MasterUpdater = {
     RateChartUpdater.updateChart(visibleProcessedData, rateWidth);
     TDEEDiffChartUpdater.updateChart(visibleProcessedData);
     // Scatter plot updated by StatsManager
-
-    // --- Update Miscellaneous UI Elements Related to View ---
-    if (!state.analysisRange.isCustom) {
-      _updateAnalysisRangeInputsFromCurrentView();
-    }
+    _updateAnalysisRangeInputsFromCurrentView();
     _updateAnalysisRangeDisplay();
   },
 };
