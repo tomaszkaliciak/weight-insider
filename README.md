@@ -1,6 +1,8 @@
 # weight-insider
 
+
 ![screenshot](assets/visualisation.png)
+![screenshot](assets/visualisation2.png)
 
 TODO:
 1. Understand how `plateau detection` is designed, and fix it.
