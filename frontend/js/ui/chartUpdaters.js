@@ -697,7 +697,6 @@ export const FocusChartUpdater = {
           .transition()
           .duration(dur / 2)
           .style("opacity", 0)
-          .attr("transform", `translate(-1000, -1000)`)
           .remove();
       },
     );
