@@ -915,20 +915,7 @@ input:checked + .slider:before {
     padding: 7px 12px;
     font-size: 0.85em;
 }
-.current-range-display {
-    font-size: 0.8em;
-    color: var(--text-muted);
-    margin-top: auto;
-    padding-top: 10px;
-    text-align: center;
-    flex-shrink: 0;
-    transition: color var(--transition-speed) var(--transition-ease);
-}
-.current-range-display strong {
-    font-weight: 500;
-    color: var(--text-secondary);
-    transition: color var(--transition-speed) var(--transition-ease);
-}
+
 /* ======================================= */
 /* --- Forms & Controls Improvements END --- */
 /* ======================================= */
