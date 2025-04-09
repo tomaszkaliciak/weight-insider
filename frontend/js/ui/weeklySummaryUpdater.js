@@ -187,7 +187,7 @@ export const WeeklySummaryUpdater = {
             );
 
           // Re-render the table body with sorted data
-          this.updateTable(state.weeklySummaryData); // Call self to re-render body
+          this.weeklyData(state.weeklySummaryData); // Call self to re-render body
         });
     } else {
       // Table structure already exists, get references
