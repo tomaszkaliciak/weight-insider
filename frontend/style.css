@@ -550,7 +550,7 @@ hr.subtle-hr {
     border-bottom: none;
     padding-bottom: 0;
     user-select: none;
-} /* Added user-select: none */
+}
 .card.collapsible:not(.collapsed) h2 {
     border-bottom: 1px solid var(--border-color-light);
     padding-bottom: 0.8em;
@@ -771,7 +771,7 @@ body.dark-theme #updateAnalysisRange:active {
     font-size: 0.9rem;
     transition: color var(--transition-speed) var(--transition-ease);
     cursor: default;
-} /* Removed pointer */
+}
 .switch {
     position: relative;
     display: inline-block;
@@ -1080,7 +1080,7 @@ body.dark-theme .highlight-trigger:hover .stat-date.highlightable {
     border-left: 4px solid var(--primary-color);
     padding: 15px 20px;
     border-radius: 0 6px 6px 0;
-    margin-bottom: 1.5em; /* Added margin */
+    margin-bottom: 1.5em;
     font-size: 0.92rem;
     color: var(--text-secondary);
     flex-shrink: 0;
@@ -1914,7 +1914,7 @@ hr.tooltip-hr {
     shape-rendering: crispEdges;
     transition: fill var(--transition-speed) var(--transition-ease);
     cursor: ew-resize;
-} /* Added cursor */
+}
 .brush .handle {
     fill: var(--text-secondary);
     stroke: var(--bg-secondary);
@@ -1924,7 +1924,7 @@ hr.tooltip-hr {
     opacity: 0.8;
     transition: fill var(--transition-speed) var(--transition-ease);
     cursor: ew-resize;
-} /* Added cursor */
+}
 .zoom-capture {
     cursor: move;
     fill: none;
@@ -1973,7 +1973,7 @@ svg .focus {
         fill var(--transition-speed) var(--transition-ease),
         stroke var(--transition-speed-fast) var(--transition-ease);
     cursor: help;
-} /* Added cursor */
+}
 .scatter-dot:hover {
     opacity: 1;
     stroke: var(--text-primary);

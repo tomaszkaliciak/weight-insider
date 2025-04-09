@@ -155,7 +155,6 @@ export const FocusChartUpdater = {
         ? regressionResult.pointsWithCI
         : [];
 
-    // <<< --- ADD LOG --- >>>
     console.log(
       `[FocusUpdater Paths] Regression visibility state: showReg=${showReg}, showRegCI=${showRegCI}. Points length: ${regPoints.length}. CI Points length: ${regCIPoints.length}`,
     );
@@ -598,7 +597,6 @@ export const FocusChartUpdater = {
     const dur = CONFIG.transitionDurationMs;
     if (!ui.trendChangeGroup || !scales.x || !scales.y) return;
 
-    // <<< --- ADD LOG --- >>>
     console.log(
       `[FocusChartUpdater] Running updateTrendChangeMarkers. Visibility state (trendChanges) = ${state.seriesVisibility.trendChanges}`,
     );
@@ -628,7 +626,6 @@ export const FocusChartUpdater = {
         p.date <= xDomain[1],
     );
 
-    // <<< --- ADD LOG --- >>>
     console.log(
       `[FocusChartUpdater] Filtered markerData length: ${markerData.length}, visibleMarkers length: ${visibleMarkers.length}`,
     );
@@ -646,7 +643,6 @@ export const FocusChartUpdater = {
     // Join logic handles adding/removing based on visibleMarkers data
     markers.join(
       (enter) => {
-        // <<< --- ADD LOG --- >>>
         console.log(
           `[FocusChartUpdater] Entering ${enter.size()} trend change markers.`,
         );
@@ -676,7 +672,6 @@ export const FocusChartUpdater = {
         return group;
       },
       (update) => {
-        // <<< --- ADD LOG --- >>>
         console.log(
           `[FocusChartUpdater] Updating ${update.size()} trend change markers.`,
         );
@@ -695,7 +690,6 @@ export const FocusChartUpdater = {
           });
       },
       (exit) => {
-        // <<< --- ADD LOG --- >>>
         console.log(
           `[FocusChartUpdater] Exiting ${exit.size()} trend change markers.`,
         );
@@ -1140,7 +1134,7 @@ export const ScatterPlotUpdater = {
       .call(axes.yScatterAxis);
   },
   updateChart(data) {
-    let scatterData = data.correlationScatterData;
+    let scatterData = state.correlationScatterData;
     const dur = CONFIG.transitionDurationMs;
     if (!ui.scatterDotsGroup || !scales.xScatter || !scales.yScatter) return;
     const validScatterData = (

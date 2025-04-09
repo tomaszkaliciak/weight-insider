@@ -359,7 +359,7 @@ export const InsightsGenerator = {
 
         if (trendStatus) summaryHtml += `<p>${trendStatus}</p>`;
         if (tdeeStatus) summaryHtml += `<p>${tdeeStatus}</p>`;
-        if (goalStatus) summaryHtml += `<p>${goalStatus}</p>`; // Goal status is now enhanced
+        if (goalStatus) summaryHtml += `<p>${goalStatus}</p>`;
         if (consistencyStatus) summaryHtml += `<p>${consistencyStatus}</p>`;
         if (detectedFeaturesHtml) summaryHtml += detectedFeaturesHtml;
       } catch (error) {

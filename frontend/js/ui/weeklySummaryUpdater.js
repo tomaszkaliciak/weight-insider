@@ -55,7 +55,7 @@ export const WeeklySummaryUpdater = {
   },
 
   weeklyData(data) {
-    let weeklyData = data.weeklySummaryData;
+    let weeklyData = state.weeklySummaryData;
     const container = ui.weeklySummaryContainer; // Use cached container
     if (!container || container.empty()) {
       console.warn("WeeklySummaryUpdater: Container element not found.");
@@ -218,6 +218,7 @@ export const WeeklySummaryUpdater = {
     // --- Bind Data and Update Rows/Cells ---
     const rows = tbody.selectAll("tr").data(sortedData, (d) => d.weekKey); // Use weekKey as the unique identifier
 
+
     rows.join(
       (enter) => {
         const tr = enter.append("tr");
@@ -250,6 +251,6 @@ export const WeeklySummaryUpdater = {
   },
 
   init() {
-    EventBus.subscribe("state::statsUpdated", WeeklySummaryUpdater.weeklyData);
+    EventBus.subscribe("state::statsUpdated", this.weeklyData.bind(this) );
   },
 };
