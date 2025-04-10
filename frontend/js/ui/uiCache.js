@@ -133,8 +133,6 @@ export function cacheSelectors() {
     "status-message": "statusMessage",
     "annotation-list": "annotationList",
     "insight-summary": "insightSummaryContainer",
-    "actionable-insights-container": "actionableInsightsContainer",
-    "actionable-insights-list": "actionableInsightsList",
     // Controls
     "theme-toggle": "themeToggle",
     goalWeight: "goalWeightInput",

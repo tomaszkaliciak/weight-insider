@@ -287,23 +287,6 @@ export const InsightsGenerator = {
     const tdeeTrend = stats.avgTDEE_WgtChange;
     const tdeeGFit = stats.avgExpenditureGFit;
 
-    if (tdeeDiff != null && Math.abs(tdeeDiff) > 150) {
-      // If significant difference between Trend and GFit
-      const higherSource = tdeeDiff > 0 ? "Weight Trend" : "GFit";
-      const lowerSource = tdeeDiff > 0 ? "GFit" : "Weight Trend";
-      insights.push(
-        `<li class="insight-info"><span class="insight-icon">💡</span> <strong>TDEE Discrepancy:</strong> Your TDEE estimated from ${higherSource} (~${fv(tdeeTrend, 0)} kcal) is significantly different from your average GFit expenditure (~${fv(tdeeGFit, 0)} kcal). Review your calorie logging accuracy and GFit activity levels/reporting.</li>`,
-      );
-    } else if (
-      tdeeAdaptive != null &&
-      tdeeTrend != null &&
-      Math.abs(tdeeAdaptive - tdeeTrend) > 150
-    ) {
-      insights.push(
-        `<li class="insight-info"><span class="insight-icon">💡</span> <strong>TDEE Methods Differ:</strong> Your Adaptive TDEE (~${fv(tdeeAdaptive, 0)} kcal) differs notably from the Trend-based estimate (~${fv(tdeeTrend, 0)} kcal). The Adaptive value is often more stable; consider prioritizing it for planning.</li>`,
-      );
-    }
-
     // --- Plateau Insights ---
     if (plateausInRange.length > 0) {
       const lastPlateau = plateausInRange[plateausInRange.length - 1];
@@ -376,40 +359,6 @@ export const InsightsGenerator = {
       );
     } else {
       console.warn("InsightsGenerator: Insight summary container not found.");
-    }
-
-    // --- Update Actionable Insights ---
-    if (ui.actionableInsightsList && !ui.actionableInsightsList.empty()) {
-      // Need plateaus detected within the current analysis range
-      const analysisRange = EventHandlers.getAnalysisDateRange();
-      const plateausInRange = state.plateaus.filter(
-        (p) =>
-          p.endDate instanceof Date &&
-          p.startDate instanceof Date &&
-          p.endDate >= analysisRange.start &&
-          p.startDate <= analysisRange.end,
-      );
-
-      const actionableHtml = this._generateActionableInsightsHTML(
-        stats,
-        plateausInRange,
-      );
-      ui.actionableInsightsList.html(
-        actionableHtml ||
-          '<li class="insight-info">No specific suggestions available.</li>',
-      );
-
-      // Show/hide the whole actionable container based on content
-      if (ui.actionableInsightsContainer) {
-        ui.actionableInsightsContainer.style(
-          "display",
-          actionableHtml ? null : "none",
-        );
-      }
-    } else {
-      console.warn(
-        "InsightsGenerator: Actionable insights list container not found.",
-      );
     }
   },
   init() {

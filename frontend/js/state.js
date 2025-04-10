@@ -1,5 +1,4 @@
 // state.js
-// Contains the shared, mutable state for the application.
 
 export const state = {
   isInitialized: false,
