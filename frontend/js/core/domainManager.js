@@ -137,8 +137,9 @@ export const DomainManager = {
   setSecondaryYDomains(visibleData) {
     // Balance Chart
     if (scales.yBalance) {
-      const yBalanceDomainMax = calculateBalanceYDomain(visibleData);
-      scales.yBalance.domain([-yBalanceDomainMax, yBalanceDomainMax]).nice();
+      const [yBalanceDomainMax, yBalanceDomainMin] =
+        calculateBalanceYDomain(visibleData);
+      scales.yBalance.domain([yBalanceDomainMin, yBalanceDomainMax]).nice();
     }
 
     // Rate of Change Chart

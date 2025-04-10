@@ -225,9 +225,11 @@ export function calculateFocusYDomain(
  * @returns {number} The Y domain max.
  */
 export function calculateBalanceYDomain(data) {
-  const maxAbsBalance = d3.max(data, (d) => Math.abs(d.netBalance ?? 0)) ?? 0;
+  const maxBalance = d3.max(data, (d) => d.netBalance ?? 0);
+  const minBalance = d3.min(data, (d) => d.netBalance ?? 0);
+
   // Ensure a minimum visible range even if balance is always zero or near zero
-  return Math.max(500, maxAbsBalance * 1.1);
+  return [Math.max(500, maxBalance * 1.1), Math.min(0, minBalance * 1.1)];
 }
 
 /**
