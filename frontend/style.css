@@ -1313,13 +1313,13 @@ body.dark-theme .highlight-trigger:hover .stat-date.highlightable {
     transition: border-color var(--transition-speed) var(--transition-ease);
 }
 #balance-chart-container {
-    height: 75px;
+    height: 250px;
 }
 #rate-of-change-container {
-    height: 75px;
+    height: 200px;
 }
 #tdee-reconciliation-container {
-    height: 75px;
+    height: 200px;
 }
 #correlation-scatter-container {
     height: 180px;
