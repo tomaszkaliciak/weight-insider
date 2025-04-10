@@ -334,7 +334,7 @@ body.dark-theme .status-message.warn {
 }
 .left-sidebar {
     grid-area: sidebarL;
-    max-height: calc(100vh - 120px);
+    max-height: calc(200vh - 120px);
     overflow-y: auto;
     padding-right: 8px;
     display: flex;
@@ -351,7 +351,7 @@ body.dark-theme .status-message.warn {
 }
 .right-sidebar {
     grid-area: sidebarR;
-    max-height: calc(100vh - 120px);
+    max-height: calc(200vh - 120px);
     overflow-y: auto;
     padding-right: 8px;
     display: flex;
@@ -1313,16 +1313,16 @@ body.dark-theme .highlight-trigger:hover .stat-date.highlightable {
     transition: border-color var(--transition-speed) var(--transition-ease);
 }
 #balance-chart-container {
-    height: 250px;
+    height: 300px;
 }
 #rate-of-change-container {
-    height: 200px;
+    height: 300px;
 }
 #tdee-reconciliation-container {
-    height: 200px;
+    height: 300px;
 }
 #correlation-scatter-container {
-    height: 180px;
+    height: 250px;
     margin-top: 15px;
     padding-top: 10px;
 }
@@ -1461,7 +1461,7 @@ body.dark-theme .highlight-trigger:hover .stat-date.highlightable {
 .axis-label.y-axis-label,
 .axis-label.scatter-axis-label-y,
 .axis-label.y-axis-label-small {
-    font-size: 0.8rem;
+    font-size: 1rem;
     fill: var(--text-secondary);
     font-weight: 600;
 }
@@ -1475,7 +1475,7 @@ body.dark-theme .highlight-trigger:hover .stat-date.highlightable {
     stroke-width: 0;
 }
 .axis-label.y-axis-label-small {
-    font-size: 0.65rem;
+    font-size: 1rem;
 }
 .axis--y2 .domain,
 .axis--y2 line {
@@ -1562,7 +1562,7 @@ body.dark-theme .highlight-trigger:hover .stat-date.highlightable {
 .tdee-diff-axis text,
 .balance-axis text {
     fill: var(--text-muted);
-    font-size: 0.65rem;
+    font-size: 0.85rem;
     transition: fill var(--transition-speed) var(--transition-ease);
 }
 .rate-zero-line,
@@ -2115,7 +2115,7 @@ body.dark-theme .goal-achieved-badge.good {
         flex-direction: row;
     }
     #chart-container {
-        min-height: 250px;
+        min-height: 400px;
     }
     #balance-chart-container,
     #rate-of-change-container,

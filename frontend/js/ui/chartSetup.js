@@ -385,7 +385,7 @@ function createSVGElements() {
       .attr("transform", "rotate(-90)")
       .attr("y", 4)
       .attr("x", 0 - (height / 2 + rm.top))
-      .attr("dy", "0.75em")
+      .attr("dy", "0.56em")
       .style("text-anchor", "middle")
       .text("Rate (kg/wk)");
   }
