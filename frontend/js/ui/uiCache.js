@@ -235,7 +235,6 @@ export function cacheSelectors() {
     "requiredNetCalories",
     "suggestedIntakeRange",
     "currentRateFeedback",
-    "whatIfResultDisplay",
     "analysisRangeDisplay",
     "regressionStartDateLabel",
     "requiredCalorieAdjustment",
@@ -268,11 +267,7 @@ export function cacheSelectors() {
       } else if (!statElementIds.includes(key)) {
         // Only warn for non-stat, non-critical elements
         // Check if it's one of the new optional elements before warning
-        if (
-          key !== "actionableInsightsContainer" &&
-          key !== "actionableInsightsList" &&
-          key !== "rollingVolatility"
-        ) {
+        if (key !== "actionableInsightsList" && key !== "rollingVolatility") {
           console.warn(`uiCache: UI element #${id} (key: ${key}) not found.`);
         }
       }

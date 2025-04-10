@@ -717,12 +717,6 @@ export const EventHandlers = {
   // --- What-If Handler ---
   handleWhatIfSubmit(event) {
     event.preventDefault();
-    if (
-      !ui.whatIfIntakeInput ||
-      !ui.whatIfDurationInput ||
-      !ui.whatIfResultDisplay
-    )
-      return;
 
     const futureIntake = parseFloat(ui.whatIfIntakeInput.property("value"));
     const durationDays = parseInt(ui.whatIfDurationInput.property("value"), 10);
@@ -772,7 +766,7 @@ export const EventHandlers = {
     const fv = Utils.formatValue;
     resultDisplay.html(
       `Based on ${tdeeSource} TDEE ≈ ${fv(tdeeEstimate, 0)} kcal:<br>
-       Est. change: ${fv(totalWeightChangeKg, 1)} kg in ${durationDays} days.<br>
+       Est. change: ${fv(totalWeightChangeKg, 1)} kg in ${durationDays} days. (${fv((totalWeightChangeKg / durationDays) * 7, 1)} kg/wk)<br>
        Projected Weight: <strong>${fv(projectedWeight, 1)} kg</strong>.`,
     );
   },
