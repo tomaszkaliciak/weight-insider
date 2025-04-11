@@ -27,12 +27,12 @@ export const CONFIG = Object.freeze({
   trendChangeMinSlopeDiffKgWeek: 0.15,
   // Visual Appearance
   margins: {
-    focus: { top: 10, right: 50, bottom: 30, left: 50 },
+    focus: { top: 10, right: 50, bottom: 30, left: 70 },
     context: { top: 10, right: 50, bottom: 30, left: 50 },
-    balance: { top: 5, right: 50, bottom: 20, left: 50 },
-    rate: { top: 10, right: 50, bottom: 20, left: 50 },
-    tdeeDiff: { top: 5, right: 50, bottom: 20, left: 50 },
-    correlationScatter: { top: 10, right: 30, bottom: 30, left: 50 },
+    balance: { top: 5, right: 50, bottom: 20, left: 70 },
+    rate: { top: 10, right: 50, bottom: 20, left: 70 },
+    tdeeDiff: { top: 5, right: 50, bottom: 20, left: 70 },
+    correlationScatter: { top: 10, right: 30, bottom: 30, left: 70 },
   },
   dotRadius: 3.5,
   dotHoverRadius: 5.5,
