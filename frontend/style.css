@@ -1,5 +1,3 @@
-/* --- START OF FILE style.css --- */
-
 /* style.css - Consolidated Improvements, Layout Fix & Discoverability Enhancements */
 
 :root {
@@ -64,7 +62,7 @@
     --regression-ci-color: hsla(var(--hue-accent), 70%, 60%, 0.1);
     --goal-line-color: var(--goal-color);
     --rate-line-color: hsl(var(--hue-goal), 45%, 60%);
-    --rate-ma-line-color: hsl(var(--hue-rate-ma), 70%, 60%); /* <<< ADDED */
+    --rate-ma-line-color: hsl(var(--hue-rate-ma), 70%, 60%);
     --tdee-diff-line-color: hsl(var(--hue-secondary), 50%, 65%);
     --annotation-marker-color: hsl(var(--hue-accent), 70%, 65%);
     --annotation-range-color: hsla(var(--hue-accent), 70%, 65%, 0.08);
@@ -133,7 +131,7 @@ body.dark-theme {
     --raw-dot-color: hsl(var(--hue-neutral), 10%, 40%);
     --regression-ci-color: hsla(var(--hue-accent), 65%, 65%, 0.1);
     --rate-line-color: hsl(var(--hue-goal), 45%, 75%);
-    --rate-ma-line-color: hsl(var(--hue-rate-ma), 65%, 70%); /* <<< ADDED */
+    --rate-ma-line-color: hsl(var(--hue-rate-ma), 65%, 70%);
     --tdee-diff-line-color: hsl(var(--hue-secondary), 45%, 75%);
     --annotation-marker-color: hsl(var(--hue-accent), 65%, 75%);
     --annotation-range-color: hsla(var(--hue-accent), 65%, 75%, 0.1);
@@ -1492,7 +1490,7 @@ body.dark-theme .highlight-trigger:hover .stat-date.highlightable {
 .trend-line.regression-line,
 .trend-line.goal-line,
 .line.rate-line,
-.line.rate-ma-line, /* <<< ADDED */
+.line.rate-ma-line,
 .line.tdee-diff-line {
     transition:
         stroke var(--transition-speed) var(--transition-ease),
@@ -1549,7 +1547,6 @@ body.dark-theme .highlight-trigger:hover .stat-date.highlightable {
     stroke-width: 1.75px;
     fill: none;
 }
-/* <<< ADDED: Style for Rate MA Line >>> */
 .line.rate-ma-line {
     stroke: var(--rate-ma-line-color);
     stroke-width: 1.5px;
@@ -2288,4 +2285,3 @@ body.dark-theme .goal-achieved-badge.good {
 .trend-line {
     fill: none;
 }
-/* --- END OF FILE style.css --- */

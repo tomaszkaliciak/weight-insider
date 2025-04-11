@@ -1,5 +1,3 @@
-// --- START OF FILE legendManager.js ---
-
 // legendManager.js
 // Manages the creation and interaction of the chart legend.
 
@@ -179,7 +177,6 @@ export const LegendManager = {
           ]
         : []),
       {
-        // <<< ADDED: Rate MA Legend Item >>>
         id: "rateMA",
         label: `Rate MA (${CONFIG.rateMovingAverageWindow}d)`,
         type: "line",
@@ -288,4 +285,3 @@ export const LegendManager = {
     EventBus.subscribe("state::annotationUpdate", LegendManager.build);
   },
 };
-// --- END OF FILE legendManager.js ---

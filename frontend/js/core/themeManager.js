@@ -1,5 +1,3 @@
-// --- START OF FILE themeManager.js ---
-
 // themeManager.js
 // Handles theme switching (light/dark) and CSS variable caching for colors.
 
@@ -83,7 +81,7 @@ export const ThemeManager = {
       deficit: getColor("--deficit-color", "deficit"),
       surplus: getColor("--surplus-color", "surplus"),
       rateLineColor: getColor("--rate-line-color", "rateLineColor"),
-      rateMALine: getColor("--rate-ma-line-color", "rateMALine"), // <<< ADDED
+      rateMALine: getColor("--rate-ma-line-color", "rateMALine"),
       tdeeDiffLineColor: getColor(
         "--tdee-diff-line-color",
         "tdeeDiffLineColor",
@@ -102,4 +100,3 @@ export const ThemeManager = {
     });
   },
 };
-// --- END OF FILE themeManager.js ---

@@ -114,7 +114,7 @@ export const DataService = {
         isOutlier: false,
         dailySmaRate: null,
         smoothedWeeklyRate: null,
-        rateMovingAverage: null, // <<< ADDED: Initialize rate MA field
+        rateMovingAverage: null,
         rollingVolatility: null,
         tdeeTrend: null,
         tdeeDifference: null,
@@ -150,7 +150,7 @@ export const DataService = {
     processed = DataService._calculateDailyRatesAndTDEETrend(processed);
     processed = DataService._calculateAdaptiveTDEE(processed);
     processed = DataService._smoothRatesAndTDEEDifference(processed);
-    processed = DataService._calculateRateMovingAverage(processed); // <<< ADDED: Calculate Rate MA
+    processed = DataService._calculateRateMovingAverage(processed);
     console.log("DataService: Data processing pipeline completed.");
     const validSMACount = processed.filter((d) => d.sma != null).length;
     const validRateCount = processed.filter(
@@ -163,11 +163,10 @@ export const DataService = {
       (d) => d.rollingVolatility != null,
     ).length;
     const validRateMACount = processed.filter(
-      // <<< ADDED Logging
       (d) => d.rateMovingAverage != null,
     ).length;
     console.log(
-      `DataService: Processed data stats - SMA: ${validSMACount}, Smoothed Rate: ${validRateCount}, Adaptive TDEE: ${validAdaptiveTDEECount}, Rolling Volatility: ${validRollingVolCount}, Rate MA: ${validRateMACount}`, // <<< UPDATED LOGGING
+      `DataService: Processed data stats - SMA: ${validSMACount}, Smoothed Rate: ${validRateCount}, Adaptive TDEE: ${validAdaptiveTDEECount}, Rolling Volatility: ${validRollingVolCount}, Rate MA: ${validRateMACount}`,
     );
     return processed;
   },
@@ -390,7 +389,6 @@ export const DataService = {
     }));
   },
 
-  // <<< NEW HELPER FUNCTION >>>
   _calculateRateMovingAverage(data) {
     const weeklyRates = data.map((d) => d.smoothedWeeklyRate);
     const rateMovingAverage = Utils.calculateRollingAverage(
@@ -589,4 +587,3 @@ export const DataService = {
     return parsedDate;
   },
 };
-// --- END OF FILE dataService.js ---

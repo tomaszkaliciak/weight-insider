@@ -1,5 +1,3 @@
-// --- START OF FILE chartUpdaters.js ---
-
 // Contains objects responsible for updating the visual elements of each chart.
 
 import { CONFIG } from "../config.js";
@@ -1078,7 +1076,6 @@ export const RateChartUpdater = {
       .duration(dur)
       .attr("d", rateLineGen);
 
-    // <<< ADDED: Update Rate MA Line >>>
     const rateMALineGen = d3
       .line()
       .x((d) => scales.xRate(d.date))
@@ -1093,7 +1090,7 @@ export const RateChartUpdater = {
       ?.datum(visibleData)
       .transition()
       .duration(dur)
-      .style("display", state.seriesVisibility.rateMA ? null : "none") // <<< Use visibility flag
+      .style("display", state.seriesVisibility.rateMA ? null : "none")
       .attr("d", rateMALineGen);
   },
 };
