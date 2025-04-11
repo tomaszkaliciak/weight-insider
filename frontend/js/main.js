@@ -1,3 +1,5 @@
+// --- START OF FILE main.js ---
+
 console.log("main.js: Module execution started.");
 
 import { EventBus } from "./core/eventBus.js";
@@ -91,3 +93,4 @@ if (document.readyState === "loading") {
 }
 
 console.log("main.js: Module execution finished.");
+// --- END OF FILE main.js ---

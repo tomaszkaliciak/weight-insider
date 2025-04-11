@@ -1,3 +1,5 @@
+// --- START OF FILE dataService.js ---
+
 import { CONFIG } from "../config.js";
 import { Utils } from "./utils.js";
 import { state } from "../state.js";
@@ -112,6 +114,7 @@ export const DataService = {
         isOutlier: false,
         dailySmaRate: null,
         smoothedWeeklyRate: null,
+        rateMovingAverage: null, // <<< ADDED: Initialize rate MA field
         rollingVolatility: null,
         tdeeTrend: null,
         tdeeDifference: null,
@@ -147,6 +150,7 @@ export const DataService = {
     processed = DataService._calculateDailyRatesAndTDEETrend(processed);
     processed = DataService._calculateAdaptiveTDEE(processed);
     processed = DataService._smoothRatesAndTDEEDifference(processed);
+    processed = DataService._calculateRateMovingAverage(processed); // <<< ADDED: Calculate Rate MA
     console.log("DataService: Data processing pipeline completed.");
     const validSMACount = processed.filter((d) => d.sma != null).length;
     const validRateCount = processed.filter(
@@ -158,8 +162,12 @@ export const DataService = {
     const validRollingVolCount = processed.filter(
       (d) => d.rollingVolatility != null,
     ).length;
+    const validRateMACount = processed.filter(
+      // <<< ADDED Logging
+      (d) => d.rateMovingAverage != null,
+    ).length;
     console.log(
-      `DataService: Processed data stats - SMA: ${validSMACount}, Smoothed Rate: ${validRateCount}, Adaptive TDEE: ${validAdaptiveTDEECount}, Rolling Volatility: ${validRollingVolCount}`, // <<< UPDATED LOGGING
+      `DataService: Processed data stats - SMA: ${validSMACount}, Smoothed Rate: ${validRateCount}, Adaptive TDEE: ${validAdaptiveTDEECount}, Rolling Volatility: ${validRollingVolCount}, Rate MA: ${validRateMACount}`, // <<< UPDATED LOGGING
     );
     return processed;
   },
@@ -382,6 +390,19 @@ export const DataService = {
     }));
   },
 
+  // <<< NEW HELPER FUNCTION >>>
+  _calculateRateMovingAverage(data) {
+    const weeklyRates = data.map((d) => d.smoothedWeeklyRate);
+    const rateMovingAverage = Utils.calculateRollingAverage(
+      weeklyRates,
+      CONFIG.rateMovingAverageWindow,
+    );
+    return data.map((d, i) => ({
+      ...d,
+      rateMovingAverage: rateMovingAverage[i],
+    }));
+  },
+
   // --- Calculation Helpers ---
   _calculateDailyBalance(intake, expenditure) {
     return intake != null &&
@@ -568,3 +589,4 @@ export const DataService = {
     return parsedDate;
   },
 };
+// --- END OF FILE dataService.js ---

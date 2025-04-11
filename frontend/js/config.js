@@ -11,6 +11,7 @@ export const CONFIG = Object.freeze({
   // Data Processing & Analysis
   movingAverageWindow: 7,
   rateOfChangeSmoothingWindow: 7,
+  rateMovingAverageWindow: 7,
   tdeeDiffSmoothingWindow: 14,
   adaptiveTDEEWindow: 28,
   stdDevMultiplier: 1.0, // For SMA band width
@@ -32,7 +33,7 @@ export const CONFIG = Object.freeze({
     balance: { top: 5, right: 50, bottom: 20, left: 70 },
     rate: { top: 10, right: 50, bottom: 20, left: 70 },
     tdeeDiff: { top: 5, right: 50, bottom: 20, left: 70 },
-    correlationScatter: { top: 10, right: 30, bottom: 30, left: 70 },
+    correlationScatter: { top: 10, right: 30, bottom: 50, left: 70 },
   },
   dotRadius: 3.5,
   dotHoverRadius: 5.5,
@@ -66,6 +67,7 @@ export const CONFIG = Object.freeze({
     deficit: "#2ecc71",
     surplus: "#e74c3c",
     rateLineColor: "#8e44ad",
+    rateMALine: "#ff7f0e",
     tdeeDiffLineColor: "#1abc9c",
     annotationMarker: "#e67e22",
     annotationRange: "rgba(230, 126, 34, 0.1)",

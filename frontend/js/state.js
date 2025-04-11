@@ -1,3 +1,5 @@
+// --- START OF FILE state.js ---
+
 // state.js
 
 export const state = {
@@ -29,6 +31,7 @@ export const state = {
     annotations: true,
     plateaus: true,
     trendChanges: true,
+    rateMA: true, // <<< ADDED: Visibility toggle for rate MA line
   },
   highlightedDate: null, // Date of the currently highlighted data point
   pinnedTooltipData: null, // Data for the pinned tooltip {id, data, pageX, pageY}
@@ -43,3 +46,4 @@ export const state = {
     rollingVolatilityWindow: null, // Will be populated by SettingsManager.loadSettings
   },
 };
+// --- END OF FILE state.js ---

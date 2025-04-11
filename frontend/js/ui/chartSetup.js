@@ -1,3 +1,5 @@
+// --- START OF FILE chartSetup.js ---
+
 // chartSetup.js
 // Handles the creation and setup of SVG elements, scales, axes, brushes, and zoom.
 
@@ -371,6 +373,10 @@ function createSVGElements() {
     ui.rateLine = ui.rateChartArea
       .append("path")
       .attr("class", "line rate-line");
+    // <<< ADDED: Append path for Rate MA line >>>
+    ui.rateMALine = ui.rateChartArea
+      .append("path")
+      .attr("class", "line rate-ma-line");
     ui.rateXAxisGroup = ui.rateSvg
       .append("g")
       .attr("class", "axis rate-axis rate-axis--x")
@@ -728,3 +734,4 @@ export function initializeChartSetup() {
   console.log("chartSetup: Setup complete.");
   return true;
 }
+// --- END OF FILE chartSetup.js ---
