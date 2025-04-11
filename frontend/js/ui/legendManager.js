@@ -12,10 +12,9 @@ import { EventBus } from "../core/eventBus.js";
 export const LegendManager = {
   /**
    * Toggles the visibility of a specific data series on the chart.
-   * @param {string} seriesId - The ID of the series to toggle (e.g., 'raw', 'smaLine', 'regression', 'trendChanges').
+   * @param {string} seriesId - The ID of the series to toggle (e.g., 'raw', 'smaLine', 'emaLine', 'regression', 'trendChanges').
    * @param {boolean} isVisible - The desired visibility state (true for visible, false for hidden).
    */
-
   toggleSeriesVisibility(seriesId, isVisible) {
     console.log(
       `[LM Toggle] START: Toggling "${seriesId}" to ${isVisible}. Current state before toggle: ${state.seriesVisibility[seriesId]}`,
@@ -126,6 +125,14 @@ export const LegendManager = {
         type: "line",
         colorKey: "sma",
         styleClass: "sma-line",
+      },
+      {
+        id: "emaLine",
+        label: `Weight EMA (${CONFIG.emaWindow}d)`,
+        type: "line",
+        colorKey: "ema",
+        styleClass: "ema-line",
+        dash: "5, 3",
       },
       {
         id: "smaBand",
@@ -260,12 +267,17 @@ export const LegendManager = {
               .style("height", "4px")
               .style("border", "none");
             if (item.dash) {
+              const dashLength = item.dash.split(",")[0].trim();
+              const gapLength = item.dash.split(",")[1]?.trim() || dashLength;
+              const totalLength =
+                parseFloat(dashLength) + parseFloat(gapLength);
+              const dashPercent = (parseFloat(dashLength) / totalLength) * 100;
               swatch
                 .style(
                   "background-image",
-                  `linear-gradient(to right, ${itemColor} 60%, transparent 40%)`,
+                  `linear-gradient(to right, ${itemColor} ${dashPercent}%, transparent ${dashPercent}%)`,
                 )
-                .style("background-size", "8px 4px")
+                .style("background-size", `${totalLength}px 4px`)
                 .style("background-color", "transparent");
             }
             break;

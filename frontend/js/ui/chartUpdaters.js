@@ -39,7 +39,7 @@ export const FocusChartUpdater = {
     ui.gridGroup?.selectAll(".domain").remove();
   },
 
-  updatePaths(visibleValidSmaData, regressionResult) {
+  updatePaths(visibleValidSmaData, visibleValidEmaData, regressionResult) {
     const dur = CONFIG.transitionDurationMs;
     if (!ui.chartArea || !scales.x || !scales.y) {
       console.warn(
@@ -57,6 +57,15 @@ export const FocusChartUpdater = {
       .defined(
         (d) =>
           d.sma != null && !isNaN(scales.x(d.date)) && !isNaN(scales.y(d.sma)),
+      );
+    const emaLineGen = d3
+      .line()
+      .x((d) => scales.x(d.date))
+      .y((d) => scales.y(d.ema))
+      .curve(d3.curveMonotoneX)
+      .defined(
+        (d) =>
+          d.ema != null && !isNaN(scales.x(d.date)) && !isNaN(scales.y(d.ema)),
       );
     const smaBandAreaGen = d3
       .area()
@@ -143,6 +152,12 @@ export const FocusChartUpdater = {
       .duration(dur)
       .style("display", state.seriesVisibility.smaLine ? null : "none")
       .attr("d", smaLineGen);
+    ui.emaLine
+      ?.datum(visibleValidEmaData)
+      .transition()
+      .duration(dur)
+      .style("display", state.seriesVisibility.emaLine ? null : "none")
+      .attr("d", emaLineGen);
 
     // Regression Line & CI
     const showReg = state.seriesVisibility.regression;

@@ -10,6 +10,7 @@ export const CONFIG = Object.freeze({
   },
   // Data Processing & Analysis
   movingAverageWindow: 7,
+  emaWindow: 7,
   rateOfChangeSmoothingWindow: 7,
   rateMovingAverageWindow: 7,
   tdeeDiffSmoothingWindow: 14,
@@ -55,6 +56,7 @@ export const CONFIG = Object.freeze({
   // Fallback Colors (referenced if CSS variables fail)
   fallbackColors: {
     sma: "#3498db",
+    ema: "#e67e22",
     band: "rgba(52,152,219,0.08)",
     rawDot: "#bdc3c7",
     dot: "#3498db",

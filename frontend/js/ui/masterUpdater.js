@@ -98,6 +98,9 @@ export const MasterUpdater = {
     const visibleValidSmaData = visibleProcessedData.filter(
       (d) => d.sma != null,
     );
+    const visibleValidEmaData = visibleProcessedData.filter(
+      (d) => d.ema != null,
+    );
     const visibleRawWeightData = visibleProcessedData.filter(
       (d) => d.value != null,
     );
@@ -129,7 +132,11 @@ export const MasterUpdater = {
     ScatterPlotUpdater.updateAxes();
 
     // Paths & Areas (Focus Chart)
-    FocusChartUpdater.updatePaths(visibleValidSmaData, regressionResult);
+    FocusChartUpdater.updatePaths(
+      visibleValidSmaData,
+      visibleValidEmaData,
+      regressionResult,
+    );
 
     // Dots & Markers (Focus Chart)
     FocusChartUpdater.updateDots(visibleRawWeightData);
@@ -143,7 +150,6 @@ export const MasterUpdater = {
     FocusChartUpdater.updatePlateauRegions(focusHeight);
     FocusChartUpdater.updateTrendChangeMarkers(state.processedData);
 
-    // <<< CALL Goal Visuals Update >>>
     FocusChartUpdater.updateGoalVisuals(focusWidth, focusHeight);
 
     // Brushes

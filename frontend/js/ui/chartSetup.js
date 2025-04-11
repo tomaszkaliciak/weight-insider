@@ -193,6 +193,7 @@ function createSVGElements() {
       .append("path")
       .attr("class", "area regression-ci-area");
     ui.smaLine = ui.chartArea.append("path").attr("class", "line sma-line");
+    ui.emaLine = ui.chartArea.append("path").attr("class", "line ema-line");
     ui.trendLine1 = ui.chartArea
       .append("path")
       .attr("class", "trend-line manual-trend-1");

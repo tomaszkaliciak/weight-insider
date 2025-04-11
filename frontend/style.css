@@ -11,6 +11,7 @@
     --hue-optimal: 115; /* Keep Green-ish */
     --hue-accent-strong: 205; /* A distinct bright blue for accents */
     --hue-rate-ma: 25; /* Orange for Rate MA */
+    --hue-ema: 30;
 
     /* --- Color Variables --- */
     /* Base UI Feedback (Slightly softer) */
@@ -54,6 +55,8 @@
     /* Chart Specific */
     --sma-color: var(--primary-color);
     --band-color: hsla(var(--hue-primary), 60%, 60%, 0.2); /* Adjust alpha */
+    --ema-color: hsl(var(--hue-ema), 80%, 55%);
+
     --raw-dot-color: hsl(var(--hue-neutral), 15%, 80%);
     --dot-color: var(--primary-color);
     --trend1-color: var(--secondary-color);
@@ -127,6 +130,7 @@ body.dark-theme {
     --optimal-gain-zone-color: hsla(var(--hue-optimal), 40%, 70%, 0.1);
 
     /* Dark Chart Specific */
+    --ema-color: hsl(var(--hue-ema), 80%, 65%);
     --band-color: hsla(var(--hue-primary), 55%, 70%, 0.2);
     --raw-dot-color: hsl(var(--hue-neutral), 10%, 40%);
     --regression-ci-color: hsla(var(--hue-accent), 65%, 65%, 0.1);
@@ -2280,6 +2284,15 @@ body.dark-theme .goal-achieved-badge.good {
     }
 }
 
+.line.ema-line {
+    stroke: var(--ema-color);
+    stroke-width: 2px;
+    stroke-dasharray: 5, 3;
+    fill: none;
+    transition:
+        stroke var(--transition-speed) var(--transition-ease),
+        opacity var(--transition-speed) var(--transition-ease);
+}
 /* Ensure fill:none for line paths if not already covered */
 .line,
 .trend-line {

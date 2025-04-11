@@ -104,6 +104,7 @@ export const DataService = {
         googleFitTDEE: expenditure,
         netBalance: netBalance,
         sma: null,
+        ema: null,
         stdDev: null,
         lowerBound: null,
         upperBound: null,
@@ -142,6 +143,7 @@ export const DataService = {
     let processed = [...rawData];
     processed = DataService._calculateBodyComposition(processed);
     processed = DataService._calculateSMAAndStdDev(processed);
+    processed = DataService._calculateEMA(processed);
     processed = DataService._identifyOutliers(processed);
     processed = DataService._calculateRollingVolatility(
       processed,
@@ -153,6 +155,7 @@ export const DataService = {
     processed = DataService._calculateRateMovingAverage(processed);
     console.log("DataService: Data processing pipeline completed.");
     const validSMACount = processed.filter((d) => d.sma != null).length;
+    const validEMACount = processed.filter((d) => d.ema != null).length;
     const validRateCount = processed.filter(
       (d) => d.smoothedWeeklyRate != null,
     ).length;
@@ -166,7 +169,7 @@ export const DataService = {
       (d) => d.rateMovingAverage != null,
     ).length;
     console.log(
-      `DataService: Processed data stats - SMA: ${validSMACount}, Smoothed Rate: ${validRateCount}, Adaptive TDEE: ${validAdaptiveTDEECount}, Rolling Volatility: ${validRollingVolCount}, Rate MA: ${validRateMACount}`,
+      `DataService: Processed data stats - SMA: ${validSMACount}, EMA: ${validEMACount}, Smoothed Rate: ${validRateCount}, Adaptive TDEE: ${validAdaptiveTDEECount}, Rolling Volatility: ${validRollingVolCount}, Rate MA: ${validRateMACount}`,
     );
     return processed;
   },
@@ -230,6 +233,33 @@ export const DataService = {
       return { ...d, sma, stdDev, lowerBound, upperBound, lbmSma, fmSma };
     });
   },
+
+  _calculateEMA(data) {
+    const windowSize = CONFIG.emaWindow;
+    if (windowSize <= 0) return data;
+
+    const alpha = 2 / (windowSize + 1);
+    let previousEMA = null;
+
+    return data.map((d, i) => {
+      let currentEMA = null;
+      const currentValue = d.value;
+
+      if (currentValue != null && !isNaN(currentValue)) {
+        if (previousEMA === null) {
+          currentEMA = currentValue;
+        } else {
+          currentEMA = currentValue * alpha + previousEMA * (1 - alpha);
+        }
+        previousEMA = currentEMA;
+      } else if (previousEMA !== null) {
+        currentEMA = previousEMA;
+      }
+
+      return { ...d, ema: currentEMA };
+    });
+  },
+
   _identifyOutliers(data) {
     const threshold = CONFIG.OUTLIER_STD_DEV_THRESHOLD;
     return data.map((d) => {

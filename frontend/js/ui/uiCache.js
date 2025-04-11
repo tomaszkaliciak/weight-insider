@@ -55,6 +55,7 @@ export const ui = {
   zoomCaptureRect: null,
   // Paths & Areas (populated during chart setup, not here)
   smaLine: null,
+  emaLine: null,
   bandArea: null,
   regressionLine: null,
   regressionCIArea: null,

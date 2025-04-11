@@ -11,7 +11,7 @@ export const state = {
   plateaus: [], // Detected plateau periods {startDate, endDate}
   trendChangePoints: [], // Detected trend change points {date, magnitude}
   goal: { weight: null, date: null, targetRate: null }, // User goal settings
-  goalAchievedDate: null, // <<< ADDED: Date goal was first met (based on SMA)
+  goalAchievedDate: null,
   analysisRange: { start: null, end: null }, // Currently analyzed date range
   interactiveRegressionRange: { start: null, end: null }, // Range selected by regression brush
   regressionStartDate: null, // Start date set via UI for regression calculation (if not using interactive brush)
@@ -20,6 +20,7 @@ export const state = {
     // Visibility toggles for different chart series
     raw: true,
     smaLine: true,
+    emaLine: true,
     smaBand: true,
     regression: true,
     regressionCI: true,
