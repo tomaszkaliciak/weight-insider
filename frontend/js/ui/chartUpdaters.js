@@ -1225,6 +1225,33 @@ export const RateChartUpdater = {
       .style("display", state.seriesVisibility.rateMA ? null : "none")
       .attr("d", rateMALineGen);
   },
+  // Add interactive hover dots for tooltips on the rate line
+  addHoverDots(visibleData) {
+    if (!ui.rateChartArea || !scales.xRate || !scales.yRate) return;
+    // Remove old dots
+    ui.rateChartArea.selectAll(".rate-hover-dot").remove();
+    // Add new dots
+    ui.rateChartArea
+      .selectAll(".rate-hover-dot")
+      .data(visibleData.filter(d => d.smoothedWeeklyRate != null && !isNaN(scales.xRate(d.date)) && !isNaN(scales.yRate(d.smoothedWeeklyRate))))
+      .enter()
+      .append("circle")
+      .attr("class", "rate-hover-dot")
+      .attr("cx", d => scales.xRate(d.date))
+      .attr("cy", d => scales.yRate(d.smoothedWeeklyRate))
+      .attr("r", 8)
+      .style("fill", "transparent")
+      .style("cursor", "help")
+      .on("mouseover", (event, d) => {
+        const tt = `<strong>${d3.timeFormat("%b %d, %Y")(d.date)}</strong><br>Rate: <b>${d.smoothedWeeklyRate.toFixed(2)}</b> kg/wk`;
+        EventHandlers._showTooltip(tt, event);
+        d3.select(event.currentTarget).attr("stroke", "var(--primary-color)").attr("stroke-width", 2);
+      })
+      .on("mouseout", (event, d) => {
+        EventHandlers._hideTooltip();
+        d3.select(event.currentTarget).attr("stroke", null).attr("stroke-width", null);
+      });
+  }
 };
 
 // --- TDEE Difference Chart Updater ---
@@ -1265,6 +1292,33 @@ export const TDEEDiffChartUpdater = {
       .duration(dur)
       .attr("d", tdeeDiffLineGen);
   },
+  // Add interactive hover dots for tooltips on the TDEE diff line
+  addHoverDots(visibleData) {
+    if (!ui.tdeeDiffChartArea || !scales.xTdeeDiff || !scales.yTdeeDiff) return;
+    // Remove old dots
+    ui.tdeeDiffChartArea.selectAll(".tdee-diff-hover-dot").remove();
+    // Add new dots
+    ui.tdeeDiffChartArea
+      .selectAll(".tdee-diff-hover-dot")
+      .data(visibleData.filter(d => d.avgTdeeDifference != null && !isNaN(scales.xTdeeDiff(d.date)) && !isNaN(scales.yTdeeDiff(d.avgTdeeDifference))))
+      .enter()
+      .append("circle")
+      .attr("class", "tdee-diff-hover-dot")
+      .attr("cx", d => scales.xTdeeDiff(d.date))
+      .attr("cy", d => scales.yTdeeDiff(d.avgTdeeDifference))
+      .attr("r", 8)
+      .style("fill", "transparent")
+      .style("cursor", "help")
+      .on("mouseover", (event, d) => {
+        const tt = `<strong>${d3.timeFormat("%b %d, %Y")(d.date)}</strong><br>TDEE Diff: <b>${d.avgTdeeDifference.toFixed(0)}</b> kcal`;
+        EventHandlers._showTooltip(tt, event);
+        d3.select(event.currentTarget).attr("stroke", "var(--accent-color)").attr("stroke-width", 2);
+      })
+      .on("mouseout", (event, d) => {
+        EventHandlers._hideTooltip();
+        d3.select(event.currentTarget).attr("stroke", null).attr("stroke-width", null);
+      });
+  }
 };
 
 // --- Scatter Plot Updater ---

@@ -159,7 +159,9 @@ export const MasterUpdater = {
     ContextChartUpdater.updateChart(state.processedData);
     BalanceChartUpdater.updateChart(visibleProcessedData, balWidth);
     RateChartUpdater.updateChart(visibleProcessedData, rateWidth);
+    RateChartUpdater.addHoverDots(visibleProcessedData);
     TDEEDiffChartUpdater.updateChart(visibleProcessedData);
+    TDEEDiffChartUpdater.addHoverDots(visibleProcessedData);
     // Scatter plot updated by StatsManager
     _updateAnalysisRangeInputsFromCurrentView();
     _updateAnalysisRangeDisplay();

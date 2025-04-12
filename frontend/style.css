@@ -1680,9 +1680,15 @@ body.dark-theme .highlight-trigger:hover .stat-date.highlightable {
     pointer-events: none;
     box-shadow: 0 4px 12px hsla(0, 0%, 0%, 0.15);
     line-height: 1.55;
-    transition: opacity var(--transition-speed-fast) var(--transition-ease-out);
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.25s cubic-bezier(0.4,0,0.2,1), transform 0.25s cubic-bezier(0.4,0,0.2,1);
     z-index: 10;
     backdrop-filter: blur(4px);
+}
+.tooltip[style*="opacity: 0.95"], .tooltip[style*="opacity:0.95"] {
+    opacity: 0.95 !important;
+    transform: translateY(0) !important;
 }
 body.dark-theme .tooltip {
     box-shadow: 0 4px 12px hsla(0, 0%, 0%, 0.25);
