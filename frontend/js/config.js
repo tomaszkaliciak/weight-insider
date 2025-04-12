@@ -26,7 +26,8 @@ export const CONFIG = Object.freeze({
   plateauRateThresholdKgWeek: 0.07,
   plateauMinDurationWeeks: 3,
   trendChangeWindowDays: 14,
-  trendChangeMinSlopeDiffKgWeek: 0.15,
+  // Increased threshold to reduce noise from frequent trend changes
+  trendChangeMinSlopeDiffKgWeek: 0.3,
   // Visual Appearance
   margins: {
     focus: { top: 10, right: 50, bottom: 30, left: 70 },
