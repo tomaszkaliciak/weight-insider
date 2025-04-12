@@ -39,7 +39,7 @@ export const CONFIG = Object.freeze({
   },
   dotRadius: 3.5,
   dotHoverRadius: 5.5,
-  rawDotRadius: 2.5,
+  rawDotRadius: 3,
   highlightRadiusMultiplier: 1.8,
   annotationMarkerRadius: 4,
   yAxisPaddingFactor: 0.02,

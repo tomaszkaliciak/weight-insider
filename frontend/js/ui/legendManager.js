@@ -80,7 +80,13 @@ export const LegendManager = {
       console.warn(`[LM Appearance] Legend item for "${seriesId}" not found.`);
       return;
     }
-    item.classed("hidden", !isVisible);
+    // For "raw", never apply the "hidden" class so it is always interactive
+    if (seriesId === "raw") {
+      item.classed("hidden", false);
+      item.classed("inactive", !isVisible); // Optionally add a new class for faded look when off
+    } else {
+      item.classed("hidden", !isVisible);
+    }
   },
 
   /**
@@ -240,12 +246,16 @@ export const LegendManager = {
           .append("div")
           .attr("class", `legend-item ${item.styleClass || ""}`)
           .attr("data-id", item.id)
-          .classed("hidden", !isVisible)
+          // Only apply "hidden" class for non-raw items; always keep raw interactive
+          .classed("hidden", item.id !== "raw" && !isVisible)
           .on("click", () => {
             const currentVisibility = state.seriesVisibility[item.id];
             console.log(
               `[LM Build Click] Legend item "${item.id}" clicked. Current visibility: ${currentVisibility}. Toggling to ${!currentVisibility}.`,
             );
+            if (item.id === "raw") {
+              console.log("[DEBUG] Raw Data legend item clicked. Toggling raw visibility.");
+            }
             LegendManager.toggleSeriesVisibility(item.id, !currentVisibility); // Use LegendManager directly
           });
 

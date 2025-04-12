@@ -57,7 +57,7 @@
     --band-color: hsla(var(--hue-primary), 60%, 60%, 0.2); /* Adjust alpha */
     --ema-color: hsl(var(--hue-ema), 80%, 55%);
 
-    --raw-dot-color: hsl(var(--hue-neutral), 15%, 80%);
+    --raw-dot-color: hsl(212, 60%, 58%);
     --dot-color: var(--primary-color);
     --trend1-color: var(--secondary-color);
     --trend2-color: hsl(var(--hue-tertiary), 55%, 70%);
@@ -1609,9 +1609,7 @@ body.dark-theme .highlight-trigger:hover .stat-date.highlightable {
     pointer-events: none;
 }
 .raw-dot {
-    fill: var(--raw-dot-color);
-    opacity: 0.4;
-    pointer-events: none;
+    /* All visual and interactive properties are set by D3 */
     transition: fill var(--transition-speed) var(--transition-ease);
 }
 .dot {
@@ -1824,6 +1822,9 @@ hr.tooltip-hr {
 }
 .legend-item.hidden .legend-swatch {
     opacity: 0.6;
+}
+.legend-item[data-id="raw"] {
+    pointer-events: auto !important;
 }
 /* Context Chart / Brush / Zoom */
 #context-chart-container .line {

@@ -360,13 +360,26 @@ export const FocusChartUpdater = {
             .attr("cy", (d) => scales.y(d.value))
             .style("fill", colors.rawDot)
             .style("opacity", 0)
+            .style("pointer-events", "all")
+            .style("cursor", "pointer")
+            .on("mouseover", EventHandlers.dotMouseOver)
+            .on("mouseout", EventHandlers.dotMouseOut)
+            .on("click", EventHandlers.dotClick)
             .call((enter) =>
-              enter.transition().duration(dur).style("opacity", 0.4),
+              enter.transition().duration(dur).style("opacity", 0.8),
             ),
         (update) =>
           update.call((update) =>
             update
               .transition()
+              .duration(dur)
+              .attr("r", (d) =>
+                state.pinnedTooltipData &&
+                ((d.date && state.pinnedTooltipData.data?.date && d.date.getTime() === state.pinnedTooltipData.data.date.getTime()) ||
+                 (d.dateString && state.pinnedTooltipData.data?.dateString && d.dateString === state.pinnedTooltipData.data.dateString))
+                  ? CONFIG.dotHoverRadius
+                  : CONFIG.rawDotRadius
+              )
               .duration(dur)
               .attr("cx", (d) => scales.x(d.date))
               .attr("cy", (d) => scales.y(d.value))
@@ -378,75 +391,9 @@ export const FocusChartUpdater = {
       ui.rawDotsGroup?.selectAll(".raw-dot").remove();
     }
 
-    // SMA Dots (represent raw values when SMA line is visible)
-    ui.smaDotsGroup?.style("display", showSmaDots ? null : "none");
-    if (showSmaDots && ui.smaDotsGroup) {
-      const smaDotsDataValid = visibleRawWeightData.filter(
-        (d) =>
-          d.value != null &&
-          d.date instanceof Date &&
-          !isNaN(d.date) &&
-          !isNaN(scales.x(d.date)) &&
-          !isNaN(scales.y(d.value)),
-      );
-      const smaDots = ui.smaDotsGroup
-        .selectAll(".dot")
-        .data(smaDotsDataValid, (d) => d.dateString || d.date);
-      smaDots.join(
-        (enter) =>
-          enter
-            .append("circle")
-            .attr("class", "dot")
-            .classed("outlier", (d) => d.isOutlier)
-            .attr("r", CONFIG.dotRadius)
-            .attr("cx", (d) => scales.x(d.date))
-            .attr("cy", (d) => scales.y(d.value))
-            .style("fill", (d) =>
-              d.isOutlier ? colors.outlier || "red" : colors.dot || "blue",
-            )
-            .style("opacity", 0)
-            .style("cursor", "pointer")
-            .on("mouseover", EventHandlers.dotMouseOver)
-            .on("mouseout", EventHandlers.dotMouseOut)
-            .on("click", EventHandlers.dotClick)
-            .call((enter) =>
-              enter.transition().duration(dur).style("opacity", 0.7),
-            ),
-        (update) =>
-          update
-            .classed("outlier", (d) => d.isOutlier)
-            .classed(
-              "highlighted",
-              (d) =>
-                state.highlightedDate &&
-                d.date.getTime() === state.highlightedDate.getTime(),
-            )
-            .call((update) =>
-              update
-                .transition()
-                .duration(dur)
-                .attr("cx", (d) => scales.x(d.date))
-                .attr("cy", (d) => scales.y(d.value))
-                .style("fill", (d) =>
-                  d.isOutlier ? colors.outlier || "red" : colors.dot || "blue",
-                )
-                .attr("r", (d) =>
-                  state.highlightedDate &&
-                  d.date.getTime() === state.highlightedDate.getTime()
-                    ? CONFIG.dotRadius * CONFIG.highlightRadiusMultiplier * 0.8
-                    : CONFIG.dotRadius,
-                )
-                .style("opacity", (d) =>
-                  state.highlightedDate &&
-                  d.date.getTime() === state.highlightedDate.getTime()
-                    ? 1
-                    : 0.7,
-                ),
-            ),
-        (exit) => exit.transition().duration(dur).style("opacity", 0).remove(),
-      );
-    } else {
-      ui.smaDotsGroup?.selectAll(".dot").remove();
+    if (ui.smaDotsGroup) {
+      ui.smaDotsGroup.selectAll(".dot").remove();
+      ui.smaDotsGroup.style("display", "none");
     }
   },
 
