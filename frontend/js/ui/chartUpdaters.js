@@ -1243,7 +1243,15 @@ export const RateChartUpdater = {
       .style("fill", "transparent")
       .style("cursor", "help")
       .on("mouseover", (event, d) => {
-        const tt = `<strong>${d3.timeFormat("%b %d, %Y")(d.date)}</strong><br>Rate: <b>${d.smoothedWeeklyRate.toFixed(2)}</b> kg/wk`;
+        let tt = `<strong>${d3.timeFormat("%b %d, %Y")(d.date)}</strong>`;
+        tt += `<div>Smoothed Rate: <b>${d.smoothedWeeklyRate.toFixed(2)}</b> kg/wk</div>`;
+        if (d.rateMovingAverage != null) {
+          tt += `<div>Moving Avg: <b>${d.rateMovingAverage.toFixed(2)}</b> kg/wk</div>`;
+        }
+        if (typeof CONFIG.MIN_RECOMMENDED_GAIN_RATE_KG_WEEK === "number" && typeof CONFIG.MAX_RECOMMENDED_GAIN_RATE_KG_WEEK === "number") {
+          tt += `<div>Recommended: <b>${CONFIG.MIN_RECOMMENDED_GAIN_RATE_KG_WEEK} to ${CONFIG.MAX_RECOMMENDED_GAIN_RATE_KG_WEEK}</b> kg/wk</div>`;
+        }
+        tt += `<hr class="tooltip-hr"><div class="note">Weekly rate of weight change. Smoothed using a 7-day window. Stay within the recommended range for optimal progress.</div>`;
         EventHandlers._showTooltip(tt, event);
         d3.select(event.currentTarget).attr("stroke", "var(--primary-color)").attr("stroke-width", 2);
       })
