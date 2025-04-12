@@ -34,10 +34,22 @@ export const DomainManager = {
       initialXDomain = [past, today];
     } else {
       // Calculate default initial view (e.g., last N months)
-      const initialEndDate = fullDataExtent[1];
+      // Always set initialEndDate to last measurement date (no future by default)
+      let initialEndDate = fullDataExtent[1];
+      // Extend fullDataExtent[1] to goal date for zooming, but not initial view
+      if (
+        typeof state !== "undefined" &&
+        state.goal &&
+        state.goal.date instanceof Date &&
+        !isNaN(state.goal.date) &&
+        state.goal.date > fullDataExtent[1]
+      ) {
+        fullDataExtent[1] = state.goal.date;
+      }
+      // Initial start date: 3 months before last measurement
       const initialStartDateDefault = d3.timeMonth.offset(
         initialEndDate,
-        -CONFIG.initialViewMonths,
+        -3
       );
       // Ensure initial start date doesn't go before the actual data start date
       const initialStartDate =

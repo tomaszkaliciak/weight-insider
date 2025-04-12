@@ -163,12 +163,45 @@ export const FocusChartUpdater = {
     const showReg = state.seriesVisibility.regression;
     const showRegCI = state.seriesVisibility.regressionCI && showReg;
     // Ensure regressionResult exists before accessing points/pointsWithCI
-    const regPoints =
-      showReg && regressionResult?.points ? regressionResult.points : [];
-    const regCIPoints =
+    let regPoints =
+      showReg && regressionResult?.points ? regressionResult.points.slice() : [];
+    let regCIPoints =
       showRegCI && regressionResult?.pointsWithCI
-        ? regressionResult.pointsWithCI
+        ? regressionResult.pointsWithCI.slice()
         : [];
+
+    // Extend regression line to goal date if needed
+    if (
+      regPoints.length > 0 &&
+      state.goal &&
+      state.goal.date instanceof Date &&
+      !isNaN(state.goal.date)
+    ) {
+      const lastRegDate = regPoints[regPoints.length - 1].date;
+      if (state.goal.date > lastRegDate) {
+        // Linear extrapolation using regression slope/intercept
+        const slope = regressionResult?.slope;
+        const intercept = regressionResult?.intercept;
+        // Use the same x-axis as the regression fit: days since first regression point
+        const firstRegDate = regPoints[0].date;
+        if (
+          typeof slope === "number" &&
+          typeof intercept === "number" &&
+          firstRegDate instanceof Date &&
+          !isNaN(firstRegDate)
+        ) {
+          const msPerDay = 24 * 60 * 60 * 1000;
+          const daysSinceFirst = (state.goal.date.getTime() - firstRegDate.getTime()) / msPerDay;
+          const regValue = slope * daysSinceFirst + intercept;
+          regPoints = regPoints.concat([
+            {
+              date: state.goal.date,
+              regressionValue: regValue,
+            },
+          ]);
+        }
+      }
+    }
 
     console.log(
       `[FocusUpdater Paths] Regression visibility state: showReg=${showReg}, showRegCI=${showRegCI}. Points length: ${regPoints.length}. CI Points length: ${regCIPoints.length}`,
@@ -192,7 +225,37 @@ export const FocusChartUpdater = {
 
     // Manual Trendlines
     const trendConfig = DataService.getTrendlineConfigFromUI();
-    const trendData = trendConfig.isValid ? state.processedData : [];
+    let trendData = trendConfig.isValid ? state.processedData.slice() : [];
+    // Extend trend lines to goal date if needed
+    if (
+      trendData.length > 0 &&
+      state.goal &&
+      state.goal.date instanceof Date &&
+      !isNaN(state.goal.date)
+    ) {
+      const lastTrendDate = trendData[trendData.length - 1].date;
+      if (state.goal.date > lastTrendDate) {
+        // Extrapolate trend value at goal date
+        // Use trendConfig.startDate, initialWeight, weeklyIncrease1/2
+        const msPerDay = 24 * 60 * 60 * 1000;
+        const daysBetween = (d1, d2) =>
+          (d2.getTime() - d1.getTime()) / msPerDay;
+        const addTrendPoint = (weeklyIncrease) => {
+          const days = daysBetween(trendConfig.startDate, state.goal.date);
+          const weeks = days / 7;
+          const value =
+            trendConfig.initialWeight + weeklyIncrease * weeks;
+          return {
+            date: state.goal.date,
+            weight: value,
+            sma: value, // for compatibility
+            ema: value,
+          };
+        };
+        // Only add if not already present
+        trendData = trendData.concat([addTrendPoint(trendConfig.weeklyIncrease1)]);
+      }
+    }
     ui.trendLine1
       ?.datum(
         state.seriesVisibility.trend1 && trendData.length ? trendData : [],
@@ -799,6 +862,60 @@ export const FocusChartUpdater = {
             .style("opacity", 0)
             .remove(),
       );
+    }
+
+    // --- Draw Goal Prognosis Line (Trend to Goal) ---
+    // Only if goal is set, goal date is after last measurement, and there is at least one data point
+    if (
+      state.goal &&
+      state.goal.weight != null &&
+      state.goal.date instanceof Date &&
+      !isNaN(state.goal.date) &&
+      state.processedData &&
+      state.processedData.length > 0
+    ) {
+      const lastPoint = state.processedData[state.processedData.length - 1];
+      if (
+        lastPoint.date instanceof Date &&
+        !isNaN(lastPoint.date) &&
+        state.goal.date > lastPoint.date
+      ) {
+        // Prognosis line: from last measurement to goal
+        const prognosisData = [
+          { date: lastPoint.date, weight: lastPoint.weight },
+          { date: state.goal.date, weight: state.goal.weight }
+        ];
+        // D3 line generator
+        const prognosisLineGen = d3.line()
+          .x(d => scales.x(d.date))
+          .y(d => scales.y(d.weight))
+          .curve(d3.curveLinear);
+
+        // Draw or update the prognosis line
+        if (ui.goalPrognosisLine) {
+          ui.goalPrognosisLine
+            .datum(prognosisData)
+            .transition()
+            .duration(CONFIG.transitionDurationMs)
+            .attr("d", prognosisLineGen)
+            .style("display", null)
+            .style("stroke", colors.goal || "#9b59b6")
+            .style("stroke-width", 2)
+            .style("stroke-dasharray", "6,4")
+            .style("fill", "none")
+            .style("opacity", 0.85);
+        }
+      } else {
+        // Hide prognosis line if not needed
+        if (ui.goalPrognosisLine) {
+          ui.goalPrognosisLine.style("display", "none");
+        }
+      }
+    } else {
+      // Hide prognosis line if not needed
+      if (ui.goalPrognosisLine) {
+        ui.goalPrognosisLine.style("display", "none");
+      }
     }
   },
 

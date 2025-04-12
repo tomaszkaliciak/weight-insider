@@ -71,6 +71,17 @@ export const Utils = {
       : "N/A";
   },
 
+ /**
+  * Formats a Date object as 'DD-MM-YYYY', returning 'N/A' for invalid dates.
+  * @param {Date} date - The Date object to format.
+  * @returns {string} The formatted date string or 'N/A'.
+  */
+ formatDateDMY(date) {
+   return date instanceof Date && !isNaN(date)
+     ? d3.timeFormat("%d-%m-%Y")(date)
+     : "N/A";
+ },
+
   /**
    * Formats a Date object as 'DD Mon 'YY', returning 'N/A' for invalid dates.
    * @param {Date} date - The Date object to format.

@@ -22,10 +22,12 @@ export const GoalManager = {
           date instanceof Date && !isNaN(date.getTime()) ? date : null;
         state.goal.targetRate =
           targetRate != null && !isNaN(targetRate) ? targetRate : null;
+        GoalManager.updateGoalUI?.();
       } catch (e) {
         console.error("GoalManager: Error parsing goal from localStorage", e);
         localStorage.removeItem(CONFIG.localStorageKeys.goal);
         state.goal = { ...defaultGoal };
+        GoalManager.updateGoalUI?.();
       }
     } else {
       state.goal = { ...defaultGoal };
@@ -54,14 +56,26 @@ export const GoalManager = {
         "error",
       );
     }
+  // Remove DD-MM-YYYY display span update (no longer in HTML)
   },
 
   updateGoalUI() {
     ui.goalWeightInput?.property("value", state.goal.weight ?? "");
+    // Set input value as YYYY-MM-DD for browser compatibility
     ui.goalDateInput?.property(
       "value",
-      state.goal.date ? Utils.formatDate(state.goal.date) : "",
+      state.goal.date
+        ? d3.timeFormat("%Y-%m-%d")(state.goal.date)
+        : "",
     );
+    // Set display span as DD-MM-YYYY
+    const dateDisplay = document.getElementById("goalDateDisplay");
+    if (dateDisplay) {
+      dateDisplay.textContent =
+        state.goal.date && state.goal.date instanceof Date && !isNaN(state.goal.date)
+          ? Utils.formatDateDMY(state.goal.date)
+          : "";
+    }
     ui.goalTargetRateInput?.property("value", state.goal.targetRate ?? "");
   },
 };

@@ -200,6 +200,13 @@ function createSVGElements() {
     ui.trendLine2 = ui.chartArea
       .append("path")
       .attr("class", "trend-line manual-trend-2");
+
+    // Prognosis (Goal Trend) Line
+    ui.goalPrognosisLine = ui.chartArea
+      .append("path")
+      .attr("class", "goal-prognosis-line")
+      .style("display", "none")
+      .style("pointer-events", "none");
     ui.regressionLine = ui.chartArea
       .append("path")
       .attr("class", "trend-line regression-line");
