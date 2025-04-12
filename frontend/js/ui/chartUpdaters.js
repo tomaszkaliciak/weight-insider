@@ -536,6 +536,7 @@ export const FocusChartUpdater = {
   },
 
   updateAnnotations(data) {
+    if (!data || !Array.isArray(data.filteredData)) return;
     let visibleData = data.filteredData;
     const dur = CONFIG.transitionDurationMs;
     if (!ui.annotationsGroup || !scales.x || !scales.y) return;
