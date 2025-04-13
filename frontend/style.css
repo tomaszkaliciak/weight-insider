@@ -62,7 +62,7 @@
     --trend1-color: var(--secondary-color);
     --trend2-color: hsl(var(--hue-tertiary), 55%, 70%);
     --regression-color: var(--accent-color);
-    --regression-ci-color: hsla(var(--hue-accent), 70%, 60%, 0.1);
+    --regression-ci-color: hsla(50, 95%, 80%, 0.25); /* Pale yellow for better contrast */
     --goal-line-color: var(--goal-color);
     --rate-line-color: hsl(var(--hue-goal), 45%, 60%);
     --rate-ma-line-color: hsl(var(--hue-rate-ma), 70%, 60%);
@@ -1537,7 +1537,8 @@ body.dark-theme .highlight-trigger:hover .stat-date.highlightable {
 }
 .area.regression-ci-area {
     fill: var(--regression-ci-color);
-    stroke: none;
+    stroke: #e6c96b; /* Subtle yellow border */
+    stroke-width: 1px;
     opacity: 0.8;
     pointer-events: none;
 }

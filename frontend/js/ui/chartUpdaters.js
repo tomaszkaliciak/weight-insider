@@ -145,12 +145,15 @@ export const FocusChartUpdater = {
       .transition()
       .duration(dur)
       .style("display", state.seriesVisibility.smaBand ? null : "none")
+      .style("opacity", 0.8)
       .attr("d", smaBandAreaGen);
     ui.smaLine
       ?.datum(visibleValidSmaData)
       .transition()
       .duration(dur)
       .style("display", state.seriesVisibility.smaLine ? null : "none")
+      .style("stroke-width", "2.5px")
+      .style("opacity", 1)
       .attr("d", smaLineGen);
     ui.emaLine
       ?.datum(visibleValidEmaData)
@@ -221,6 +224,7 @@ export const FocusChartUpdater = {
       .duration(dur)
       // Use 'display' style based directly on showRegCI and points length
       .style("display", showRegCI && regCIPoints.length > 0 ? null : "none") // <-- Check logic here
+      .style("opacity", 0.3)
       .attr("d", regressionCIAreaGen); // Generator will handle empty data
 
     // Manual Trendlines
