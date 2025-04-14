@@ -1,8 +1,11 @@
+// js/core/domainManager.js
+// Manages the calculation and setting of domains for chart scales.
+
 import { scales } from "../ui/chartSetup.js";
-import { state } from "../state.js";
+import { StateManager } from "./stateManager.js";
 import { CONFIG } from "../config.js";
-import { DataService } from "./dataService.js";
-import { EventHandlers } from "../interactions/eventHandlers.js";
+// DataService may not be needed if trend weight calculation moves or uses state
+// import { DataService } from "./dataService.js";
 import {
   calculateContextYDomain,
   calculateFocusYDomain,
@@ -10,172 +13,170 @@ import {
   calculateRateYDomain,
   calculateTdeeDiffYDomain,
   calculateScatterPlotDomains,
-} from "./domainCalculations.js";
+} from "./domainCalculations.js"; // Assuming these are still separate
 import { Utils } from "./utils.js";
+import * as Selectors from "./selectors.js"; // Import selectors
 
 export const DomainManager = {
   /**
    * Sets the initial X domains for focus and context charts, and secondary charts.
-   * @param {Array<object>} processedData - The fully processed data array.
+   * Reads goal state for potential extent adjustment.
+   * @param {object} stateSnapshot - A snapshot of the current application state.
    * @returns {Array<Date>} The initial domain for the focus chart [startDate, endDate].
    */
-  setXDomains(processedData) {
-    const fullDataExtent = d3.extent(processedData, (d) => d.date);
+  _setInitialXDomains(stateSnapshot) {
+    const processedData = Selectors.selectProcessedData(stateSnapshot);
+    const goal = Selectors.selectGoal(stateSnapshot);
 
-    let initialXDomain = [];
-    if (!fullDataExtent[0] || !fullDataExtent[1]) {
-      console.warn(
-        "DomainManager: No valid date range found in data. Using fallback.",
-      );
-      const today = new Date();
-      const past = d3.timeMonth.offset(today, -CONFIG.initialViewMonths);
-      fullDataExtent[0] = past;
-      fullDataExtent[1] = today;
-      initialXDomain = [past, today];
-    } else {
-      // Calculate default initial view (e.g., last N months)
-      // Always set initialEndDate to last measurement date (no future by default)
-      let initialEndDate = fullDataExtent[1];
-      // Extend fullDataExtent[1] to goal date for zooming, but not initial view
-      if (
-        typeof state !== "undefined" &&
-        state.goal &&
-        state.goal.date instanceof Date &&
-        !isNaN(state.goal.date) &&
-        state.goal.date > fullDataExtent[1]
-      ) {
-        fullDataExtent[1] = state.goal.date;
-      }
-      // Initial start date: 3 months before last measurement
-      const initialStartDateDefault = d3.timeMonth.offset(
-        initialEndDate,
-        -3
-      );
-      // Ensure initial start date doesn't go before the actual data start date
-      const initialStartDate =
-        initialStartDateDefault < fullDataExtent[0]
-          ? fullDataExtent[0]
-          : initialStartDateDefault;
-      initialXDomain = [initialStartDate, initialEndDate];
+    // Determine extent from processed data dates
+    let dataStartDate = null;
+    let dataEndDate = null;
+    if (processedData.length > 0) {
+        const dateExtent = d3.extent(processedData, (d) => d.date);
+        if (dateExtent[0] instanceof Date && !isNaN(dateExtent[0])) dataStartDate = dateExtent[0];
+        if (dateExtent[1] instanceof Date && !isNaN(dateExtent[1])) dataEndDate = dateExtent[1];
     }
 
-    // Set domains on the imported scales
-    scales.xContext?.domain(fullDataExtent);
-    scales.x?.domain(initialXDomain);
-    scales.xBalance?.domain(initialXDomain);
-    scales.xRate?.domain(initialXDomain);
-    scales.xTdeeDiff?.domain(initialXDomain);
+    let contextDomainStart = dataStartDate;
+    let contextDomainEnd = dataEndDate;
+    let initialFocusStart = null;
+    let initialFocusEnd = null;
 
-    return initialXDomain; // Return the calculated focus domain
+    if (!contextDomainStart || !contextDomainEnd) {
+        console.warn("DomainManager: No valid date range in data. Using fallback.");
+        const today = new Date();
+        const past = d3.timeMonth.offset(today, -CONFIG.initialViewMonths);
+        contextDomainStart = past;
+        contextDomainEnd = today;
+        initialFocusStart = past;
+        initialFocusEnd = today;
+    } else {
+        // Extend context end date if goal date is later
+        if (goal.date instanceof Date && !isNaN(goal.date) && goal.date > contextDomainEnd) {
+            contextDomainEnd = goal.date;
+        }
+        // Set initial focus view end date to last data point date
+        initialFocusEnd = dataEndDate;
+        // Set initial focus view start date N months before end date, clamped by data start
+        const defaultFocusStart = d3.timeMonth.offset(initialFocusEnd, -CONFIG.initialViewMonths);
+        initialFocusStart = defaultFocusStart < contextDomainStart ? contextDomainStart : defaultFocusStart;
+    }
+
+    const initialFocusDomain = [initialFocusStart, initialFocusEnd];
+    const contextDomain = [contextDomainStart, contextDomainEnd];
+
+    // Set domains on the imported scales
+    scales.xContext?.domain(contextDomain);
+    scales.x?.domain(initialFocusDomain);
+    scales.xBalance?.domain(initialFocusDomain);
+    scales.xRate?.domain(initialFocusDomain);
+    scales.xTdeeDiff?.domain(initialFocusDomain);
+
+    // Dispatch action to set the initial analysis range based on the focus view
+    const initialAnalysisRange = {
+        start: new Date(new Date(initialFocusDomain[0]).setHours(0,0,0,0)), // Clone
+        end: new Date(new Date(initialFocusDomain[1]).setHours(23,59,59,999)) // Clone
+    };
+    StateManager.dispatch({ type: 'SET_ANALYSIS_RANGE', payload: initialAnalysisRange });
+
+    return initialFocusDomain; // Return the focus domain for potential immediate use
   },
 
   /**
    * Sets the Y domain for the context chart based on visible series.
-   * @param {Array<object>} processedData - The fully processed data array.
+   * @param {object} stateSnapshot - A snapshot of the current application state.
    */
-  setContextYDomain(processedData) {
+  _setContextYDomain(stateSnapshot) {
     if (!scales.yContext) return;
+    const processedData = Selectors.selectProcessedData(stateSnapshot);
+    const visibility = Selectors.selectSeriesVisibility(stateSnapshot);
 
     const [yMin, yMax] = calculateContextYDomain(
       processedData,
-      state.seriesVisibility.smaLine,
-      state.seriesVisibility.smaBand,
+      visibility.smaLine, // Pass visibility flags
+      visibility.smaBand
     );
-    state.contextYDomain = [yMin, yMax];
-    scales.yContext.domain([yMin, yMax]).nice(); // Apply nice() for better ticks
+    scales.yContext.domain([yMin, yMax]).nice();
   },
 
   /**
-   * Sets the Y domains for the focus chart (Y1 for weight, Y2 potentially later).
-   * Considers visible series, regression, goals, and dynamic Y-axis settings.
-   * @param {Array<object>} dataForCalculation - Data filtered by current X view OR all data, depending on dynamicYAxis setting.
-   * @param {object|null} regressionResult - Result from DataService.calculateLinearRegression.
+   * Sets the Y domains for the focus chart (Y1 for weight).
+   * Relies on derived data (filteredData, regressionResult) being present in the state snapshot.
+   * @param {object} stateSnapshot - A snapshot of the current application state.
    */
-  setFocusYDomains(dataForCalculation, regressionResult) {
+  _setFocusYDomains(stateSnapshot) {
     if (!scales.y || !scales.x) {
       console.error("DomainManager: Focus scales (x, y) not initialized.");
       return;
     }
 
-    const yRange = scales.y.range(); // Get the pixel range [height, 0]
-    const height =
-      Array.isArray(yRange) && yRange.length === 2
-        ? Math.abs(yRange[0] - yRange[1])
-        : 200; // Estimate height
+    const yRange = scales.y.range();
+    const height = Array.isArray(yRange) && yRange.length === 2 ? Math.abs(yRange[0] - yRange[1]) : 200;
+    const currentXDomain = scales.x.domain(); // Get current focus X domain from the scale
 
-    // Define buffer dates only if dynamic Y is enabled
-    const currentXDomain = scales.x.domain();
-    state.currentXDomain = currentXDomain;
-    const bufferStartDate =
-      currentXDomain[0] instanceof Date
-        ? d3.timeDay.offset(currentXDomain[0], -CONFIG.domainBufferDays)
-        : null;
-    const bufferEndDate =
-      currentXDomain[1] instanceof Date
-        ? d3.timeDay.offset(currentXDomain[1], CONFIG.domainBufferDays)
-        : null;
+    // --- Get pre-calculated/filtered data from the state snapshot ---
+    const filteredData = Selectors.selectFilteredData(stateSnapshot); // Use filtered data
+    const regressionResult = stateSnapshot.regressionResult; // Use regression result from state
+    // Note: We no longer need bufferStartDate/EndDate if filteredData is already correct
 
-    const trendConfig = DataService.getTrendlineConfigFromUI();
-
-    const [yMin, yMax] = calculateFocusYDomain(
-      dataForCalculation,
-      regressionResult,
+    // The calculation function now takes the state snapshot directly
+    let [yMin, yMax] = calculateFocusYDomain(
+      filteredData, // Pass the already filtered data
+      regressionResult, // Pass the result from state
       CONFIG,
-      state,
-      bufferStartDate,
-      bufferEndDate,
-      trendConfig,
+      stateSnapshot, // Pass the whole snapshot
+      null, // Pass null for buffer dates as filtering is done upstream
+      null
+      // Trend config is read internally by calculateFocusYDomain from stateSnapshot
     );
 
-    // Apply the calculated domain, ensuring validity
-    if (!isNaN(yMin) && !isNaN(yMax)) {
-      scales.y.domain([yMin, yMax]).nice(Math.max(Math.floor(height / 40), 5)); // Use nice() with tick hint
+    // Apply the calculated domain, using context domain as fallback if calculation failed
+    if (isFinite(yMin) && isFinite(yMax)) {
+        scales.y.domain([yMin, yMax]).nice(Math.max(Math.floor(height / 40), 5));
     } else {
-      console.error("DomainManager: Calculated invalid Y1 domain", [
-        yMin,
-        yMax,
-      ]);
-      scales.y.domain([60, 80]).nice(); // Fallback
+        console.warn("DomainManager: Calculated invalid focus Y domain. Using context domain as fallback.");
+        const contextDomain = scales.yContext?.domain();
+        if (Array.isArray(contextDomain) && contextDomain.length === 2 && isFinite(contextDomain[0]) && isFinite(contextDomain[1])) {
+            scales.y.domain(contextDomain).nice(Math.max(Math.floor(height / 40), 5));
+        } else {
+            console.error("DomainManager: Context Y domain is also invalid! Using hardcoded fallback [60, 80].");
+            scales.y.domain([60, 80]).nice(); // Hardcoded fallback
+        }
     }
-
-    // Set a default fixed range for y2 if it exists, even if unused
-    scales.y2?.domain([0, 100]);
+    scales.y2?.domain([0, 100]); // Keep default for unused Y2
   },
 
   /**
    * Sets the Y domains for the secondary charts (Balance, Rate, TDEE Diff).
-   * @param {Array<object>} visibleData - Data filtered by the current focus X domain.
+   * Relies on filteredData being present in the state snapshot.
+   * @param {object} stateSnapshot - A snapshot of the current application state.
    */
-  setSecondaryYDomains(visibleData) {
-    // Balance Chart
-    if (scales.yBalance) {
-      const [yBalanceDomainMax, yBalanceDomainMin] =
-        calculateBalanceYDomain(visibleData);
-      scales.yBalance.domain([yBalanceDomainMin, yBalanceDomainMax]).nice();
-    }
+  _setSecondaryYDomains(stateSnapshot) {
+    const filteredData = Selectors.selectFilteredData(stateSnapshot); // Use filtered data from state
 
-    // Rate of Change Chart
+    if (scales.yBalance) {
+      const [yBalanceMax, yBalanceMin] = calculateBalanceYDomain(filteredData); // Max/Min returned order
+      scales.yBalance.domain([yBalanceMin, yBalanceMax]).nice();
+    }
     if (scales.yRate) {
-      const [yRateMin, yRateMax] = calculateRateYDomain(visibleData);
+      const [yRateMin, yRateMax] = calculateRateYDomain(filteredData);
       scales.yRate.domain([yRateMin, yRateMax]).nice();
     }
-
-    // TDEE Difference Chart
     if (scales.yTdeeDiff) {
-      const [yDiffMin, yDiffMax] = calculateTdeeDiffYDomain(visibleData);
+      const [yDiffMin, yDiffMax] = calculateTdeeDiffYDomain(filteredData);
       scales.yTdeeDiff.domain([yDiffMin, yDiffMax]).nice();
     }
   },
 
   /**
    * Sets the X and Y domains for the correlation scatter plot.
-   * @param {Array<object>} scatterData - Array of weekly summary stats {avgNetCal, weeklyRate}.
+   * Relies on correlationScatterData being present in the state snapshot.
+   * @param {object} stateSnapshot - A snapshot of the current application state.
    */
-  setScatterPlotDomains(scatterData) {
+  _setScatterPlotDomains(stateSnapshot) {
     if (!scales.xScatter || !scales.yScatter) return;
-
+    const scatterData = Selectors.selectCorrelationScatterData(stateSnapshot); // Use selector
     const { xDomain, yDomain } = calculateScatterPlotDomains(scatterData);
-
     scales.xScatter.domain(xDomain).nice();
     scales.yScatter.domain(yDomain).nice();
   },
@@ -183,116 +184,93 @@ export const DomainManager = {
   /**
    * Initializes all domains based on the full processed dataset.
    * Should be called once after data is loaded and processed.
-   * @param {Array<object>} processedData - The fully processed data array.
+   * Reads state, dispatches actions.
+   * @param {object} stateSnapshot - A snapshot of the application state containing processedData.
    */
-  initializeDomains(processedData) {
+  initializeDomains(stateSnapshot) {
     console.log("DomainManager: Initializing domains...");
-    this.setContextYDomain(processedData);
-    const initialXDomain = this.setXDomains(processedData);
+    const processedData = Selectors.selectProcessedData(stateSnapshot);
+    if (!processedData || processedData.length === 0) {
+        console.warn("DomainManager: No processed data available for initial domain setup.");
+        this.setEmptyDomains(); // Set default domains
+        return;
+    }
 
-    // Calculate initial domains based on the initial view
-    const initialVisibleData = processedData.filter(
-      (d) =>
-        d.date instanceof Date &&
-        d.date >= initialXDomain[0] &&
-        d.date <= initialXDomain[1],
-    );
-    // Calculate regression for the initial view (considering regression start date if set)
-    const initialRegression = DataService.calculateLinearRegression(
-      initialVisibleData.filter((d) => !d.isOutlier && d.value != null),
-      state.regressionStartDate, // Use initial regression start date from state
-    );
+    this._setContextYDomain(stateSnapshot); // Reads state.seriesVisibility
+    const initialFocusDomain = this._setInitialXDomains(stateSnapshot); // Reads state.goal, dispatches SET_ANALYSIS_RANGE
 
-    this.setFocusYDomains(initialVisibleData, initialRegression);
-    this.setSecondaryYDomains(initialVisibleData);
+    // --- Initial Derived Data Calculation (Now handled by StatsManager) ---
+    // We now rely on StatsManager having run its initial calculation *after*
+    // SET_ANALYSIS_RANGE was dispatched by _setInitialXDomains.
+    // The stateSnapshot passed here might be slightly stale regarding derived data,
+    // but it's sufficient for setting the initial scale domains.
+    // MasterUpdater will use the final, updated derived state for the initial render.
 
-    // Calculate scatter plot data based on the *full* dataset initially
-    // Call the method from DataService now
-    const allWeeklyStats = DataService.calculateWeeklyStats(
-      processedData,
-      null,
-      null,
-    );
+    // Use the most recent state to set other domains
+    const finalStateSnapshot = StateManager.getState(); // Get the absolute latest state
 
-    // Update state directly here
-    state.correlationScatterData = allWeeklyStats.filter(
-      (w) => w.avgNetCal != null && w.weeklyRate != null,
-    );
-    this.setScatterPlotDomains(state.correlationScatterData);
+    this._setFocusYDomains(finalStateSnapshot);
+    this._setSecondaryYDomains(finalStateSnapshot);
+    this._setScatterPlotDomains(finalStateSnapshot);
 
     console.log("DomainManager: Domain initialization complete.");
   },
 
   /**
-   * Updates domains based on user interaction (zoom/brush).
-   * Recalculates focus Y and secondary Y domains based on the current X view.
+   * Updates domains based on user interaction (zoom/brush) or other state changes.
+   * Primarily recalculates Y domains based on the current X view and visibility state.
+   * Assumes scales.x domain is already updated by the interaction handler.
    */
   updateDomainsOnInteraction() {
-    const currentXDomain = scales.x?.domain();
-    if (
-      !currentXDomain ||
-      currentXDomain.length !== 2 ||
-      !(currentXDomain[0] instanceof Date) ||
-      !(currentXDomain[1] instanceof Date)
-    ) {
-      console.warn(
-        "DomainManager: Invalid X domain during interaction update.",
-      );
+    console.log("[DomainManager] Updating domains on interaction/state change.");
+    const stateSnapshot = StateManager.getState(); // Get current state
+
+    if (!Selectors.selectIsInitialized(stateSnapshot)) {
+      console.warn("DomainManager: Skipping domain update - not initialized.");
       return;
     }
 
-    // Update filtered data in state
-    state.filteredData = state.processedData.filter(
-      (d) =>
-        d.date instanceof Date &&
-        d.date >= currentXDomain[0] &&
-        d.date <= currentXDomain[1],
-    );
+    // --- Update Focus Y Domain ---
+    // This now relies on filteredData and regressionResult being correctly updated in the state
+    // by StatsManager *before* this function is called by MasterUpdater.
+    this._setFocusYDomains(stateSnapshot);
 
-    // Recalculate regression for the current view/range
-    const regressionRange = EventHandlers.getEffectiveRegressionRange(); // Get current range
-    let regressionResult = null;
-    if (regressionRange.start && regressionRange.end) {
-      const regressionData = state.processedData.filter(
-        (d) =>
-          d.date instanceof Date &&
-          d.date >= regressionRange.start &&
-          d.date <= regressionRange.end &&
-          d.value != null &&
-          !d.isOutlier,
-      );
-      regressionResult = DataService.calculateLinearRegression(
-        regressionData,
-        regressionRange.start,
-      );
+    // --- Update Secondary Chart X Domains to Match Focus ---
+    const currentXDomain = scales.x?.domain();
+    if (currentXDomain && currentXDomain.length === 2) {
+      scales.xBalance?.domain(currentXDomain);
+      scales.xRate?.domain(currentXDomain);
+      scales.xTdeeDiff?.domain(currentXDomain);
     } else {
-      regressionResult = {
-        slope: null,
-        intercept: null,
-        points: [],
-        pointsWithCI: [],
-      }; // Default empty result
+       console.warn("DomainManager: Could not update secondary X domains - invalid focus X domain.");
     }
 
-    this.setFocusYDomains(state.filteredData, regressionResult);
+    // --- Update Secondary Y Domains (based on currently filtered data in state) ---
+    this._setSecondaryYDomains(stateSnapshot);
 
-    // Update secondary chart X domains to match focus
-    scales.xBalance?.domain(currentXDomain);
-    scales.xRate?.domain(currentXDomain);
-    scales.xTdeeDiff?.domain(currentXDomain);
-
-    // Update secondary chart Y domains based on *visible* data
-    this.setSecondaryYDomains(state.filteredData);
-
-    // Note: Scatter plot domain typically doesn't change on zoom/brush of main chart
-    // It's usually based on the analysis range set elsewhere.
+    // Note: Scatter plot domain typically doesn't change on zoom/brush of main chart.
+    // It updates when the underlying weekly/correlation data changes (handled via subscription).
+    console.log("[DomainManager] Finished updating domains.");
   },
 
+  /** Sets all domains to empty/default values */
   setEmptyDomains() {
-    DomainManager.setXDomains([]);
-    DomainManager.setContextYDomain([]);
-    DomainManager.setFocusYDomains([], null);
-    DomainManager.setSecondaryYDomains([]);
-    DomainManager.setScatterPlotDomains([]);
+    console.log("[DomainManager] Setting empty/default domains.");
+    const defaultDate = new Date();
+    const defaultX = [d3.timeMonth.offset(defaultDate, -1), defaultDate];
+    const defaultY = [60, 80];
+    scales.x?.domain(defaultX); scales.xContext?.domain(defaultX); scales.xBalance?.domain(defaultX);
+    scales.xRate?.domain(defaultX); scales.xTdeeDiff?.domain(defaultX);
+    scales.y?.domain(defaultY).nice(); scales.yContext?.domain(defaultY).nice();
+    scales.yBalance?.domain([-500, 500]).nice(); scales.yRate?.domain([-0.5, 0.5]).nice();
+    scales.yTdeeDiff?.domain([-500, 500]).nice(); scales.xScatter?.domain([-1000, 1000]).nice();
+    scales.yScatter?.domain([-1, 1]).nice();
+    // No direct state dispatch needed here unless clearing state is desired
+  },
+
+   // --- Initialization ---
+  init() {
+    // No subscriptions needed here as updates are called explicitly by MasterUpdater or during init.
+    console.log("[DomainManager Init] Initialized.");
   },
 };

@@ -1,147 +1,117 @@
-// statsManager.js
-// Calculates and updates various statistics based on the processed data and current view/analysis range.
+// js/ui/renderers/statsDisplayRenderer.js
+// Renders statistics to the UI display elements.
 
-import { CONFIG } from "../../config.js";
 import { ui } from "../uiCache.js";
 import { Utils } from "../../core/utils.js";
-
-import { DataService } from "../../core/dataService.js";
+import { StateManager } from "../../core/stateManager.js";
 import { EventHandlers } from "../../interactions/eventHandlers.js";
-import { InsightsGenerator } from "../insightsGenerator.js";
-import { WeeklySummaryUpdater } from "../weeklySummaryUpdater.js";
-import { ScatterPlotUpdater } from "../chartUpdaters.js";
-import { EventBus } from "../../core/eventBus.js";
+import * as Selectors from "../../core/selectors.js"; // Import selectors
 
 export const StatsDisplayRenderer = {
-  updateStatsDisplay(stats) {
+  /**
+   * Updates the text content of various stat display elements.
+   * @param {object} displayStats - The displayStats object received from the state update event.
+   */
+  _render(displayStats) {
+    console.log("[StatsDisplayRenderer] _render called with displayStats:", JSON.stringify(displayStats));
+    if (!displayStats || typeof displayStats !== 'object') {
+        console.warn("StatsDisplayRenderer: _render called without valid stats data. Rendering N/A.");
+        displayStats = {}; // Use empty object to avoid errors below and render N/A
+    }
+
     const fv = Utils.formatValue;
     const fd = Utils.formatDate;
     const fdShort = Utils.formatDateShort;
-    const na = (v) => v ?? "N/A";
+    const na = (v) => (v != null ? v : "N/A");
+
     const updateElement = (key, value, formatter = na, args = undefined) => {
       const element = ui.statElements[key];
       if (element) {
         let formattedValue = formatter(value, args);
-        if (key === "currentRateFeedback" && stats.targetRateFeedback) {
-          element.className = `stat-value feedback ${stats.targetRateFeedback.class || ""}`;
-          element.textContent = stats.targetRateFeedback.text;
-        } else if (
-          key === "weightConsistencyDetails" &&
-          stats.weightDataConsistency
-        ) {
-          element.textContent = `(${stats.weightDataConsistency.count}/${stats.weightDataConsistency.totalDays} days)`;
-        } else if (
-          key === "calorieConsistencyDetails" &&
-          stats.calorieDataConsistency
-        ) {
-          element.textContent = `(${stats.calorieDataConsistency.count}/${stats.calorieDataConsistency.totalDays} days)`;
-        } else if (
-          key === "suggestedIntakeRange" &&
-          value &&
-          value.min != null &&
-          value.max != null
-        ) {
-          element.textContent = `${value.min} - ${value.max}`;
+        // Special handling (remains the same)
+        if (key === "currentRateFeedback" && displayStats.targetRateFeedback) {
+             element.className = `stat-value feedback ${displayStats.targetRateFeedback.class || ""}`;
+             element.textContent = displayStats.targetRateFeedback.text ?? "N/A";
+        } else if (key === "weightConsistencyDetails" && displayStats.weightDataConsistency) {
+             element.textContent = `(${displayStats.weightDataConsistency.count ?? '?'}/${displayStats.weightDataConsistency.totalDays ?? '?'} days)`;
+        } else if (key === "calorieConsistencyDetails" && displayStats.calorieDataConsistency) {
+             element.textContent = `(${displayStats.calorieDataConsistency.count ?? '?'}/${displayStats.calorieDataConsistency.totalDays ?? '?'} days)`;
+        } else if (key === "suggestedIntakeRange" && value && value.min != null && value.max != null) {
+             element.textContent = `${value.min} - ${value.max}`;
         } else {
-          element.textContent = formattedValue;
+             element.textContent = formattedValue; // Default
         }
-        // Add/Remove highlightable class and listener for date stats
+
+        // Add/Remove highlightable class and listener (remains the same)
         if (key === "maxWeightDate" || key === "minWeightDate") {
-          if (value instanceof Date && !isNaN(value)) {
-            element.classList.add("highlightable");
-            element.style.cursor = "pointer";
-            element.style.textDecoration = "underline dotted";
-            element.__highlightDate = value; // Store date ref on element
-            element.removeEventListener(
-              "click",
-              EventHandlers.statDateClickWrapper,
-            ); // Avoid duplicates
-            element.addEventListener(
-              "click",
-              EventHandlers.statDateClickWrapper,
-            );
-          } else {
-            element.classList.remove("highlightable");
-            element.style.cursor = "";
-            element.style.textDecoration = "";
-            element.removeEventListener(
-              "click",
-              EventHandlers.statDateClickWrapper,
-            );
-            element.__highlightDate = null;
-          }
+            if (value instanceof Date && !isNaN(value)) {
+                element.classList.add("highlightable"); element.style.cursor = "pointer"; element.style.textDecoration = "underline dotted";
+                element.__highlightDate = value;
+                element.removeEventListener("click", EventHandlers.statDateClickWrapper);
+                element.addEventListener("click", EventHandlers.statDateClickWrapper);
+            } else {
+                element.classList.remove("highlightable"); element.style.cursor = ""; element.style.textDecoration = "";
+                element.removeEventListener("click", EventHandlers.statDateClickWrapper);
+                element.__highlightDate = null;
+                element.textContent = "N/A"; // Ensure N/A
+            }
         }
       }
+      // else { console.warn(`StatsDisplayRenderer: UI element for key "${key}" not found.`); } // Keep commented unless debugging needed
     };
 
-    // Update all stat elements
-    updateElement("startingWeight", stats.startingWeight, fv, 1);
-    updateElement("currentWeight", stats.currentWeight, fv, 1);
-    updateElement("currentSma", stats.currentSma, fv, 1);
-    updateElement("totalChange", stats.totalChange, fv, 1);
-    updateElement("maxWeight", stats.maxWeight, fv, 1);
-    updateElement("maxWeightDate", stats.maxWeightDate, fd);
-    updateElement("minWeight", stats.minWeight, fv, 1);
-    updateElement("minWeightDate", stats.minWeightDate, fd);
-    updateElement("startingLbm", stats.startingLbm, fv, 1);
-    updateElement("currentLbmSma", stats.currentLbmSma, fv, 1);
-    updateElement("totalLbmChange", stats.totalLbmChange, fv, 1);
-    updateElement("currentFmSma", stats.currentFmSma, fv, 1);
-    updateElement("totalFmChange", stats.totalFmChange, fv, 1);
-    updateElement("volatilityScore", stats.volatility, fv, 2); // Overall volatility
-    updateElement("rollingVolatility", stats.rollingVolatility, fv, 2);
-    updateElement("rollingWeeklyChangeSma", stats.currentWeeklyRate, fv, 2);
-    updateElement("regressionSlope", stats.regressionSlopeWeekly, fv, 2);
+    // Update all stat elements using the provided displayStats object
+    updateElement("startingWeight", displayStats.startingWeight, fv, 1);
+    updateElement("currentWeight", displayStats.currentWeight, fv, 1);
+    updateElement("currentSma", displayStats.currentSma, fv, 1);
+    updateElement("totalChange", displayStats.totalChange, fv, 1);
+    updateElement("maxWeight", displayStats.maxWeight, fv, 1);
+    updateElement("maxWeightDate", displayStats.maxWeightDate, fd);
+    updateElement("minWeight", displayStats.minWeight, fv, 1);
+    updateElement("minWeightDate", displayStats.minWeightDate, fd);
+    updateElement("startingLbm", displayStats.startingLbm, fv, 1);
+    updateElement("currentLbmSma", displayStats.currentLbmSma, fv, 1);
+    updateElement("totalLbmChange", displayStats.totalLbmChange, fv, 1);
+    updateElement("currentFmSma", displayStats.currentFmSma, fv, 1);
+    updateElement("totalFmChange", displayStats.totalFmChange, fv, 1);
+    updateElement("volatilityScore", displayStats.volatility, fv, 2);
+    updateElement("rollingVolatility", displayStats.rollingVolatility, fv, 2);
+    updateElement("rollingWeeklyChangeSma", displayStats.currentWeeklyRate, fv, 2);
+    updateElement("regressionSlope", displayStats.regressionSlopeWeekly, fv, 2);
+    // Update regression start date label directly
     if (ui.statElements.regressionStartDateLabel) {
-      ui.statElements.regressionStartDateLabel.textContent =
-        stats.regressionStartDate
-          ? `(${fdShort(stats.regressionStartDate)})`
-          : "(Range Start)";
+        ui.statElements.regressionStartDateLabel.textContent = displayStats.regressionStartDate
+            ? `(${fdShort(displayStats.regressionStartDate)})` : "(Range Start)";
     }
-    updateElement("netcalRateCorrelation", stats.netCalRateCorrelation, fv, 2);
-    updateElement(
-      "weightConsistency",
-      stats.weightDataConsistency?.percentage,
-      fv,
-      0,
-    );
-    updateElement("weightConsistencyDetails"); // Updates based on stats.weightDataConsistency
-    updateElement(
-      "calorieConsistency",
-      stats.calorieDataConsistency?.percentage,
-      fv,
-      0,
-    );
-    updateElement("calorieConsistencyDetails"); // Updates based on stats.calorieDataConsistency
-    updateElement("avgIntake", stats.avgIntake, fv, 0);
-    updateElement("avgExpenditure", stats.avgExpenditureGFit, fv, 0); // Renamed from avgExpenditure to avgTdeeGfit in HTML
-    updateElement("avgNetBalance", stats.avgNetBalance, fv, 0);
-    updateElement(
-      "estimatedDeficitSurplus",
-      stats.estimatedDeficitSurplus,
-      fv,
-      0,
-    );
-    updateElement("avgTdeeGfit", stats.avgExpenditureGFit, fv, 0);
-    updateElement("avgTdeeWgtChange", stats.avgTDEE_WgtChange, fv, 0);
-    updateElement("avgTdeeDifference", stats.avgTDEE_Difference, fv, 0);
-    updateElement("avgTdeeAdaptive", stats.avgTDEE_Adaptive, fv, 0);
-    updateElement("targetWeightStat", stats.targetWeight, fv, 1);
-    updateElement("targetRateStat", stats.targetRate, fv, 2);
-    updateElement("weightToGoal", stats.weightToGoal, fv, 1);
-    updateElement("estimatedTimeToGoal", stats.estimatedTimeToGoal);
-    updateElement("requiredRateForGoal", stats.requiredRateForGoal, fv, 2);
-    updateElement("requiredNetCalories", stats.requiredNetCalories, fv, 0);
-    updateElement(
-      "requiredCalorieAdjustment",
-      stats.requiredCalorieAdjustment,
-      fv,
-      0,
-    );
-    updateElement("suggestedIntakeRange"); // Updates based on stats.suggestedIntakeRange
-    updateElement("currentRateFeedback"); // Updates based on stats.targetRateFeedback
+    updateElement("netcalRateCorrelation", displayStats.netCalRateCorrelation, fv, 2);
+    updateElement("weightConsistency", displayStats.weightDataConsistency?.percentage, fv, 0);
+    updateElement("weightConsistencyDetails"); // Special handling inside updateElement
+    updateElement("calorieConsistency", displayStats.calorieDataConsistency?.percentage, fv, 0);
+    updateElement("calorieConsistencyDetails"); // Special handling inside updateElement
+    updateElement("avgIntake", displayStats.avgIntake, fv, 0);
+    updateElement("avgExpenditure", displayStats.avgExpenditureGFit, fv, 0);
+    updateElement("avgNetBalance", displayStats.avgNetBalance, fv, 0);
+    updateElement("estimatedDeficitSurplus", displayStats.estimatedDeficitSurplus, fv, 0);
+    updateElement("avgTdeeGfit", displayStats.avgExpenditureGFit, fv, 0);
+    updateElement("avgTdeeWgtChange", displayStats.avgTDEE_WgtChange, fv, 0);
+    updateElement("avgTdeeDifference", displayStats.avgTDEE_Difference, fv, 0);
+    updateElement("avgTdeeAdaptive", displayStats.avgTDEE_Adaptive, fv, 0);
+    updateElement("targetWeightStat", displayStats.targetWeight, fv, 1);
+    updateElement("targetRateStat", displayStats.targetRate, fv, 2);
+    updateElement("weightToGoal", displayStats.weightToGoal, fv, 1);
+    updateElement("estimatedTimeToGoal", displayStats.estimatedTimeToGoal);
+    updateElement("requiredRateForGoal", displayStats.requiredRateForGoal, fv, 2);
+    updateElement("requiredNetCalories", displayStats.requiredNetCalories, fv, 0);
+    updateElement("requiredCalorieAdjustment", displayStats.requiredCalorieAdjustment, fv, 0);
+    updateElement("suggestedIntakeRange", displayStats.suggestedIntakeRange); // Special handling
+    updateElement("currentRateFeedback", displayStats.targetRateFeedback); // Special handling
   },
+
   init() {
-    EventBus.subscribe("state::statsUpdated", this.updateStatsDisplay);
+    // Subscribe specifically to the event carrying the display stats
+    StateManager.subscribeToSpecificEvent('state:displayStatsUpdated', this._render);
+    console.log("[StatsDisplayRenderer Init] Subscribed to state:displayStatsUpdated.");
+    // Render initial empty state
+    this._render({});
   },
 };

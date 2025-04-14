@@ -69,10 +69,12 @@ function calculateDimensions() {
     const clientWidth = node.clientWidth || 0;
     const clientHeight = node.clientHeight || 0;
 
+    // Use clientWidth/Height if available and seems reliable
+    // Check if clientWidth is close to rect.width minus padding (accounts for border/scrollbar)
     const useClientDims =
       clientWidth > 0 &&
       clientHeight > 0 &&
-      clientWidth >= rect.width - paddingLeft - paddingRight - 2;
+      clientWidth >= rect.width - paddingLeft - paddingRight - 2; // Tolerance of 2px
 
     const effectiveWidth = useClientDims
       ? clientWidth - paddingLeft - paddingRight
@@ -81,10 +83,14 @@ function calculateDimensions() {
       ? clientHeight - paddingTop - paddingBottom
       : rect.height - paddingTop - paddingBottom;
 
+    // Ensure width/height are not negative or excessively small
     const width = Math.max(10, effectiveWidth - margins.left - margins.right);
     const height = Math.max(10, effectiveHeight - margins.top - margins.bottom);
 
+    // Check validity based on calculated drawable area
     const valid = width > 10 && height > 10;
+    // Log dimension calculation details for debugging if needed
+    // console.log(`[Dim Calc] Container: ${containerSelection.attr('id') || 'N/A'}, Rect:[${rect.width}x${rect.height}], Client:[${clientWidth}x${clientHeight}], Padding:[L${paddingLeft},R${paddingRight},T${paddingTop},B${paddingBottom}], UseClient:${useClientDims}, Eff:[${effectiveWidth}x${effectiveHeight}], Margins:[L${margins.left},R${margins.right},T${margins.top},B${margins.bottom}], Draw:[${width}x${height}], Valid:${valid}`);
     return { width, height, valid };
   };
 
@@ -101,14 +107,17 @@ function calculateDimensions() {
     CONFIG.margins.correlationScatter,
   );
 
+  // Only focus and context are absolutely essential for the main chart view
   const requiredDimsValid =
     _dimensions.focus.valid && _dimensions.context.valid;
 
   if (!requiredDimsValid) {
     console.error(
       "chartSetup: Cannot setup dimensions, focus or context container not found or has zero effective size.",
-      _dimensions,
+      { focus: _dimensions.focus, context: _dimensions.context }
     );
+    // Potentially show a user-facing error message here
+    Utils.showCriticalErrorMessage("Could not determine chart drawing dimensions.");
     return false;
   }
   return true;
@@ -169,73 +178,77 @@ function createSVGElements() {
       .attr("transform", `translate(${fm.left},${fm.top})`);
 
     // Groups within focus, order matters for layering
-    ui.gridGroup = ui.focus.append("g").attr("class", "grid y-grid");
-    ui.plateauGroup = ui.focus.append("g").attr("class", "plateau-group");
-
-    ui.goalZoneRect = ui.focus
+    ui.gridGroup = ui.focus.append("g").attr("class", "grid y-grid"); // Grid first (behind everything)
+    ui.plateauGroup = ui.focus.append("g").attr("class", "plateau-group"); // Plateaus behind most lines/dots
+    ui.goalZoneRect = ui.focus // Goal zone behind lines/dots
       .append("rect")
       .attr("class", "goal-zone-rect")
-      .style("display", "none") // Initially hidden
+      .style("display", "none")
       .style("pointer-events", "none");
 
-    ui.annotationsGroup = ui.focus
-      .append("g")
-      .attr("class", "annotations-group");
-
+    // Main chart area group with clipping
     ui.chartArea = ui.focus
       .append("g")
       .attr("class", "chart-area")
       .attr("clip-path", "url(#clip-focus)");
 
-    // Elements within chartArea (Paths)
+    // Elements within chartArea - ORDER IS CRITICAL FOR LAYERING
+
+    // 1. Areas (drawn first, underneath lines)
     ui.bandArea = ui.chartArea.append("path").attr("class", "area band-area");
     ui.regressionCIArea = ui.chartArea
       .append("path")
       .attr("class", "area regression-ci-area");
-    ui.smaLine = ui.chartArea.append("path").attr("class", "line sma-line");
-    ui.emaLine = ui.chartArea.append("path").attr("class", "line ema-line");
+
+    // 2. Trend/Reference Lines (drawn after areas, before main data lines/dots)
     ui.trendLine1 = ui.chartArea
       .append("path")
       .attr("class", "trend-line manual-trend-1");
     ui.trendLine2 = ui.chartArea
       .append("path")
       .attr("class", "trend-line manual-trend-2");
-
-    // Prognosis (Goal Trend) Line
-    ui.goalPrognosisLine = ui.chartArea
+    ui.goalPrognosisLine = ui.chartArea // Goal Prognosis line
       .append("path")
       .attr("class", "goal-prognosis-line")
       .style("display", "none")
       .style("pointer-events", "none");
-    ui.regressionLine = ui.chartArea
+    ui.regressionLine = ui.chartArea // Regression line
       .append("path")
       .attr("class", "trend-line regression-line");
-    ui.goalLine = ui.chartArea
+    ui.goalLine = ui.chartArea // Goal line
       .append("path")
       .attr("class", "trend-line goal-line");
-    ui.bfLine = ui.chartArea.append("path").attr("class", "line bf-line"); // Retained but unused
+    ui.bfLine = ui.chartArea.append("path").attr("class", "line bf-line"); // Bodyfat line (unused)
 
-    // Elements within chartArea (Dots/Markers)
+    // 3. Main Data Lines (SMA, EMA - drawn after reference lines)
+    ui.smaLine = ui.chartArea.append("path").attr("class", "line sma-line"); // <<< SMA LINE
+    ui.emaLine = ui.chartArea.append("path").attr("class", "line ema-line"); // <<< EMA LINE
+
+    // 4. Dots/Markers (drawn last within clipped area, on top of lines/areas)
     ui.rawDotsGroup = ui.chartArea.append("g").attr("class", "raw-dots-group");
-    ui.smaDotsGroup = ui.chartArea.append("g").attr("class", "dots-group");
+    ui.smaDotsGroup = ui.chartArea.append("g").attr("class", "dots-group"); // Seems unused
     ui.trendChangeGroup = ui.chartArea
       .append("g")
-      .attr("class", "trend-change-group");
+      .attr("class", "trend-change-group"); // Trend change markers
     ui.highlightGroup = ui.chartArea
       .append("g")
-      .attr("class", "highlight-group");
+      .attr("class", "highlight-group"); // Highlighted dot marker
 
-    // Groups outside clipped area (axes, brush, crosshair, goal marker)
-    ui.xAxisGroup = ui.focus
+
+    // Groups outside clipped area (drawn on top of everything in `focus` group)
+    ui.annotationsGroup = ui.focus // Annotations markers (need to be clickable)
+      .append("g")
+      .attr("class", "annotations-group");
+    ui.goalAchievedGroup = ui.focus // Goal achieved marker (drawn on top)
+      .append("g")
+      .attr("class", "goal-achieved-group");
+    ui.xAxisGroup = ui.focus // X Axis
       .append("g")
       .attr("class", "axis axis--x")
       .attr("transform", `translate(0,${height})`);
-    ui.yAxisGroup = ui.focus.append("g").attr("class", "axis axis--y");
+    ui.yAxisGroup = ui.focus.append("g").attr("class", "axis axis--y"); // Y Axis
 
-    ui.goalAchievedGroup = ui.focus
-      .append("g")
-      .attr("class", "goal-achieved-group");
-
+    // Crosshair Group (drawn last within focus, on top of axes potentially)
     ui.crosshairGroup = ui.focus
       .append("g")
       .attr("class", "crosshair-group")
@@ -251,24 +264,26 @@ function createSVGElements() {
       .attr("x1", 0)
       .attr("x2", width);
 
+    // Regression Brush Group (drawn on top for interaction)
     ui.regressionBrushGroup = ui.focus
       .append("g")
       .attr("class", "regression-brush");
 
-    // Axis Labels
+    // Axis Labels (Appended to main SVG, positioned relative to margins/dimensions)
     ui.svg
       .append("text")
       .attr("class", "axis-label y-axis-label")
       .attr("transform", "rotate(-90)")
-      .attr("y", 6)
-      .attr("x", 0 - (height / 2 + fm.top))
-      .attr("dy", "1em")
+      .attr("y", 6) // Position outside left margin
+      .attr("x", 0 - (height / 2 + fm.top)) // Center vertically
+      .attr("dy", "1em") // Adjust vertical alignment
       .style("text-anchor", "middle")
       .text("Weight (KG)");
   } else {
     console.error(
       "chartSetup: Focus chart dimensions invalid or container missing.",
     );
+    // Potentially throw error or handle gracefully
   }
 
   // --- Context Chart ---
@@ -287,16 +302,22 @@ function createSVGElements() {
       .append("g")
       .attr("class", "context")
       .attr("transform", `translate(${cm.left},${cm.top})`);
+    // Order within context chart
     ui.contextArea = ui.context
       .append("path")
-      .attr("class", "area band-area context-area");
+      .attr("class", "area band-area context-area"); // Area first
     ui.contextLine = ui.context
       .append("path")
-      .attr("class", "line sma-line context-line");
+      .attr("class", "line sma-line context-line"); // Line on top of area
     ui.contextXAxisGroup = ui.context
       .append("g")
       .attr("class", "axis axis--x")
-      .attr("transform", `translate(0,${height})`);
+      .attr("transform", `translate(0,${height})`); // Axis last
+    ui.brushGroup = ui.context
+        .append("g")
+        .attr("class", "brush context-brush"); // Brush on very top
+  } else {
+      console.warn("chartSetup: Context dimensions invalid or container missing. Context chart/brush disabled.")
   }
 
   // --- Balance Chart ---
@@ -315,11 +336,12 @@ function createSVGElements() {
       .append("g")
       .attr("class", "balance-chart-area")
       .attr("transform", `translate(${bm.left},${bm.top})`);
-    ui.balanceZeroLine = ui.balanceChartArea
+    ui.balanceZeroLine = ui.balanceChartArea // Zero line behind bars
       .append("line")
       .attr("class", "balance-zero-line")
       .attr("x1", 0)
       .attr("x2", width);
+    // Bars will be appended dynamically inside balanceChartArea
     ui.balanceXAxisGroup = ui.balanceSvg
       .append("g")
       .attr("class", "axis balance-axis balance-axis--x")
@@ -363,7 +385,7 @@ function createSVGElements() {
       .attr("class", "rate-chart-area")
       .attr("transform", `translate(${rm.left},${rm.top})`)
       .attr("clip-path", "url(#clip-rate)");
-    ui.optimalGainZoneRect = ui.rateChartArea
+    ui.optimalGainZoneRect = ui.rateChartArea // Zone behind lines
       .append("rect")
       .attr("class", "optimal-gain-zone")
       .attr("x", 0)
@@ -371,17 +393,18 @@ function createSVGElements() {
       .attr("y", 0)
       .attr("height", 0)
       .style("display", "none");
-    ui.rateZeroLine = ui.rateChartArea
+    ui.rateZeroLine = ui.rateChartArea // Zero line behind lines
       .append("line")
       .attr("class", "rate-zero-line")
       .attr("x1", 0)
       .attr("x2", width);
-    ui.rateLine = ui.rateChartArea
+    ui.rateLine = ui.rateChartArea // Main rate line
       .append("path")
       .attr("class", "line rate-line");
-    ui.rateMALine = ui.rateChartArea
+    ui.rateMALine = ui.rateChartArea // MA line on top
       .append("path")
       .attr("class", "line rate-ma-line");
+    // Hover dots will be appended dynamically
     ui.rateXAxisGroup = ui.rateSvg
       .append("g")
       .attr("class", "axis rate-axis rate-axis--x")
@@ -425,14 +448,15 @@ function createSVGElements() {
       .attr("class", "tdee-diff-chart-area")
       .attr("transform", `translate(${tdm.left},${tdm.top})`)
       .attr("clip-path", "url(#clip-tdee-diff)");
-    ui.tdeeDiffZeroLine = ui.tdeeDiffChartArea
+    ui.tdeeDiffZeroLine = ui.tdeeDiffChartArea // Zero line behind main line
       .append("line")
       .attr("class", "tdee-diff-zero-line")
       .attr("x1", 0)
       .attr("x2", width);
-    ui.tdeeDiffLine = ui.tdeeDiffChartArea
+    ui.tdeeDiffLine = ui.tdeeDiffChartArea // Main diff line
       .append("path")
       .attr("class", "line tdee-diff-line");
+    // Hover dots will be appended dynamically
     ui.tdeeDiffXAxisGroup = ui.tdeeDiffSvg
       .append("g")
       .attr("class", "axis tdee-diff-axis tdee-diff-axis--x")
@@ -469,7 +493,7 @@ function createSVGElements() {
       .append("g")
       .attr("class", "correlation-scatter-area")
       .attr("transform", `translate(${sm.left},${sm.top})`);
-    ui.scatterDotsGroup = ui.correlationScatterArea
+    ui.scatterDotsGroup = ui.correlationScatterArea // Group for dots
       .append("g")
       .attr("class", "scatter-dots-group");
     ui.correlationScatterXAxisGroup = ui.correlationScatterSvg
@@ -484,15 +508,15 @@ function createSVGElements() {
       .append("text")
       .attr("class", "axis-label scatter-axis-label-x")
       .attr("x", sm.left + width / 2)
-      .attr("y", height + sm.top + sm.bottom - 5)
+      .attr("y", height + sm.top + sm.bottom - 5) // Position below x-axis
       .style("text-anchor", "middle")
       .text("Avg Weekly Net Calories (kcal)");
     ui.correlationScatterSvg
       .append("text")
       .attr("class", "axis-label scatter-axis-label-y")
       .attr("transform", "rotate(-90)")
-      .attr("y", 4)
-      .attr("x", 0 - (height / 2 + sm.top))
+      .attr("y", 4) // Position outside left margin
+      .attr("x", 0 - (height / 2 + sm.top)) // Center vertically
       .attr("dy", "0.75em")
       .style("text-anchor", "middle")
       .text("Weekly Rate (kg/wk)");
@@ -526,7 +550,7 @@ function createScales() {
   scales.xContext = d3.scaleTime().range([0, contextW]);
   scales.yContext = d3.scaleLinear().range([contextH, 0]);
   scales.xBalance = d3.scaleTime().range([0, balanceW]);
-  scales.yBalance = d3.scaleLinear().range([balanceH, 0]);
+  scales.yBalance = d3.scaleLinear().range([0, balanceH]);
   scales.xRate = d3.scaleTime().range([0, rateW]);
   scales.yRate = d3.scaleLinear().range([rateH, 0]);
   scales.xTdeeDiff = d3.scaleTime().range([0, tdeeDiffW]);
@@ -553,25 +577,26 @@ function createAxes() {
 
   axes.xAxis = d3
     .axisBottom(scales.x)
-    .ticks(Math.max(Math.floor(focusW / 130), 2))
-    .tickSizeOuter(0)
-    .tickFormat(Utils.formatDateShort);
+    .ticks(Math.max(Math.floor(focusW / 130), 2)) // Dynamic ticks based on width
+    .tickSizeOuter(0) // Remove outer ticks
+    .tickFormat(Utils.formatDateShort); // Use custom date format
   axes.yAxis = d3
     .axisLeft(scales.y)
-    .ticks(Math.max(Math.floor(focusH / 40), 5))
+    .ticks(Math.max(Math.floor(focusH / 40), 5)) // Dynamic ticks based on height
     .tickSizeOuter(0)
-    .tickFormat((d) => Utils.formatValue(d, 1));
+    .tickFormat((d) => Utils.formatValue(d, 1)); // Format to 1 decimal place
   axes.yAxis2 = d3
-    .axisRight(scales.y2)
+    .axisRight(scales.y2) // Retained but unused
     .ticks(5)
     .tickSizeOuter(0)
-    .tickFormat((d) => Utils.formatValue(d, 1) + "%"); // Retained but unused
+    .tickFormat((d) => Utils.formatValue(d, 1) + "%");
   axes.xAxisContext = d3
     .axisBottom(scales.xContext)
-    .ticks(Math.max(Math.floor(contextW / 100), 2))
+    .ticks(Math.max(Math.floor(contextW / 100), 2)) // Fewer ticks for context
     .tickSizeOuter(0)
-    .tickFormat(d3.timeFormat("%b '%y"));
+    .tickFormat(d3.timeFormat("%b '%y")); // Shorter format for context
 
+  // Helper for secondary chart axes
   const createSecondaryAxis = (
     scale,
     dimension,
@@ -582,26 +607,29 @@ function createAxes() {
     const axis =
       orientation === "left" ? d3.axisLeft(scale) : d3.axisBottom(scale);
     axis
-      .ticks(Math.max(Math.floor(dimension / tickDivisor), 3))
+      .ticks(Math.max(Math.floor(dimension / tickDivisor), 3)) // Adjust tick density
       .tickSizeOuter(0)
       .tickFormat(format);
     return axis;
   };
 
+  // Balance Chart Axes
   axes.xBalanceAxis = createSecondaryAxis(
     scales.xBalance,
     balanceW,
     "bottom",
-    180,
-    d3.timeFormat("%b %d"),
+    180, // Fewer x-ticks
+    d3.timeFormat("%b %d"), // Day-month format
   );
   axes.yBalanceAxis = createSecondaryAxis(
     scales.yBalance,
     balanceH,
     "left",
-    25,
-    (d) => (d === 0 ? "0" : d3.format("+,")(d)),
+    25, // Fewer y-ticks
+    (d) => (d === 0 ? "0" : d3.format("+,")(d)), // Format with sign, commas
   );
+
+  // Rate Chart Axes
   axes.xRateAxis = createSecondaryAxis(
     scales.xRate,
     rateW,
@@ -610,8 +638,10 @@ function createAxes() {
     d3.timeFormat("%b %d"),
   );
   axes.yRateAxis = createSecondaryAxis(scales.yRate, rateH, "left", 30, (d) =>
-    Utils.formatValue(d, 2),
+    Utils.formatValue(d, 2), // Format to 2 decimal places
   );
+
+  // TDEE Diff Chart Axes
   axes.xTdeeDiffAxis = createSecondaryAxis(
     scales.xTdeeDiff,
     tdeeDiffW,
@@ -624,23 +654,32 @@ function createAxes() {
     tdeeDiffH,
     "left",
     30,
-    d3.format("+,.0f"),
+    d3.format("+,.0f"), // Format with sign, commas, no decimals
   );
+
+  // Scatter Plot Axes
   axes.xScatterAxis = d3
     .axisBottom(scales.xScatter)
-    .ticks(5)
-    .tickFormat(d3.format("+,"));
+    .ticks(5) // Fewer ticks for scatter
+    .tickFormat(d3.format("+,")); // Format with sign, commas
   axes.yScatterAxis = d3
     .axisLeft(scales.yScatter)
     .ticks(5)
-    .tickFormat((d) => d.toFixed(2));
+    .tickFormat((d) => d.toFixed(2)); // Format to 2 decimal places
 }
 
 /**
  * Creates and configures the D3 brushes.
  */
 function createBrushes() {
-  if (_dimensions.context.valid && ui.context && !ui.context.empty()) {
+  // Context Brush
+  if (
+    _dimensions.context.valid &&
+    ui.context &&
+    !ui.context.empty() &&
+    ui.brushGroup &&
+    !ui.brushGroup.empty() // Ensure brushGroup exists
+  ) {
     const { width, height } = _dimensions.context;
     brushes.context = d3
       .brushX()
@@ -648,17 +687,15 @@ function createBrushes() {
         [0, 0],
         [width, height],
       ])
-      .on("brush end", EventHandlers.contextBrushed);
-    ui.brushGroup = ui.context
-      .append("g")
-      .attr("class", "brush context-brush")
-      .call(brushes.context);
+      .on("brush.handler end.handler", EventHandlers.contextBrushed); // Use unique namespaces
+    ui.brushGroup.call(brushes.context); // Apply brush to the dedicated group
   } else {
     console.warn(
-      "chartSetup: Context dimensions invalid or group missing, cannot create context brush.",
+      "chartSetup: Context dimensions invalid or context/brush group missing, cannot create context brush.",
     );
   }
 
+  // Regression Brush
   if (
     _dimensions.focus.valid &&
     ui.regressionBrushGroup &&
@@ -671,8 +708,9 @@ function createBrushes() {
         [0, 0],
         [width, height],
       ])
-      .on("end", EventHandlers.regressionBrushed);
+      .on("end.handler", EventHandlers.regressionBrushed); // Use unique namespace
     ui.regressionBrushGroup.call(brushes.regression);
+    // Hide initially, only shown when range is active
     ui.regressionBrushGroup
       .selectAll(".overlay, .selection, .handle")
       .style("display", "none");
@@ -695,23 +733,34 @@ function createZoom() {
     return;
   }
   const { width, height } = _dimensions.focus;
-  const contextRange = scales.xContext?.range() || [0, width];
+  // Get the context scale range AFTER it's been created and potentially domain-set
+  const contextRange = scales.xContext?.range() || [0, width]; // Fallback to focus width
 
   zoom = d3
     .zoom()
-    .scaleExtent([0.5, 20])
-    .extent([
+    .filter(event => {
+      // Allow panning (drag), double-click (if enabled elsewhere), but block wheel events
+      // Check event type and button for drag (mousedown + button 0)
+      const isDrag = event.type === 'mousedown' && event.button === 0;
+      // Check event type for double click
+      const isDblClick = event.type === 'dblclick';
+      // Allow only drag and double-click (or other non-wheel events)
+      return isDrag || isDblClick || !event.type.includes('wheel');
+    })
+    .scaleExtent([0.5, 20]) // Min/max zoom level
+    .extent([ // Viewport for zoom
       [0, 0],
       [width, height],
     ])
-    .translateExtent([
-      [contextRange[0], -Infinity],
-      [contextRange[1], Infinity],
+    .translateExtent([ // Limit panning
+      [contextRange[0], -Infinity], // Pan starts at the beginning of the context chart's range
+      [contextRange[1], Infinity], // Pan ends at the end of the context chart's range
     ])
-    .on("zoom", EventHandlers.zoomed);
+    .on("zoom", EventHandlers.zoomed); // Attach the handler
 
+  // Apply zoom behavior to the capture rectangle
   if (ui.zoomCaptureRect && !ui.zoomCaptureRect.empty()) {
-    ui.zoomCaptureRect.call(zoom).on("dblclick.zoom", null);
+    ui.zoomCaptureRect.call(zoom).on("dblclick.zoom", null); // Disable double-click zoom reset
     console.log("chartSetup: Zoom behavior initialized.");
   } else {
     console.error(
