@@ -62,7 +62,6 @@
     --trend1-color: var(--secondary-color);
     --trend2-color: hsl(var(--hue-tertiary), 55%, 70%);
     --regression-color: var(--accent-color);
-    --regression-ci-color: hsla(50, 95%, 80%, 0.25); /* Pale yellow for better contrast */
     --goal-line-color: var(--goal-color);
     --rate-line-color: hsl(var(--hue-goal), 45%, 60%);
     --rate-ma-line-color: hsl(var(--hue-rate-ma), 70%, 60%);
@@ -133,7 +132,6 @@ body.dark-theme {
     --ema-color: hsl(var(--hue-ema), 80%, 65%);
     --band-color: hsla(var(--hue-primary), 55%, 70%, 0.2);
     --raw-dot-color: hsl(var(--hue-neutral), 10%, 40%);
-    --regression-ci-color: hsla(var(--hue-accent), 65%, 65%, 0.1);
     --rate-line-color: hsl(var(--hue-goal), 45%, 75%);
     --rate-ma-line-color: hsl(var(--hue-rate-ma), 65%, 70%);
     --tdee-diff-line-color: hsl(var(--hue-secondary), 45%, 75%);
@@ -1502,7 +1500,6 @@ body.dark-theme .highlight-trigger:hover .stat-date.highlightable {
     fill: none;
 }
 .area.band-area,
-.area.regression-ci-area,
 .optimal-gain-zone,
 .plateau-group .plateau-region {
     transition:
@@ -1534,13 +1531,6 @@ body.dark-theme .highlight-trigger:hover .stat-date.highlightable {
 .trend-line.regression-line {
     stroke: var(--regression-color);
     stroke-width: 2px;
-}
-.area.regression-ci-area {
-    fill: var(--regression-ci-color);
-    stroke: #e6c96b; /* Subtle yellow border */
-    stroke-width: 1px;
-    opacity: 0.8;
-    pointer-events: none;
 }
 .trend-line.goal-line {
     stroke: var(--goal-line-color);
@@ -1807,10 +1797,6 @@ hr.tooltip-hr {
 }
 .legend-swatch.type-area {
     opacity: 0.6;
-}
-.legend-item.regression-ci-area .legend-swatch {
-    background-color: var(--regression-ci-color);
-    opacity: 0.8;
 }
 .legend-item.hidden {
     opacity: 0.5;

@@ -34,7 +34,7 @@ export const ui = {
   highlightGroup: null, crosshairGroup: null, rawDotsGroup: null, smaDotsGroup: null,
   scatterDotsGroup: null, regressionBrushGroup: null, zoomCaptureRect: null,
   // Paths & Areas
-  smaLine: null, emaLine: null, bandArea: null, regressionLine: null, regressionCIArea: null,
+  smaLine: null, emaLine: null, bandArea: null, regressionLine: null,
   trendLine1: null, trendLine2: null, goalLine: null, goalPrognosisLine: null, rateLine: null, rateMALine: null,
   tdeeDiffLine: null, contextArea: null, contextLine: null, balanceZeroLine: null,
   rateZeroLine: null, tdeeDiffZeroLine: null, optimalGainZoneRect: null,

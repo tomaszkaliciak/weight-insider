@@ -88,7 +88,6 @@ export const MasterUpdater = {
         }
         MasterUpdater._isUpdating = true;
         MasterUpdater._pendingUpdate = false; // Clear pending flag as we are starting an update
-        // console.log("[MasterUpdater updateAllCharts] Starting update cycle. Options:", options); // Less verbose
 
         // Use requestAnimationFrame for smoother rendering, especially during interactions
         requestAnimationFrame(() => {
@@ -235,7 +234,7 @@ export const MasterUpdater = {
                         case 'emaLine': ui.emaLine?.style("display", isVisible ? null : "none"); break;
                         case 'smaBand': ui.bandArea?.style("display", isVisible ? null : "none"); break;
                         case 'regression': ui.regressionLine?.style("display", isVisible ? null : "none"); break;
-                        case 'regressionCI': ui.regressionCIArea?.style("display", isVisible ? null : "none"); break;
+                        // case 'regressionCI': ui.regressionCIArea?.style("display", isVisible ? null : "none"); break;
                         case 'trend1': ui.trendLine1?.style("display", isVisible ? null : "none"); break;
                         case 'trend2': ui.trendLine2?.style("display", isVisible ? null : "none"); break;
                         case 'goal':
@@ -287,8 +286,6 @@ export const MasterUpdater = {
                 // Sync & UI Helpers
                 if (!options.isInteractive) { EventHandlers.syncBrushAndZoomToFocus(); }
                 _updateAnalysisRangeInputsFromFocusScale();
-
-                // console.log("[MasterUpdater updateAllCharts] Update cycle finished."); // Less verbose
 
             } catch (error) {
                  console.error("MasterUpdater: Error during updateAllCharts animation frame:", error);

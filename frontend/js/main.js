@@ -128,7 +128,7 @@ async function initialize() {
             StateManager.dispatch({ type: 'SET_FILTERED_DATA', payload: [] });
             StateManager.dispatch({ type: 'SET_WEEKLY_SUMMARY', payload: [] });
              StateManager.dispatch({ type: 'SET_CORRELATION_DATA', payload: [] });
-             StateManager.dispatch({ type: 'SET_REGRESSION_RESULT', payload: { slope: null, intercept: null, points: [], pointsWithCI: [] }});
+             StateManager.dispatch({ type: 'SET_REGRESSION_RESULT', payload: { slope: null, intercept: null, points: [] }});
              StateManager.dispatch({ type: 'UPDATE_DISPLAY_STATS', payload: {} }); // Send empty stats
         }
 

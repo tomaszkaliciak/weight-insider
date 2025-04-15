@@ -62,7 +62,6 @@ export const selectEffectiveRegressionRange = (state) => {
         !(analysisRange.start instanceof Date) ||
         !(analysisRange.end instanceof Date)
     ) {
-        // console.warn("Selector: Invalid analysis range for regression fallback.");
         return { start: null, end: null }; // Cannot determine range
     }
 
@@ -114,8 +113,6 @@ export const selectFocusChartPathData = (state) => {
     return {
         visibleValidSmaData: state.filteredData?.filter((d) => d.sma != null) || [],
         visibleValidEmaData: state.filteredData?.filter((d) => d.ema != null) || [],
-        // Assuming regression results are now stored in state
-        // regressionResult: state.regressionResult || { points: [], pointsWithCI: [] }, // Placeholder
     };
 };
 

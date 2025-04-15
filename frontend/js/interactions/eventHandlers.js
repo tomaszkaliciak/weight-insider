@@ -18,7 +18,7 @@ export const EventHandlers = {
     // Flags to track interaction state (primarily for zoom/brush coordination)
     _isZooming: false,
     _isBrushing: false,
-    _isDraggingRegressionBrush: false, // Flag for regression brush drag
+    _isDraggingRegressionBrush: false,
 
     // --- Debouncing/Throttling for Interaction End ---
     _debouncedInteractionEnd: Utils.debounce(
@@ -106,9 +106,8 @@ export const EventHandlers = {
     // --- Chart Hover Events ---
     dotMouseOver(event, d) {
         if (!d || !d.date) return;
-        StateManager.dispatch({ type: 'SET_ACTIVE_HOVER_DATA', payload: d }); // Dispatch hover state
+        StateManager.dispatch({ type: 'SET_ACTIVE_HOVER_DATA', payload: d });
 
-        // Tooltip content generation - remains here as it's tied to the event
         let tt = `<strong>${Utils.formatDateLong(d.date)}</strong>`;
         tt += `<div style="margin-top: 4px;">Weight: ${Utils.formatValue(d.value, 1)} KG</div>`;
         if (d.sma != null) tt += `<div>SMA (${CONFIG.movingAverageWindow}d): ${Utils.formatValue(d.sma, 1)} KG</div>`;
@@ -140,19 +139,14 @@ export const EventHandlers = {
 
         EventHandlers._showTooltip(tt, event); // Show tooltip
 
-        // Direct UI feedback for hover removed (will be handled by updaters reacting to SET_ACTIVE_HOVER_DATA)
-        // Crosshair update removed (handled by updaters reacting to SET_ACTIVE_HOVER_DATA)
     },
     dotMouseOut(event, d) {
         if (!d || !d.date) return;
-        // Only dispatch unhover if the current hover data matches this point
         const currentHoverData = Selectors.selectActiveHoverData(StateManager.getState());
         if (currentHoverData?.date?.getTime() === d.date?.getTime()) {
             StateManager.dispatch({ type: 'SET_ACTIVE_HOVER_DATA', payload: null });
         }
-        EventHandlers._hideTooltip(); // Hide tooltip (checks pin status internally)
-        // Direct UI feedback for hover removed
-        // Crosshair update removed
+        EventHandlers._hideTooltip();
     },
     dotClick(event, d) {
         if (!d || !d.date) return;
@@ -180,56 +174,47 @@ export const EventHandlers = {
         }
     },
 
-    // Other hovers (keep simple tooltip logic, no state change needed)
-    balanceMouseOver(event, d) { /* ... keep tooltip logic, remove direct style changes ... */
+    balanceMouseOver(event, d) {
         if (!d || !d.date) return;
         const tt = `<strong>${Utils.formatDateLong(d.date)}</strong><br>Balance: ${Utils.formatValue(d.netBalance, 0)} kcal`;
         EventHandlers._showTooltip(tt, event);
-        // d3.select(event.currentTarget).style("opacity", 1); // Remove direct style
     },
-    balanceMouseOut(event, d) { /* ... hide tooltip, remove direct style changes ... */
+    balanceMouseOut(event, d) {
         EventHandlers._hideTooltip();
-        // d3.select(event.currentTarget).style("opacity", 0.8); // Remove direct style
      },
-    scatterMouseOver(event, d) { /* ... keep tooltip logic, remove direct style/transition changes ... */
+    scatterMouseOver(event, d) {
         if (!d || !d.weekStartDate) return;
         const tt = `<strong>Week: ${Utils.formatDateShort(d.weekStartDate)}</strong><br>Avg Net: ${Utils.formatValue(d.avgNetCal, 0)} kcal/d<br>Rate: ${Utils.formatValue(d.weeklyRate, 2)} kg/wk`;
         EventHandlers._showTooltip(tt, event);
-        // Remove d3.select manipulation
     },
-    scatterMouseOut(event, d) { /* ... hide tooltip, remove direct style/transition changes ... */
+    scatterMouseOut(event, d) {
         EventHandlers._hideTooltip();
-        // Remove d3.select manipulation
     },
-    annotationMouseOver(event, d) { /* ... keep tooltip logic, remove direct style/transition changes ... */
+    annotationMouseOver(event, d) {
         if (!ui.tooltip || !d) return;
-        // Remove d3.select manipulation
         const tt = `<strong>Annotation (${Utils.formatDateShort(new Date(d.date))})</strong><br>${d.text}`;
         EventHandlers._showTooltip(tt, event);
     },
-    annotationMouseOut(event, d) { /* ... hide tooltip, remove direct style/transition changes ... */
-        // Remove d3.select manipulation
+    annotationMouseOut(event, d) {
         EventHandlers._hideTooltip();
     },
-    trendChangeMouseOver(event, d) { /* ... keep tooltip logic, remove direct style/transition changes ... */
+    trendChangeMouseOver(event, d) {
         if (!ui.tooltip || !d) return;
-        // Remove d3.select manipulation
         const direction = d.magnitude > 0 ? "acceleration" : "deceleration";
         const rateChange = Math.abs(d.magnitude * 7);
         const tt = `<strong>Trend Change (${Utils.formatDateShort(d.date)})</strong><br>Significant ${direction} detected.<br>Rate Δ ≈ ${Utils.formatValue(rateChange, 2)} kg/wk`;
         EventHandlers._showTooltip(tt, event);
     },
-    trendChangeMouseOut(event, d) { /* ... hide tooltip, remove direct style/transition changes ... */
-        // Remove d3.select manipulation
+    trendChangeMouseOut(event, d) {
         EventHandlers._hideTooltip();
     },
 
     // --- Brush and Zoom Handlers ---
     contextBrushed(event) {
         if (!event || !event.sourceEvent || event.sourceEvent.type === "zoom" || EventHandlers._isBrushing) return;
-        if (!event.selection && event.type !== 'end') return; // Ignore empty selections during brush
+        if (!event.selection && event.type !== 'end') return;
 
-        EventHandlers._isBrushing = true; // Set flag early
+        EventHandlers._isBrushing = true;
 
         const selection = event.selection;
         if (!scales.xContext || !scales.x || !zoom) {
@@ -271,18 +256,16 @@ export const EventHandlers = {
          MasterUpdater.updateAllCharts({ isInteractive: true }); // Trigger light update
 
 
-        // --- Schedule Final Update on Brush End ---
         if (event.type === 'end') {
             console.log("[EventHandlers] Context Brush end.");
-            EventHandlers._debouncedInteractionEnd(); // Schedule final state updates and full render
+            EventHandlers._debouncedInteractionEnd();
         }
-        // Reset flag slightly later to prevent race conditions if events fire very quickly
         setTimeout(() => { EventHandlers._isBrushing = false; }, 50);
     },
     zoomed(event) {
         if (!event || !event.sourceEvent || event.sourceEvent.type === "brush" || EventHandlers._isZooming) return;
 
-        EventHandlers._isZooming = true; // Set flag early
+        EventHandlers._isZooming = true;
 
         StateManager.dispatch({ type: 'SET_LAST_ZOOM_TRANSFORM', payload: { k: event.transform.k, x: event.transform.x, y: event.transform.y } });
 
@@ -314,16 +297,15 @@ export const EventHandlers = {
         StateManager.dispatch({ type: 'SET_FILTERED_DATA', payload: newFilteredData });
          MasterUpdater.updateAllCharts({ isInteractive: true }); // Trigger light update
 
-        // --- Schedule Final Update After Zoom ---
         EventHandlers._debouncedInteractionEnd();
 
         setTimeout(() => { EventHandlers._isZooming = false; }, 50);
     },
 
     regressionBrushed(event) {
-        if (!event || event.type !== 'end' || !event.sourceEvent || EventHandlers._isDraggingRegressionBrush) return; // Check drag flag
+        if (!event || event.type !== 'end' || !event.sourceEvent || EventHandlers._isDraggingRegressionBrush) return;
 
-        EventHandlers._isDraggingRegressionBrush = true; // Set flag during processing
+        EventHandlers._isDraggingRegressionBrush = true;
 
         const selection = event.selection;
         let newRange = { start: null, end: null };
@@ -352,15 +334,13 @@ export const EventHandlers = {
         if (rangeUpdated) {
             console.log("[EventHandlers] Regression brush range changed, dispatching update.");
             StateManager.dispatch({ type: 'SET_INTERACTIVE_REGRESSION_RANGE', payload: newRange });
-            StateManager.dispatch({ type: 'SET_PINNED_TOOLTIP', payload: null }); // Clear pin on range change
-            // Recalculation (StatsManager) and rerender (MasterUpdater) are triggered by state change subscription.
+            StateManager.dispatch({ type: 'SET_PINNED_TOOLTIP', payload: null });
             Utils.showStatusMessage(newRange.start ? "Regression range updated." : "Regression range reset.", "info", 1500);
         } else {
             console.log("[EventHandlers] Regression brush range not changed significantly.");
              // Still might need to update the visual appearance of the brush itself if it was moved slightly then back
-             MasterUpdater.updateAllCharts({ isInteractive: false }); // Trigger update to redraw brush correctly
+             MasterUpdater.updateAllCharts({ isInteractive: false });
         }
-        // Reset flag after processing
         setTimeout(() => { EventHandlers._isDraggingRegressionBrush = false; }, 50);
     },
 
@@ -368,30 +348,25 @@ export const EventHandlers = {
     // --- Resize Handler ---
     handleResize: Utils.debounce(() => {
         console.log("EventHandlers: Resize detected, re-rendering chart...");
-        // Clear potentially position-dependent state
         StateManager.dispatch({ type: 'SET_HIGHLIGHTED_DATE', payload: null });
         StateManager.dispatch({ type: 'SET_PINNED_TOOLTIP', payload: null });
-        // Keep interactive regression range? Usually yes.
-        // StateManager.dispatch({ type: 'SET_INTERACTIVE_REGRESSION_RANGE', payload: { start: null, end: null } });
 
-        if (initializeChartSetup()) { // Re-initialize scales, axes etc.
+        if (initializeChartSetup()) {
             const stateSnapshot = StateManager.getState();
             if (Selectors.selectIsInitialized(stateSnapshot) && Selectors.selectProcessedData(stateSnapshot)?.length > 0) {
-                // Re-initialize domains based on the current state (might read goal, etc.)
                 DomainManager.initializeDomains(Selectors.selectProcessedData(stateSnapshot));
                 EventHandlers.restoreViewAfterResize(); // Uses state.lastZoomTransform
                 MasterUpdater.updateAllCharts(); // Full update after resize adjustments
             } else if (Selectors.selectIsInitialized(stateSnapshot)) {
                 console.warn("EventHandlers: Resize handler - No data to display after setup.");
-                DomainManager.setEmptyDomains(); // Ensure scales have default domains
-                MasterUpdater.updateAllCharts(); // Still update layout even if no data
+                DomainManager.setEmptyDomains();
+                MasterUpdater.updateAllCharts();
             }
         } else {
             console.error("EventHandlers: Chart redraw on resize failed during setup phase.");
         }
     }, CONFIG.debounceResizeMs),
 
-    // Restore zoom/brush based on state
     restoreViewAfterResize() {
         const lastZoomTransform = Selectors.selectLastZoomTransform(StateManager.getState());
         if (zoom && ui.zoomCaptureRect && !ui.zoomCaptureRect.empty() && lastZoomTransform && scales.xContext) {
@@ -401,7 +376,6 @@ export const EventHandlers = {
                 ui.zoomCaptureRect.call(zoom.transform, reconstructedTransform);
                 ui.zoomCaptureRect.on("zoom", EventHandlers.zoomed);
 
-                // Sync brush based on restored zoom
                 if (brushes.context && ui.brushGroup && !ui.brushGroup.empty()) {
                     const currentFocusDomain = reconstructedTransform.rescaleX(scales.xContext).domain();
                     if (currentFocusDomain.every(d => d instanceof Date && !isNaN(d))) {
@@ -417,11 +391,7 @@ export const EventHandlers = {
         }
     },
 
-    // --- Control Handlers ---
     handleThemeToggle() {
-        // ThemeManager handles its own logic and state/localStorage updates
-        // Just need to call its toggle method.
-        // ThemeManager must be imported if not already
         import("../core/themeManager.js").then(({ ThemeManager }) => {
             ThemeManager.toggleTheme();
         }).catch(err => console.error("Failed to load ThemeManager for toggle", err));
@@ -437,13 +407,12 @@ export const EventHandlers = {
         StateManager.dispatch({
             type: 'UPDATE_TREND_CONFIG',
             payload: {
-                startDate: startDateVal ? new Date(startDateVal) : null, // Parse inside reducer
-                initialWeight: initialWeightVal, // Send raw string/null
-                weeklyIncrease1: weeklyIncrease1Val, // Send raw string/null
-                weeklyIncrease2: weeklyIncrease2Val, // Send raw string/null
+                startDate: startDateVal ? new Date(startDateVal) : null,
+                initialWeight: initialWeightVal,
+                weeklyIncrease1: weeklyIncrease1Val,
+                weeklyIncrease2: weeklyIncrease2Val,
             }
         });
-        // Rerender is triggered by state change subscription in MasterUpdater
     },
 
     handleGoalSubmit(event) {
@@ -452,7 +421,6 @@ export const EventHandlers = {
         const dateVal = ui.goalDateInput?.property("value");
         const rateVal = ui.goalTargetRateInput?.property("value");
 
-        // Dispatch action with raw values, reducer/GoalManager handles parsing/validation
         StateManager.dispatch({
             type: 'LOAD_GOAL', // Or a more specific 'UPDATE_GOAL_FROM_FORM'
             payload: {
@@ -461,14 +429,11 @@ export const EventHandlers = {
                 targetRate: rateVal || null // Send null if empty
             }
         });
-        // Save to localStorage (can be done by a PersistenceService listening to state:goalChanged)
          import("../core/goalManager.js").then(({ GoalManager }) => {
-            GoalManager.save(); // Needs GoalManager to read state now
+            GoalManager.save();
         }).catch(err => console.error("Failed to load GoalManager for save", err));
-        // Rerender is triggered by state change subscription
     },
 
-    // Debounced handler for date range inputs
     _debouncedRangeInputChange: Utils.debounce(() => {
         console.log("[EventHandlers] Debounced range input change handler triggered.");
         const startVal = ui.analysisStartDateInput?.property("value");
@@ -481,39 +446,34 @@ export const EventHandlers = {
             const newEnd = new Date(endDate.setHours(23, 59, 59, 999));
             const currentRange = Selectors.selectAnalysisRange(StateManager.getState());
 
-            // Only dispatch if the range actually changed
             if (currentRange.start?.getTime() !== newStart.getTime() || currentRange.end?.getTime() !== newEnd.getTime()) {
                 console.log("[EventHandlers Debounce] Dispatching range change from inputs:", newStart, newEnd);
                 StateManager.dispatch({ type: 'SET_ANALYSIS_RANGE', payload: { start: newStart, end: newEnd } });
                 StateManager.dispatch({ type: 'SET_PINNED_TOOLTIP', payload: null });
                 StateManager.dispatch({ type: 'SET_HIGHLIGHTED_DATE', payload: null });
                 StateManager.dispatch({ type: 'SET_INTERACTIVE_REGRESSION_RANGE', payload: { start: null, end: null } });
-                 // Update scales *after* dispatching state
                  if (scales.x) scales.x.domain([newStart, newEnd]);
-                 EventHandlers.syncBrushAndZoomToFocus(); // Sync visuals to new range
-                // Recalculation/rerender triggered by state change subscriptions
+                 EventHandlers.syncBrushAndZoomToFocus();
                  Utils.showStatusMessage("Analysis range updated from input.", "info", 1500);
             } else {
                 console.log("[EventHandlers Debounce] Range input change detected, but value is same as current state. No dispatch.");
             }
-        } else if (startVal || endVal) { // Only show error if inputs have values but are invalid
+        } else if (startVal || endVal) {
             Utils.showStatusMessage("Invalid date range entered in inputs.", "error");
         }
     }, 400), // Debounce for 400ms
 
-    handleAnalysisRangeUpdate() { // Apply button click
+    handleAnalysisRangeUpdate() {
         console.log("[EventHandlers] Apply Range button clicked.");
-        // Immediately trigger the core logic from the debounced function
-        EventHandlers._debouncedRangeInputChange.flush(); // Assuming debounce provides a flush method, or call core logic directly
+        EventHandlers._debouncedRangeInputChange.flush();
     },
 
-    handleAnalysisRangeInputChange() { // Input field change
+    handleAnalysisRangeInputChange() {
         console.log("[EventHandlers] Date input change detected.");
-        EventHandlers._debouncedRangeInputChange(); // Schedule the debounced update
+        EventHandlers._debouncedRangeInputChange();
     },
 
     syncBrushAndZoomToFocus() {
-        // Reads scales, dispatches SET_LAST_ZOOM_TRANSFORM, updates zoom/brush visuals. Logic remains largely the same.
         if (!scales.x || !scales.xContext || !brushes.context || !zoom) return;
         const { width: focusW } = EventHandlers._getChartDimensions("focus"); if (!focusW) return;
         const currentFocusDomain = scales.x.domain();
@@ -541,12 +501,12 @@ export const EventHandlers = {
         }
     },
 
-    statDateClickWrapper(event) { /* Keep as is */
+    statDateClickWrapper(event) {
         if (event.currentTarget && event.currentTarget.__highlightDate) {
             EventHandlers.statDateClick(event.currentTarget.__highlightDate);
         }
      },
-    statDateClick(date) { // Focuses the chart view on the clicked date
+    statDateClick(date) {
         if (!(date instanceof Date) || isNaN(date.getTime())) return;
         const dateMs = date.getTime();
         const stateSnapshot = StateManager.getState();
@@ -598,13 +558,11 @@ export const EventHandlers = {
         };
         StateManager.dispatch({ type: 'SET_ANALYSIS_RANGE', payload: finalAnalysisRange });
 
-        EventHandlers.syncBrushAndZoomToFocus(); // Sync visuals
-        EventHandlers._hideTooltip(); // Hide any existing tooltip
-
-        // Rerender triggered by state change subscription in MasterUpdater/StatsManager
+        EventHandlers.syncBrushAndZoomToFocus();
+        EventHandlers._hideTooltip();
     },
 
-    handleWhatIfSubmit(event) { // Keep as is, reads stats from StatsManager which reads state
+    handleWhatIfSubmit(event) {
          event.preventDefault();
          const futureIntake = parseFloat(ui.whatIfIntakeInput.property("value"));
          const durationDays = parseInt(ui.whatIfDurationInput.property("value"), 10);
@@ -614,11 +572,8 @@ export const EventHandlers = {
          if (isNaN(futureIntake) || isNaN(durationDays) || durationDays <= 0) {
              resultDisplay.classed("error", true).text("Please enter valid intake and duration > 0."); return;
          }
-         // --- IMPORTANT: Recalculate stats based on *current* state before projection ---
-         // This ensures the TDEE used is up-to-date with the current analysis range etc.
-
          const stateSnapshot = StateManager.getState();
-         const currentDisplayStats = Selectors.selectDisplayStats(stateSnapshot); // Use Selector
+         const currentDisplayStats = Selectors.selectDisplayStats(stateSnapshot);
          const tdeeEstimate = currentDisplayStats.avgTDEE_Adaptive ?? currentDisplayStats.avgTDEE_WgtChange ?? currentDisplayStats.avgExpenditureGFit;
          const tdeeSource = tdeeEstimate === currentDisplayStats.avgTDEE_Adaptive ? "Adaptive" : tdeeEstimate === currentDisplayStats.avgTDEE_WgtChange ? "Trend" : "GFit";
 
@@ -637,7 +592,7 @@ export const EventHandlers = {
          resultDisplay.html(`Based on ${tdeeSource} TDEE ≈ ${fv(tdeeEstimate, 0)} kcal:<br> Est. change: ${fv(totalWeightChangeKg, 1)} kg in ${durationDays} days. (${fv((totalWeightChangeKg / durationDays) * 7, 1)} kg/wk)<br> Projected Weight: <strong>${fv(projectedWeight, 1)} kg</strong>.`);
      },
 
-    handleBackgroundClick(event) { // Keep most logic, dispatch actions instead of direct calls
+    handleBackgroundClick(event) {
         const targetNode = event.target;
         const isInteractive = targetNode.closest('.raw-dot, .annotation-marker-group, .trend-change-marker-group, .legend-item, .handle, .selection, .overlay, .highlightable');
         const isBackground = targetNode === ui.zoomCaptureRect?.node() || targetNode === ui.svg?.node() || targetNode === ui.focus?.node() || targetNode === ui.chartArea?.node();
@@ -660,12 +615,11 @@ export const EventHandlers = {
                      ui.regressionBrushGroup.call(brushes.regression.move, null);
                      ui.regressionBrushGroup.on("end.handler", EventHandlers.regressionBrushed);
                  }
-            }
-            // Rerender triggered by state change subscriptions
+             }
         }
     },
 
-    handleCardToggle(buttonElement) { /* Keep as is - local DOM/localStorage */
+    handleCardToggle(buttonElement) {
         if (!buttonElement) return;
         const cardSection = buttonElement.closest(".card.collapsible"); if (!cardSection) return;
         const isCollapsed = cardSection.classList.toggle("collapsed");
@@ -681,7 +635,7 @@ export const EventHandlers = {
      },
 
     // --- Helpers ---
-    _getChartDimensions(chartKey) { /* Keep as is - reads scales */
+    _getChartDimensions(chartKey) {
         let width = 0, height = 0;
         try {
             if (chartKey === "focus" && scales.x && scales.y) {
@@ -695,34 +649,29 @@ export const EventHandlers = {
     // --- Setup ---
     setupAll() {
         console.log("EventHandlers: Setting up event listeners...");
-        // Window
         window.addEventListener("resize", EventHandlers.handleResize);
-        // Controls
-        ui.themeToggle?.on("click", EventHandlers.handleThemeToggle); // Calls ThemeManager directly for now
-        d3.select("#goal-setting-form").on("submit", EventHandlers.handleGoalSubmit); // Dispatches action
-        ui.annotationForm?.on("submit", (event) => { // Calls AnnotationManager which dispatches
+        ui.themeToggle?.on("click", EventHandlers.handleThemeToggle);
+        d3.select("#goal-setting-form").on("submit", EventHandlers.handleGoalSubmit);
+        ui.annotationForm?.on("submit", (event) => {
              import("../core/annotationManager.js").then(({ AnnotationManager }) => {
                 AnnotationManager.handleSubmit(event);
             }).catch(err => console.error("Failed to load AnnotationManager", err));
         });
-        ui.updateAnalysisRangeBtn?.on("click", EventHandlers.handleAnalysisRangeUpdate); // Triggers debounced update
-        ui.analysisStartDateInput?.on("change.range", EventHandlers.handleAnalysisRangeInputChange); // Schedules debounced update
-        ui.analysisEndDateInput?.on("change.range", EventHandlers.handleAnalysisRangeInputChange); // Schedules debounced update
-        ui.whatIfSubmitBtn?.on("click", EventHandlers.handleWhatIfSubmit); // Reads state via StatsManager calculation
+        ui.updateAnalysisRangeBtn?.on("click", EventHandlers.handleAnalysisRangeUpdate);
+        ui.analysisStartDateInput?.on("change.range", EventHandlers.handleAnalysisRangeInputChange);
+        ui.analysisEndDateInput?.on("change.range", EventHandlers.handleAnalysisRangeInputChange);
+        ui.whatIfSubmitBtn?.on("click", EventHandlers.handleWhatIfSubmit);
         ui.whatIfIntakeInput?.on("keydown", (event) => { if (event.key === 'Enter') EventHandlers.handleWhatIfSubmit(event); });
         ui.whatIfDurationInput?.on("keydown", (event) => { if (event.key === 'Enter') EventHandlers.handleWhatIfSubmit(event); });
         const trendInputs = [ui.trendStartDateInput, ui.trendInitialWeightInput, ui.trendWeeklyIncrease1Input, ui.trendWeeklyIncrease2Input];
-        trendInputs.forEach(input => input?.on("input.trend", EventHandlers.handleTrendlineInputChange)); // Dispatches action
+        trendInputs.forEach(input => input?.on("input.trend", EventHandlers.handleTrendlineInputChange));
 
-        // Chart Interactions (Attach Brush/Zoom handlers)
         if (brushes.context && ui.brushGroup) { ui.brushGroup.on("brush.handler end.handler", EventHandlers.contextBrushed); }
         if (zoom && ui.zoomCaptureRect) { ui.zoomCaptureRect.on("zoom", EventHandlers.zoomed); }
         if (brushes.regression && ui.regressionBrushGroup) { ui.regressionBrushGroup.on("end.handler", EventHandlers.regressionBrushed); }
 
-        // Chart Background Click
         ui.svg?.on("click", EventHandlers.handleBackgroundClick);
 
-        // Card Collapse (Delegated)
         d3.select("body").on("click.cardToggle", (event) => {
             const toggleButton = event.target.closest('.card-toggle-btn'); const heading = event.target.closest('h2');
             if (toggleButton && toggleButton.closest(".card.collapsible")) { EventHandlers.handleCardToggle(toggleButton); }
@@ -731,8 +680,6 @@ export const EventHandlers = {
                 if (btn) { event.preventDefault(); EventHandlers.handleCardToggle(btn); }
             }
         });
-        // Note: Dot/Marker/Balance/Scatter handlers attached dynamically in chartUpdaters using d3.on
-        // Note: Stat date click listeners attached dynamically in StatsDisplayRenderer
         console.log("EventHandlers: Setup complete.");
     },
 };

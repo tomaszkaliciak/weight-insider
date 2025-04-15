@@ -80,7 +80,7 @@ export const DataService = {
                 dailySmaRate: null, smoothedWeeklyRate: null, rateMovingAverage: null,
                 rollingVolatility: null, tdeeTrend: null, tdeeDifference: null,
                 avgTdeeDifference: null, adaptiveTDEE: null,
-                regressionValue: null, lowerCI: null, upperCI: null // Added CI placeholders
+                regressionValue: null
             });
         }
         // Sort by date ascending
@@ -269,7 +269,7 @@ export const DataService = {
 
         if (filteredData.length < CONFIG.MIN_POINTS_FOR_REGRESSION) { // Use CONFIG
             console.log(`[DataService Reg] Not enough points (${filteredData.length}) for regression starting ${startDate?.toISOString().slice(0,10)}.`);
-            return { slope: null, intercept: null, points: [], pointsWithCI: [] };
+            return { slope: null, intercept: null, points: [] };
         }
 
         filteredData.sort((a, b) => a.date - b.date);
@@ -283,25 +283,22 @@ export const DataService = {
             if (!regressionLine || isNaN(regressionLine.m) || isNaN(regressionLine.b)) { throw new Error(`simple-statistics linearRegression returned invalid results: m=${regressionLine?.m}, b=${regressionLine?.b}`); }
 
             const slope = regressionLine.m; const intercept = regressionLine.b;
-            // Pass only necessary data for CI calculation (date, value)
-            const pointsForCI = filteredData.map(d => ({ date: d.date, value: d.value }));
-            const pointsWithCI = Utils.calculateRegressionCI(pointsForCI, { slope, intercept }, CONFIG.CONFIDENCE_INTERVAL_ALPHA); // Use CONFIG
 
-            // Map back to simpler structure for state, ensuring all original props aren't carried over unless needed
-            const finalPointsWithCI = pointsWithCI.map(p => ({
-                date: p.date,
-                regressionValue: p.regressionValue,
-                lowerCI: p.lowerCI,
-                upperCI: p.upperCI
-            }));
-            const plotPoints = finalPointsWithCI.map(p => ({ date: p.date, regressionValue: p.regressionValue }));
+            // Calculate regression points directly
+            const plotPoints = filteredData.map(d => {
+                const xValue = (d.date.getTime() - firstDateMs) / dayInMillis;
+                const regressionValue = slope * xValue + intercept;
+                // Ensure regressionValue is finite, otherwise return null or handle appropriately
+                const finalRegressionValue = isFinite(regressionValue) ? regressionValue : null;
+                return { date: d.date, regressionValue: finalRegressionValue };
+            }).filter(p => p.regressionValue !== null); // Filter out points where regression couldn't be calculated
 
              console.log(`[DataService Reg] Success. Slope: ${slope.toFixed(4)}, Intercept: ${intercept.toFixed(2)}, Points: ${plotPoints.length}`);
-            return { slope, intercept, points: plotPoints, pointsWithCI: finalPointsWithCI };
+            return { slope, intercept, points: plotPoints };
 
         } catch (e) {
             console.error("DataService: Error calculating linear regression:", e);
-            return { slope: null, intercept: null, points: [], pointsWithCI: [] };
+            return { slope: null, intercept: null, points: [] };
         }
     },
 

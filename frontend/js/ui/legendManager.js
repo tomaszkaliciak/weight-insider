@@ -30,26 +30,8 @@ export const LegendManager = {
     });
 
     // Synchronize related items
-    if (seriesId === "regression") {
-        // If turning regression OFF, also turn CI OFF
-        // If turning regression ON, CI state remains unchanged (user toggles separately)
-        if (!isVisible && currentVisibilityState.regressionCI) {
-            StateManager.dispatch({
-                type: 'TOGGLE_SERIES_VISIBILITY',
-                payload: { seriesId: 'regressionCI', isVisible: false }
-            });
-        }
-    } else if (seriesId === "regressionCI") {
-        // If turning CI ON, ensure regression is also ON
-        if (isVisible && !currentVisibilityState.regression) {
-            StateManager.dispatch({
-                type: 'TOGGLE_SERIES_VISIBILITY',
-                payload: { seriesId: 'regression', isVisible: true }
-            });
-        }
-    }
      // If toggling SMA Line off, also toggle SMA Band off? (Optional business logic)
-     /* else if (seriesId === "smaLine" && !isVisible && currentVisibilityState.smaBand) {
+     /* if (seriesId === "smaLine" && !isVisible && currentVisibilityState.smaBand) {
          StateManager.dispatch({
              type: 'TOGGLE_SERIES_VISIBILITY',
              payload: { seriesId: 'smaBand', isVisible: false }
@@ -104,7 +86,7 @@ export const LegendManager = {
       { id: "emaLine", label: `Weight EMA (${CONFIG.emaWindow}d)`, type: "line", colorKey: "ema", styleClass: "ema-line", dash: "5, 3" },
       { id: "smaBand", label: "SMA Band (±SD)", type: "area", colorKey: "band", styleClass: "band-area" },
       { id: "regression", label: "Lin. Regression", type: "line", colorKey: "regression", styleClass: "regression-line" },
-      { id: "regressionCI", label: "Regression 95% CI", type: "area", colorKey: "regressionCI", styleClass: "regression-ci-area" },
+      // { id: "regressionCI", label: "Regression 95% CI", type: "area", colorKey: "regressionCI", styleClass: "regression-ci-area" },
       { id: "trend1", label: "Manual Trend 1", type: "line", colorKey: "trend1", styleClass: "manual-trend-1", dash: "4, 4" },
       { id: "trend2", label: "Manual Trend 2", type: "line", colorKey: "trend2", styleClass: "manual-trend-2", dash: "4, 4" },
       ...(goal.weight != null ? [{ id: "goal", label: "Goal Path", type: "line", colorKey: "goal", styleClass: "goal-line", dash: "6, 3" }] : []),
@@ -184,7 +166,5 @@ export const LegendManager = {
 
     console.log("[LM Init] Subscribed to relevant state changes.");
     // Initial build will happen upon 'state:initializationComplete'
-    // Or call build directly if state might be ready before init is called? Less likely now.
-    // this._build();
   },
 };

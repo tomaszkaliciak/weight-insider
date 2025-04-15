@@ -15,7 +15,7 @@ const initialState = {
     currentTheme: "light",
     seriesVisibility: { /* ... keep all keys ... */
         raw: true, smaLine: true, emaLine: true, smaBand: true, regression: true,
-        regressionCI: true, trend1: true, trend2: true, goal: true,
+        trend1: true, trend2: true, goal: true,
         annotations: true, plateaus: true, trendChanges: true, rateMA: true,
      },
     trendConfig: { startDate: null, initialWeight: null, weeklyIncrease1: null, weeklyIncrease2: null, isValid: false },
@@ -37,7 +37,7 @@ const initialState = {
     plateaus: [],
     trendChangePoints: [],
     goalAchievedDate: null,
-    regressionResult: { slope: null, intercept: null, points: [], pointsWithCI: [] },
+    regressionResult: { slope: null, intercept: null, points: [] },
     displayStats: {}, // Display stats are now part of the state
 };
 
@@ -48,12 +48,8 @@ let state = Utils.deepClone(initialState);
 const generalSubscribers = new Set(); // Use Set for easier add/remove
 const specificSubscribers = {}; // { eventName: Set<callback> }
 
-// --- Reducer Logic (Keep internal - No changes needed here from previous step) ---
+// --- Reducer Logic ---
 function reducer(currentState, action) {
-    // ... (reducer logic remains the same as previously defined) ...
-    // It should include the 'SET_DISPLAY_STATS' case and remove 'UPDATE_DISPLAY_STATS'.
-
-    // --- START OF COPIED REDUCER LOGIC (for completeness) ---
     console.log('[StateManager] Reducing action:', action.type, action.payload);
     const nextState = Utils.deepClone(currentState); // Clone before modifying
 
@@ -63,7 +59,7 @@ function reducer(currentState, action) {
             nextState.rawData = []; nextState.processedData = []; nextState.filteredData = [];
             nextState.weeklySummaryData = []; nextState.correlationScatterData = [];
             nextState.plateaus = []; nextState.trendChangePoints = []; nextState.goalAchievedDate = null;
-            nextState.regressionResult = { slope: null, intercept: null, points: [], pointsWithCI: [] };
+            nextState.regressionResult = { slope: null, intercept: null, points: [] };
             nextState.analysisRange = { start: null, end: null };
             nextState.interactiveRegressionRange = { start: null, end: null };
             nextState.displayStats = {}; // Reset display stats too
@@ -88,7 +84,6 @@ function reducer(currentState, action) {
             nextState.regressionResult = {
                  slope: action.payload?.slope ?? null, intercept: action.payload?.intercept ?? null,
                  points: Array.isArray(action.payload?.points) ? action.payload.points : [],
-                 pointsWithCI: Array.isArray(action.payload?.pointsWithCI) ? action.payload.pointsWithCI : [],
             };
             break;
         case 'LOAD_GOAL':
@@ -202,7 +197,6 @@ function reducer(currentState, action) {
 
     console.log('[StateManager] State updated.');
     return nextState;
-    // --- END OF COPIED REDUCER LOGIC ---
 }
 
 // --- Internal Notification Helpers ---

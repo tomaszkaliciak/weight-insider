@@ -104,7 +104,7 @@ export const FocusChartUpdater = {
         const emaLineGen = lineGenFactory(d => d.ema);
         const smaBandAreaGen = areaGenFactory(d => d.lowerBound, d => d.upperBound);
         const regressionLineGen = lineGenFactory(d => d.regressionValue);
-        const regressionCIAreaGen = areaGenFactory(d => d.lowerCI, d => d.upperCI);
+        // const regressionCIAreaGen = areaGenFactory(d => d.lowerCI, d => d.upperCI);
         const goalLineGen = lineGenFactory(d => d.weight);
         const trendLineGen = lineGenFactory(d => d.weight); // Generic trend line using 'weight' property
 
@@ -125,7 +125,7 @@ export const FocusChartUpdater = {
         updateSelection(ui.bandArea, visibleValidSmaData, smaBandAreaGen);
         updateSelection(ui.emaLine, visibleValidEmaData, emaLineGen);
         updateSelection(ui.regressionLine, regressionResult?.points, regressionLineGen);
-        updateSelection(ui.regressionCIArea, regressionResult?.pointsWithCI, regressionCIAreaGen);
+        // updateSelection(ui.regressionCIArea, regressionResult?.pointsWithCI, regressionCIAreaGen);
         updateSelection(ui.goalLine, goalLineData, goalLineGen);
         updateSelection(ui.trendLine1, trendLine1Data, trendLineGen); // Use pre-calculated data
         updateSelection(ui.trendLine2, trendLine2Data, trendLineGen); // Use pre-calculated data

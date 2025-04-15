@@ -39,7 +39,6 @@ export const ThemeManager = {
             trend1: getColor("--trend1-color", "trend1"),
             trend2: getColor("--trend2-color", "trend2"),
             regression: getColor("--regression-color", "regression"),
-            regressionCI: getColor("--regression-ci-color", "regressionCI"),
             goal: getColor("--goal-line-color", "goal"),
             outlier: getColor("--outlier-color", "outlier"),
             deficit: getColor("--deficit-color", "deficit"),

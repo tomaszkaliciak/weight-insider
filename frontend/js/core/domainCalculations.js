@@ -126,26 +126,6 @@ export function calculateFocusYDomain(
                  }
              }
         }
-        if (visibility.regressionCI && Array.isArray(regressionResult.pointsWithCI)) {
-            const filteredDatesSet = new Set(filteredData.map(d => d.date?.getTime()));
-            regressionResult.pointsWithCI.forEach(p => {
-                if (p.date instanceof Date && filteredDatesSet.has(p.date.getTime())) {
-                    updateExtent(p.lowerCI);
-                    updateExtent(p.upperCI);
-                }
-            });
-             // Also check first/last CI points similarly to regression line
-              if (regressionResult.pointsWithCI.length > 0) {
-                 const firstCIPoint = regressionResult.pointsWithCI[0];
-                 const lastCIPoint = regressionResult.pointsWithCI[regressionResult.pointsWithCI.length - 1];
-                 if (firstCIPoint.date && filteredDatesSet.has(firstCIPoint.date.getTime())) {
-                     updateExtent(firstCIPoint.lowerCI); updateExtent(firstCIPoint.upperCI);
-                 }
-                  if (lastCIPoint.date && filteredDatesSet.has(lastCIPoint.date.getTime())) {
-                     updateExtent(lastCIPoint.lowerCI); updateExtent(lastCIPoint.upperCI);
-                 }
-             }
-        }
     }
 
     // --- Include Manual Trendlines if visible and valid ---

@@ -38,7 +38,6 @@ export const AnnotationManager = {
       }
     }
     // Annotations are sorted by the renderer if needed
-    // loadedAnnotations.sort((a, b) => new Date(a.date) - new Date(b.date));
 
     StateManager.dispatch({ type: 'LOAD_ANNOTATIONS', payload: loadedAnnotations });
     console.log(`AnnotationManager: Dispatched LOAD_ANNOTATIONS with ${loadedAnnotations.length} annotations.`);
@@ -97,7 +96,6 @@ export const AnnotationManager = {
     this.save(); // Save after state update
 
     // UI Render is handled by AnnotationListRenderer subscription
-    // Utils.showStatusMessage("Annotation added.", "success", 1500); // Status message could be shown by caller (handleSubmit)
     return true;
   },
 
@@ -106,15 +104,10 @@ export const AnnotationManager = {
    * @param {number|string} id - The unique ID of the annotation to remove.
    */
   remove(id) {
-    // Check if annotation exists (optional, reducer handles non-existent IDs gracefully)
-    // const exists = Selectors.selectAnnotations(StateManager.getState()).some(a => a.id === id);
-    // if(!exists) { console.warn(...); return; }
-
     StateManager.dispatch({ type: 'DELETE_ANNOTATION', payload: { id } });
     this.save(); // Save after state update
 
     // UI Render is handled by AnnotationListRenderer subscription
-    // Utils.showStatusMessage("Annotation removed.", "info", 1500); // Status message could be shown by caller/renderer
   },
 
   /**

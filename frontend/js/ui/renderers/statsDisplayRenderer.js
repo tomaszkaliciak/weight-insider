@@ -57,7 +57,6 @@ export const StatsDisplayRenderer = {
             }
         }
       }
-      // else { console.warn(`StatsDisplayRenderer: UI element for key "${key}" not found.`); } // Keep commented unless debugging needed
     };
 
     // Update all stat elements using the provided displayStats object

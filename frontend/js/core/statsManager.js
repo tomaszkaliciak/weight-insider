@@ -26,8 +26,7 @@ const ss = window.ss || {
 export const StatsManager = {
 
     // --- Internal Calculation Helpers ---
-    // ... (All _calculate... helper functions remain exactly the same) ...
-     _calculateAverageInRange(data, field, startDate, endDate) { /* ... */
+    _calculateAverageInRange(data, field, startDate, endDate) { /* ... */
         if (!Array.isArray(data) || !startDate || !endDate || startDate > endDate) return null;
         const rangeData = data.filter(d => d.date >= startDate && d.date <= endDate);
         const relevantValues = rangeData.map(d => d[field]).filter(val => val != null && !isNaN(val));
@@ -191,13 +190,11 @@ export const StatsManager = {
      * @returns {object} An object containing calculated derived data { displayStats, filteredData, ... }.
      */
     _calculateDerivedData(stateSnapshot) {
-        // ... (Implementation of this function remains exactly the same as before) ...
-        // It reads primary state using selectors and performs calculations.
         const results = {
             displayStats: {}, filteredData: [], weeklySummaryData: [],
             correlationScatterData: [], plateaus: [], trendChangePoints: [],
             goalAchievedDate: null,
-            regressionResult: { slope: null, intercept: null, points: [], pointsWithCI: [] },
+            regressionResult: { slope: null, intercept: null, points: [] },
         };
         const displayStats = results.displayStats;
         const processedData = Selectors.selectProcessedData(stateSnapshot);
@@ -266,7 +263,7 @@ export const StatsManager = {
                      displayStats.regressionSlopeWeekly = results.regressionResult.slope != null ? results.regressionResult.slope * 7 : null;
                      displayStats.regressionStartDate = effectiveRegRange.start;
                  } else { /* ... defaults ... */
-                      results.regressionResult = { slope: null, intercept: null, points: [], pointsWithCI: [] };
+                      results.regressionResult = { slope: null, intercept: null, points: [] };
                       displayStats.regressionSlopeWeekly = null; displayStats.regressionStartDate = null;
                  }
                  // TDEE from Trend
@@ -284,13 +281,13 @@ export const StatsManager = {
                  } else { results.goalAchievedDate = null; }
             } else { /* ... defaults ... */
                   results.weeklySummaryData = []; results.correlationScatterData = []; results.goalAchievedDate = null;
-                  results.regressionResult = { slope: null, intercept: null, points: [], pointsWithCI: [] };
+                  results.regressionResult = { slope: null, intercept: null, points: [] };
                   Object.assign(displayStats, { /* ... */ });
             }
         } else { /* ... defaults ... */
              results.filteredData = []; results.plateaus = []; results.trendChangePoints = [];
              results.weeklySummaryData = []; results.correlationScatterData = [];
-             results.goalAchievedDate = null; results.regressionResult = { slope: null, intercept: null, points: [], pointsWithCI: [] };
+             results.goalAchievedDate = null; results.regressionResult = { slope: null, intercept: null, points: [] };
              Object.assign(displayStats, { /* ... */ });
         }
 

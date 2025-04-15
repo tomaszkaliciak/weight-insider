@@ -64,7 +64,6 @@ export const GoalManager = {
         JSON.stringify(goalToStore),
       );
       console.log("GoalManager: Goal saved to localStorage:", goalToStore);
-      // Utils.showStatusMessage("Goal saved successfully.", "success"); // Status message could be shown by the component triggering the save
     } catch (e) {
       console.error("GoalManager: Error saving goal to localStorage", e);
       Utils.showStatusMessage("Could not save goal due to storage error.", "error");
@@ -80,11 +79,6 @@ export const GoalManager = {
    */
    init() {
        this.load();
-       // Optional: Subscribe to state:goalChanged to automatically save?
-       // StateManager.subscribeToSpecificEvent('state:goalChanged', () => {
-       //     console.log("[GoalManager] Detected goal state change, auto-saving...");
-       //     this.save();
-       // });
        console.log("[GoalManager Init] Initialized and loaded goal.");
    }
 };

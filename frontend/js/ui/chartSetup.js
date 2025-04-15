@@ -89,8 +89,6 @@ function calculateDimensions() {
 
     // Check validity based on calculated drawable area
     const valid = width > 10 && height > 10;
-    // Log dimension calculation details for debugging if needed
-    // console.log(`[Dim Calc] Container: ${containerSelection.attr('id') || 'N/A'}, Rect:[${rect.width}x${rect.height}], Client:[${clientWidth}x${clientHeight}], Padding:[L${paddingLeft},R${paddingRight},T${paddingTop},B${paddingBottom}], UseClient:${useClientDims}, Eff:[${effectiveWidth}x${effectiveHeight}], Margins:[L${margins.left},R${margins.right},T${margins.top},B${margins.bottom}], Draw:[${width}x${height}], Valid:${valid}`);
     return { width, height, valid };
   };
 
@@ -196,9 +194,6 @@ function createSVGElements() {
 
     // 1. Areas (drawn first, underneath lines)
     ui.bandArea = ui.chartArea.append("path").attr("class", "area band-area");
-    ui.regressionCIArea = ui.chartArea
-      .append("path")
-      .attr("class", "area regression-ci-area");
 
     // 2. Trend/Reference Lines (drawn after areas, before main data lines/dots)
     ui.trendLine1 = ui.chartArea

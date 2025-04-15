@@ -212,7 +212,6 @@ export const InsightsGenerator = {
    * @param {object} displayStats - The displayStats object from the state update event.
    */
   _renderSummary(displayStats) {
-    // console.info("InsightsGenerator: _renderSummary triggered."); // Less verbose log
 
     // Ensure the container exists in the DOM and is cached.
     if (!ui.insightSummaryContainer || ui.insightSummaryContainer.empty()) {

@@ -27,7 +27,6 @@ export const CONFIG = Object.freeze({
   ROLLING_VOLATILITY_WINDOW: 14, // Days for calculating rolling volatility stat
   MIN_POINTS_FOR_REGRESSION: 7, // Minimum non-outlier points needed within range for regression line
   MIN_WEEKS_FOR_CORRELATION: 4, // Minimum weeks of data needed in analysis range for correlation calculation
-  CONFIDENCE_INTERVAL_ALPHA: 0.05, // Significance level for regression CI (0.05 = 95% CI)
 
   // --- Plateau & Trend Detection ---
   plateauRateThresholdKgWeek: 0.07, // Max absolute weekly rate (kg/wk) to be considered a plateau
@@ -75,7 +74,6 @@ export const CONFIG = Object.freeze({
     trend1: "#2ecc71", // Green
     trend2: "#e74c3c", // Red
     regression: "#f39c12", // Yellow/Orange
-    regressionCI: "rgba(243,156,18, 0.1)", // Light Yellow/Orange area
     goal: "#9b59b6", // Purple
     outlier: "#e74c3c", // Red
     deficit: "#2ecc71", // Green (Used for negative balance)
