@@ -1,8 +1,8 @@
 // js/core/utils.js
 // Provides common utility functions used throughout the application.
 
-import { ui } from "../ui/uiCache.js"; // Needed for showStatusMessage
-import { CONFIG } from "../config.js"; // Needed for showStatusMessage
+import { ui } from "../ui/uiCache.js";
+import { CONFIG } from "../config.js";
 
 // Assume simple-statistics (ss) might be needed elsewhere, keep reference if used
 // const ss = window.ss || { /* ... fallback implementations ... */ };
@@ -15,15 +15,15 @@ export const Utils = {
    */
   getElementByIdSafe(id) {
     try {
-        // Basic check for invalid selector characters, although IDs are generally safe
-        if (/[^a-zA-Z0-9\-_]/.test(id)) {
-            console.warn(`Utils: Potentially invalid ID selector used: "${id}"`);
-            // Allow it for now, but could restrict further if needed
-        }
-        return document.getElementById(id);
+      // Basic check for invalid selector characters, although IDs are generally safe
+      if (/[^a-zA-Z0-9\-_]/.test(id)) {
+        console.warn(`Utils: Potentially invalid ID selector used: "${id}"`);
+        // Allow it for now, but could restrict further if needed
+      }
+      return document.getElementById(id);
     } catch (e) {
-        console.error(`Utils: Error accessing element with ID "${id}"`, e);
-        return null;
+      console.error(`Utils: Error accessing element with ID "${id}"`, e);
+      return null;
     }
   },
 
@@ -36,7 +36,9 @@ export const Utils = {
    */
   formatValue(val, decimals = 2) {
     const num = Number(val); // Attempt conversion
-    return (val != null && !isNaN(num) && isFinite(num)) ? num.toFixed(decimals) : "N/A";
+    return val != null && !isNaN(num) && isFinite(num)
+      ? num.toFixed(decimals)
+      : "N/A";
   },
 
   /**
@@ -45,19 +47,23 @@ export const Utils = {
    * @returns {string} The formatted date string or 'N/A'.
    */
   formatDate(dateInput) {
-    const date = (dateInput instanceof Date) ? dateInput : new Date(dateInput); // Attempt conversion if string
-    return (date instanceof Date && !isNaN(date)) ? d3.timeFormat("%Y-%m-%d")(date) : "N/A";
+    const date = dateInput instanceof Date ? dateInput : new Date(dateInput); // Attempt conversion if string
+    return date instanceof Date && !isNaN(date)
+      ? d3.timeFormat("%Y-%m-%d")(date)
+      : "N/A";
   },
 
- /**
-  * Formats a Date object or a valid date string as 'DD-MM-YYYY', returning 'N/A' for invalid inputs.
-  * @param {Date|string|null|undefined} dateInput - The Date object or string to format.
-  * @returns {string} The formatted date string or 'N/A'.
-  */
- formatDateDMY(dateInput) {
-    const date = (dateInput instanceof Date) ? dateInput : new Date(dateInput);
-    return (date instanceof Date && !isNaN(date)) ? d3.timeFormat("%d-%m-%Y")(date) : "N/A";
- },
+  /**
+   * Formats a Date object or a valid date string as 'DD-MM-YYYY', returning 'N/A' for invalid inputs.
+   * @param {Date|string|null|undefined} dateInput - The Date object or string to format.
+   * @returns {string} The formatted date string or 'N/A'.
+   */
+  formatDateDMY(dateInput) {
+    const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
+    return date instanceof Date && !isNaN(date)
+      ? d3.timeFormat("%d-%m-%Y")(date)
+      : "N/A";
+  },
 
   /**
    * Formats a Date object or a valid date string as 'DD Mon 'YY', returning 'N/A' for invalid inputs.
@@ -65,8 +71,10 @@ export const Utils = {
    * @returns {string} The formatted date string or 'N/A'.
    */
   formatDateShort(dateInput) {
-    const date = (dateInput instanceof Date) ? dateInput : new Date(dateInput);
-    return (date instanceof Date && !isNaN(date)) ? d3.timeFormat("%d %b '%y")(date) : "N/A";
+    const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
+    return date instanceof Date && !isNaN(date)
+      ? d3.timeFormat("%d %b '%y")(date)
+      : "N/A";
   },
 
   /**
@@ -75,8 +83,10 @@ export const Utils = {
    * @returns {string} The formatted date string or 'N/A'.
    */
   formatDateLong(dateInput) {
-    const date = (dateInput instanceof Date) ? dateInput : new Date(dateInput);
-    return (date instanceof Date && !isNaN(date)) ? d3.timeFormat("%a, %d %b %Y")(date) : "N/A";
+    const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
+    return date instanceof Date && !isNaN(date)
+      ? d3.timeFormat("%a, %d %b %Y")(date)
+      : "N/A";
   },
 
   /**
@@ -88,33 +98,32 @@ export const Utils = {
    */
   debounce(func, wait, options = {}) {
     let timeout, result;
-    const debounced = function(...args) {
-        const context = this;
-        const later = function() {
-            timeout = null;
-            if (!options.leading) {
-                result = func.apply(context, args);
-            }
-        };
-        const callNow = options.leading && !timeout;
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-        if (callNow) {
-            result = func.apply(context, args);
-            // Set timeout to null after immediate call if leading is true,
-            // to allow subsequent calls after wait period.
-            // Context and args are cleared by later function if trailing call happens.
-            // If only leading, timeout is cleared and reset above anyway.
-        }
-        return result;
-    };
-    debounced.cancel = function() {
-        clearTimeout(timeout);
+    const debounced = function (...args) {
+      const context = this;
+      const later = function () {
         timeout = null;
+        if (!options.leading) {
+          result = func.apply(context, args);
+        }
+      };
+      const callNow = options.leading && !timeout;
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+      if (callNow) {
+        result = func.apply(context, args);
+        // Set timeout to null after immediate call if leading is true,
+        // to allow subsequent calls after wait period.
+        // Context and args are cleared by later function if trailing call happens.
+        // If only leading, timeout is cleared and reset above anyway.
+      }
+      return result;
+    };
+    debounced.cancel = function () {
+      clearTimeout(timeout);
+      timeout = null;
     };
     return debounced;
   },
-
 
   /**
    * Creates a throttled version of a function.
@@ -123,48 +132,48 @@ export const Utils = {
    * @param {object} [options={}] - Optional settings. `leading`: false to disable leading call. `trailing`: false to disable trailing call.
    * @returns {Function} The new throttled function with a `cancel` method.
    */
-   throttle(func, wait, options = {}) {
-        let context, args, result;
-        let timeout = null;
-        let previous = 0;
-        if (!options) options = {};
+  throttle(func, wait, options = {}) {
+    let context, args, result;
+    let timeout = null;
+    let previous = 0;
+    if (!options) options = {};
 
-        const later = function() {
-            previous = options.leading === false ? 0 : Date.now();
-            timeout = null;
-            result = func.apply(context, args);
-            if (!timeout) context = args = null; // Clean up references
-        };
+    const later = function () {
+      previous = options.leading === false ? 0 : Date.now();
+      timeout = null;
+      result = func.apply(context, args);
+      if (!timeout) context = args = null; // Clean up references
+    };
 
-        const throttled = function(...throttledArgs) {
-            const now = Date.now();
-            if (!previous && options.leading === false) previous = now;
-            const remaining = wait - (now - previous);
-            context = this;
-            args = throttledArgs; // Use rest parameter
+    const throttled = function (...throttledArgs) {
+      const now = Date.now();
+      if (!previous && options.leading === false) previous = now;
+      const remaining = wait - (now - previous);
+      context = this;
+      args = throttledArgs; // Use rest parameter
 
-            if (remaining <= 0 || remaining > wait) {
-                if (timeout) {
-                    clearTimeout(timeout);
-                    timeout = null;
-                }
-                previous = now;
-                result = func.apply(context, args);
-                if (!timeout) context = args = null; // Clean up references
-            } else if (!timeout && options.trailing !== false) {
-                timeout = setTimeout(later, remaining);
-            }
-            return result;
-        };
+      if (remaining <= 0 || remaining > wait) {
+        if (timeout) {
+          clearTimeout(timeout);
+          timeout = null;
+        }
+        previous = now;
+        result = func.apply(context, args);
+        if (!timeout) context = args = null; // Clean up references
+      } else if (!timeout && options.trailing !== false) {
+        timeout = setTimeout(later, remaining);
+      }
+      return result;
+    };
 
-        throttled.cancel = function() {
-            clearTimeout(timeout);
-            previous = 0;
-            timeout = context = args = null;
-        };
+    throttled.cancel = function () {
+      clearTimeout(timeout);
+      previous = 0;
+      timeout = context = args = null;
+    };
 
-        return throttled;
-   },
+    return throttled;
+  },
 
   /**
    * Shows a temporary status message at the top of the screen.
@@ -174,37 +183,37 @@ export const Utils = {
    * @param {number} [duration=CONFIG.statusMessageDurationMs] - How long the message stays visible (ms).
    */
   showStatusMessage(
-      message,
-      type = "info",
-      duration = CONFIG.statusMessageDurationMs,
+    message,
+    type = "info",
+    duration = CONFIG.statusMessageDurationMs,
   ) {
-      // Static variable within the function scope to hold the timeout ID
-      if (typeof this.statusTimeoutId === 'undefined') {
-          this.statusTimeoutId = null;
-      }
+    // Static variable within the function scope to hold the timeout ID
+    if (typeof this.statusTimeoutId === "undefined") {
+      this.statusTimeoutId = null;
+    }
 
-      if (!ui.statusMessage || ui.statusMessage.empty()) {
-          console.warn("Status message UI element not found in cache.");
-          return;
-      }
+    if (!ui.statusMessage || ui.statusMessage.empty()) {
+      console.warn("Status message UI element not found in cache.");
+      return;
+    }
 
-      // Clear any existing timeout for the status message
-      if (this.statusTimeoutId) {
-          clearTimeout(this.statusTimeoutId);
-          this.statusTimeoutId = null; // Reset the stored ID
-      }
+    // Clear any existing timeout for the status message
+    if (this.statusTimeoutId) {
+      clearTimeout(this.statusTimeoutId);
+      this.statusTimeoutId = null; // Reset the stored ID
+    }
 
-      // Update and show the message
-      ui.statusMessage
-          .attr("class", `status-message ${type}`) // Set classes first
-          .text(message) // Then set text
-          .classed("show", true); // Then add show class
+    // Update and show the message
+    ui.statusMessage
+      .attr("class", `status-message ${type}`) // Set classes first
+      .text(message) // Then set text
+      .classed("show", true); // Then add show class
 
-      // Create new timeout and store its ID
-      this.statusTimeoutId = setTimeout(() => {
-          ui.statusMessage.classed("show", false);
-          this.statusTimeoutId = null; // Clear the stored ID when timeout executes
-      }, duration);
+    // Create new timeout and store its ID
+    this.statusTimeoutId = setTimeout(() => {
+      ui.statusMessage.classed("show", false);
+      this.statusTimeoutId = null; // Clear the stored ID when timeout executes
+    }, duration);
   },
 
   /**
@@ -215,7 +224,7 @@ export const Utils = {
     // Remove existing overlay if present
     const existingOverlay = document.querySelector(".critical-error-overlay");
     if (existingOverlay) {
-        existingOverlay.remove();
+      existingOverlay.remove();
     }
 
     // Create a modal-like overlay
@@ -240,43 +249,44 @@ export const Utils = {
    * @returns {Array<number|null>} Array containing the rolling average, or null if insufficient data in window.
    */
   calculateRollingAverage(data, windowSize) {
-      if (!Array.isArray(data) || windowSize <= 0) {
-          return new Array(data?.length || 0).fill(null);
+    if (!Array.isArray(data) || windowSize <= 0) {
+      return new Array(data?.length || 0).fill(null);
+    }
+    const result = new Array(data.length).fill(null);
+    let sum = 0;
+    let count = 0;
+    const windowQueue = []; // Use a queue for efficient window management
+
+    for (let i = 0; i < data.length; i++) {
+      const value = data[i];
+      let isValidValue = value != null && !isNaN(value) && isFinite(value);
+
+      // Add current value (or null placeholder) to queue
+      windowQueue.push(isValidValue ? value : null);
+
+      // Add to sum/count if valid
+      if (isValidValue) {
+        sum += value;
+        count++;
       }
-      const result = new Array(data.length).fill(null);
-      let sum = 0;
-      let count = 0;
-      const windowQueue = []; // Use a queue for efficient window management
 
-      for (let i = 0; i < data.length; i++) {
-          const value = data[i];
-          let isValidValue = (value != null && !isNaN(value) && isFinite(value));
-
-          // Add current value (or null placeholder) to queue
-          windowQueue.push(isValidValue ? value : null);
-
-          // Add to sum/count if valid
-          if (isValidValue) {
-              sum += value;
-              count++;
-          }
-
-          // Remove value leaving the window from the left (if window is full)
-          if (windowQueue.length > windowSize) {
-              const removedValue = windowQueue.shift(); // Remove from the beginning
-              if (removedValue != null) { // Check if the removed value was valid
-                  sum -= removedValue;
-                  count--;
-              }
-          }
-
-          // Calculate average if there are valid points in the window
-          if (count > 0) {
-              result[i] = sum / count;
-          }
-          // else result[i] remains null
+      // Remove value leaving the window from the left (if window is full)
+      if (windowQueue.length > windowSize) {
+        const removedValue = windowQueue.shift(); // Remove from the beginning
+        if (removedValue != null) {
+          // Check if the removed value was valid
+          sum -= removedValue;
+          count--;
+        }
       }
-      return result;
+
+      // Calculate average if there are valid points in the window
+      if (count > 0) {
+        result[i] = sum / count;
+      }
+      // else result[i] remains null
+    }
+    return result;
   },
 
   /**
@@ -286,9 +296,9 @@ export const Utils = {
    * @param {Map} [hash=new Map()] - Internal map to handle circular references (optional).
    * @returns {any} A deep clone of the input.
    */
-   deepClone(obj, hash = new Map()) {
+  deepClone(obj, hash = new Map()) {
     // Handle primitive types and null
-    if (obj === null || typeof obj !== 'object') {
+    if (obj === null || typeof obj !== "object") {
       return obj;
     }
 
@@ -323,6 +333,5 @@ export const Utils = {
       }
     }
     return objClone;
-  }
-
+  },
 };

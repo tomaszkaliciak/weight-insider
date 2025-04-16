@@ -2,10 +2,9 @@
 // Handles loading and saving goal settings to localStorage and dispatching state updates.
 
 import { StateManager } from "./stateManager.js";
-// uiCache import removed - no direct UI updates
 import { CONFIG } from "../config.js";
 import { Utils } from "./utils.js";
-import * as Selectors from "./selectors.js"; // Import selectors
+import * as Selectors from "./selectors.js";
 
 export const GoalManager = {
   /**
@@ -21,13 +20,20 @@ export const GoalManager = {
         // Validate and parse data carefully
         const weight = parsed.weight ? parseFloat(parsed.weight) : null;
         // Ensure date string is handled correctly (YYYY-MM-DD expected from save)
-        const date = (parsed.date && typeof parsed.date === 'string') ? new Date(parsed.date + 'T00:00:00') : null; // Parse as local midnight
-        const targetRate = parsed.targetRate ? parseFloat(parsed.targetRate) : null;
+        const date =
+          parsed.date && typeof parsed.date === "string"
+            ? new Date(parsed.date + "T00:00:00")
+            : null; // Parse as local midnight
+        const targetRate = parsed.targetRate
+          ? parseFloat(parsed.targetRate)
+          : null;
 
-        loadedGoalData.weight = (weight != null && !isNaN(weight)) ? weight : null;
-        loadedGoalData.date = (date instanceof Date && !isNaN(date.getTime())) ? date : null;
-        loadedGoalData.targetRate = (targetRate != null && !isNaN(targetRate)) ? targetRate : null;
-
+        loadedGoalData.weight =
+          weight != null && !isNaN(weight) ? weight : null;
+        loadedGoalData.date =
+          date instanceof Date && !isNaN(date.getTime()) ? date : null;
+        loadedGoalData.targetRate =
+          targetRate != null && !isNaN(targetRate) ? targetRate : null;
       } catch (e) {
         console.error("GoalManager: Error parsing goal from localStorage", e);
         localStorage.removeItem(CONFIG.localStorageKeys.goal); // Clear invalid data
@@ -35,8 +41,11 @@ export const GoalManager = {
       }
     }
     // Dispatch action to update state with the loaded or default goal
-    StateManager.dispatch({ type: 'LOAD_GOAL', payload: loadedGoalData });
-    console.log("GoalManager: Dispatched LOAD_GOAL action with payload:", loadedGoalData);
+    StateManager.dispatch({ type: "LOAD_GOAL", payload: loadedGoalData });
+    console.log(
+      "GoalManager: Dispatched LOAD_GOAL action with payload:",
+      loadedGoalData,
+    );
     // UI updates are handled by components subscribing to state:goalChanged or state:displayStatsUpdated
   },
 
@@ -53,9 +62,10 @@ export const GoalManager = {
       const goalToStore = {
         weight: currentGoal.weight,
         // Format Date object to YYYY-MM-DD string or null
-        date: (currentGoal.date instanceof Date && !isNaN(currentGoal.date))
-                ? currentGoal.date.toISOString().slice(0, 10)
-                : null,
+        date:
+          currentGoal.date instanceof Date && !isNaN(currentGoal.date)
+            ? currentGoal.date.toISOString().slice(0, 10)
+            : null,
         targetRate: currentGoal.targetRate,
       };
 
@@ -66,7 +76,10 @@ export const GoalManager = {
       console.log("GoalManager: Goal saved to localStorage:", goalToStore);
     } catch (e) {
       console.error("GoalManager: Error saving goal to localStorage", e);
-      Utils.showStatusMessage("Could not save goal due to storage error.", "error");
+      Utils.showStatusMessage(
+        "Could not save goal due to storage error.",
+        "error",
+      );
     }
   },
 
@@ -77,8 +90,8 @@ export const GoalManager = {
    * Initializes the GoalManager by loading any saved goal.
    * Typically called during application startup.
    */
-   init() {
-       this.load();
-       console.log("[GoalManager Init] Initialized and loaded goal.");
-   }
+  init() {
+    this.load();
+    console.log("[GoalManager Init] Initialized and loaded goal.");
+  },
 };

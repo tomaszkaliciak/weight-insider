@@ -4,14 +4,10 @@
 export const CONFIG = Object.freeze({
   // Make CONFIG immutable
 
-  // --- Storage Keys ---
   localStorageKeys: {
-    goal: "weightInsightsGoalV2", // Use distinct keys if format changes
-    theme: "weightInsightsThemeV2",
-    annotations: "weightInsightsAnnotationsV2",
-    // Add keys for other persisted states if needed (e.g., card collapse)
-    // cardCollapseStates: "weightInsightsCardCollapseV1",
-    // lastViewport: "weightInsightsLastViewportV1", // For saving zoom/pan state
+    goal: "weightInsightsGoalV3",
+    theme: "weightInsightsThemeV3",
+    annotations: "weightInsightsAnnotationsV3",
   },
 
   // --- Data Processing & Analysis ---
@@ -35,7 +31,8 @@ export const CONFIG = Object.freeze({
   trendChangeMinSlopeDiffKgWeek: 0.3, // Minimum change in weekly slope (kg/wk) to mark a trend change
 
   // --- Visual Appearance ---
-  margins: { // SVG margins for charts
+  margins: {
+    // SVG margins for charts
     focus: { top: 10, right: 50, bottom: 30, left: 70 }, // Main chart
     context: { top: 10, right: 50, bottom: 30, left: 50 }, // Context/brush chart
     balance: { top: 5, right: 50, bottom: 20, left: 70 }, // Calorie balance bars

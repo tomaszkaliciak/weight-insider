@@ -8,7 +8,6 @@ import { Utils } from "./utils.js";
 import * as Selectors from "./selectors.js"; // Import selectors
 
 export const AnnotationManager = {
-
   /**
    * Loads annotations from localStorage and dispatches action to update state.
    */
@@ -28,19 +27,32 @@ export const AnnotationManager = {
               text: a.text || "", // Ensure text is string
               type: a.type === "range" ? "range" : "point", // Default to 'point'
             }))
-            .filter( // Basic validation
-              (a) => a.id && a.date && typeof a.text === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(a.date)
+            .filter(
+              // Basic validation
+              (a) =>
+                a.id &&
+                a.date &&
+                typeof a.text === "string" &&
+                /^\d{4}-\d{2}-\d{2}$/.test(a.date),
             );
         }
       } catch (e) {
-        console.error("AnnotationManager: Error loading/parsing annotations:", e);
+        console.error(
+          "AnnotationManager: Error loading/parsing annotations:",
+          e,
+        );
         localStorage.removeItem(CONFIG.localStorageKeys.annotations); // Clear invalid data
       }
     }
     // Annotations are sorted by the renderer if needed
 
-    StateManager.dispatch({ type: 'LOAD_ANNOTATIONS', payload: loadedAnnotations });
-    console.log(`AnnotationManager: Dispatched LOAD_ANNOTATIONS with ${loadedAnnotations.length} annotations.`);
+    StateManager.dispatch({
+      type: "LOAD_ANNOTATIONS",
+      payload: loadedAnnotations,
+    });
+    console.log(
+      `AnnotationManager: Dispatched LOAD_ANNOTATIONS with ${loadedAnnotations.length} annotations.`,
+    );
     // AnnotationListRenderer handles the UI update via subscription
   },
 
@@ -50,20 +62,27 @@ export const AnnotationManager = {
   save() {
     try {
       // Read the current annotations directly from the state using a selector
-      const currentAnnotations = Selectors.selectAnnotations(StateManager.getState());
+      const currentAnnotations = Selectors.selectAnnotations(
+        StateManager.getState(),
+      );
 
       // Prepare for storage (ensure only necessary fields are saved)
       const annotationsToSave = currentAnnotations.map(
-        ({ id, date, text, type }) => ({ id, date, text, type })
+        ({ id, date, text, type }) => ({ id, date, text, type }),
       );
       localStorage.setItem(
         CONFIG.localStorageKeys.annotations,
         JSON.stringify(annotationsToSave),
       );
-      console.log(`AnnotationManager: Saved ${annotationsToSave.length} annotations.`);
+      console.log(
+        `AnnotationManager: Saved ${annotationsToSave.length} annotations.`,
+      );
     } catch (e) {
       console.error("AnnotationManager: Error saving annotations:", e);
-      Utils.showStatusMessage("Could not save annotations due to storage error.", "error");
+      Utils.showStatusMessage(
+        "Could not save annotations due to storage error.",
+        "error",
+      );
     }
   },
 
@@ -76,9 +95,12 @@ export const AnnotationManager = {
    */
   add(dateStr, text, type = "point") {
     // Basic validation before dispatching
-    const date = new Date(dateStr + 'T00:00:00'); // Parse as local midnight
+    const date = new Date(dateStr + "T00:00:00"); // Parse as local midnight
     if (isNaN(date.getTime()) || !text || text.trim().length === 0) {
-      Utils.showStatusMessage("Annotation requires a valid date and non-empty text.", "error");
+      Utils.showStatusMessage(
+        "Annotation requires a valid date and non-empty text.",
+        "error",
+      );
       return false;
     }
 
@@ -92,7 +114,7 @@ export const AnnotationManager = {
       type: type === "range" ? "range" : "point",
     };
 
-    StateManager.dispatch({ type: 'ADD_ANNOTATION', payload: newAnnotation });
+    StateManager.dispatch({ type: "ADD_ANNOTATION", payload: newAnnotation });
     this.save(); // Save after state update
 
     // UI Render is handled by AnnotationListRenderer subscription
@@ -104,7 +126,7 @@ export const AnnotationManager = {
    * @param {number|string} id - The unique ID of the annotation to remove.
    */
   remove(id) {
-    StateManager.dispatch({ type: 'DELETE_ANNOTATION', payload: { id } });
+    StateManager.dispatch({ type: "DELETE_ANNOTATION", payload: { id } });
     this.save(); // Save after state update
 
     // UI Render is handled by AnnotationListRenderer subscription
@@ -120,12 +142,17 @@ export const AnnotationManager = {
     const targetTime = new Date(targetDate).setHours(0, 0, 0, 0); // Normalize target date (use local timezone)
 
     // Read current annotations from state using selector
-    const currentAnnotations = Selectors.selectAnnotations(StateManager.getState());
+    const currentAnnotations = Selectors.selectAnnotations(
+      StateManager.getState(),
+    );
 
-    return currentAnnotations.find(a => {
+    return currentAnnotations.find((a) => {
       // Parse annotation date string and normalize (use local timezone)
-      const annoDate = new Date(a.date + 'T00:00:00');
-      return !isNaN(annoDate.getTime()) && annoDate.setHours(0, 0, 0, 0) === targetTime;
+      const annoDate = new Date(a.date + "T00:00:00");
+      return (
+        !isNaN(annoDate.getTime()) &&
+        annoDate.setHours(0, 0, 0, 0) === targetTime
+      );
     });
   },
 
@@ -138,7 +165,8 @@ export const AnnotationManager = {
     const dateVal = ui.annotationDateInput?.property("value");
     const textVal = ui.annotationTextInput?.property("value");
 
-    if (this.add(dateVal, textVal)) { // Calls internal add method (which dispatches)
+    if (this.add(dateVal, textVal)) {
+      // Calls internal add method (which dispatches)
       // Clear form only on successful add dispatch attempt
       ui.annotationDateInput?.property("value", "");
       ui.annotationTextInput?.property("value", "");
@@ -147,11 +175,11 @@ export const AnnotationManager = {
     // else: add() shows error message if validation fails
   },
 
-   /**
+  /**
    * Initializes the AnnotationManager by loading saved annotations.
    */
-   init() {
-       this.load();
-       console.log("[AnnotationManager Init] Initialized and loaded annotations.");
-   }
+  init() {
+    this.load();
+    console.log("[AnnotationManager Init] Initialized and loaded annotations.");
+  },
 };

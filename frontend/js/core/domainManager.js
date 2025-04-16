@@ -4,8 +4,6 @@
 import { scales } from "../ui/chartSetup.js";
 import { StateManager } from "./stateManager.js";
 import { CONFIG } from "../config.js";
-// DataService may not be needed if trend weight calculation moves or uses state
-// import { DataService } from "./dataService.js";
 import {
   calculateContextYDomain,
   calculateFocusYDomain,
@@ -13,9 +11,9 @@ import {
   calculateRateYDomain,
   calculateTdeeDiffYDomain,
   calculateScatterPlotDomains,
-} from "./domainCalculations.js"; // Assuming these are still separate
+} from "./domainCalculations.js";
 import { Utils } from "./utils.js";
-import * as Selectors from "./selectors.js"; // Import selectors
+import * as Selectors from "./selectors.js";
 
 export const DomainManager = {
   /**
@@ -32,9 +30,11 @@ export const DomainManager = {
     let dataStartDate = null;
     let dataEndDate = null;
     if (processedData.length > 0) {
-        const dateExtent = d3.extent(processedData, (d) => d.date);
-        if (dateExtent[0] instanceof Date && !isNaN(dateExtent[0])) dataStartDate = dateExtent[0];
-        if (dateExtent[1] instanceof Date && !isNaN(dateExtent[1])) dataEndDate = dateExtent[1];
+      const dateExtent = d3.extent(processedData, (d) => d.date);
+      if (dateExtent[0] instanceof Date && !isNaN(dateExtent[0]))
+        dataStartDate = dateExtent[0];
+      if (dateExtent[1] instanceof Date && !isNaN(dateExtent[1]))
+        dataEndDate = dateExtent[1];
     }
 
     let contextDomainStart = dataStartDate;
@@ -43,23 +43,35 @@ export const DomainManager = {
     let initialFocusEnd = null;
 
     if (!contextDomainStart || !contextDomainEnd) {
-        console.warn("DomainManager: No valid date range in data. Using fallback.");
-        const today = new Date();
-        const past = d3.timeMonth.offset(today, -CONFIG.initialViewMonths);
-        contextDomainStart = past;
-        contextDomainEnd = today;
-        initialFocusStart = past;
-        initialFocusEnd = today;
+      console.warn(
+        "DomainManager: No valid date range in data. Using fallback.",
+      );
+      const today = new Date();
+      const past = d3.timeMonth.offset(today, -CONFIG.initialViewMonths);
+      contextDomainStart = past;
+      contextDomainEnd = today;
+      initialFocusStart = past;
+      initialFocusEnd = today;
     } else {
-        // Extend context end date if goal date is later
-        if (goal.date instanceof Date && !isNaN(goal.date) && goal.date > contextDomainEnd) {
-            contextDomainEnd = goal.date;
-        }
-        // Set initial focus view end date to last data point date
-        initialFocusEnd = dataEndDate;
-        // Set initial focus view start date N months before end date, clamped by data start
-        const defaultFocusStart = d3.timeMonth.offset(initialFocusEnd, -CONFIG.initialViewMonths);
-        initialFocusStart = defaultFocusStart < contextDomainStart ? contextDomainStart : defaultFocusStart;
+      // Extend context end date if goal date is later
+      if (
+        goal.date instanceof Date &&
+        !isNaN(goal.date) &&
+        goal.date > contextDomainEnd
+      ) {
+        contextDomainEnd = goal.date;
+      }
+      // Set initial focus view end date to last data point date
+      initialFocusEnd = dataEndDate;
+      // Set initial focus view start date N months before end date, clamped by data start
+      const defaultFocusStart = d3.timeMonth.offset(
+        initialFocusEnd,
+        -CONFIG.initialViewMonths,
+      );
+      initialFocusStart =
+        defaultFocusStart < contextDomainStart
+          ? contextDomainStart
+          : defaultFocusStart;
     }
 
     const initialFocusDomain = [initialFocusStart, initialFocusEnd];
@@ -74,10 +86,13 @@ export const DomainManager = {
 
     // Dispatch action to set the initial analysis range based on the focus view
     const initialAnalysisRange = {
-        start: new Date(new Date(initialFocusDomain[0]).setHours(0,0,0,0)), // Clone
-        end: new Date(new Date(initialFocusDomain[1]).setHours(23,59,59,999)) // Clone
+      start: new Date(new Date(initialFocusDomain[0]).setHours(0, 0, 0, 0)), // Clone
+      end: new Date(new Date(initialFocusDomain[1]).setHours(23, 59, 59, 999)), // Clone
     };
-    StateManager.dispatch({ type: 'SET_ANALYSIS_RANGE', payload: initialAnalysisRange });
+    StateManager.dispatch({
+      type: "SET_ANALYSIS_RANGE",
+      payload: initialAnalysisRange,
+    });
 
     return initialFocusDomain; // Return the focus domain for potential immediate use
   },
@@ -94,7 +109,7 @@ export const DomainManager = {
     const [yMin, yMax] = calculateContextYDomain(
       processedData,
       visibility.smaLine, // Pass visibility flags
-      visibility.smaBand
+      visibility.smaBand,
     );
     scales.yContext.domain([yMin, yMax]).nice();
   },
@@ -111,7 +126,10 @@ export const DomainManager = {
     }
 
     const yRange = scales.y.range();
-    const height = Array.isArray(yRange) && yRange.length === 2 ? Math.abs(yRange[0] - yRange[1]) : 200;
+    const height =
+      Array.isArray(yRange) && yRange.length === 2
+        ? Math.abs(yRange[0] - yRange[1])
+        : 200;
     const currentXDomain = scales.x.domain(); // Get current focus X domain from the scale
 
     // --- Get pre-calculated/filtered data from the state snapshot ---
@@ -126,22 +144,33 @@ export const DomainManager = {
       CONFIG,
       stateSnapshot, // Pass the whole snapshot
       null, // Pass null for buffer dates as filtering is done upstream
-      null
+      null,
       // Trend config is read internally by calculateFocusYDomain from stateSnapshot
     );
 
     // Apply the calculated domain, using context domain as fallback if calculation failed
     if (isFinite(yMin) && isFinite(yMax)) {
-        scales.y.domain([yMin, yMax]).nice(Math.max(Math.floor(height / 40), 5));
+      scales.y.domain([yMin, yMax]).nice(Math.max(Math.floor(height / 40), 5));
     } else {
-        console.warn("DomainManager: Calculated invalid focus Y domain. Using context domain as fallback.");
-        const contextDomain = scales.yContext?.domain();
-        if (Array.isArray(contextDomain) && contextDomain.length === 2 && isFinite(contextDomain[0]) && isFinite(contextDomain[1])) {
-            scales.y.domain(contextDomain).nice(Math.max(Math.floor(height / 40), 5));
-        } else {
-            console.error("DomainManager: Context Y domain is also invalid! Using hardcoded fallback [60, 80].");
-            scales.y.domain([60, 80]).nice(); // Hardcoded fallback
-        }
+      console.warn(
+        "DomainManager: Calculated invalid focus Y domain. Using context domain as fallback.",
+      );
+      const contextDomain = scales.yContext?.domain();
+      if (
+        Array.isArray(contextDomain) &&
+        contextDomain.length === 2 &&
+        isFinite(contextDomain[0]) &&
+        isFinite(contextDomain[1])
+      ) {
+        scales.y
+          .domain(contextDomain)
+          .nice(Math.max(Math.floor(height / 40), 5));
+      } else {
+        console.error(
+          "DomainManager: Context Y domain is also invalid! Using hardcoded fallback [60, 80].",
+        );
+        scales.y.domain([60, 80]).nice(); // Hardcoded fallback
+      }
     }
     scales.y2?.domain([0, 100]); // Keep default for unused Y2
   },
@@ -191,9 +220,11 @@ export const DomainManager = {
     console.log("DomainManager: Initializing domains...");
     const processedData = Selectors.selectProcessedData(stateSnapshot);
     if (!processedData || processedData.length === 0) {
-        console.warn("DomainManager: No processed data available for initial domain setup.");
-        this.setEmptyDomains(); // Set default domains
-        return;
+      console.warn(
+        "DomainManager: No processed data available for initial domain setup.",
+      );
+      this.setEmptyDomains(); // Set default domains
+      return;
     }
 
     this._setContextYDomain(stateSnapshot); // Reads state.seriesVisibility
@@ -222,7 +253,9 @@ export const DomainManager = {
    * Assumes scales.x domain is already updated by the interaction handler.
    */
   updateDomainsOnInteraction() {
-    console.log("[DomainManager] Updating domains on interaction/state change.");
+    console.log(
+      "[DomainManager] Updating domains on interaction/state change.",
+    );
     const stateSnapshot = StateManager.getState(); // Get current state
 
     if (!Selectors.selectIsInitialized(stateSnapshot)) {
@@ -242,7 +275,9 @@ export const DomainManager = {
       scales.xRate?.domain(currentXDomain);
       scales.xTdeeDiff?.domain(currentXDomain);
     } else {
-       console.warn("DomainManager: Could not update secondary X domains - invalid focus X domain.");
+      console.warn(
+        "DomainManager: Could not update secondary X domains - invalid focus X domain.",
+      );
     }
 
     // --- Update Secondary Y Domains (based on currently filtered data in state) ---
@@ -259,16 +294,22 @@ export const DomainManager = {
     const defaultDate = new Date();
     const defaultX = [d3.timeMonth.offset(defaultDate, -1), defaultDate];
     const defaultY = [60, 80];
-    scales.x?.domain(defaultX); scales.xContext?.domain(defaultX); scales.xBalance?.domain(defaultX);
-    scales.xRate?.domain(defaultX); scales.xTdeeDiff?.domain(defaultX);
-    scales.y?.domain(defaultY).nice(); scales.yContext?.domain(defaultY).nice();
-    scales.yBalance?.domain([-500, 500]).nice(); scales.yRate?.domain([-0.5, 0.5]).nice();
-    scales.yTdeeDiff?.domain([-500, 500]).nice(); scales.xScatter?.domain([-1000, 1000]).nice();
+    scales.x?.domain(defaultX);
+    scales.xContext?.domain(defaultX);
+    scales.xBalance?.domain(defaultX);
+    scales.xRate?.domain(defaultX);
+    scales.xTdeeDiff?.domain(defaultX);
+    scales.y?.domain(defaultY).nice();
+    scales.yContext?.domain(defaultY).nice();
+    scales.yBalance?.domain([-500, 500]).nice();
+    scales.yRate?.domain([-0.5, 0.5]).nice();
+    scales.yTdeeDiff?.domain([-500, 500]).nice();
+    scales.xScatter?.domain([-1000, 1000]).nice();
     scales.yScatter?.domain([-1, 1]).nice();
     // No direct state dispatch needed here unless clearing state is desired
   },
 
-   // --- Initialization ---
+  // --- Initialization ---
   init() {
     // No subscriptions needed here as updates are called explicitly by MasterUpdater or during init.
     console.log("[DomainManager Init] Initialized.");
