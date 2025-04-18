@@ -23,7 +23,7 @@ const ss = window.ss || {
     const meanVal = arr.reduce((a, b) => a + b, 0) / n;
     return Math.sqrt(
       arr.map((x) => Math.pow(x - meanVal, 2)).reduce((a, b) => a + b, 0) /
-        (n - 1),
+      (n - 1),
     );
   },
   sum: (arr) => arr.reduce((a, b) => a + b, 0),
@@ -163,9 +163,6 @@ export const DataService = {
     processed = this._calculateRateMovingAverage(processed);
 
     console.log("DataService: Data processing pipeline completed.");
-    // Optional: Log counts of calculated fields for verification
-    // const validSMACount = processed.filter(d => d.sma != null).length;
-    // console.log(`DataService: Processed data stats - SMA: ${validSMACount}, ...`);
     return processed;
   },
 
@@ -189,8 +186,8 @@ export const DataService = {
     });
   },
   _calculateSMAAndStdDev(data) {
-    const windowSize = CONFIG.movingAverageWindow; // Use CONFIG
-    const stdDevMult = CONFIG.stdDevMultiplier; // Use CONFIG
+    const windowSize = CONFIG.movingAverageWindow;
+    const stdDevMult = CONFIG.stdDevMultiplier;
     return data.map((d, i, arr) => {
       const windowDataPoints = arr.slice(
         Math.max(0, i - windowSize + 1),
@@ -207,7 +204,7 @@ export const DataService = {
         sma = d3.mean(validValuesInWindow);
         stdDev =
           validValuesInWindow.length > 1 &&
-          typeof ss?.standardDeviation === "function"
+            typeof ss?.standardDeviation === "function"
             ? ss.standardDeviation(validValuesInWindow)
             : 0;
         lowerBound =
@@ -229,7 +226,7 @@ export const DataService = {
     });
   },
   _calculateEMA(data) {
-    const windowSize = CONFIG.emaWindow; // Use CONFIG
+    const windowSize = CONFIG.emaWindow;
     if (windowSize <= 0) return data;
     const alpha = 2 / (windowSize + 1);
     let previousEMA = null;
@@ -250,7 +247,7 @@ export const DataService = {
     });
   },
   _identifyOutliers(data) {
-    const threshold = CONFIG.OUTLIER_STD_DEV_THRESHOLD; // Use CONFIG
+    const threshold = CONFIG.OUTLIER_STD_DEV_THRESHOLD;
     return data.map((d) => {
       let isOutlier = false;
       if (
@@ -333,7 +330,7 @@ export const DataService = {
     });
   },
   _calculateAdaptiveTDEE(data) {
-    const windowSize = CONFIG.adaptiveTDEEWindow; // Use CONFIG
+    const windowSize = CONFIG.adaptiveTDEEWindow;
     const minDataRatio = 0.7; // Minimum ratio of valid intake days needed in window
     return data.map((d, i, arr) => {
       let adaptiveTDEE = null;
@@ -375,19 +372,19 @@ export const DataService = {
     const smoothedDailyRates = Utils.calculateRollingAverage(
       dailyRates,
       CONFIG.rateOfChangeSmoothingWindow,
-    ); // Use CONFIG
+    );
     const tdeeDifferences = data.map((d) =>
       d.tdeeTrend != null &&
-      d.googleFitTDEE != null &&
-      !isNaN(d.tdeeTrend) &&
-      !isNaN(d.googleFitTDEE)
+        d.googleFitTDEE != null &&
+        !isNaN(d.tdeeTrend) &&
+        !isNaN(d.googleFitTDEE)
         ? d.tdeeTrend - d.googleFitTDEE
         : null,
     );
     const smoothedTdeeDifferences = Utils.calculateRollingAverage(
       tdeeDifferences,
       CONFIG.tdeeDiffSmoothingWindow,
-    ); // Use CONFIG
+    );
     return data.map((d, i) => ({
       ...d,
       smoothedWeeklyRate:
@@ -401,7 +398,7 @@ export const DataService = {
     const rateMovingAverage = Utils.calculateRollingAverage(
       weeklyRates,
       CONFIG.rateMovingAverageWindow,
-    ); // Use CONFIG
+    );
     return data.map((d, i) => ({
       ...d,
       rateMovingAverage: rateMovingAverage[i],
@@ -433,7 +430,6 @@ export const DataService = {
         : validData;
 
     if (filteredData.length < CONFIG.MIN_POINTS_FOR_REGRESSION) {
-      // Use CONFIG
       console.log(
         `[DataService Reg] Not enough points (${filteredData.length}) for regression starting ${startDate?.toISOString().slice(0, 10)}.`,
       );
@@ -513,11 +509,11 @@ export const DataService = {
     const rangeData =
       startDate && endDate
         ? processedData.filter(
-            (d) =>
-              d.date instanceof Date &&
-              d.date >= startDate &&
-              d.date <= endDate,
-          )
+          (d) =>
+            d.date instanceof Date &&
+            d.date >= startDate &&
+            d.date <= endDate,
+        )
         : processedData;
     if (!Array.isArray(rangeData) || rangeData.length === 0) return [];
 

@@ -35,25 +35,9 @@ export const LegendManager = {
       payload: { seriesId, isVisible },
     });
 
-    // Synchronize related items
-    // If toggling SMA Line off, also toggle SMA Band off? (Optional business logic)
-    /* if (seriesId === "smaLine" && !isVisible && currentVisibilityState.smaBand) {
-         StateManager.dispatch({
-             type: 'TOGGLE_SERIES_VISIBILITY',
-             payload: { seriesId: 'smaBand', isVisible: false }
-         });
-     } else if (seriesId === "smaBand" && isVisible && !currentVisibilityState.smaLine) {
-          StateManager.dispatch({
-             type: 'TOGGLE_SERIES_VISIBILITY',
-             payload: { seriesId: 'smaLine', isVisible: true }
-         });
-     } */
-
     // State change subscriptions will handle UI updates (rebuilding legend, redrawing charts)
     console.log(`[LM Toggle] END: Dispatched actions for "${seriesId}"`);
   },
-
-  // updateAppearance method removed - handled by build()
 
   /**
    * Builds or rebuilds the legend items in the legend container
@@ -111,19 +95,19 @@ export const LegendManager = {
         styleClass: "sma-line",
       },
       {
+        id: "smaBand",
+        label: "SMA Band (±SD)",
+        type: "area",
+        colorKey: "band",
+        styleClass: "band-area",
+      },
+      {
         id: "emaLine",
         label: `Weight EMA (${CONFIG.emaWindow}d)`,
         type: "line",
         colorKey: "ema",
         styleClass: "ema-line",
         dash: "5, 3",
-      },
-      {
-        id: "smaBand",
-        label: "SMA Band (±SD)",
-        type: "area",
-        colorKey: "band",
-        styleClass: "band-area",
       },
       {
         id: "regression",
@@ -160,14 +144,6 @@ export const LegendManager = {
             },
           ]
         : []),
-      {
-        id: "rateMA",
-        label: `Rate MA (${CONFIG.rateMovingAverageWindow}d)`,
-        type: "line",
-        colorKey: "rateMALine",
-        styleClass: "rate-ma-line",
-        dash: "2, 2",
-      },
       ...(annotations && annotations.length > 0
         ? [
             {

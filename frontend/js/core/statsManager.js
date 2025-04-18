@@ -44,7 +44,6 @@ const ss = window.ss || {
 export const StatsManager = {
   // --- Internal Calculation Helpers ---
   _calculateAverageInRange(data, field, startDate, endDate) {
-    /* ... */
     if (!Array.isArray(data) || !startDate || !endDate || startDate > endDate)
       return null;
     const rangeData = data.filter(
@@ -53,10 +52,9 @@ export const StatsManager = {
     const relevantValues = rangeData
       .map((d) => d[field])
       .filter((val) => val != null && !isNaN(val));
-    return relevantValues.length > 0 ? d3.mean(relevantValues) : null; // Use global d3
+    return relevantValues.length > 0 ? d3.mean(relevantValues) : null;
   },
   _calculateCountInRange(data, field, startDate, endDate) {
-    /* ... */
     const defaultResult = { count: 0, totalDays: 0, percentage: 0 };
     if (!Array.isArray(data) || !startDate || !endDate || startDate > endDate)
       return defaultResult;
@@ -73,7 +71,6 @@ export const StatsManager = {
     return { count, totalDays, percentage };
   },
   _calculateCurrentRate(allProcessedData, analysisEndDate) {
-    /* ... */
     if (
       !Array.isArray(allProcessedData) ||
       allProcessedData.length === 0 ||
@@ -96,7 +93,6 @@ export const StatsManager = {
     return lastRate;
   },
   _calculateVolatility(processedData, startDate, endDate) {
-    /* ... */
     if (
       !Array.isArray(processedData) ||
       !startDate ||
@@ -115,7 +111,6 @@ export const StatsManager = {
       : null;
   },
   _calculateTDEEFromTrend(avgIntake, weeklyKgChange) {
-    /* ... */
     if (
       avgIntake == null ||
       weeklyKgChange == null ||
@@ -128,13 +123,11 @@ export const StatsManager = {
     return avgIntake - dailyDeficitSurplus;
   },
   _estimateDeficitSurplusFromTrend(weeklyKgChange) {
-    /* ... */
     if (weeklyKgChange == null || isNaN(weeklyKgChange)) return null;
     const dailyKgChange = weeklyKgChange / 7;
     return dailyKgChange * CONFIG.KCALS_PER_KG;
   },
   _calculateNetCalRateCorrelation(weeklyStats) {
-    /* ... */
     if (!ss || typeof ss.sampleCorrelation !== "function") return null;
     if (
       !Array.isArray(weeklyStats) ||
@@ -165,7 +158,6 @@ export const StatsManager = {
     weeklyChange,
     goalAchieved = false,
   ) {
-    /* ... */
     if (goalAchieved) return "Goal Achieved!";
     if (
       currentWeight == null ||
@@ -194,7 +186,6 @@ export const StatsManager = {
     return `~${(monthsNeeded / 12).toFixed(1)} years`;
   },
   _calculateRequiredRateForGoal(currentWeight, goalWeight, goalDate) {
-    /* ... */
     if (
       currentWeight == null ||
       goalWeight == null ||
@@ -215,7 +206,6 @@ export const StatsManager = {
     return weightDifference / (daysRemaining / 7);
   },
   _detectPlateaus(processedData) {
-    /* ... */
     if (!Array.isArray(processedData) || processedData.length === 0) return [];
     const minDurationDays = CONFIG.plateauMinDurationWeeks * 7;
     const rateThreshold = CONFIG.plateauRateThresholdKgWeek;
@@ -278,7 +268,6 @@ export const StatsManager = {
     return plateaus;
   },
   _detectTrendChanges(processedData) {
-    /* ... */
     if (
       !Array.isArray(processedData) ||
       processedData.length < CONFIG.trendChangeWindowDays * 2
@@ -288,7 +277,6 @@ export const StatsManager = {
     const minSlopeDiff = CONFIG.trendChangeMinSlopeDiffKgWeek / 7; // Convert threshold to daily slope diff
     let changes = [];
     const calculateSlope = (dataSegment) => {
-      /* ... */
       const validPoints = dataSegment.filter(
         (p) => p.sma != null && p.date instanceof Date && !isNaN(p.date),
       );
@@ -302,7 +290,6 @@ export const StatsManager = {
       return (last.sma - first.sma) / timeDiffDays; // Daily rate of change
     };
     for (let i = windowSize; i < processedData.length - windowSize; i++) {
-      /* ... */
       const currentDate = processedData[i].date;
       if (!(currentDate instanceof Date) || isNaN(currentDate.getTime()))
         continue; // Skip invalid dates
@@ -366,7 +353,6 @@ export const StatsManager = {
       (d) => d.value != null && !isNaN(d.value),
     );
     if (validWeightDataAll.length > 0) {
-      /* ... */
       displayStats.startingWeight = validWeightDataAll[0].value;
       displayStats.currentWeight =
         validWeightDataAll[validWeightDataAll.length - 1].value;
@@ -424,11 +410,9 @@ export const StatsManager = {
 
     // Analysis Range Specific Calculations
     if (analysisRange.start && analysisRange.end && processedData.length > 0) {
-      /* ... */
       results.plateaus = this._detectPlateaus(processedData);
       results.trendChangePoints = this._detectTrendChanges(processedData);
       if (results.filteredData.length > 0) {
-        /* ... */
         results.weeklySummaryData = DataService.calculateWeeklyStats(
           processedData,
           analysisRange.start,
@@ -498,7 +482,6 @@ export const StatsManager = {
 
         // Regression
         if (effectiveRegRange.start && effectiveRegRange.end) {
-          /* ... */
           const regressionData = processedData.filter(
             (d) =>
               d.date instanceof Date &&
@@ -527,7 +510,7 @@ export const StatsManager = {
         // TDEE from Trend
         const trendForTDEECalc =
           displayStats.regressionSlopeWeekly ??
-          displayStats.currentWeeklyRate; /* ... */
+          displayStats.currentWeeklyRate;
         displayStats.avgTDEE_WgtChange = this._calculateTDEEFromTrend(
           displayStats.avgIntake,
           trendForTDEECalc,
@@ -535,7 +518,7 @@ export const StatsManager = {
         displayStats.estimatedDeficitSurplus =
           this._estimateDeficitSurplusFromTrend(trendForTDEECalc);
         // Goal Achievement Check
-        const weightThreshold = 0.1; /* ... */
+        const weightThreshold = 0.1;
         if (goal.weight != null) {
           let achievedPoint = null;
           for (const d of results.filteredData) {
@@ -558,7 +541,6 @@ export const StatsManager = {
         results.goalAchievedDate = null;
         results.regressionResult = { slope: null, intercept: null, points: [] };
         Object.assign(displayStats, {
-          /* ... */
         });
       }
     } else {
@@ -571,12 +553,11 @@ export const StatsManager = {
       results.goalAchievedDate = null;
       results.regressionResult = { slope: null, intercept: null, points: [] };
       Object.assign(displayStats, {
-        /* ... */
       });
     }
 
     // Goal Related Display Stats
-    displayStats.targetWeight = goal.weight; /* ... etc ... */
+    displayStats.targetWeight = goal.weight;
     displayStats.targetRate = goal.targetRate;
     displayStats.targetDate = goal.date;
     const referenceWeightForGoal =
@@ -605,7 +586,7 @@ export const StatsManager = {
     // Required Calorie Adjustment & Suggested Intake
     displayStats.requiredCalorieAdjustment = null;
     displayStats.requiredNetCalories = null;
-    displayStats.suggestedIntakeRange = null; /* ... */
+    displayStats.suggestedIntakeRange = null;
     const baselineTDEE =
       displayStats.avgTDEE_Adaptive ??
       displayStats.avgTDEE_WgtChange ??
@@ -618,7 +599,6 @@ export const StatsManager = {
       baselineTDEE != null &&
       !isNaN(baselineTDEE)
     ) {
-      /* ... */
       const rateDifferenceKgWeek =
         displayStats.targetRate - currentTrendForGoal;
       displayStats.requiredCalorieAdjustment =
@@ -630,7 +610,6 @@ export const StatsManager = {
       !isNaN(baselineTDEE) &&
       !isNaN(displayStats.requiredRateForGoal)
     ) {
-      /* ... */
       const requiredDailyDeficitSurplus =
         (displayStats.requiredRateForGoal / 7) * CONFIG.KCALS_PER_KG;
       displayStats.requiredNetCalories = requiredDailyDeficitSurplus;
@@ -643,14 +622,13 @@ export const StatsManager = {
       }
     }
     // Target Rate Feedback
-    displayStats.targetRateFeedback = { text: "N/A", class: "" }; /* ... */
+    displayStats.targetRateFeedback = { text: "N/A", class: "" };
     if (
       displayStats.targetRate != null &&
       currentTrendForGoal != null &&
       !isNaN(currentTrendForGoal) &&
       !isNaN(displayStats.targetRate)
     ) {
-      /* ... */
       const diff = currentTrendForGoal - displayStats.targetRate;
       const absDiff = Math.abs(diff);
       if (absDiff < 0.03) {

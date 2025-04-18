@@ -27,13 +27,9 @@ import * as Selectors from "./core/selectors.js"; // Import selectors
 async function initialize() {
   console.log("[Main Init] Application initialization started.");
   try {
-    // 0. Initial Dispatch (Optional: good for resetting state on hot reload)
-    // StateManager.dispatch({ type: 'INITIALIZE_START' });
-
-    // 1. Cache UI Elements (Essential for subsequent steps)
+    // 1. Cache UI Elements
     cacheSelectors();
     if (!ui.body || !ui.chartContainer) {
-      // Basic check
       throw new Error(
         "Essential UI elements (body, chartContainer) not found.",
       );
@@ -55,7 +51,7 @@ async function initialize() {
     AnnotationManager.init(); // Loads saved annotations, dispatches LOAD_ANNOTATIONS
 
     // 5. Setup Event Handlers (Attaches listeners to UI elements)
-    EventHandlers.setupAll(); // Assumes EventHandlers doesn't need state yet
+    EventHandlers.setupAll();
 
     // 6. Initialize UI Modules that Subscribe to State
     // These need to be ready *before* data/stats updates start flowing
@@ -84,13 +80,14 @@ async function initialize() {
       ui.trendWeeklyIncrease1Input?.property("value");
     const initialWeeklyIncrease2Val =
       ui.trendWeeklyIncrease2Input?.property("value");
+
     StateManager.dispatch({
       type: "UPDATE_TREND_CONFIG",
       payload: {
         startDate: initialStartDateVal ? new Date(initialStartDateVal) : null,
-        initialWeight: initialWeightVal, // Let reducer parse
-        weeklyIncrease1: initialWeeklyIncrease1Val, // Let reducer parse
-        weeklyIncrease2: initialWeeklyIncrease2Val, // Let reducer parse
+        initialWeight: initialWeightVal, 
+        weeklyIncrease1: initialWeeklyIncrease1Val,
+        weeklyIncrease2: initialWeeklyIncrease2Val,
       },
     });
     console.log(
@@ -122,7 +119,7 @@ async function initialize() {
         type: "SET_REGRESSION_RESULT",
         payload: { slope: null, intercept: null, points: [] },
       });
-      StateManager.dispatch({ type: "UPDATE_DISPLAY_STATS", payload: {} }); // Send empty stats
+      StateManager.dispatch({ type: "UPDATE_DISPLAY_STATS", payload: {} });
     }
 
     // 13. Restore Initial Viewport (if applicable)

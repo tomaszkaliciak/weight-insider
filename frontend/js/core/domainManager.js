@@ -308,10 +308,4 @@ export const DomainManager = {
     scales.yScatter?.domain([-1, 1]).nice();
     // No direct state dispatch needed here unless clearing state is desired
   },
-
-  // --- Initialization ---
-  init() {
-    // No subscriptions needed here as updates are called explicitly by MasterUpdater or during init.
-    console.log("[DomainManager Init] Initialized.");
-  },
 };

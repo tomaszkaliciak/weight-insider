@@ -112,12 +112,11 @@ export const MasterUpdater = {
    */
   updateAllCharts(options = {}) {
     if (MasterUpdater._isUpdating) {
-      // console.warn("MasterUpdater: Skipping update - already updating.");
-      MasterUpdater._pendingUpdate = true; // Mark that an update is needed after current one finishes
+      MasterUpdater._pendingUpdate = true;
       return;
     }
     MasterUpdater._isUpdating = true;
-    MasterUpdater._pendingUpdate = false; // Clear pending flag as we are starting an update
+    MasterUpdater._pendingUpdate = false;
 
     // Use requestAnimationFrame for smoother rendering, especially during interactions
     requestAnimationFrame(() => {
@@ -298,7 +297,6 @@ export const MasterUpdater = {
         }
         // SVG resizing logic (remains the same)
         if (ui.svg) {
-          /* ... */
           ui.svg
             .attr(
               "width",
@@ -336,7 +334,6 @@ export const MasterUpdater = {
           }
         }
         if (ui.contextSvg && contextWidth > 0 && contextHeight > 0) {
-          /* ... */
           ui.contextSvg
             .attr(
               "width",
@@ -504,21 +501,10 @@ export const MasterUpdater = {
    * Initializes the MasterUpdater by subscribing to relevant state changes.
    */
   init() {
-    // --- Subscribe to the MAIN derived data update event ---
-    StateManager.subscribeToSpecificEvent(
-      "state:displayStatsUpdated",
-      (/* payload is displayStats object */) => {
-        console.log(
-          "[MasterUpdater] Received event: state:displayStatsUpdated. Triggering update.",
-        );
-        // Pass isInteractive: false because this is a state-driven update, not a direct interaction response
-        MasterUpdater.updateAllCharts({ isInteractive: false });
-      },
-    );
-
     // --- Subscribe ONLY to events NOT directly caused by StatsManager calculation cycle ---
     // These affect visual presentation or interaction states directly.
-    const directVisualUpdateEvents = [
+    const directUpdateEvents = [
+      "state:displayStatsUpdated",
       "state:visibilityChanged",
       "state:themeUpdated",
       "state:highlightedDateChanged",
@@ -530,17 +516,17 @@ export const MasterUpdater = {
       "state:annotationsChanged", // Redraw annotation markers immediately
     ];
 
-    directVisualUpdateEvents.forEach((eventName) => {
+    directUpdateEvents.forEach((eventName) => {
       StateManager.subscribeToSpecificEvent(eventName, (payload) => {
         console.log(
-          `[MasterUpdater] Received direct visual event: ${eventName}. Triggering VISUAL update.`,
+          `[MasterUpdater] Received direct event: ${eventName}. Triggering VISUAL update.`,
         );
         // Trigger a non-interactive redraw immediately for these events
         MasterUpdater.updateAllCharts({ isInteractive: false });
       });
     });
 
-    // --- Scatter Plot Update (Keep separate) ---
+    // --- Scatter Plot Update ---
     StateManager.subscribeToSpecificEvent(
       "state:correlationDataUpdated",
       (payload) => {

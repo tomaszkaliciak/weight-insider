@@ -33,7 +33,7 @@ export const ThemeManager = {
     // Update the exported colors object
     Object.assign(colors, {
       sma: getColor("--sma-color", "sma"),
-      ema: getColor("--ema-color", "ema"), // Added EMA
+      ema: getColor("--ema-color", "ema"),
       band: getColor("--band-color", "band"),
       rawDot: getColor("--raw-dot-color", "rawDot"),
       dot: getColor("--dot-color", "dot"),
@@ -87,10 +87,9 @@ export const ThemeManager = {
     const theme = newTheme === "dark" ? "dark" : "light";
     console.log(`[ThemeManager] Applying theme: ${theme}`);
     ui.body?.classed("dark-theme", theme === "dark");
-    localStorage.setItem(CONFIG.localStorageKeys.theme, theme); // Keep saving preference
+    localStorage.setItem(CONFIG.localStorageKeys.theme, theme);
     this._updateColorsObject(); // Recalculate colors based on new theme
     this._updateToggleButtonIcon(theme); // Update button icon
-    // MasterUpdater will handle chart redraw via its own subscription to theme change
   },
 
   /**
@@ -109,7 +108,6 @@ export const ThemeManager = {
    * Reads the saved theme, dispatches the initial state, and subscribes to changes.
    */
   init() {
-    // Determine initial theme (localStorage > default)
     const savedTheme = localStorage.getItem(CONFIG.localStorageKeys.theme);
     const initialTheme = savedTheme === "dark" ? "dark" : "light";
     console.log(
@@ -120,7 +118,6 @@ export const ThemeManager = {
     // This ensures the state is correct before any reactions happen.
     StateManager.dispatch({ type: "SET_THEME", payload: initialTheme });
 
-    // Subscribe to subsequent theme changes from the state
     StateManager.subscribeToSpecificEvent("state:themeUpdated", (payload) => {
       // Payload is { theme: newTheme }
       this._applyTheme(payload.theme);
