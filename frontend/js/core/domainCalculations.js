@@ -76,8 +76,6 @@ export function calculateFocusYDomain(
   regressionResult,
   config,
   stateSnapshot,
-  // bufferStartDate, bufferEndDate removed - filtering assumed done upstream
-  // trendConfig removed - read directly from stateSnapshot
 ) {
   let yMin = Infinity,
     yMax = -Infinity;

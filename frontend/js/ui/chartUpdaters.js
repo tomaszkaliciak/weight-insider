@@ -584,7 +584,6 @@ export const FocusChartUpdater = {
     );
 
     const findYValue = (targetDate) => {
-      /* ... (same as in updateAnnotations) ... */
       if (!(targetDate instanceof Date) || isNaN(targetDate.getTime()))
         return null;
       const targetTime = targetDate.getTime();
@@ -617,7 +616,6 @@ export const FocusChartUpdater = {
 
     markers.join(
       (enter) => {
-        /* ... (same as before) ... */
         const group = enter
           .append("g")
           .attr("class", "trend-change-marker-group")
@@ -647,7 +645,7 @@ export const FocusChartUpdater = {
         return group;
       },
       (update) =>
-        update /* ... (same as before) ... */
+        update
           .on("mouseover", EventHandlers.trendChangeMouseOver)
           .on("mouseout", EventHandlers.trendChangeMouseOut)
           .transition()
@@ -666,7 +664,7 @@ export const FocusChartUpdater = {
               : `translate(-1000, -1000)`;
           }),
       (exit) =>
-        exit /* ... (same as before) ... */
+        exit
           .transition()
           .duration(dur / 2)
           .style("opacity", 0)
@@ -897,7 +895,6 @@ export const ContextChartUpdater = {
 };
 export const BalanceChartUpdater = {
   updateAxes(balanceWidth) {
-    /* ... (no changes needed here) ... */
     if (
       !balanceWidth ||
       !axes.xBalanceAxis ||
@@ -1026,7 +1023,6 @@ export const BalanceChartUpdater = {
 };
 export const RateChartUpdater = {
   updateAxes(rateWidth) {
-    /* ... (unchanged, axes updated in master) ... */
     if (
       !rateWidth ||
       !axes.xRateAxis ||
@@ -1120,7 +1116,6 @@ export const RateChartUpdater = {
       .style("stroke", colors.rateMALine || CONFIG.fallbackColors.rateMALine);
   },
   addHoverDots(visibleData) {
-    /* ... (unchanged - attaches handlers) ... */
     if (!ui.rateChartArea || !scales.xRate || !scales.yRate) return;
     ui.rateChartArea.selectAll(".rate-hover-dot").remove();
     const validData = visibleData.filter(
@@ -1152,7 +1147,6 @@ export const RateChartUpdater = {
 };
 export const TDEEDiffChartUpdater = {
   updateAxes(tdeeDiffWidth) {
-    /* ... (unchanged, axes updated in master) ... */
     if (
       !tdeeDiffWidth ||
       !axes.xTdeeDiffAxis ||
@@ -1204,7 +1198,6 @@ export const TDEEDiffChartUpdater = {
       );
   },
   addHoverDots(visibleData) {
-    /* ... (unchanged - attaches handlers) ... */
     if (!ui.tdeeDiffChartArea || !scales.xTdeeDiff || !scales.yTdeeDiff) return;
     ui.tdeeDiffChartArea.selectAll(".tdee-diff-hover-dot").remove();
     const validData = visibleData.filter(
@@ -1233,7 +1226,6 @@ export const TDEEDiffChartUpdater = {
 };
 export const ScatterPlotUpdater = {
   updateAxes() {
-    /* ... (unchanged, axes updated in master) ... */
     if (
       !axes.xScatterAxis ||
       !axes.yScatterAxis ||

@@ -172,7 +172,6 @@ export const AnnotationManager = {
       ui.annotationTextInput?.property("value", "");
       Utils.showStatusMessage("Annotation added.", "success", 1500); // Show status after successful add call
     }
-    // else: add() shows error message if validation fails
   },
 
   /**

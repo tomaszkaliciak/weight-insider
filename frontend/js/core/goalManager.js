@@ -83,9 +83,6 @@ export const GoalManager = {
     }
   },
 
-  // Removed updateGoalUI - This is now handled by StatsDisplayRenderer and potentially a form renderer
-  // reacting to state changes.
-
   /**
    * Initializes the GoalManager by loading any saved goal.
    * Typically called during application startup.

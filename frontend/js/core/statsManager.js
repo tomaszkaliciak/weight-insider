@@ -393,7 +393,7 @@ export const StatsManager = {
       (d) => d.fmSma != null && !isNaN(d.fmSma),
     );
     displayStats.startingLbm =
-      validLbmSmaData[0]?.lbmSma ?? null; /* ... etc ... */
+      validLbmSmaData[0]?.lbmSma ?? null;
     displayStats.currentLbmSma =
       validLbmSmaData[validLbmSmaData.length - 1]?.lbmSma ?? null;
     displayStats.totalLbmChange =
@@ -712,15 +712,10 @@ export const StatsManager = {
   },
 
   init() {
-    // Subscribe ONLY to primary state changes that NECESSITATE recalculating derived data.
     const relevantEvents = [
-      // 'state:processedDataChanged', // Only if core processing can be re-run
-      // 'state:rawDataChanged', // Only if raw data can be loaded dynamically
       "state:analysisRangeChanged", // User changes view via brush, zoom, or date inputs
       "state:interactiveRegressionRangeChanged", // User changes regression brush
       "state:trendConfigChanged", // Affects default regression start if interactive range is null
-      // 'state:goalChanged', // <<< REMOVED THIS SUBSCRIPTION >>> Goal values are read during calculation, no need to trigger full recalc on change.
-      // 'state:settingsChanged', // Add this back if settings are dynamic and affect calcs
       "state:initializationComplete", // Trigger initial calculation
     ];
 

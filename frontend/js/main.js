@@ -75,19 +75,14 @@ async function initialize() {
 
     // 9. Initialize Trend Config State from UI Defaults (after caching selectors)
     const initialStartDateVal = ui.trendStartDateInput?.property("value");
-    const initialWeightVal = ui.trendInitialWeightInput?.property("value");
-    const initialWeeklyIncrease1Val =
-      ui.trendWeeklyIncrease1Input?.property("value");
-    const initialWeeklyIncrease2Val =
-      ui.trendWeeklyIncrease2Input?.property("value");
 
     StateManager.dispatch({
       type: "UPDATE_TREND_CONFIG",
       payload: {
         startDate: initialStartDateVal ? new Date(initialStartDateVal) : null,
-        initialWeight: initialWeightVal, 
-        weeklyIncrease1: initialWeeklyIncrease1Val,
-        weeklyIncrease2: initialWeeklyIncrease2Val,
+        initialWeight: ui.trendInitialWeightInput?.property("value"),
+        weeklyIncrease1: ui.trendWeeklyIncrease1Input?.property("value"),
+        weeklyIncrease2: ui.trendWeeklyIncrease2Input?.property("value"),
       },
     });
     console.log(
@@ -111,7 +106,6 @@ async function initialize() {
         "[Main Init] No processed data available. Setting empty domains.",
       );
       DomainManager.setEmptyDomains();
-      // Dispatch empty derived data? StatsManager might handle this if it runs.
       StateManager.dispatch({ type: "SET_FILTERED_DATA", payload: [] });
       StateManager.dispatch({ type: "SET_WEEKLY_SUMMARY", payload: [] });
       StateManager.dispatch({ type: "SET_CORRELATION_DATA", payload: [] });
@@ -135,7 +129,7 @@ async function initialize() {
     );
   } catch (error) {
     console.error(`[Main Init] Initialization failed"`, error);
-    StateManager.dispatch({ type: "INITIALIZATION_FAILED" }); // Signal failure state
+    StateManager.dispatch({ type: "INITIALIZATION_FAILED" });
     Utils.showCriticalErrorMessage(
       error.message || `An unknown error occurred`,
     );
