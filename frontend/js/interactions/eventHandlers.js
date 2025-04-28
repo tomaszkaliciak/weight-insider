@@ -496,6 +496,10 @@ export const EventHandlers = {
   // --- Resize Handler ---
   handleResize: Utils.debounce(() => {
     console.log("EventHandlers: Resize detected, re-rendering chart...");
+
+    const preResizeState = StateManager.getState();
+    const currentAnalysisRange = Selectors.selectAnalysisRange(preResizeState);
+
     StateManager.dispatch({ type: "SET_HIGHLIGHTED_DATE", payload: null });
     StateManager.dispatch({ type: "SET_PINNED_TOOLTIP", payload: null });
 
@@ -505,10 +509,13 @@ export const EventHandlers = {
         Selectors.selectIsInitialized(stateSnapshot) &&
         Selectors.selectProcessedData(stateSnapshot)?.length > 0
       ) {
-        DomainManager.initializeDomains(
-          Selectors.selectProcessedData(stateSnapshot),
-        );
-        EventHandlers.restoreViewAfterResize(); // Uses state.lastZoomTransform
+        // Update the context chart's X domain based on the full dataset
+        DomainManager.updateContextXDomain(stateSnapshot);
+
+        // Restore the focus chart's view (domain and zoom)
+        EventHandlers.restoreViewAfterResize(currentAnalysisRange);
+
+        // Redraw everything
         MasterUpdater.updateAllCharts(); // Full update after resize adjustments
       } else if (Selectors.selectIsInitialized(stateSnapshot)) {
         console.warn(
@@ -524,7 +531,12 @@ export const EventHandlers = {
     }
   }, CONFIG.debounceResizeMs),
 
-  restoreViewAfterResize() {
+  /**
+   * Restores the zoom transform and sets the focus domain based on the pre-resize analysis range.
+   * Also syncs the context brush.
+   * @param {object} analysisRange - The analysis range {start, end} stored before resize.
+   */
+  restoreViewAfterResize(analysisRange) { // Signature updated
     const lastZoomTransform = Selectors.selectLastZoomTransform(
       StateManager.getState(),
     );
@@ -547,21 +559,32 @@ export const EventHandlers = {
         ui.zoomCaptureRect.call(zoom.transform, reconstructedTransform);
         ui.zoomCaptureRect.on("zoom", EventHandlers.zoomed);
 
-        if (brushes.context && ui.brushGroup && !ui.brushGroup.empty()) {
-          const currentFocusDomain = reconstructedTransform
-            .rescaleX(scales.xContext)
-            .domain();
-          if (currentFocusDomain.every((d) => d instanceof Date && !isNaN(d))) {
-            const brushSelection = currentFocusDomain.map(scales.xContext);
+        // --- Set Focus Domain Directly from Stored Analysis Range ---
+        if (analysisRange?.start && analysisRange?.end) {
+            console.log("Restoring focus domain from pre-resize range:", analysisRange);
+            scales.x.domain([analysisRange.start, analysisRange.end]); // Set focus domain directly
+        } else {
+            console.warn("restoreViewAfterResize: No valid analysisRange provided to restore.");
+            // Fallback or error handling might be needed if range is missing
+        }
+
+        // --- Sync Context Brush ---
+        // Use the restored analysisRange and the (potentially resized) scales.xContext
+        if (brushes.context && ui.brushGroup && !ui.brushGroup.empty() && scales.xContext && analysisRange?.start && analysisRange?.end) {
+            const brushSelection = [
+                scales.xContext(analysisRange.start),
+                scales.xContext(analysisRange.end)
+            ];
+            // Move the brush visually without triggering the 'brush' event
             ui.brushGroup.on("brush.handler", null).on("end.handler", null);
             if (brushSelection.every((v) => !isNaN(v))) {
               ui.brushGroup.call(brushes.context.move, brushSelection);
             }
+            // Reattach brush listeners
             ui.brushGroup.on(
               "brush.handler end.handler",
               EventHandlers.contextBrushed,
             );
-          }
         }
       }
     }
@@ -855,7 +878,7 @@ export const EventHandlers = {
       `Based on ${tdeeSource} TDEE ≈ ${fv(tdeeEstimate, 0)} kcal:<br> Est. change: ${fv(totalWeightChangeKg, 1)} kg in ${durationDays} days. (${fv((totalWeightChangeKg / durationDays) * 7, 1)} kg/wk)<br> Projected Weight: <strong>${fv(projectedWeight, 1)} kg</strong>.`,
     );
   },
-
+                         
   handleBackgroundClick(event) {
     const targetNode = event.target;
     const isInteractive = targetNode.closest(

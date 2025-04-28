@@ -211,6 +211,56 @@ export const DomainManager = {
   },
 
   /**
+   * Calculates and sets the X domain for the context chart based on the full dataset and goal.
+   * @param {object} stateSnapshot - A snapshot of the current application state.
+   * @private // Still conceptually private, but accessible for resize handler
+   */
+  updateContextXDomain(stateSnapshot) { // Renamed: Removed leading underscore
+    if (!scales.xContext) {
+        console.warn("DomainManager: Context X scale not initialized.");
+        return;
+    }
+    const processedData = Selectors.selectProcessedData(stateSnapshot);
+    const goal = Selectors.selectGoal(stateSnapshot);
+
+    // Determine extent from processed data dates
+    let dataStartDate = null;
+    let dataEndDate = null;
+    if (processedData.length > 0) {
+      const dateExtent = d3.extent(processedData, (d) => d.date);
+      if (dateExtent[0] instanceof Date && !isNaN(dateExtent[0]))
+        dataStartDate = dateExtent[0];
+      if (dateExtent[1] instanceof Date && !isNaN(dateExtent[1]))
+        dataEndDate = dateExtent[1];
+    }
+
+    let contextDomainStart = dataStartDate;
+    let contextDomainEnd = dataEndDate;
+
+    if (!contextDomainStart || !contextDomainEnd) {
+      console.warn(
+        "DomainManager: No valid date range in data for context. Using fallback.",
+      );
+      const today = new Date();
+      const past = d3.timeMonth.offset(today, -CONFIG.initialViewMonths); 
+      contextDomainStart = past;
+      contextDomainEnd = today;
+    } else {
+      if (
+        goal.date instanceof Date &&
+        !isNaN(goal.date) &&
+        goal.date > contextDomainEnd
+      ) {
+        contextDomainEnd = goal.date;
+      }
+    }
+
+    const contextDomain = [contextDomainStart, contextDomainEnd];
+    console.log("DomainManager: Setting context X domain:", contextDomain);
+    scales.xContext.domain(contextDomain);
+  },
+
+  /**
    * Initializes all domains based on the full processed dataset.
    * Should be called once after data is loaded and processed.
    * Reads state, dispatches actions.
