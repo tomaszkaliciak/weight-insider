@@ -18,7 +18,7 @@ export const selectGoalAchievedDate = (state) => state.goalAchievedDate;
 export const selectAnalysisRange = (state) => state.analysisRange;
 export const selectInteractiveRegressionRange = (state) =>
   state.interactiveRegressionRange;
-export const selectRegressionStartDate = (state) => state.regressionStartDate; // UI-set start date
+export const selectRegressionStartDate = (state) => state.regressionStartDate;
 export const selectCurrentTheme = (state) => state.currentTheme;
 export const selectDisplayStats = (state) => state.displayStats;
 export const selectSeriesVisibility = (state) => state.seriesVisibility;
@@ -35,6 +35,10 @@ export const selectSortOptions = (state) => ({
 });
 export const selectSettings = (state) => state.settings;
 export const selectTrendConfig = (state) => state.trendConfig;
+
+export const selectTrendLine1Points = (state) => state.trendLine1Points;
+export const selectTrendLine2Points = (state) => state.trendLine2Points;
+export const selectGoalLinePoints = (state) => state.goalLinePoints;
 
 // --- Derived/Calculated Selectors ---
 

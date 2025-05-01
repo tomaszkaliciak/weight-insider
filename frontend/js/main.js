@@ -19,7 +19,8 @@ import { AnnotationListRenderer } from "./ui/renderers/annotationListRenderer.js
 import { WeeklySummaryUpdater } from "./ui/weeklySummaryUpdater.js";
 import { Utils } from "./core/utils.js";
 import { CONFIG } from "./config.js";
-import * as Selectors from "./core/selectors.js"; // Import selectors
+import * as Selectors from "./core/selectors.js";
+import { ResizeHandler } from "./interactions/resizeHandler.js";
 
 /**
  * Initializes the application step-by-step.
@@ -65,7 +66,16 @@ async function initialize() {
     // 7. Fetch and Process Data
     const rawDataObjects = await DataService.fetchData();
     const mergedData = DataService.mergeRawData(rawDataObjects);
-    const processedData = DataService.processData(mergedData); // Initial processing
+    // Apply processing steps sequentially using the new DataService methods
+    let processedData = DataService.calculateBodyComposition(mergedData);
+    processedData = DataService.calculateSMAAndStdDev(processedData);
+    processedData = DataService.calculateEMA(processedData);
+    processedData = DataService.identifyOutliers(processedData);
+    processedData = DataService.calculateRollingVolatility(processedData); // Uses default window from CONFIG
+    processedData = DataService.calculateDailyRatesAndTDEETrend(processedData);
+    processedData = DataService.calculateAdaptiveTDEE(processedData); // Uses default window from CONFIG
+    processedData = DataService.smoothRatesAndTDEEDifference(processedData);
+    processedData = DataService.calculateRateMovingAverage(processedData);
 
     // 8. Set Initial Data in State
     StateManager.dispatch({
@@ -117,7 +127,10 @@ async function initialize() {
     }
 
     // 13. Restore Initial Viewport (if applicable)
-    EventHandlers.restoreViewAfterResize(); // Reads lastZoomTransform state
+    // Get the analysis range *after* domains have been initialized
+    const stateAfterDomains = StateManager.getState();
+    const initialAnalysisRange = Selectors.selectAnalysisRange(stateAfterDomains);
+    ResizeHandler.restoreViewAfterResize(initialAnalysisRange); // Use ResizeHandler and pass range
 
     // 14. Final Signal: Initialization Complete -> Triggers initial calculations/renders
     StateManager.dispatch({ type: "INITIALIZATION_COMPLETE" });

@@ -3,10 +3,11 @@
 // based on primary state changes and dispatches actions to update derived state.
 
 import { CONFIG } from "../config.js";
-import { StateManager } from "./stateManager.js";
+import { StateManager, ActionTypes } from "./stateManager.js"; // Added ActionTypes
 import { Utils } from "./utils.js";
 import { DataService } from "./dataService.js";
 import * as Selectors from "./selectors.js";
+import { scales } from "../ui/chartSetup.js"; // TODO: Remove this dependency - contextDomain should be in state
 
 // Assume simple-statistics (ss) is loaded globally or provide check/fallback
 const ss = window.ss || {
@@ -310,6 +311,117 @@ export const StatsManager = {
       }
     }
     return changes;
+  }, // <-- Add missing comma
+
+
+  /**
+   * Calculates the data points for a single trend line based on config and current view.
+   * @param {object} stateSnapshot - Current application state.
+   * @param {number} rate - The weekly rate for this trend line.
+   * @returns {Array} Array of {date, weight} points.
+   * @private
+   */
+  _calculateTrendLinePoints(stateSnapshot, rate) {
+      const trendConfig = stateSnapshot.trendConfig;
+      const processedData = stateSnapshot.processedData;
+      const analysisRange = stateSnapshot.analysisRange; // Use analysis range for view bounds
+
+      if (!trendConfig.isValid || rate == null || processedData.length === 0 || !analysisRange?.start || !analysisRange?.end) {
+          return [];
+      }
+
+      const currentXDomain = [analysisRange.start, analysisRange.end]; // Focus domain from state
+
+      // Generate points slightly beyond the visible range for smoother panning/zooming
+      const bufferDays = 7; // Add a buffer
+      const viewStartDate = d3.timeDay.offset(currentXDomain[0], -bufferDays);
+      const viewEndDate = d3.timeDay.offset(currentXDomain[1], bufferDays);
+
+      // Generate points across the visible range + buffer
+      // Using processedData ensures we have points even if filteredData is sparse at edges
+      const pointsInRange = processedData.filter(
+          (d) => d.date >= viewStartDate && d.date <= viewEndDate,
+      );
+
+      const points = pointsInRange
+          .map((d) => ({
+              date: d.date,
+              weight: DataService.calculateTrendWeight(
+                  trendConfig.startDate,
+                  trendConfig.initialWeight,
+                  rate,
+                  d.date,
+              ),
+          }))
+          .filter((p) => p.weight != null);
+
+      // Add explicit start/end points for the buffered view range
+      const trendStart = DataService.calculateTrendWeight(
+          trendConfig.startDate,
+          trendConfig.initialWeight,
+          rate,
+          viewStartDate,
+      );
+      const trendEnd = DataService.calculateTrendWeight(
+          trendConfig.startDate,
+          trendConfig.initialWeight,
+          rate,
+          viewEndDate,
+      );
+      if (trendStart != null) points.unshift({ date: viewStartDate, weight: trendStart });
+      if (trendEnd != null) points.push({ date: viewEndDate, weight: trendEnd });
+
+      // Remove duplicates and sort
+      const uniquePoints = Array.from(
+          new Map(points.map((p) => [p.date.getTime(), p])).values(),
+      );
+      uniquePoints.sort((a, b) => a.date - b.date);
+      return uniquePoints;
+  },
+
+  /**
+   * Calculates the data points for the goal line.
+   * @param {object} stateSnapshot - Current application state.
+   * @returns {Array} Array of {date, weight} points or empty array.
+   * @private
+   */
+  _calculateGoalLinePoints(stateSnapshot) {
+      const goal = stateSnapshot.goal;
+      const processedData = stateSnapshot.processedData;
+      const visibility = stateSnapshot.seriesVisibility; // Need visibility state
+
+      // TODO: Remove dependency on scales.xContext. Context domain should be in state.
+      const contextXDomain = scales.xContext?.domain();
+
+      if (!visibility.goal || goal.weight == null || processedData.length === 0 || !contextXDomain) {
+          return [];
+      }
+
+      // Find last valid SMA point in the *entire* dataset to start the goal line
+      const lastSmaPoint = [...processedData]
+          .reverse()
+          .find((d) => d.sma != null);
+
+      if (lastSmaPoint?.date && lastSmaPoint.sma != null) {
+          const startDate = lastSmaPoint.date;
+          const startWeight = lastSmaPoint.sma;
+          // End date is goal date or the end of the *context* x-axis if no goal date
+          const endDateRaw = goal.date
+              ? goal.date
+              : contextXDomain?.[1] || startDate; // Fallback to start date if context missing
+
+          if (
+              endDateRaw instanceof Date &&
+              !isNaN(endDateRaw) &&
+              endDateRaw >= startDate
+          ) {
+              return [
+                  { date: startDate, weight: startWeight },
+                  { date: endDateRaw, weight: goal.weight },
+              ];
+          }
+      }
+      return [];
   },
 
   /**
@@ -702,6 +814,31 @@ export const StatsManager = {
         type: "SET_DISPLAY_STATS",
         payload: derivedData.displayStats,
       });
+
+      // --- Dispatch actions for newly calculated line data ---
+      // Calculate line points using the *latest* state snapshot
+      const latestState = StateManager.getState(); // Get latest state AFTER other dispatches
+      let trendPoints1 = [];
+      let trendPoints2 = [];
+      if (latestState.trendConfig.isValid) {
+          if (latestState.trendConfig.weeklyIncrease1 != null) {
+              trendPoints1 = this._calculateTrendLinePoints(latestState, latestState.trendConfig.weeklyIncrease1);
+          }
+          if (latestState.trendConfig.weeklyIncrease2 != null) {
+              trendPoints2 = this._calculateTrendLinePoints(latestState, latestState.trendConfig.weeklyIncrease2);
+          }
+      }
+      const goalPoints = this._calculateGoalLinePoints(latestState);
+
+      StateManager.dispatch({
+          type: ActionTypes.SET_TREND_LINE_DATA,
+          payload: { trend1: trendPoints1, trend2: trendPoints2 }
+      });
+      StateManager.dispatch({
+          type: ActionTypes.SET_GOAL_LINE_DATA,
+          payload: goalPoints
+      });
+
     } catch (error) {
       console.error(
         "StatsManager: Error during derived data calculation/update:",
@@ -715,8 +852,10 @@ export const StatsManager = {
     const relevantEvents = [
       "state:analysisRangeChanged", // User changes view via brush, zoom, or date inputs
       "state:interactiveRegressionRangeChanged", // User changes regression brush
-      "state:trendConfigChanged", // Affects default regression start if interactive range is null
+      "state:trendConfigChanged", // Affects trend lines and default regression start
+      // "state:goalChanged", // REMOVED: Goal line calculated with other stats based on inputs below
       "state:initializationComplete", // Trigger initial calculation
+      // Consider adding state:processedDataChanged if data can change dynamically
     ];
 
     relevantEvents.forEach((eventName) => {

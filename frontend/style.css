@@ -331,7 +331,7 @@ body.dark-theme .status-message.warn {
     display: grid;
     grid-template-columns: clamp(330px, 26%, 420px) 1fr clamp(330px, 26%, 420px);
     grid-template-areas: "sidebarL main     sidebarR" "sidebarL secondary sidebarR";
-    gap: clamp(25px, 3.5vw, 40px);
+    gap: clamp(25px, 4vw, 45px); /* Increased target/max gap */
     width: 100%;
     max-width: 1800px;
     align-items: stretch;
@@ -344,7 +344,7 @@ body.dark-theme .status-message.warn {
     padding-right: 8px;
     display: flex;
     flex-direction: column;
-    gap: clamp(22px, 2.8vw, 30px);
+    gap: clamp(25px, 3.2vw, 35px); /* Increased vertical gap between cards */
     min-height: 0;
 }
 .chart-section {
@@ -361,7 +361,7 @@ body.dark-theme .status-message.warn {
     padding-right: 8px;
     display: flex;
     flex-direction: column;
-    gap: clamp(22px, 2.8vw, 30px);
+    gap: clamp(25px, 3.2vw, 35px); /* Increased vertical gap between cards */
     min-height: 0;
 }
 .secondary-analysis-section {
@@ -388,6 +388,10 @@ body.dark-theme .status-message.warn {
 }
 .secondary-analysis-section summary:hover {
     background-color: var(--bg-tertiary);
+}
+.secondary-analysis-section summary:active {
+    background-color: var(--border-color-light); /* Use border color for active state */
+    transition-duration: var(--transition-speed-fast);
 }
 .secondary-analysis-section summary h2 {
     margin: 0;
@@ -509,13 +513,13 @@ body.dark-theme .status-message.warn {
     opacity: 0.9;
 }
 .info-icon {
-    font-size: 0.85em;
+    font-size: 0.9em; /* Slightly larger base */
     color: var(--text-muted);
     cursor: help;
     border: 1px solid var(--border-color);
     border-radius: 50%;
-    width: 1.7em;
-    height: 1.7em;
+    width: 1.8em; /* Adjusted */
+    height: 1.8em; /* Adjusted */
     display: inline-flex;
     justify-content: center;
     align-items: center;
@@ -525,12 +529,13 @@ body.dark-theme .status-message.warn {
 .info-icon:hover {
     background-color: var(--bg-tertiary);
     color: var(--text-primary);
-    border-color: var(--text-muted);
+    border-color: var(--text-secondary); /* Slightly stronger border on hover */
     transform: scale(1.1);
+    box-shadow: 0 1px 3px var(--shadow-hover); /* Add subtle shadow */
 }
 .info-icon svg {
-    width: 0.95em;
-    height: 0.95em;
+    width: 1em; /* Adjusted */
+    height: 1em; /* Adjusted */
     stroke-width: 2.5;
 }
 
@@ -563,6 +568,13 @@ hr.subtle-hr {
 /* Subtle background on H2 hover when collapsible */
 .card.collapsible > h2:hover {
     background-color: hsla(var(--hue-neutral), 20%, 50%, 0.03);
+.card.collapsible > h2:active {
+    background-color: hsla(var(--hue-neutral), 20%, 50%, 0.06); /* Slightly darker active */
+    transition-duration: var(--transition-speed-fast);
+}
+body.dark-theme .card.collapsible > h2:active {
+    background-color: hsla(var(--hue-neutral), 15%, 50%, 0.12);
+}
     border-radius: 6px;
 }
 body.dark-theme .card.collapsible > h2:hover {
@@ -604,8 +616,8 @@ body.dark-theme .card.collapsible > h2:hover {
         opacity 0.3s ease-in-out,
         border-top-color 0.35s ease-in-out;
     border-top: 1px solid var(--border-color-light);
-    margin-top: 0.8em;
-    padding-top: 1.3em;
+    margin-top: 1em; /* Increased margin-top */
+    padding-top: 1em; /* Adjusted padding-top for consistency */
     opacity: 1;
 }
 .card.collapsed .card-content {
@@ -920,6 +932,43 @@ input:checked + .slider:before {
     padding: 7px 12px;
     font-size: 0.85em;
 }
+/* --- Inline Form Feedback --- */
+.inline-feedback {
+    font-size: 0.85em;
+    padding: 8px 12px;
+    margin-top: 12px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    display: none; /* Hidden by default */
+    opacity: 0;
+    transition: opacity 0.3s ease-out, display 0s linear 0.3s;
+    line-height: 1.4;
+}
+.inline-feedback.show {
+    display: block;
+    opacity: 1;
+    transition: opacity 0.3s ease-out;
+}
+.inline-feedback.success {
+    color: var(--success-color);
+    background-color: hsla(var(--hue-secondary), 50%, 50%, 0.1);
+    border-color: hsla(var(--hue-secondary), 50%, 50%, 0.2);
+}
+body.dark-theme .inline-feedback.success {
+    color: hsl(var(--hue-secondary), 45%, 70%);
+    background-color: hsla(var(--hue-secondary), 45%, 60%, 0.1);
+    border-color: hsla(var(--hue-secondary), 45%, 60%, 0.2);
+}
+.inline-feedback.error {
+    color: var(--danger-color);
+    background-color: hsla(var(--hue-tertiary), 70%, 58%, 0.1);
+    border-color: hsla(var(--hue-tertiary), 70%, 58%, 0.2);
+}
+body.dark-theme .inline-feedback.error {
+    color: hsl(var(--hue-tertiary), 60%, 70%);
+    background-color: hsla(var(--hue-tertiary), 60%, 60%, 0.1);
+    border-color: hsla(var(--hue-tertiary), 60%, 60%, 0.2);
+}
 
 /* ======================================= */
 /* --- Forms & Controls Improvements END --- */
@@ -1029,10 +1078,19 @@ body.dark-theme .stat-value.feedback.warn {
     text-decoration: underline dotted;
     transition:
         color var(--transition-speed-fast) ease-out,
-        background-color var(--transition-speed-fast) ease-out;
+        background-color var(--transition-speed-fast) ease-out; /* Corrected transition */
     border-radius: 3px;
     padding: 0 2px;
     margin: 0 -2px;
+}
+/* Moved :active rules outside the base rule */
+.stat-date.highlightable:active {
+    transform: scale(0.98); /* Add a subtle scale effect on click */
+    background-color: hsla(var(--hue-accent), 80%, 70%, 0.15);
+    transition-duration: var(--transition-speed-fast);
+}
+body.dark-theme .stat-date.highlightable:active {
+    background-color: hsla(var(--hue-accent), 80%, 78%, 0.18);
 }
 .stat-date.highlightable:hover {
     color: var(--highlight-stroke-color);
@@ -1066,6 +1124,28 @@ body.dark-theme .highlight-trigger:hover .stat-date.highlightable {
     flex-shrink: 0;
 }
 
+.insight-group {
+    padding: 0.8em 1em;
+    margin: 1em -1em -0.5em -1em; /* Adjust margins to align with card padding */
+    border-radius: 6px;
+    background-color: var(--bg-primary); /* Use primary bg for subtle contrast */
+    border: 1px solid var(--border-color-light);
+    transition: background-color var(--transition-speed) var(--transition-ease), border-color var(--transition-speed) var(--transition-ease);
+}
+.insight-group h4 {
+    margin-block-start: 0; /* Remove top margin for h4 inside group */
+    margin-block-end: 1em;
+    padding-bottom: 0.5em;
+    border-bottom: 1px solid var(--border-color);
+}
+.insight-group .stat-item:first-of-type {
+    margin-top: 0; /* Remove top margin for first stat item */
+}
+.insight-group .stat-item:last-of-type {
+    border-bottom: none; /* Remove bottom border for last stat item */
+    padding-bottom: 0;
+}
+
 /* --- Insight Summary --- */
 .insight-summary {
     background-color: var(--bg-tertiary);
@@ -1073,7 +1153,7 @@ body.dark-theme .highlight-trigger:hover .stat-date.highlightable {
     padding: 15px 20px;
     border-radius: 0 6px 6px 0;
     margin-bottom: 1.5em;
-    font-size: 0.92rem;
+    font-size: 0.95rem; /* Slightly larger font size for readability */
     color: var(--text-secondary);
     flex-shrink: 0;
     transition:
@@ -2012,11 +2092,11 @@ body.dark-theme .goal-achieved-badge.good {
 
 /* --- Chart Hints --- */
 .chart-hint {
-    font-size: 0.75rem;
+    font-size: 0.8rem; /* Slightly larger */
     color: var(--text-muted);
     text-align: center;
     padding: 3px 0;
-    opacity: 0.8;
+    opacity: 0.85; /* Slightly more opaque */
     pointer-events: none;
     transition: color var(--transition-speed) ease-in-out;
 }
@@ -2027,6 +2107,7 @@ body.dark-theme .goal-achieved-badge.good {
 .focus-controls-hint {
     margin-top: 8px;
     padding: 0 10px;
+    font-weight: 500; /* Slightly bolder */
 }
 
 /* --- Responsive Adjustments --- */

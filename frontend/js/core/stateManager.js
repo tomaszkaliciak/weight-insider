@@ -3,6 +3,42 @@
 import { Utils } from "./utils.js";
 // Selectors are used by consumers, not needed here.
 
+// --- Action Types ---
+export const ActionTypes = {
+  INITIALIZE_START: "INITIALIZE_START",
+  SET_INITIAL_DATA: "SET_INITIAL_DATA",
+  SET_PROCESSED_DATA: "SET_PROCESSED_DATA",
+  SET_FILTERED_DATA: "SET_FILTERED_DATA",
+  SET_WEEKLY_SUMMARY: "SET_WEEKLY_SUMMARY",
+  SET_CORRELATION_DATA: "SET_CORRELATION_DATA",
+  SET_REGRESSION_RESULT: "SET_REGRESSION_RESULT",
+  LOAD_GOAL: "LOAD_GOAL",
+  LOAD_ANNOTATIONS: "LOAD_ANNOTATIONS",
+  ADD_ANNOTATION: "ADD_ANNOTATION",
+  DELETE_ANNOTATION: "DELETE_ANNOTATION",
+  SET_PLATEAUS: "SET_PLATEAUS",
+  SET_TREND_CHANGES: "SET_TREND_CHANGES",
+  SET_GOAL_ACHIEVED_DATE: "SET_GOAL_ACHIEVED_DATE",
+  SET_ANALYSIS_RANGE: "SET_ANALYSIS_RANGE",
+  SET_INTERACTIVE_REGRESSION_RANGE: "SET_INTERACTIVE_REGRESSION_RANGE",
+  SET_THEME: "SET_THEME",
+  TOGGLE_SERIES_VISIBILITY: "TOGGLE_SERIES_VISIBILITY",
+  SET_HIGHLIGHTED_DATE: "SET_HIGHLIGHTED_DATE",
+  SET_PINNED_TOOLTIP: "SET_PINNED_TOOLTIP",
+  SET_ACTIVE_HOVER_DATA: "SET_ACTIVE_HOVER_DATA",
+  SET_LAST_ZOOM_TRANSFORM: "SET_LAST_ZOOM_TRANSFORM",
+  SET_STATUS_TIMEOUT_ID: "SET_STATUS_TIMEOUT_ID",
+  SET_TOOLTIP_TIMEOUT_ID: "SET_TOOLTIP_TIMEOUT_ID",
+  SET_SORT_OPTIONS: "SET_SORT_OPTIONS",
+  LOAD_SETTINGS: "LOAD_SETTINGS",
+  UPDATE_TREND_CONFIG: "UPDATE_TREND_CONFIG",
+  SET_DISPLAY_STATS: "SET_DISPLAY_STATS",
+  INITIALIZATION_COMPLETE: "INITIALIZATION_COMPLETE",
+  INITIALIZATION_FAILED: "INITIALIZATION_FAILED",
+  SET_TREND_LINE_DATA: "SET_TREND_LINE_DATA",
+  SET_GOAL_LINE_DATA: "SET_GOAL_LINE_DATA",
+};
+
 // Define the initial structure and default values of the state
 const initialState = {
   isInitialized: false,
@@ -46,6 +82,9 @@ const initialState = {
 
   // --- Derived State ---
   processedData: [],
+  trendLine1Points: [], // Added for calculated trend line 1
+  trendLine2Points: [], // Added for calculated trend line 2
+  goalLinePoints: [],   // Added for calculated goal line
   filteredData: [],
   weeklySummaryData: [],
   correlationScatterData: [],
@@ -69,8 +108,13 @@ function reducer(currentState, action) {
   const nextState = Utils.deepClone(currentState); // Clone before modifying
 
   switch (action.type) {
-    case "INITIALIZE_START":
+    // Use ActionTypes constants now
+    case ActionTypes.INITIALIZE_START:
       nextState.isInitialized = false;
+      // Reset new state properties too
+      nextState.trendLine1Points = [];
+      nextState.trendLine2Points = [];
+      nextState.goalLinePoints = [];
       nextState.rawData = [];
       nextState.processedData = [];
       nextState.filteredData = [];
@@ -84,23 +128,23 @@ function reducer(currentState, action) {
       nextState.interactiveRegressionRange = { start: null, end: null };
       nextState.displayStats = {}; // Reset display stats too
       break;
-    case "SET_INITIAL_DATA":
+    case ActionTypes.SET_INITIAL_DATA:
       nextState.rawData = action.payload.rawData || [];
       nextState.processedData = action.payload.processedData || [];
       break;
-    case "SET_PROCESSED_DATA":
+    case ActionTypes.SET_PROCESSED_DATA:
       nextState.processedData = action.payload || [];
       break;
-    case "SET_FILTERED_DATA":
+    case ActionTypes.SET_FILTERED_DATA:
       nextState.filteredData = action.payload || [];
       break;
-    case "SET_WEEKLY_SUMMARY":
+    case ActionTypes.SET_WEEKLY_SUMMARY:
       nextState.weeklySummaryData = action.payload || [];
       break;
-    case "SET_CORRELATION_DATA":
+    case ActionTypes.SET_CORRELATION_DATA:
       nextState.correlationScatterData = action.payload || [];
       break;
-    case "SET_REGRESSION_RESULT":
+    case ActionTypes.SET_REGRESSION_RESULT:
       nextState.regressionResult = {
         slope: action.payload?.slope ?? null,
         intercept: action.payload?.intercept ?? null,
@@ -109,37 +153,37 @@ function reducer(currentState, action) {
           : [],
       };
       break;
-    case "LOAD_GOAL":
+    case ActionTypes.LOAD_GOAL:
       nextState.goal = { ...nextState.goal, ...(action.payload || {}) };
       if (nextState.goal.date && !(nextState.goal.date instanceof Date)) {
         const parsedDate = new Date(nextState.goal.date);
         nextState.goal.date = !isNaN(parsedDate) ? parsedDate : null;
       }
       break;
-    case "LOAD_ANNOTATIONS":
+    case ActionTypes.LOAD_ANNOTATIONS:
       nextState.annotations = action.payload || [];
       break;
-    case "ADD_ANNOTATION":
+    case ActionTypes.ADD_ANNOTATION:
       nextState.annotations = [...nextState.annotations, action.payload];
       break;
-    case "DELETE_ANNOTATION":
+    case ActionTypes.DELETE_ANNOTATION:
       nextState.annotations = nextState.annotations.filter(
         (a) => a.id !== action.payload.id,
       );
       break;
-    case "SET_PLATEAUS":
+    case ActionTypes.SET_PLATEAUS:
       nextState.plateaus = action.payload || [];
       break;
-    case "SET_TREND_CHANGES":
+    case ActionTypes.SET_TREND_CHANGES:
       nextState.trendChangePoints = action.payload || [];
       break;
-    case "SET_GOAL_ACHIEVED_DATE":
+    case ActionTypes.SET_GOAL_ACHIEVED_DATE:
       nextState.goalAchievedDate =
         action.payload instanceof Date || action.payload === null
           ? action.payload
           : null;
       break;
-    case "SET_ANALYSIS_RANGE":
+    case ActionTypes.SET_ANALYSIS_RANGE:
       nextState.analysisRange = {
         ...nextState.analysisRange,
         ...(action.payload || {}),
@@ -159,7 +203,7 @@ function reducer(currentState, action) {
         nextState.analysisRange.end = !isNaN(parsedDate) ? parsedDate : null;
       }
       break;
-    case "SET_INTERACTIVE_REGRESSION_RANGE":
+    case ActionTypes.SET_INTERACTIVE_REGRESSION_RANGE:
       nextState.interactiveRegressionRange = {
         ...nextState.interactiveRegressionRange,
         ...(action.payload || {}),
@@ -183,28 +227,28 @@ function reducer(currentState, action) {
           : null;
       }
       break;
-    case "SET_THEME":
+    case ActionTypes.SET_THEME:
       nextState.currentTheme = action.payload;
       break;
-    case "TOGGLE_SERIES_VISIBILITY":
+    case ActionTypes.TOGGLE_SERIES_VISIBILITY:
       if (nextState.seriesVisibility.hasOwnProperty(action.payload.seriesId)) {
         nextState.seriesVisibility[action.payload.seriesId] =
           !!action.payload.isVisible;
       }
       break;
-    case "SET_HIGHLIGHTED_DATE":
+    case ActionTypes.SET_HIGHLIGHTED_DATE:
       nextState.highlightedDate =
         action.payload instanceof Date || action.payload === null
           ? action.payload
           : null;
       break;
-    case "SET_PINNED_TOOLTIP":
+    case ActionTypes.SET_PINNED_TOOLTIP:
       nextState.pinnedTooltipData = action.payload;
       break;
-    case "SET_ACTIVE_HOVER_DATA":
+    case ActionTypes.SET_ACTIVE_HOVER_DATA:
       nextState.activeHoverData = action.payload;
       break;
-    case "SET_LAST_ZOOM_TRANSFORM":
+    case ActionTypes.SET_LAST_ZOOM_TRANSFORM:
       if (
         action.payload &&
         typeof action.payload.k === "number" &&
@@ -220,24 +264,24 @@ function reducer(currentState, action) {
         nextState.lastZoomTransform = null;
       }
       break;
-    case "SET_STATUS_TIMEOUT_ID":
+    case ActionTypes.SET_STATUS_TIMEOUT_ID:
       if (nextState.statusTimeoutId) clearTimeout(nextState.statusTimeoutId);
       nextState.statusTimeoutId = action.payload;
       break;
-    case "SET_TOOLTIP_TIMEOUT_ID":
+    case ActionTypes.SET_TOOLTIP_TIMEOUT_ID:
       if (nextState.tooltipTimeoutId) clearTimeout(nextState.tooltipTimeoutId);
       nextState.tooltipTimeoutId = action.payload;
       break;
-    case "SET_SORT_OPTIONS":
+    case ActionTypes.SET_SORT_OPTIONS:
       nextState.sortColumnKey =
         action.payload.columnKey ?? nextState.sortColumnKey;
       nextState.sortDirection =
         action.payload.direction ?? nextState.sortDirection;
       break;
-    case "LOAD_SETTINGS":
+    case ActionTypes.LOAD_SETTINGS:
       nextState.settings = { ...nextState.settings, ...(action.payload || {}) };
       break;
-    case "UPDATE_TREND_CONFIG":
+    case ActionTypes.UPDATE_TREND_CONFIG:
       const { startDate, initialWeight, weeklyIncrease1, weeklyIncrease2 } =
         action.payload || {};
       const parsedStartDate =
@@ -269,17 +313,26 @@ function reducer(currentState, action) {
         isValid: isValid,
       };
       break;
-    case "SET_DISPLAY_STATS": // Store display stats
+    case ActionTypes.SET_DISPLAY_STATS: // Store display stats
       nextState.displayStats =
         typeof action.payload === "object" && action.payload !== null
           ? action.payload
           : {};
       break;
-    case "INITIALIZATION_COMPLETE":
+    case ActionTypes.INITIALIZATION_COMPLETE:
       nextState.isInitialized = true;
       break;
-    case "INITIALIZATION_FAILED":
+    case ActionTypes.INITIALIZATION_FAILED:
       nextState.isInitialized = false;
+      break;
+    case ActionTypes.SET_TREND_LINE_DATA: // Added reducer case
+      // Expects payload like { trend1: [...], trend2: [...] }
+      nextState.trendLine1Points = action.payload?.trend1 || [];
+      nextState.trendLine2Points = action.payload?.trend2 || [];
+      break;
+    case ActionTypes.SET_GOAL_LINE_DATA: // Added reducer case
+      // Expects payload like [...] (array of points)
+      nextState.goalLinePoints = action.payload || [];
       break;
     default:
       console.warn(`[StateManager] Unknown action type: ${action.type}`);
@@ -372,6 +425,8 @@ export const StateManager = {
       SET_HIGHLIGHTED_DATE: "state:highlightedDateChanged",
       SET_PINNED_TOOLTIP: "state:pinnedTooltipDataChanged",
       SET_ACTIVE_HOVER_DATA: "state:activeHoverDataChanged",
+      // SET_TREND_LINE_DATA: "state:trendLineDataChanged", // Removed mapping - derived data
+      // SET_GOAL_LINE_DATA: "state:goalLineDataChanged",   // Removed mapping - derived data
       // Add other specific events if needed
     };
 
@@ -448,6 +503,7 @@ export const StateManager = {
         case "SET_ACTIVE_HOVER_DATA":
           eventPayload = { data: newStateForEvent.activeHoverData };
           break;
+        // Removed cases for SET_TREND_LINE_DATA and SET_GOAL_LINE_DATA
         default:
           // Fallback for events not explicitly listed above
           console.warn(

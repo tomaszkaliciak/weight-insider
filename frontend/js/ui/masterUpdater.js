@@ -15,7 +15,7 @@ import {
   ScatterPlotUpdater,
 } from "./chartUpdaters.js";
 import { CONFIG } from "../config.js";
-import { EventHandlers } from "../interactions/eventHandlers.js";
+import { ChartInteractions } from "../interactions/chartInteractions.js";
 import * as Selectors from "../core/selectors.js";
 import { DataService } from "../core/dataService.js";
 
@@ -174,110 +174,10 @@ export const MasterUpdater = {
           (d) => d.value != null,
         );
 
-        // --- Calculate Trend Line and Goal Line Data ---
-        let goalLineData = [];
-        if (
-          visibility.goal &&
-          goal.weight != null &&
-          processedData.length > 0
-        ) {
-          // Find last valid SMA point in the *entire* dataset to start the goal line
-          const lastSmaPoint = [...processedData]
-            .reverse()
-            .find((d) => d.sma != null);
-          if (lastSmaPoint?.date && lastSmaPoint.sma != null) {
-            const startDate = lastSmaPoint.date;
-            const startWeight = lastSmaPoint.sma;
-            // End date is goal date or the end of the *context* x-axis if no goal date
-            const contextXDomain = scales.xContext?.domain();
-            const endDateRaw = goal.date
-              ? goal.date
-              : contextXDomain?.[1] || startDate; // Fallback to start date if context missing
-            if (
-              endDateRaw instanceof Date &&
-              !isNaN(endDateRaw) &&
-              endDateRaw >= startDate
-            ) {
-              goalLineData = [
-                { date: startDate, weight: startWeight },
-                { date: endDateRaw, weight: goal.weight },
-              ];
-            }
-          }
-        }
-
-        let trendLine1Data = [];
-        let trendLine2Data = [];
-        if (trendConfig.isValid && processedData.length > 0) {
-          const currentXDomain = scales.x?.domain(); // Use focus chart's domain
-          if (currentXDomain && currentXDomain[0] && currentXDomain[1]) {
-            // Generate points slightly beyond the visible range for smoother panning/zooming
-            const bufferDays = 7; // Add a buffer
-            const viewStartDate = d3.timeDay.offset(
-              currentXDomain[0],
-              -bufferDays,
-            );
-            const viewEndDate = d3.timeDay.offset(
-              currentXDomain[1],
-              bufferDays,
-            );
-
-            // Generate points across the visible range + buffer
-            // Using processedData ensures we have points even if filteredData is sparse at edges
-            const pointsInRange = processedData.filter(
-              (d) => d.date >= viewStartDate && d.date <= viewEndDate,
-            );
-
-            // Helper to calculate trend points for a given rate
-            const calculateTrendPoints = (rate) => {
-              const points = pointsInRange
-                .map((d) => ({
-                  date: d.date,
-                  weight: DataService.calculateTrendWeight(
-                    trendConfig.startDate,
-                    trendConfig.initialWeight,
-                    rate,
-                    d.date,
-                  ),
-                }))
-                .filter((p) => p.weight != null);
-              // Add explicit start/end points for the buffered view range
-              const trendStart = DataService.calculateTrendWeight(
-                trendConfig.startDate,
-                trendConfig.initialWeight,
-                rate,
-                viewStartDate,
-              );
-              const trendEnd = DataService.calculateTrendWeight(
-                trendConfig.startDate,
-                trendConfig.initialWeight,
-                rate,
-                viewEndDate,
-              );
-              if (trendStart != null)
-                points.unshift({ date: viewStartDate, weight: trendStart });
-              if (trendEnd != null)
-                points.push({ date: viewEndDate, weight: trendEnd });
-              // Remove duplicates and sort
-              const uniquePoints = Array.from(
-                new Map(points.map((p) => [p.date.getTime(), p])).values(),
-              );
-              uniquePoints.sort((a, b) => a.date - b.date);
-              return uniquePoints;
-            };
-
-            if (trendConfig.weeklyIncrease1 != null) {
-              trendLine1Data = calculateTrendPoints(
-                trendConfig.weeklyIncrease1,
-              );
-            }
-            if (trendConfig.weeklyIncrease2 != null) {
-              trendLine2Data = calculateTrendPoints(
-                trendConfig.weeklyIncrease2,
-              );
-            }
-          }
-        }
+        // --- Get Pre-Calculated Line Data from State ---
+        const goalLineData = Selectors.selectGoalLinePoints(stateSnapshot);
+        const trendLine1Data = Selectors.selectTrendLine1Points(stateSnapshot);
+        const trendLine2Data = Selectors.selectTrendLine2Points(stateSnapshot);
 
         // --- Dimension Recalculation & SVG Resizing ---
         const { width: focusWidth, height: focusHeight } =
@@ -477,7 +377,7 @@ export const MasterUpdater = {
 
         // Sync & UI Helpers
         if (!options.isInteractive) {
-          EventHandlers.syncBrushAndZoomToFocus();
+          ChartInteractions.syncBrushAndZoomToFocus(); // Use ChartInteractions
         }
         _updateAnalysisRangeInputsFromFocusScale();
       } catch (error) {

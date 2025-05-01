@@ -8,7 +8,8 @@ import { CONFIG } from "../config.js";
 import { ui } from "./uiCache.js";
 import { scales, axes, brushes } from "./chartSetup.js";
 import { colors } from "../core/themeManager.js";
-import { EventHandlers } from "../interactions/eventHandlers.js";
+import { ChartInteractions } from "../interactions/chartInteractions.js";
+import { TooltipManager } from "../interactions/tooltipManager.js";
 import { Utils } from "../core/utils.js";
 
 // --- Focus Chart Updater ---
@@ -223,18 +224,18 @@ export const FocusChartUpdater = {
           .style("opacity", 0) // Start hidden for transition
           .style("pointer-events", "all") // Ensure dots are interactive
           .style("cursor", "pointer")
-          .on("mouseover", EventHandlers.dotMouseOver) // Attach handlers
-          .on("mouseout", EventHandlers.dotMouseOut)
-          .on("click", EventHandlers.dotClick)
+          .on("mouseover", ChartInteractions.dotMouseOver) // Use ChartInteractions
+          .on("mouseout", ChartInteractions.dotMouseOut)  // Use ChartInteractions
+          .on("click", ChartInteractions.dotClick)        // Use ChartInteractions
           .call((enter) =>
             enter.transition().duration(dur).style("opacity", 0.4),
           ), // Fade in
       (update) =>
         update
-          // Ensure handlers are attached on update too (redundant but safe)
-          .on("mouseover", EventHandlers.dotMouseOver)
-          .on("mouseout", EventHandlers.dotMouseOut)
-          .on("click", EventHandlers.dotClick)
+          // Ensure handlers are attached on update too
+          .on("mouseover", ChartInteractions.dotMouseOver) // Use ChartInteractions
+          .on("mouseout", ChartInteractions.dotMouseOut)  // Use ChartInteractions
+          .on("click", ChartInteractions.dotClick)        // Use ChartInteractions
           .call((update) =>
             update
               .transition()
@@ -470,16 +471,16 @@ export const FocusChartUpdater = {
           .style("cursor", "help");
 
         group
-          .on("mouseover", EventHandlers.annotationMouseOver) // Attach handlers
-          .on("mouseout", EventHandlers.annotationMouseOut);
+          .on("mouseover", ChartInteractions.annotationMouseOver) // Use ChartInteractions
+          .on("mouseout", ChartInteractions.annotationMouseOut);  // Use ChartInteractions
 
         group.transition().duration(dur).style("opacity", 0.8); // Transition in
         return group;
       },
       (update) =>
         update
-          .on("mouseover", EventHandlers.annotationMouseOver) // Re-attach handlers
-          .on("mouseout", EventHandlers.annotationMouseOut)
+          .on("mouseover", ChartInteractions.annotationMouseOver) // Use ChartInteractions
+          .on("mouseout", ChartInteractions.annotationMouseOut)  // Use ChartInteractions
           .transition()
           .duration(dur) // Transition to new position
           .style("opacity", 0.8)
@@ -639,15 +640,15 @@ export const FocusChartUpdater = {
           .style("fill", colors.trendChangeColor || "red")
           .style("cursor", "help");
         group
-          .on("mouseover", EventHandlers.trendChangeMouseOver)
-          .on("mouseout", EventHandlers.trendChangeMouseOut);
+          .on("mouseover", ChartInteractions.trendChangeMouseOver) // Use ChartInteractions
+          .on("mouseout", ChartInteractions.trendChangeMouseOut);  // Use ChartInteractions
         group.transition().duration(dur).style("opacity", 1);
         return group;
       },
       (update) =>
         update
-          .on("mouseover", EventHandlers.trendChangeMouseOver)
-          .on("mouseout", EventHandlers.trendChangeMouseOut)
+          .on("mouseover", ChartInteractions.trendChangeMouseOver) // Use ChartInteractions
+          .on("mouseout", ChartInteractions.trendChangeMouseOut)  // Use ChartInteractions
           .transition()
           .duration(dur)
           .style("opacity", 1)
@@ -965,8 +966,8 @@ export const BalanceChartUpdater = {
               ? colors.surplus || CONFIG.fallbackColors.surplus
               : colors.deficit || CONFIG.fallbackColors.deficit,
           )
-          .on("mouseover", EventHandlers.balanceMouseOver)
-          .on("mouseout", EventHandlers.balanceMouseOut)
+          .on("mouseover", ChartInteractions.balanceMouseOver) // Use ChartInteractions
+          .on("mouseout", ChartInteractions.balanceMouseOut)  // Use ChartInteractions
           .call((enter) =>
             enter
               .transition()
@@ -991,8 +992,8 @@ export const BalanceChartUpdater = {
               ? colors.surplus || CONFIG.fallbackColors.surplus
               : colors.deficit || CONFIG.fallbackColors.deficit,
           )
-          .on("mouseover", EventHandlers.balanceMouseOver)
-          .on("mouseout", EventHandlers.balanceMouseOut)
+          .on("mouseover", ChartInteractions.balanceMouseOver) // Use ChartInteractions
+          .on("mouseout", ChartInteractions.balanceMouseOut)  // Use ChartInteractions
           .call((update) =>
             update
               .transition()
@@ -1140,9 +1141,9 @@ export const RateChartUpdater = {
         tt += `<div>Smoothed Rate: <b>${Utils.formatValue(d.smoothedWeeklyRate, 2)}</b> kg/wk</div>`;
         if (d.rateMovingAverage != null)
           tt += `<div>Moving Avg: <b>${Utils.formatValue(d.rateMovingAverage, 2)}</b> kg/wk</div>`;
-        EventHandlers._showTooltip(tt, event);
+        TooltipManager.show(tt, event); // Use TooltipManager
       })
-      .on("mouseout", (event, d) => EventHandlers._hideTooltip());
+      .on("mouseout", (event, d) => TooltipManager.hide()); // Use TooltipManager
   },
 };
 export const TDEEDiffChartUpdater = {
@@ -1219,9 +1220,9 @@ export const TDEEDiffChartUpdater = {
       .style("cursor", "help")
       .on("mouseover", (event, d) => {
         const tt = `<strong>${Utils.formatDateShort(d.date)}</strong><br>TDEE Diff: <b>${Utils.formatValue(d.avgTdeeDifference, 0)}</b> kcal`;
-        EventHandlers._showTooltip(tt, event);
+        TooltipManager.show(tt, event); // Use TooltipManager
       })
-      .on("mouseout", (event, d) => EventHandlers._hideTooltip());
+      .on("mouseout", (event, d) => TooltipManager.hide()); // Use TooltipManager
   },
 };
 export const ScatterPlotUpdater = {
@@ -1276,15 +1277,15 @@ export const ScatterPlotUpdater = {
           )
           .style("opacity", 0)
           .style("cursor", "help")
-          .on("mouseover", EventHandlers.scatterMouseOver)
-          .on("mouseout", EventHandlers.scatterMouseOut)
+          .on("mouseover", ChartInteractions.scatterMouseOver) // Use ChartInteractions
+          .on("mouseout", ChartInteractions.scatterMouseOut)  // Use ChartInteractions
           .call((enter) =>
             enter.transition().duration(dur).style("opacity", 0.7),
           ),
       (update) =>
         update
-          .on("mouseover", EventHandlers.scatterMouseOver)
-          .on("mouseout", EventHandlers.scatterMouseOut)
+          .on("mouseover", ChartInteractions.scatterMouseOver) // Use ChartInteractions
+          .on("mouseout", ChartInteractions.scatterMouseOut)  // Use ChartInteractions
           .transition()
           .duration(dur)
           .attr("cx", (d) => scales.xScatter(d.avgNetCal))

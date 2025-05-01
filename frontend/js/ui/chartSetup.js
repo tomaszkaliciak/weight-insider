@@ -3,7 +3,7 @@
 
 import { CONFIG } from "../config.js";
 import { ui } from "./uiCache.js";
-import { EventHandlers } from "../interactions/eventHandlers.js";
+import { ChartInteractions } from "../interactions/chartInteractions.js";
 import { Utils } from "../core/utils.js";
 
 // --- D3 Constructs (Exported, populated by setup) ---
@@ -682,7 +682,7 @@ function createBrushes() {
         [0, 0],
         [width, height],
       ])
-      .on("brush.handler end.handler", EventHandlers.contextBrushed); // Use unique namespaces
+      .on("brush.handler end.handler", ChartInteractions.contextBrushed); // Use ChartInteractions
     ui.brushGroup.call(brushes.context); // Apply brush to the dedicated group
   } else {
     console.warn(
@@ -703,7 +703,7 @@ function createBrushes() {
         [0, 0],
         [width, height],
       ])
-      .on("end.handler", EventHandlers.regressionBrushed); // Use unique namespace
+      .on("end.handler", ChartInteractions.regressionBrushed); // Use ChartInteractions
     ui.regressionBrushGroup.call(brushes.regression);
     // Hide initially, only shown when range is active
     ui.regressionBrushGroup
@@ -751,7 +751,7 @@ function createZoom() {
       [contextRange[0], -Infinity], // Pan starts at the beginning of the context chart's range
       [contextRange[1], Infinity], // Pan ends at the end of the context chart's range
     ])
-    .on("zoom", EventHandlers.zoomed); // Attach the handler
+    .on("zoom", ChartInteractions.zoomed); // Use ChartInteractions
 
   // Apply zoom behavior to the capture rectangle
   if (ui.zoomCaptureRect && !ui.zoomCaptureRect.empty()) {

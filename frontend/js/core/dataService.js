@@ -138,36 +138,11 @@ export const DataService = {
     return mergedData;
   },
 
-  // --- Data Processing Pipeline (Initial Calculations) ---
-  processData(rawData) {
-    console.log("DataService: Starting data processing pipeline...");
-    if (!Array.isArray(rawData) || rawData.length === 0) {
-      console.warn("DataService: No raw data to process.");
-      return [];
-    }
-    // Create a new array to avoid modifying the input directly
-    let processed = Utils.deepClone(rawData);
+  // --- Data Processing Steps (Exported Methods) ---
+  // These methods take data and return a *new* array with the calculated field added.
+  // They rely on CONFIG values, not external state.
 
-    // Apply processing steps sequentially
-    processed = this._calculateBodyComposition(processed);
-    processed = this._calculateSMAAndStdDev(processed);
-    processed = this._calculateEMA(processed);
-    processed = this._identifyOutliers(processed);
-    processed = this._calculateRollingVolatility(
-      processed,
-      CONFIG.ROLLING_VOLATILITY_WINDOW,
-    );
-    processed = this._calculateDailyRatesAndTDEETrend(processed);
-    processed = this._calculateAdaptiveTDEE(processed);
-    processed = this._smoothRatesAndTDEEDifference(processed);
-    processed = this._calculateRateMovingAverage(processed);
-
-    console.log("DataService: Data processing pipeline completed.");
-    return processed;
-  },
-
-  // --- Processing Steps (Internal Helpers - rely on CONFIG, not state) ---
-  _calculateBodyComposition(data) {
+  calculateBodyComposition(data) {
     return data.map((d) => {
       let lbm = null;
       let fm = null;
@@ -185,7 +160,8 @@ export const DataService = {
       return { ...d, lbm, fm };
     });
   },
-  _calculateSMAAndStdDev(data) {
+
+  calculateSMAAndStdDev(data) {
     const windowSize = CONFIG.movingAverageWindow;
     const stdDevMult = CONFIG.stdDevMultiplier;
     return data.map((d, i, arr) => {
@@ -225,7 +201,8 @@ export const DataService = {
       return { ...d, sma, stdDev, lowerBound, upperBound, lbmSma, fmSma };
     });
   },
-  _calculateEMA(data) {
+
+  calculateEMA(data) {
     const windowSize = CONFIG.emaWindow;
     if (windowSize <= 0) return data;
     const alpha = 2 / (windowSize + 1);
@@ -246,7 +223,8 @@ export const DataService = {
       return { ...d, ema: currentEMA };
     });
   },
-  _identifyOutliers(data) {
+
+  identifyOutliers(data) {
     const threshold = CONFIG.OUTLIER_STD_DEV_THRESHOLD;
     return data.map((d) => {
       let isOutlier = false;
@@ -264,8 +242,8 @@ export const DataService = {
       return { ...d, isOutlier };
     });
   },
-  _calculateRollingVolatility(data, windowSize) {
-    // console.log(`DataService: Calculating rolling volatility (window: ${windowSize} days)...`); // Less verbose log
+
+  calculateRollingVolatility(data, windowSize = CONFIG.ROLLING_VOLATILITY_WINDOW) {
     return data.map((d, i, arr) => {
       let rollingVolatility = null;
       const windowStartIndex = Math.max(0, i - windowSize + 1);
@@ -297,7 +275,8 @@ export const DataService = {
       return { ...d, rollingVolatility };
     });
   },
-  _calculateDailyRatesAndTDEETrend(data) {
+
+  calculateDailyRatesAndTDEETrend(data) {
     return data.map((d, i, arr) => {
       let dailySmaRate = null;
       let tdeeTrend = null;
@@ -329,8 +308,8 @@ export const DataService = {
       return { ...d, dailySmaRate, tdeeTrend };
     });
   },
-  _calculateAdaptiveTDEE(data) {
-    const windowSize = CONFIG.adaptiveTDEEWindow;
+
+  calculateAdaptiveTDEE(data, windowSize = CONFIG.adaptiveTDEEWindow) {
     const minDataRatio = 0.7; // Minimum ratio of valid intake days needed in window
     return data.map((d, i, arr) => {
       let adaptiveTDEE = null;
@@ -367,7 +346,8 @@ export const DataService = {
       return { ...d, adaptiveTDEE };
     });
   },
-  _smoothRatesAndTDEEDifference(data) {
+
+  smoothRatesAndTDEEDifference(data) {
     const dailyRates = data.map((d) => d.dailySmaRate);
     const smoothedDailyRates = Utils.calculateRollingAverage(
       dailyRates,
@@ -393,7 +373,8 @@ export const DataService = {
       avgTdeeDifference: smoothedTdeeDifferences[i], // Store smoothed difference
     }));
   },
-  _calculateRateMovingAverage(data) {
+
+  calculateRateMovingAverage(data) {
     const weeklyRates = data.map((d) => d.smoothedWeeklyRate);
     const rateMovingAverage = Utils.calculateRollingAverage(
       weeklyRates,
