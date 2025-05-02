@@ -5,7 +5,7 @@
 import { CONFIG } from "../config.js";
 import { StateManager, ActionTypes } from "./stateManager.js"; // Added ActionTypes
 import { Utils } from "./utils.js";
-import { DataService } from "./dataService.js;
+import { DataService } from "./dataService.js";
 import * as Selectors from "./selectors.js";
 import { scales } from "../ui/chartSetup.js"; // TODO: Remove this dependency - contextDomain should be in state
 
@@ -438,7 +438,7 @@ export const StatsManager = {
       plateaus: [],
       trendChangePoints: [],
       goalAchievedDate: null,
-      regressionResult: { slope: null, intercept: null, points: [] },
+      regressionResult: { slope: null, intercept: null, points: [], extendedPoints: [] },
     };
     const displayStats = results.displayStats;
     const processedData = Selectors.selectProcessedData(stateSnapshot);
@@ -608,10 +608,45 @@ export const StatsManager = {
               d.date >= effectiveRegRange.start &&
               d.date <= effectiveRegRange.end,
           ); // Use processedData for full range
-          results.regressionResult = DataService.calculateLinearRegression(
+          const regCalcResult = DataService.calculateLinearRegression(
             regressionData,
             effectiveRegRange.start,
           ); // Pass start date
+
+          // Calculate extended points for the full analysis range
+          let extendedPoints = [];
+          if (regCalcResult.slope != null && regCalcResult.intercept != null && regCalcResult.firstDateMs != null && analysisRange.start && analysisRange.end) {
+              const { slope, intercept, firstDateMs } = regCalcResult;
+              const dayInMillis = 86400000;
+
+              // Generate points covering the analysis range (visible area)
+              // Use a reasonable number of points or base on processedData dates in range
+              // For simplicity, let's just use the start and end of the analysis range
+              const analysisStartDate = analysisRange.start;
+              const analysisEndDate = analysisRange.end;
+
+              const xStart = (analysisStartDate.getTime() - firstDateMs) / dayInMillis;
+              const yStart = slope * xStart + intercept;
+
+              const xEnd = (analysisEndDate.getTime() - firstDateMs) / dayInMillis;
+              const yEnd = slope * xEnd + intercept;
+
+              if (isFinite(yStart) && isFinite(yEnd)) {
+                  extendedPoints = [
+                      { date: analysisStartDate, regressionValue: yStart },
+                      { date: analysisEndDate, regressionValue: yEnd }
+                  ];
+              }
+          }
+
+          // Store both original and extended points
+          results.regressionResult = {
+              slope: regCalcResult.slope,
+              intercept: regCalcResult.intercept,
+              points: regCalcResult.points, // Original points based on regression range
+              extendedPoints: extendedPoints // Points spanning the analysis range
+          };
+
           displayStats.regressionSlopeWeekly =
             results.regressionResult.slope != null
               ? results.regressionResult.slope * 7
@@ -623,6 +658,7 @@ export const StatsManager = {
             slope: null,
             intercept: null,
             points: [],
+            extendedPoints: [],
           };
           displayStats.regressionSlopeWeekly = null;
           displayStats.regressionStartDate = null;
@@ -659,7 +695,7 @@ export const StatsManager = {
         results.weeklySummaryData = [];
         results.correlationScatterData = [];
         results.goalAchievedDate = null;
-        results.regressionResult = { slope: null, intercept: null, points: [] };
+        results.regressionResult = { slope: null, intercept: null, points: [], extendedPoints: [] };
         Object.assign(displayStats, {
         });
       }
@@ -671,7 +707,7 @@ export const StatsManager = {
       results.weeklySummaryData = [];
       results.correlationScatterData = [];
       results.goalAchievedDate = null;
-      results.regressionResult = { slope: null, intercept: null, points: [] };
+      results.regressionResult = { slope: null, intercept: null, points: [], extendedPoints: [] };
       Object.assign(displayStats, {
       });
     }

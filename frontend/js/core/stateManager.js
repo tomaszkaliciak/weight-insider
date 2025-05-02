@@ -91,7 +91,7 @@ const initialState = {
   plateaus: [],
   trendChangePoints: [],
   goalAchievedDate: null,
-  regressionResult: { slope: null, intercept: null, points: [] },
+  regressionResult: { slope: null, intercept: null, points: [], extendedPoints: [] },
   displayStats: {}, // Display stats are now part of the state
 };
 
@@ -123,7 +123,7 @@ function reducer(currentState, action) {
       nextState.plateaus = [];
       nextState.trendChangePoints = [];
       nextState.goalAchievedDate = null;
-      nextState.regressionResult = { slope: null, intercept: null, points: [] };
+      nextState.regressionResult = { slope: null, intercept: null, points: [], extendedPoints: [] };
       nextState.analysisRange = { start: null, end: null };
       nextState.interactiveRegressionRange = { start: null, end: null };
       nextState.displayStats = {}; // Reset display stats too
@@ -150,6 +150,9 @@ function reducer(currentState, action) {
         intercept: action.payload?.intercept ?? null,
         points: Array.isArray(action.payload?.points)
           ? action.payload.points
+          : [],
+        extendedPoints: Array.isArray(action.payload?.extendedPoints)
+          ? action.payload.extendedPoints
           : [],
       };
       break;

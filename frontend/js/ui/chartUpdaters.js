@@ -146,7 +146,20 @@ export const FocusChartUpdater = {
       (d) => d.lowerBound,
       (d) => d.upperBound,
     );
-    const regressionLineGen = lineGenFactory((d) => d.regressionValue);
+    const regressionLineGen = d3
+        .line()
+        .x((d) => currentXScale(d.date))
+        .y((d) => currentYScale(d.regressionValue))
+        .curve(d3.curveLinear)
+        .defined((d) => {
+            const dateValid = d.date instanceof Date && !isNaN(d.date);
+            const valueValid = d.regressionValue != null;
+            const scaledYFinite = valueValid ? isFinite(currentYScale(d.regressionValue)) : false;
+            const scaledXFinite = dateValid ? isFinite(currentXScale(d.date)) : false;
+            const result = dateValid && valueValid && scaledYFinite && scaledXFinite;
+
+            return result;
+        });
     const goalLineGen = lineGenFactory((d) => d.weight);
     const trendLineGen = lineGenFactory((d) => d.weight); // Generic trend line using 'weight' property
 
@@ -169,7 +182,7 @@ export const FocusChartUpdater = {
     updateSelection(ui.emaLine, visibleValidEmaData, emaLineGen);
     updateSelection(
       ui.regressionLine,
-      regressionResult?.points,
+      regressionResult?.extendedPoints,
       regressionLineGen,
     );
     updateSelection(ui.goalLine, goalLineData, goalLineGen);

@@ -414,7 +414,7 @@ export const DataService = {
       console.log(
         `[DataService Reg] Not enough points (${filteredData.length}) for regression starting ${startDate?.toISOString().slice(0, 10)}.`,
       );
-      return { slope: null, intercept: null, points: [] };
+      return { slope: null, intercept: null, points: [], firstDateMs: null };
     }
 
     filteredData.sort((a, b) => a.date - b.date);
@@ -459,7 +459,7 @@ export const DataService = {
       console.log(
         `[DataService Reg] Success. Slope: ${slope.toFixed(4)}, Intercept: ${intercept.toFixed(2)}, Points: ${plotPoints.length}`,
       );
-      return { slope, intercept, points: plotPoints };
+      return { slope, intercept, points: plotPoints, firstDateMs };
     } catch (e) {
       console.error("DataService: Error calculating linear regression:", e);
       return { slope: null, intercept: null, points: [] };
