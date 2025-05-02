@@ -5,7 +5,7 @@
 import { CONFIG } from "../config.js";
 import { StateManager, ActionTypes } from "./stateManager.js"; // Added ActionTypes
 import { Utils } from "./utils.js";
-import { DataService } from "./dataService.js";
+import { DataService } from "./dataService.js;
 import * as Selectors from "./selectors.js";
 import { scales } from "../ui/chartSetup.js"; // TODO: Remove this dependency - contextDomain should be in state
 
@@ -539,6 +539,14 @@ export const StatsManager = {
           processedData,
           analysisRange.end,
         );
+        // Calculate Rate Consistency (Std Dev of Smoothed Weekly Rate in filtered range)
+        const validRates = results.filteredData
+            .map(d => d.smoothedWeeklyRate)
+            .filter(rate => rate != null && !isNaN(rate));
+        displayStats.rateConsistencyStdDev = validRates.length >= 2 && typeof ss?.standardDeviation === 'function'
+            ? ss.standardDeviation(validRates)
+            : null;
+
         displayStats.volatility = this._calculateVolatility(
           processedData,
           analysisRange.start,
@@ -697,40 +705,56 @@ export const StatsManager = {
         : null;
     // Required Calorie Adjustment & Suggested Intake
     displayStats.requiredCalorieAdjustment = null;
-    displayStats.requiredNetCalories = null;
-    displayStats.suggestedIntakeRange = null;
-    const baselineTDEE =
-      displayStats.avgTDEE_Adaptive ??
-      displayStats.avgTDEE_WgtChange ??
-      displayStats.avgExpenditureGFit;
+    displayStats.requiredNetCalories = null; // Specific to date-based goal
+    displayStats.suggestedIntakeTarget = null; // Changed from range
+    displayStats.baselineTDEESource = null; // Added to store TDEE source
+
+    // Determine baseline TDEE and its source
+    let baselineTDEE = null;
+    if (displayStats.avgTDEE_Adaptive != null && !isNaN(displayStats.avgTDEE_Adaptive)) {
+        baselineTDEE = displayStats.avgTDEE_Adaptive;
+        displayStats.baselineTDEESource = 'Adaptive';
+    } else if (displayStats.avgTDEE_WgtChange != null && !isNaN(displayStats.avgTDEE_WgtChange)) {
+        baselineTDEE = displayStats.avgTDEE_WgtChange;
+        displayStats.baselineTDEESource = 'Weight Change Trend';
+    } else if (displayStats.avgExpenditureGFit != null && !isNaN(displayStats.avgExpenditureGFit)) {
+        baselineTDEE = displayStats.avgExpenditureGFit;
+        displayStats.baselineTDEESource = 'Google Fit';
+    }
+
+    // Calculate required calorie adjustment based on target rate vs current trend
     if (
       displayStats.targetRate != null &&
       currentTrendForGoal != null &&
       !isNaN(currentTrendForGoal) &&
       !isNaN(displayStats.targetRate) &&
-      baselineTDEE != null &&
-      !isNaN(baselineTDEE)
+      baselineTDEE != null // No need to check isNaN again
     ) {
       const rateDifferenceKgWeek =
         displayStats.targetRate - currentTrendForGoal;
       displayStats.requiredCalorieAdjustment =
         (rateDifferenceKgWeek / 7) * CONFIG.KCALS_PER_KG;
     }
+
+    // Calculate suggested intake based on EITHER requiredRateForGoal OR targetRate
+    const effectiveTargetRate = displayStats.requiredRateForGoal ?? displayStats.targetRate;
+
     if (
-      displayStats.requiredRateForGoal != null &&
-      baselineTDEE != null &&
-      !isNaN(baselineTDEE) &&
-      !isNaN(displayStats.requiredRateForGoal)
+      effectiveTargetRate != null &&
+      !isNaN(effectiveTargetRate) &&
+      baselineTDEE != null // Already checked for null/NaN above
     ) {
-      const requiredDailyDeficitSurplus =
-        (displayStats.requiredRateForGoal / 7) * CONFIG.KCALS_PER_KG;
-      displayStats.requiredNetCalories = requiredDailyDeficitSurplus;
-      const targetIntake = baselineTDEE + requiredDailyDeficitSurplus;
+      const targetDailyDeficitSurplus =
+        (effectiveTargetRate / 7) * CONFIG.KCALS_PER_KG;
+
+      // Calculate requiredNetCalories only if based on requiredRateForGoal (date-based)
+      if (displayStats.requiredRateForGoal != null) {
+          displayStats.requiredNetCalories = targetDailyDeficitSurplus;
+      }
+
+      const targetIntake = baselineTDEE + targetDailyDeficitSurplus;
       if (!isNaN(targetIntake)) {
-        displayStats.suggestedIntakeRange = {
-          min: Math.round(targetIntake - 100),
-          max: Math.round(targetIntake + 100),
-        };
+        displayStats.suggestedIntakeTarget = Math.round(targetIntake); // Set single target value
       }
     }
     // Target Rate Feedback

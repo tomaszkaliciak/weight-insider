@@ -44,13 +44,9 @@ export const StatsDisplayRenderer = {
           displayStats.calorieDataConsistency
         ) {
           element.textContent = `(${displayStats.calorieDataConsistency.count ?? "?"}/${displayStats.calorieDataConsistency.totalDays ?? "?"} days)`;
-        } else if (
-          key === "suggestedIntakeRange" &&
-          value &&
-          value.min != null &&
-          value.max != null
-        ) {
-          element.textContent = `${value.min} - ${value.max}`;
+        } else if (key === "suggestedIntakeTarget") { // Changed key
+          // Display single target value, or N/A
+          element.textContent = value != null ? fv(value, 0) : "N/A";
         } else {
           element.textContent = formattedValue; // Default
         }
@@ -107,6 +103,7 @@ export const StatsDisplayRenderer = {
       fv,
       2,
     );
+    updateElement("rateConsistencyStdDev", displayStats.rateConsistencyStdDev, fv, 2); // Added this line
     updateElement("regressionSlope", displayStats.regressionSlopeWeekly, fv, 2);
     // Update regression start date label directly
     if (ui.statElements.regressionStartDateLabel) {
@@ -170,7 +167,8 @@ export const StatsDisplayRenderer = {
       fv,
       0,
     );
-    updateElement("suggestedIntakeRange", displayStats.suggestedIntakeRange); // Special handling
+    updateElement("suggestedIntakeTarget", displayStats.suggestedIntakeTarget); // Changed key, uses new special handling
+    updateElement("suggestedIntakeSource", displayStats.baselineTDEESource); // Added: Display TDEE source (assumes element exists)
     updateElement("currentRateFeedback", displayStats.targetRateFeedback); // Special handling
   },
 

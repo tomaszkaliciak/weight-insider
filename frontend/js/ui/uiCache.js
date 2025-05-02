@@ -178,6 +178,7 @@ const elementIdMap = {
   "volatility-score": { key: "volatilityScore", type: "stat" },
   "rolling-volatility": { key: "rollingVolatility", type: "stat" },
   "rolling-weekly-change-sma": { key: "rollingWeeklyChangeSma", type: "stat" },
+"rate-consistency-stddev": { key: "rateConsistencyStdDev", type: "stat" },
   "regression-slope": { key: "regressionSlope", type: "stat" },
   "regression-start-date-label": {
     key: "regressionStartDateLabel",

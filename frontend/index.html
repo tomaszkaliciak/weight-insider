@@ -281,6 +281,50 @@
                                     ><span class="stat-unit">KG/wk</span>
                                 </div>
                             </div>
+<div
+                                class="stat-item"
+                                title="Rate Consistency (Std Dev): Standard deviation of the Smoothed Weekly Rate values within the Analysis Range. Lower values indicate more consistent progress."
+                            >
+                                <span
+                                    >Rate Consistency (Std Dev):
+                                    <span
+                                        class="info-icon"
+                                        title="Std Dev of Smoothed Weekly Rate in Analysis Range. Lower = more consistent."
+                                        ><svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="16"
+                                            height="16"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2.5"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            class="feather feather-info"
+                                        >
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <line
+                                                x1="12"
+                                                y1="16"
+                                                x2="12"
+                                                y2="12"
+                                            ></line>
+                                            <line
+                                                x1="12"
+                                                y1="8"
+                                                x2="12.01"
+                                                y2="8"
+                                            ></line></svg></span
+                                ></span>
+                                <div>
+                                    <span
+                                        id="rate-consistency-stddev"
+                                        data-stat-key="rateConsistencyStdDev"
+                                        class="stat-value"
+                                        >N/A</span
+                                    ><span class="stat-unit">KG/wk</span>
+                                </div>
+                            </div>
                             <div class="stat-item">
                                 <span
                                     title="Regression Slope: The weekly rate of change calculated from the linear regression line fitted to non-outlier data within the selected regression range (defaults to analysis range start)."
@@ -877,7 +921,7 @@
                                 ><input
                                     type="date"
                                     id="trendStartDate"
-                                    value="2025-01-01"
+                                    value="2025-02-01"
                                     aria-label="Manual trendline start date"
                                     title="The starting date for the manual trendlines below. Also used as the default start date for the Regression calculation unless overridden by the interactive brush."
                                 />
@@ -888,7 +932,7 @@
                                 ><input
                                     type="number"
                                     id="trendInitialWeight"
-                                    value="69.4"
+                                    value="70"
                                     step="0.1"
                                     placeholder="e.g., 70.0"
                                     aria-label="Manual trendline initial weight in KG"
@@ -970,44 +1014,47 @@
                     </h2>
                     <div class="card-content" id="goal-tracker-content">
                         <form id="goal-setting-form">
-                            <div class="form-row">
-                                <label for="goalWeight">Target Wgt (KG):</label
-                                ><input
-                                    type="number"
-                                    id="goalWeight"
-                                    step="0.1"
-                                    placeholder="Weight in KG (e.g., 75.0)"
-                                    aria-label="Target weight goal in KG"
-                                    title="Your target body weight in kilograms."
-                                />
-                            </div>
-                            <div class="form-row">
-                                <label for="goalDate">Target Date:</label
-                                ><input
-                                    type="date"
-                                    id="goalDate"
-                                    aria-label="Target date for weight goal (optional)"
-                                    title="Optional: The date by which you want to achieve your target weight."
-                                />
-                            </div>
-                            <div class="form-row">
-                                <label
-                                    for="goalTargetRate"
-                                    title="Optional: Set your desired average weekly weight change (e.g., 0.25 for gain, -0.5 for loss). Used for feedback comparisons."
-                                    >Target Weekly Rate:</label
-                                ><input
-                                    type="number"
-                                    id="goalTargetRate"
-                                    step="0.05"
-                                    placeholder="KG/week (e.g., 0.25)"
-                                    aria-label="Target weekly weight change rate in KG (optional)"
-                                />
-                            </div>
+                            <fieldset>
+                                <legend>Set Your Goal</legend>
+                                <div class="form-row">
+                                    <label for="goalWeight">Target Wgt (KG):</label
+                                    ><input
+                                        type="number"
+                                        id="goalWeight"
+                                        step="0.1"
+                                        placeholder="Weight in KG (e.g., 75.0)"
+                                        aria-label="Target weight goal in KG"
+                                        title="Your target body weight in kilograms."
+                                    />
+                                </div>
+                                <div class="form-row">
+                                    <label for="goalDate">Target Date (Optional):</label
+                                    ><input
+                                        type="date"
+                                        id="goalDate"
+                                        aria-label="Target date for weight goal (optional)"
+                                        title="Optional: The date by which you want to achieve your target weight."
+                                    />
+                                </div>
+                                <div class="form-row">
+                                    <label
+                                        for="goalTargetRate"
+                                        title="Optional: Set your desired average weekly weight change (e.g., 0.25 for gain, -0.5 for loss). Used for feedback comparisons."
+                                        >Target Weekly Rate (Optional):</label
+                                    ><input
+                                        type="number"
+                                        id="goalTargetRate"
+                                        step="0.05"
+                                        placeholder="KG/week (e.g., 0.25)"
+                                        aria-label="Target weekly weight change rate in KG (optional)"
+                                    />
+                                </div>
+                            </fieldset>
                             <button type="submit">Save Goal</button>
                         </form>
                         <hr class="subtle-hr" />
                         <div id="what-if-controls">
-                            <h3>"What-If" Projection</h3>
+                            <h4>Estimate Future Weight</h4> <!-- Changed from h3 for better structure -->
                             <div class="form-row">
                                 <label for="what-if-intake"
                                     >Future Daily Intake (kcal):</label
@@ -1045,6 +1092,7 @@
                             </div>
                         </div>
                         <div class="goal-stats">
+<h4>Goal Summary</h4>
                             <div class="stat-item">
                                 <span>Target Weight:</span>
                                 <div>
@@ -1087,6 +1135,7 @@
                                     >N/A</span
                                 >
                             </div>
+<h4>Progress</h4>
                             <hr class="subtle-hr" />
                             <div
                                 class="stat-item"
@@ -1099,6 +1148,7 @@
                                     >N/A</span
                                 >
                             </div>
+<h4>Requirements & Suggestions</h4>
                             <div
                                 class="stat-item"
                                 title="The average weekly weight change required to reach your Target Weight by your Target Date, starting from your Latest SMA."
@@ -1212,13 +1262,13 @@
                             </div>
                             <div
                                 class="stat-item"
-                                title="A suggested daily calorie intake range (based on your estimated TDEE and the Required Net Calories) to help you reach your goal by the Target Date."
+                                title="A suggested daily calorie intake based on your estimated TDEE and your goal (either target date or target rate)."
                             >
                                 <span
-                                    >Suggested Intake for Date:
+                                    >Suggested Intake for Goal:
                                     <span
                                         class="info-icon"
-                                        title="Calculated as: Est. TDEE + Required Net Calories ± 100 kcal buffer."
+                                        title="Calculated as: Baseline TDEE + Target Daily Deficit/Surplus. Baseline TDEE source shown in parentheses."
                                     >
                                         <svg
                                             xmlns="http://www.w3.org/2000/svg"
@@ -1253,10 +1303,18 @@
                                 ></span>
                                 <div>
                                     <span
-                                        id="suggested-intake-range"
+                                        id="suggested-intake-target"
+                                        data-stat-key="suggestedIntakeTarget"
                                         class="stat-value"
                                         >N/A</span
                                     ><span class="stat-unit">kcal/d</span>
+                                    <span
+                                        id="suggested-intake-source"
+                                        data-stat-key="suggestedIntakeSource"
+                                        class="stat-details"
+                                        style="margin-left: 5px"
+                                        >(N/A)</span
+                                    >
                                 </div>
                             </div>
                         </div>
