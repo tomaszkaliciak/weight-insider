@@ -21,6 +21,13 @@ const (
 	CredentialsFile  = "credentials.json"
 )
 
+type WeightInsiderData struct {
+	BodyFat              map[string]float64 `json:"bodyFat"`
+	CalorieIntake        map[string]int     `json:"calorieIntake"`
+	GoogleFitExpenditure map[string]int     `json:"googleFitExpenditure"`
+	Weights              map[string]float64 `json:"weights"`
+}
+
 type WeightData struct {
 	Weights    map[string]float64 `json:"weights"`
 	Targets    map[string]float64 `json:"targets"`
@@ -210,6 +217,37 @@ func fetchWeightData(client *http.Client, userID, token string) (*WeightData, er
 	return &weightData, nil
 }
 
+func updateDataJSON(filename string, newWeights map[string]float64) error {
+	file, err := os.ReadFile(filename)
+	var insiderData WeightInsiderData
+
+	if err == nil && len(file) > 0 {
+		if err := json.Unmarshal(file, &insiderData); err != nil {
+			return fmt.Errorf("error unmarshalling existing data from %s: %w", filename, err)
+		}
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("error reading file %s: %w", filename, err)
+	}
+
+	if insiderData.Weights == nil {
+		insiderData.Weights = make(map[string]float64)
+	}
+	for date, weight := range newWeights {
+		insiderData.Weights[date] = weight
+	}
+
+	updatedData, err := json.MarshalIndent(insiderData, "", "  ")
+	if err != nil {
+		return fmt.Errorf("error marshalling updated data to JSON: %w", err)
+	}
+
+	if err := os.WriteFile(filename, updatedData, 0644); err != nil {
+		return fmt.Errorf("error writing updated data to file %s: %w", filename, err)
+	}
+
+	return nil
+}
+
 func main() {
 	client := &http.Client{}
 
@@ -248,4 +286,10 @@ func main() {
 	}
 
 	fmt.Printf("Weight data: %+v\n", weightData.Weights)
+
+	dataJSONPath := "../frontend/data.json"
+	if err := updateDataJSON(dataJSONPath, weightData.Weights); err != nil {
+		log.Fatalf("Failed to update data.json: %v", err)
+	}
+	fmt.Printf("Successfully updated weights in %s\n", dataJSONPath)
 }
