@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"strconv"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -53,20 +54,8 @@ type NutritionRecord struct {
 // total_calories_burned_record_table
 type TotalCaloriesBurnedRecord struct {
 	RowID                  int64
-	UUID                   []byte
-	LastModifiedTime       sql.NullInt64
-	ClientRecordID         sql.NullString
-	ClientRecordVersion    sql.NullString
-	DeviceInfoID           sql.NullInt64
 	AppInfoID              sql.NullInt64
-	RecordingMethod        sql.NullInt64
-	DedupeHash             []byte
-	StartTime              sql.NullInt64
-	StartZoneOffset        sql.NullInt64
-	EndTime                sql.NullInt64
-	EndZoneOffset          sql.NullInt64
-	LocalDate              sql.NullInt64
-	Energy                 sql.NullFloat64 // (kcal)
+	Energy                 sql.NullFloat64
 	LocalDateTimeStartTime sql.NullInt64
 	LocalDateTimeEndTime   sql.NullInt64
 }
@@ -78,23 +67,23 @@ func main() {
 	}
 	defer db.Close()
 
-	weightRecords, err := fetchWeightRecords(db)
-	if err != nil {
-		log.Fatalf("Fatal: Could not fetch weight records: %v", err)
-	}
+	// weightRecords, err := fetchWeightRecords(db)
+	// if err != nil {
+	// 	log.Fatalf("Fatal: Could not fetch weight records: %v", err)
+	// }
 
-	nutritionRecords, err := fetchNutritionRecords(db)
-	if err != nil {
-		log.Fatalf("Fatal: Could not fetch nutrition records: %v", err)
-	}
+	// nutritionRecords, err := fetchNutritionRecords(db)
+	// if err != nil {
+	// 	log.Fatalf("Fatal: Could not fetch nutrition records: %v", err)
+	// }
 
 	caloriesBurnedRecords, err := fetchTotalCaloriesBurnedRecords(db)
 	if err != nil {
 		log.Fatalf("Fatal: Could not fetch total calories burned records: %v", err)
 	}
 
-	printWeightRecords(weightRecords)
-	printNutritionRecords(nutritionRecords)
+	// printWeightRecords(weightRecords)
+	// printNutritionRecords(nutritionRecords)
 	printCaloriesBurnedRecords(caloriesBurnedRecords)
 }
 
@@ -137,7 +126,8 @@ func fetchNutritionRecords(db *sql.DB) ([]NutritionRecord, error) {
 }
 
 func fetchTotalCaloriesBurnedRecords(db *sql.DB) ([]TotalCaloriesBurnedRecord, error) {
-	query := "SELECT row_id, uuid, last_modified_time, client_record_id, client_record_version, device_info_id, app_info_id, recording_method, dedupe_hash, start_time, start_zone_offset, end_time, end_zone_offset, local_date, energy, local_date_time_start_time, local_date_time_end_time FROM total_calories_burned_record_table"
+	query := "SELECT row_id, energy, app_info_id, local_date_time_start_time, local_date_time_end_time FROM total_calories_burned_record_table"
+
 	rows, err := db.Query(query)
 	if err != nil {
 		return nil, err
@@ -147,7 +137,7 @@ func fetchTotalCaloriesBurnedRecords(db *sql.DB) ([]TotalCaloriesBurnedRecord, e
 	var records []TotalCaloriesBurnedRecord
 	for rows.Next() {
 		var r TotalCaloriesBurnedRecord
-		if err := rows.Scan(&r.RowID, &r.UUID, &r.LastModifiedTime, &r.ClientRecordID, &r.ClientRecordVersion, &r.DeviceInfoID, &r.AppInfoID, &r.RecordingMethod, &r.DedupeHash, &r.StartTime, &r.StartZoneOffset, &r.EndTime, &r.EndZoneOffset, &r.LocalDate, &r.Energy, &r.LocalDateTimeStartTime, &r.LocalDateTimeEndTime); err != nil {
+		if err := rows.Scan(&r.RowID, &r.Energy, &r.AppInfoID, &r.LocalDateTimeStartTime, &r.LocalDateTimeEndTime); err != nil {
 			return nil, err
 		}
 		records = append(records, r)
@@ -207,21 +197,27 @@ func printCaloriesBurnedRecords(records []TotalCaloriesBurnedRecord) {
 		fmt.Println("No records found.")
 		return
 	}
+
+	data := make(map[string]float64)
+
 	for _, r := range records {
-		energy := 0.0
-		if r.Energy.Valid {
-			energy = r.Energy.Float64
-		}
+		energy := r.Energy.Float64 / 1000
 
-		startTime := "N/A"
-		if r.StartTime.Valid {
-			startTime = time.Unix(r.StartTime.Int64, 0).Format(time.RFC1123)
-		}
+		unixTimestamp := time.Unix(r.LocalDateTimeStartTime.Int64/1000, 0)
+		year, month, day := unixTimestamp.Date()
 
-		fmt.Printf("RowID: %d, Calories Burned: %.2f kcal, Start Time: %s\n",
-			r.RowID,
-			energy,
-			startTime,
+		date := strconv.Itoa(day) + "-" + strconv.Itoa(int(month)) + "-" + strconv.Itoa(year)
+
+		// we trust appinfoid 1 (com.google.android.apps.fitness) for now to avoid dealing with duplicates between apps
+		if r.AppInfoID.Int64 == 1 {
+			data[date] += energy
+		}
+	}
+
+	for day, kcal := range data {
+		fmt.Printf("Calories Burned: %.2f kcal, Start Time: %s\n",
+			kcal,
+			day,
 		)
 	}
 }
