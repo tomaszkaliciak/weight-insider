@@ -45,6 +45,18 @@ type JWT struct {
 	Signature string         `json:"signature"`
 }
 
+type PlanData struct {
+	DietPlan map[string]Meal `json:"dietPlan"`
+}
+
+type Meal struct {
+	Items []Item `json:"items"`
+}
+
+type Item struct {
+	Energy float64 `json:"energy"`
+}
+
 func decodeBase64(s string) ([]byte, error) {
 	missing := len(s) % 4
 	if missing != 0 {
@@ -248,6 +260,36 @@ func updateDataJSON(filename string, newWeights map[string]float64) error {
 	return nil
 }
 
+func fetchNutritionData(client *http.Client, userID, token string) (*PlanData, error) {
+	url := fmt.Sprintf("%s/diet-and-activity-plan/%s/day/2025-11-15", FitatuAPIBaseURL, userID)
+
+	headers := map[string]string{
+		"api-secret":    ApiSecret,
+		"api-key":       ApiKey,
+		"content-Type":  ContentType,
+		"authorization": "Bearer " + token,
+	}
+
+	resp, err := makeHTTPRequest(client, "GET", url, nil, headers)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("error reading response: %w", err)
+	}
+
+	var planData PlanData
+	err = json.Unmarshal(body, &planData)
+	if err != nil {
+		return nil, fmt.Errorf("error unmarshaling JSON: %w", err)
+	}
+
+	return &planData, nil
+}
+
 func main() {
 	client := &http.Client{}
 
@@ -292,4 +334,11 @@ func main() {
 		log.Fatalf("Failed to update data.json: %v", err)
 	}
 	fmt.Printf("Successfully updated weights in %s\n", dataJSONPath)
+
+	nutritionData, err := fetchNutritionData(client, idValue, token)
+	if err != nil {
+		log.Fatalf("Failed to fetchn nutrition data: %v", err)
+	}
+
+	fmt.Printf("Nutrition data: %+v\n", nutritionData.DietPlan)
 }
