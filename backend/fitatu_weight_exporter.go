@@ -12,6 +12,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -57,6 +58,11 @@ type Meal struct {
 
 type Item struct {
 	Energy float64 `json:"energy"`
+}
+
+type PlanDataDay struct {
+	planData    PlanData
+	calendarDay time.Time
 }
 
 func decodeBase64(s string) ([]byte, error) {
@@ -342,26 +348,56 @@ func main() {
 
 	now := time.Now().UTC()
 
-	// let's take only last 90 days
-	for i := range 90 {
-		dateToCheck := now.AddDate(0, 0, -i)
+	numRequests := 90
+	requestData := make([]PlanDataDay, numRequests)
+	for i := 0; i < numRequests; i++ {
+		requestData[i].calendarDay = now.AddDate(0, 0, -i)
+	}
 
-		nutritionData, err := fetchNutritionData(client, idValue, token, dateToCheck)
+	var wg sync.WaitGroup
+	wg.Add(numRequests)
 
-		if err != nil {
-			log.Printf("Failed to fetchn nutrition data: %v", err)
-			continue
-		}
+	results := make(chan PlanDataDay, numRequests)
+
+	for i := 0; i < numRequests; i++ {
+		go func(dateToCheck PlanDataDay) {
+			defer wg.Done()
+
+			nutritionData, err := fetchNutritionData(client, idValue, token, dateToCheck.calendarDay)
+
+			if err == nil {
+				dateToCheck.planData = *nutritionData
+			}
+
+			results <- dateToCheck
+		}(requestData[i])
+	}
+
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	var finalResults []PlanDataDay
+	for result := range results {
+		finalResults = append(finalResults, result)
+	}
+
+	for _, result := range finalResults {
 
 		sum := 0.0
 
-		for _, value := range nutritionData.DietPlan {
+		for _, value := range result.planData.DietPlan {
 			for _, element := range value.Items {
 				sum += element.Energy
 			}
 		}
 
-		fmt.Printf("Day: %+v, Nutrition data: %+v\n sum:%d\n", dateToCheck, nutritionData.DietPlan, sum)
+		// ignore days I didnt log anything
+		if sum == 0.0 {
+			continue
+		}
+		fmt.Printf("Day: %+v, sum:%d\n", result.calendarDay, sum)
 	}
 
 }
