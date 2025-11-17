@@ -10,7 +10,9 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 )
 
 const (
@@ -260,8 +262,11 @@ func updateDataJSON(filename string, newWeights map[string]float64) error {
 	return nil
 }
 
-func fetchNutritionData(client *http.Client, userID, token string) (*PlanData, error) {
-	url := fmt.Sprintf("%s/diet-and-activity-plan/%s/day/2025-11-15", FitatuAPIBaseURL, userID)
+func fetchNutritionData(client *http.Client, userID, token string, time time.Time) (*PlanData, error) {
+
+	year, month, day := time.Date()
+
+	url := fmt.Sprintf("%s/diet-and-activity-plan/%s/day/%s-%s-%s", FitatuAPIBaseURL, userID, strconv.Itoa(year), strconv.Itoa(int(month)), strconv.Itoa(day))
 
 	headers := map[string]string{
 		"api-secret":    ApiSecret,
@@ -335,10 +340,28 @@ func main() {
 	}
 	fmt.Printf("Successfully updated weights in %s\n", dataJSONPath)
 
-	nutritionData, err := fetchNutritionData(client, idValue, token)
-	if err != nil {
-		log.Fatalf("Failed to fetchn nutrition data: %v", err)
+	now := time.Now().UTC()
+
+	// let's take only last 90 days
+	for i := range 90 {
+		dateToCheck := now.AddDate(0, 0, -i)
+
+		nutritionData, err := fetchNutritionData(client, idValue, token, dateToCheck)
+
+		if err != nil {
+			log.Printf("Failed to fetchn nutrition data: %v", err)
+			continue
+		}
+
+		sum := 0.0
+
+		for _, value := range nutritionData.DietPlan {
+			for _, element := range value.Items {
+				sum += element.Energy
+			}
+		}
+
+		fmt.Printf("Day: %+v, Nutrition data: %+v\n sum:%d\n", dateToCheck, nutritionData.DietPlan, sum)
 	}
 
-	fmt.Printf("Nutrition data: %+v\n", nutritionData.DietPlan)
 }
