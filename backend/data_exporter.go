@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -14,6 +15,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 const (
@@ -63,6 +66,15 @@ type Item struct {
 type PlanDataDay struct {
 	planData    PlanData
 	calendarDay time.Time
+}
+
+// total_calories_burned_record_table
+type TotalCaloriesBurnedRecord struct {
+	RowID                  int64
+	AppInfoID              sql.NullInt64
+	Energy                 sql.NullFloat64
+	LocalDateTimeStartTime sql.NullInt64
+	LocalDateTimeEndTime   sql.NullInt64
 }
 
 func decodeBase64(s string) ([]byte, error) {
@@ -334,6 +346,88 @@ func updateIntakeDataJSON(filename string, newintakeData map[time.Time]float64) 
 	return nil
 }
 
+func fetchTotalCaloriesBurnedRecords(db *sql.DB) ([]TotalCaloriesBurnedRecord, error) {
+	query := "SELECT row_id, energy, app_info_id, local_date_time_start_time, local_date_time_end_time FROM total_calories_burned_record_table"
+
+	rows, err := db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var records []TotalCaloriesBurnedRecord
+	for rows.Next() {
+		var r TotalCaloriesBurnedRecord
+		if err := rows.Scan(&r.RowID, &r.Energy, &r.AppInfoID, &r.LocalDateTimeStartTime, &r.LocalDateTimeEndTime); err != nil {
+			return nil, err
+		}
+		records = append(records, r)
+	}
+	return records, rows.Err()
+}
+
+func getCaloriesBurnedRecords(records []TotalCaloriesBurnedRecord) map[string]float64 {
+	fmt.Println("\n--- Total Calories Burned Records ---")
+
+	data := make(map[string]float64)
+
+	for _, r := range records {
+		energy := r.Energy.Float64 / 1000
+
+		unixTimestamp := time.Unix(r.LocalDateTimeStartTime.Int64/1000, 0)
+		year, month, day := unixTimestamp.Date()
+
+		date := strconv.Itoa(year) + "-" + strconv.Itoa(int(month)) + "-" + strconv.Itoa(day)
+
+		// we trust appinfoid 1 (com.google.android.apps.fitness) for now to avoid dealing with duplicates between apps
+		if r.AppInfoID.Int64 == 1 {
+			data[date] += energy
+		}
+	}
+
+	for day, kcal := range data {
+		data[day] = kcal
+		fmt.Printf("Calories Burned: %.2f kcal, Start Time: %s\n",
+			kcal,
+			day,
+		)
+	}
+
+	return data
+}
+
+func updateExpenditureDataJSON(filename string, newExpenditureData map[string]float64) error {
+	file, err := os.ReadFile(filename)
+	var insiderData WeightInsiderData
+
+	if err == nil && len(file) > 0 {
+		if err := json.Unmarshal(file, &insiderData); err != nil {
+			return fmt.Errorf("error unmarshalling existing data from %s: %w", filename, err)
+		}
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("error reading file %s: %w", filename, err)
+	}
+
+	if insiderData.GoogleFitExpenditure == nil {
+		insiderData.GoogleFitExpenditure = make(map[string]int)
+	}
+	for date, expenditure := range newExpenditureData {
+
+		insiderData.GoogleFitExpenditure[date] = int(expenditure)
+	}
+
+	updatedData, err := json.MarshalIndent(insiderData, "", "  ")
+	if err != nil {
+		return fmt.Errorf("error marshalling updated data to JSON: %w", err)
+	}
+
+	if err := os.WriteFile(filename, updatedData, 0644); err != nil {
+		return fmt.Errorf("error writing updated data to file %s: %w", filename, err)
+	}
+
+	return nil
+}
+
 func main() {
 	client := &http.Client{}
 
@@ -439,7 +533,23 @@ func main() {
 	if err := updateIntakeDataJSON(dataJSONPath, intakeData); err != nil {
 		log.Fatalf("Failed to update data.json: %v", err)
 	}
-	fmt.Printf("Successfully updated weights in %s\n", dataJSONPath)
+	fmt.Printf("Successfully updated intake in %s\n", dataJSONPath)
 
-	//
+	db, err := sql.Open("sqlite3", "./health_connect_export.db")
+	if err != nil {
+		log.Fatalf("Fatal: Failed to open database: %v", err)
+	}
+	defer db.Close()
+
+	caloriesBurnedRecords, err := fetchTotalCaloriesBurnedRecords(db)
+	if err != nil {
+		log.Fatalf("Fatal: Could not fetch total calories burned records: %v", err)
+	}
+
+	records := getCaloriesBurnedRecords(caloriesBurnedRecords)
+
+	if err := updateExpenditureDataJSON(dataJSONPath, records); err != nil {
+		log.Fatalf("Failed to update data.json: %v", err)
+	}
+	fmt.Printf("Successfully updated expenditure in %s\n", dataJSONPath)
 }
