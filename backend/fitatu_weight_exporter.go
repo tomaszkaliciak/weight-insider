@@ -237,7 +237,7 @@ func fetchWeightData(client *http.Client, userID, token string) (*WeightData, er
 	return &weightData, nil
 }
 
-func updateDataJSON(filename string, newWeights map[string]float64) error {
+func updateWeightDataJSON(filename string, newWeights map[string]float64) error {
 	file, err := os.ReadFile(filename)
 	var insiderData WeightInsiderData
 
@@ -268,7 +268,7 @@ func updateDataJSON(filename string, newWeights map[string]float64) error {
 	return nil
 }
 
-func fetchNutritionData(client *http.Client, userID, token string, time time.Time) (*PlanData, error) {
+func fetchintakeData(client *http.Client, userID, token string, time time.Time) (*PlanData, error) {
 
 	year, month, day := time.Date()
 
@@ -299,6 +299,39 @@ func fetchNutritionData(client *http.Client, userID, token string, time time.Tim
 	}
 
 	return &planData, nil
+}
+
+func updateIntakeDataJSON(filename string, newintakeData map[time.Time]float64) error {
+	file, err := os.ReadFile(filename)
+	var insiderData WeightInsiderData
+
+	if err == nil && len(file) > 0 {
+		if err := json.Unmarshal(file, &insiderData); err != nil {
+			return fmt.Errorf("error unmarshalling existing data from %s: %w", filename, err)
+		}
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("error reading file %s: %w", filename, err)
+	}
+
+	if insiderData.CalorieIntake == nil {
+		insiderData.CalorieIntake = make(map[string]int)
+	}
+	for date, intake := range newintakeData {
+
+		dataString := fmt.Sprintf("%s-%s-%s", strconv.Itoa(date.Year()), strconv.Itoa(int(date.Month())), strconv.Itoa(date.Day()))
+		insiderData.CalorieIntake[dataString] = int(intake)
+	}
+
+	updatedData, err := json.MarshalIndent(insiderData, "", "  ")
+	if err != nil {
+		return fmt.Errorf("error marshalling updated data to JSON: %w", err)
+	}
+
+	if err := os.WriteFile(filename, updatedData, 0644); err != nil {
+		return fmt.Errorf("error writing updated data to file %s: %w", filename, err)
+	}
+
+	return nil
 }
 
 func main() {
@@ -341,7 +374,7 @@ func main() {
 	fmt.Printf("Weight data: %+v\n", weightData.Weights)
 
 	dataJSONPath := "../frontend/data.json"
-	if err := updateDataJSON(dataJSONPath, weightData.Weights); err != nil {
+	if err := updateWeightDataJSON(dataJSONPath, weightData.Weights); err != nil {
 		log.Fatalf("Failed to update data.json: %v", err)
 	}
 	fmt.Printf("Successfully updated weights in %s\n", dataJSONPath)
@@ -363,10 +396,10 @@ func main() {
 		go func(dateToCheck PlanDataDay) {
 			defer wg.Done()
 
-			nutritionData, err := fetchNutritionData(client, idValue, token, dateToCheck.calendarDay)
+			intakeData, err := fetchintakeData(client, idValue, token, dateToCheck.calendarDay)
 
 			if err == nil {
-				dateToCheck.planData = *nutritionData
+				dateToCheck.planData = *intakeData
 			}
 
 			results <- dateToCheck
@@ -383,6 +416,8 @@ func main() {
 		finalResults = append(finalResults, result)
 	}
 
+	intakeData := make(map[time.Time]float64)
+
 	for _, result := range finalResults {
 
 		sum := 0.0
@@ -397,7 +432,14 @@ func main() {
 		if sum == 0.0 {
 			continue
 		}
-		fmt.Printf("Day: %+v, sum:%d\n", result.calendarDay, sum)
+
+		intakeData[result.calendarDay] = sum
 	}
 
+	if err := updateIntakeDataJSON(dataJSONPath, intakeData); err != nil {
+		log.Fatalf("Failed to update data.json: %v", err)
+	}
+	fmt.Printf("Successfully updated weights in %s\n", dataJSONPath)
+
+	//
 }
