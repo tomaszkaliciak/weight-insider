@@ -11,43 +11,43 @@ import { ChartInteractions } from "./chartInteractions.js";
 
 // Debounced handler for analysis range date inputs
 const debouncedRangeInputChange = Utils.debounce(() => {
-    console.log("[FormHandlers] Debounced range input change handler triggered.");
-    const startVal = ui.analysisStartDateInput?.property("value");
-    const endVal = ui.analysisEndDateInput?.property("value");
-    const startDate = startVal ? new Date(startVal) : null;
-    const endDate = endVal ? new Date(endVal) : null;
+  console.log("[FormHandlers] Debounced range input change handler triggered.");
+  const startVal = ui.analysisStartDateInput?.property("value");
+  const endVal = ui.analysisEndDateInput?.property("value");
+  const startDate = Utils.parseDateDMY(startVal);
+  const endDate = Utils.parseDateDMY(endVal);
+
+  if (
+    startDate instanceof Date &&
+    !isNaN(startDate) &&
+    endDate instanceof Date &&
+    !isNaN(endDate) &&
+    startDate <= endDate
+  ) {
+    const newStart = new Date(startDate.setHours(0, 0, 0, 0));
+    const newEnd = new Date(endDate.setHours(23, 59, 59, 999));
+    const currentRange = Selectors.selectAnalysisRange(StateManager.getState());
 
     if (
-      startDate instanceof Date &&
-      !isNaN(startDate) &&
-      endDate instanceof Date &&
-      !isNaN(endDate) &&
-      startDate <= endDate
+      currentRange.start?.getTime() !== newStart.getTime() ||
+      currentRange.end?.getTime() !== newEnd.getTime()
     ) {
-      const newStart = new Date(startDate.setHours(0, 0, 0, 0));
-      const newEnd = new Date(endDate.setHours(23, 59, 59, 999));
-      const currentRange = Selectors.selectAnalysisRange(StateManager.getState());
+      console.log("[FormHandlers Debounce] Dispatching range change from inputs:", newStart, newEnd);
+      StateManager.dispatch({ type: ActionTypes.SET_ANALYSIS_RANGE, payload: { start: newStart, end: newEnd } });
+      StateManager.dispatch({ type: ActionTypes.SET_PINNED_TOOLTIP, payload: null });
+      StateManager.dispatch({ type: ActionTypes.SET_HIGHLIGHTED_DATE, payload: null });
+      StateManager.dispatch({ type: ActionTypes.SET_INTERACTIVE_REGRESSION_RANGE, payload: { start: null, end: null } });
 
-      if (
-        currentRange.start?.getTime() !== newStart.getTime() ||
-        currentRange.end?.getTime() !== newEnd.getTime()
-      ) {
-        console.log("[FormHandlers Debounce] Dispatching range change from inputs:", newStart, newEnd);
-        StateManager.dispatch({ type: ActionTypes.SET_ANALYSIS_RANGE, payload: { start: newStart, end: newEnd } });
-        StateManager.dispatch({ type: ActionTypes.SET_PINNED_TOOLTIP, payload: null });
-        StateManager.dispatch({ type: ActionTypes.SET_HIGHLIGHTED_DATE, payload: null });
-        StateManager.dispatch({ type: ActionTypes.SET_INTERACTIVE_REGRESSION_RANGE, payload: { start: null, end: null } });
+      if (scales.x) scales.x.domain([newStart, newEnd]);
+      ChartInteractions.syncBrushAndZoomToFocus(); // Sync chart view
 
-        if (scales.x) scales.x.domain([newStart, newEnd]);
-        ChartInteractions.syncBrushAndZoomToFocus(); // Sync chart view
-
-        Utils.showStatusMessage("Analysis range updated from input.", "info", 1500);
-      } else {
-        console.log("[FormHandlers Debounce] Range input change detected, but value is same as current state. No dispatch.");
-      }
-    } else if (startVal || endVal) {
-      Utils.showStatusMessage("Invalid date range entered in inputs.", "error");
+      Utils.showStatusMessage("Analysis range updated from input.", "info", 1500);
+    } else {
+      console.log("[FormHandlers Debounce] Range input change detected, but value is same as current state. No dispatch.");
     }
+  } else if (startVal || endVal) {
+    Utils.showStatusMessage("Invalid date range entered in inputs.", "error");
+  }
 }, 400); // Debounce for 400ms
 
 
@@ -121,7 +121,7 @@ export const FormHandlers = {
       currentDisplayStats.avgExpenditureGFit;
     const tdeeSource =
       tdeeEstimate === currentDisplayStats.avgTDEE_Adaptive ? "Adaptive" :
-      tdeeEstimate === currentDisplayStats.avgTDEE_WgtChange ? "Trend" : "GFit";
+        tdeeEstimate === currentDisplayStats.avgTDEE_WgtChange ? "Trend" : "GFit";
 
     if (tdeeEstimate == null || isNaN(tdeeEstimate)) {
       resultDisplay.classed("error", true).text(`Cannot project: TDEE estimate unavailable.`);

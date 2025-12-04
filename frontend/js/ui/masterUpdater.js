@@ -89,8 +89,8 @@ function _updateAnalysisRangeInputsFromFocusScale() {
     focusXDomain[1] instanceof Date &&
     !isNaN(focusXDomain[1])
   ) {
-    const startDateStr = Utils.formatDate(focusXDomain[0]);
-    const endDateStr = Utils.formatDate(focusXDomain[1]);
+    const startDateStr = Utils.formatDateDMY(focusXDomain[0]);
+    const endDateStr = Utils.formatDateDMY(focusXDomain[1]);
     ui.analysisStartDateInput?.property("value", startDateStr);
     ui.analysisEndDateInput?.property("value", endDateStr);
   } else {
@@ -201,14 +201,14 @@ export const MasterUpdater = {
             .attr(
               "width",
               focusWidth +
-                CONFIG.margins.focus.left +
-                CONFIG.margins.focus.right,
+              CONFIG.margins.focus.left +
+              CONFIG.margins.focus.right,
             )
             .attr(
               "height",
               focusHeight +
-                CONFIG.margins.focus.top +
-                CONFIG.margins.focus.bottom,
+              CONFIG.margins.focus.top +
+              CONFIG.margins.focus.bottom,
             );
           ui.svg
             .select("#clip-focus rect")
@@ -238,14 +238,14 @@ export const MasterUpdater = {
             .attr(
               "width",
               contextWidth +
-                CONFIG.margins.context.left +
-                CONFIG.margins.context.right,
+              CONFIG.margins.context.left +
+              CONFIG.margins.context.right,
             )
             .attr(
               "height",
               contextHeight +
-                CONFIG.margins.context.top +
-                CONFIG.margins.context.bottom,
+              CONFIG.margins.context.top +
+              CONFIG.margins.context.bottom,
             );
           brushes.context?.extent([
             [0, 0],

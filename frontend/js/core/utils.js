@@ -66,6 +66,27 @@ export const Utils = {
   },
 
   /**
+   * Parses a date string in 'DD-MM-YYYY' format into a Date object.
+   * @param {string} dateStr - The date string in DD-MM-YYYY format.
+   * @returns {Date|null} The parsed Date object or null if invalid.
+   */
+  parseDateDMY(dateStr) {
+    if (!dateStr || typeof dateStr !== "string") return null;
+    const parts = dateStr.split("-");
+    if (parts.length !== 3) return null;
+    const day = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
+    const year = parseInt(parts[2], 10);
+    if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
+    const date = new Date(year, month, day);
+    // Validate the date is valid (e.g., not Feb 30)
+    if (date.getDate() !== day || date.getMonth() !== month || date.getFullYear() !== year) {
+      return null;
+    }
+    return date;
+  },
+
+  /**
    * Formats a Date object or a valid date string as 'DD Mon 'YY', returning 'N/A' for invalid inputs.
    * @param {Date|string|null|undefined} dateInput - The Date object or string to format.
    * @returns {string} The formatted date string or 'N/A'.
