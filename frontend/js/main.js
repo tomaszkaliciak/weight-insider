@@ -29,6 +29,12 @@ import { MonthlyReportRenderer } from "./ui/renderers/monthlyReportRenderer.js";
 import { WhatWorkedRenderer } from "./ui/renderers/whatWorkedRenderer.js";
 import { PlateauBreakerRenderer } from "./ui/renderers/plateauBreakerRenderer.js";
 import { RollingAveragesRenderer } from "./ui/renderers/rollingAveragesRenderer.js";
+import { TdeeAccuracyRenderer } from "./ui/renderers/tdeeAccuracyRenderer.js";
+import { CalorieHeatmapRenderer } from "./ui/renderers/calorieHeatmapRenderer.js";
+import { StreakTrackerRenderer } from "./ui/renderers/streakTrackerRenderer.js";
+import { WaterWeightRenderer } from "./ui/renderers/waterWeightRenderer.js";
+import { ReverseDietRenderer } from "./ui/renderers/reverseDietRenderer.js";
+import { RateOptimizerRenderer } from "./ui/renderers/rateOptimizerRenderer.js";
 import { WeeklySummaryUpdater } from "./ui/weeklySummaryUpdater.js";
 import { Utils } from "./core/utils.js";
 import { CONFIG } from "./config.js";
@@ -85,6 +91,12 @@ async function initialize() {
     WhatWorkedRenderer.init(); // Pattern analysis from successful periods
     PlateauBreakerRenderer.init(); // Plateau detection and suggestions
     RollingAveragesRenderer.init(); // 7/14/30 day rolling averages
+    TdeeAccuracyRenderer.init(); // TDEE accuracy dashboard
+    CalorieHeatmapRenderer.init(); // Calorie calendar heatmap
+    StreakTrackerRenderer.init(); // Streak tracking and achievements
+    WaterWeightRenderer.init(); // Water weight predictor
+    ReverseDietRenderer.init(); // Reverse diet calculator
+    RateOptimizerRenderer.init(); // Optimal rate suggestions
     WeeklySummaryUpdater.init(); // Listens for weekly data/sort changes
     LegendManager.init(); // Listens for visibility/goal/etc changes
     InsightsGenerator.init(); // Listens for display stats updates
