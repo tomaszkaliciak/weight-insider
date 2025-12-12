@@ -69,15 +69,23 @@ export const DataService = {
 
   mergeRawData(rawDataObjects) {
     console.log("DataService: Merging raw data sources...");
-    const weights = rawDataObjects.weights || {};
+    const weights = rawDataObjects.bodyWeight || rawDataObjects.weights || {};
     const calorieIntake = rawDataObjects.calorieIntake || {};
     const googleFitExpenditure = rawDataObjects.googleFitExpenditure || {};
     const bodyFat = rawDataObjects.bodyFat || {};
+    const protein = rawDataObjects.protein || {};
+    const carbs = rawDataObjects.carbs || {};
+    const fat = rawDataObjects.fat || {};
+    const workouts = rawDataObjects.workouts || {};
     const allDates = new Set([
       ...Object.keys(weights),
       ...Object.keys(calorieIntake),
       ...Object.keys(googleFitExpenditure),
       ...Object.keys(bodyFat),
+      ...Object.keys(protein),
+      ...Object.keys(carbs),
+      ...Object.keys(fat),
+      ...Object.keys(workouts),
     ]);
     let mergedData = [];
     for (const dateStr of allDates) {
@@ -108,6 +116,15 @@ export const DataService = {
         calorieIntake: intake,
         googleFitTDEE: expenditure,
         netBalance: netBalance,
+        // Macro data
+        protein: protein[dateStr] ?? null,
+        carbs: carbs[dateStr] ?? null,
+        fat: fat[dateStr] ?? null,
+        // Workout data
+        workoutCount: workouts[dateStr]?.workoutCount ?? null,
+        totalSets: workouts[dateStr]?.totalSets ?? null,
+        totalVolume: workouts[dateStr]?.totalVolume ?? null,
+        isRestDay: workouts[dateStr]?.isRestDay ?? null,
         // Initialize all derived fields to null initially
         sma: null,
         ema: null,
@@ -483,6 +500,215 @@ export const DataService = {
     const weeksElapsed =
       (targetDate.getTime() - startDate.getTime()) / msPerWeek;
     return initialWeight + weeksElapsed * weeklyIncrease;
+  },
+
+  /**
+   * Detects periodization phases (bulk/cut/maintenance) based on smoothedWeeklyRate.
+   * @param {Array} processedData - The processed data array with smoothedWeeklyRate.
+   * @returns {Array} Array of phase objects with type, startDate, endDate, avgRate, avgCalories, weightChange.
+   */
+  detectPeriodizationPhases(processedData) {
+    if (!processedData || processedData.length === 0) return [];
+
+    const bulkThreshold = CONFIG.BULK_RATE_THRESHOLD_KG_WEEK;
+    const cutThreshold = CONFIG.CUT_RATE_THRESHOLD_KG_WEEK;
+    const minPhaseDuration = CONFIG.MIN_PHASE_DURATION_WEEKS * 7; // Convert weeks to days
+
+    // Filter to data with valid smoothedWeeklyRate
+    const validData = processedData.filter(
+      (d) => d.smoothedWeeklyRate != null && !isNaN(d.smoothedWeeklyRate) && d.date instanceof Date
+    );
+
+    if (validData.length < 7) return []; // Need at least a week of data
+
+    const classifyPhase = (rate) => {
+      if (rate >= bulkThreshold) return 'bulk';
+      if (rate <= cutThreshold) return 'cut';
+      return 'maintenance';
+    };
+
+    // Build phases by tracking consecutive days with same classification
+    let phases = [];
+    let currentPhase = null;
+
+    for (let i = 0; i < validData.length; i++) {
+      const d = validData[i];
+      const phaseType = classifyPhase(d.smoothedWeeklyRate);
+
+      if (!currentPhase || currentPhase.type !== phaseType) {
+        // Start new phase
+        if (currentPhase) {
+          phases.push(currentPhase);
+        }
+        currentPhase = {
+          type: phaseType,
+          startDate: d.date,
+          endDate: d.date,
+          rates: [d.smoothedWeeklyRate],
+          calories: d.calorieIntake != null ? [d.calorieIntake] : [],
+          startWeight: d.sma ?? d.value,
+          endWeight: d.sma ?? d.value,
+        };
+      } else {
+        // Extend current phase
+        currentPhase.endDate = d.date;
+        currentPhase.rates.push(d.smoothedWeeklyRate);
+        if (d.calorieIntake != null) currentPhase.calories.push(d.calorieIntake);
+        currentPhase.endWeight = d.sma ?? d.value;
+      }
+    }
+
+    // Don't forget the last phase
+    if (currentPhase) {
+      phases.push(currentPhase);
+    }
+
+    // Filter out phases shorter than minimum duration and calculate final stats
+    const finalPhases = phases
+      .filter((p) => {
+        const durationDays = (p.endDate.getTime() - p.startDate.getTime()) / 86400000;
+        return durationDays >= minPhaseDuration;
+      })
+      .map((p) => {
+        const durationDays = Math.round((p.endDate.getTime() - p.startDate.getTime()) / 86400000);
+        const durationWeeks = Math.round(durationDays / 7 * 10) / 10; // 1 decimal
+        const avgRate = p.rates.length > 0 ? d3.mean(p.rates) : null;
+        const avgCalories = p.calories.length > 0 ? Math.round(d3.mean(p.calories)) : null;
+        const weightChange =
+          p.startWeight != null && p.endWeight != null
+            ? Math.round((p.endWeight - p.startWeight) * 10) / 10
+            : null;
+
+        return {
+          type: p.type,
+          startDate: p.startDate,
+          endDate: p.endDate,
+          durationDays,
+          durationWeeks,
+          avgRate: avgRate != null ? Math.round(avgRate * 100) / 100 : null,
+          avgCalories,
+          weightChange,
+        };
+      });
+
+    console.log(`DataService: Detected ${finalPhases.length} periodization phases.`);
+    return finalPhases;
+  },
+
+  /**
+   * Calculates correlation between workout metrics and weight changes.
+   * Uses weekly aggregates to smooth out daily noise.
+   * @param {Array<object>} processedData - The fullprocessed data array.
+   * @returns {object} Correlation results including coefficient, weekly data, and interpretation.
+   */
+  calculateWorkoutCorrelation(processedData) {
+    if (!Array.isArray(processedData) || processedData.length < 14) {
+      return { coefficient: null, weeklyData: [], interpretation: 'Insufficient data' };
+    }
+
+    // Group data by week
+    const getWeekKey = (date) => d3.timeFormat("%Y-W%W")(d3.timeMonday(date));
+    const groupedByWeek = d3.group(processedData, (d) => getWeekKey(d.date));
+
+    const weeklyData = [];
+    groupedByWeek.forEach((weekData, weekKey) => {
+      weekData.sort((a, b) => a.date - b.date);
+      if (weekData.length === 0) return;
+
+      // Calculate weekly volume (sum of all workout volume for the week)
+      const weeklyVolume = weekData.reduce((sum, d) => {
+        return sum + (d.totalVolume || 0);
+      }, 0);
+
+      // Calculate weekly training days
+      const trainingDays = weekData.filter(d => d.workoutCount > 0).length;
+
+      // Calculate average weekly rate (smoothed) for this week
+      const validRates = weekData
+        .map(d => d.smoothedWeeklyRate)
+        .filter(r => r != null && !isNaN(r));
+      const avgWeeklyRate = validRates.length > 0 ? d3.mean(validRates) : null;
+
+      // Calculate average SMA weight for the week
+      const validWeights = weekData
+        .map(d => d.sma != null ? d.sma : d.value)
+        .filter(w => w != null && !isNaN(w));
+      const avgWeight = validWeights.length > 0 ? d3.mean(validWeights) : null;
+
+      if (avgWeeklyRate != null && weeklyVolume > 0) {
+        weeklyData.push({
+          weekKey,
+          weekStartDate: d3.timeMonday(weekData[0].date),
+          weeklyVolume,
+          trainingDays,
+          avgWeeklyRate,
+          avgWeight,
+        });
+      }
+    });
+
+    weeklyData.sort((a, b) => a.weekStartDate - b.weekStartDate);
+
+    if (weeklyData.length < 4) {
+      return { coefficient: null, weeklyData, interpretation: 'Need at least 4 weeks of workout data' };
+    }
+
+    // Calculate Pearson correlation between weekly volume and weight change rate
+    const volumeValues = weeklyData.map(w => w.weeklyVolume);
+    const rateValues = weeklyData.map(w => w.avgWeeklyRate);
+
+    let coefficient = null;
+    try {
+      if (typeof ss?.sampleCorrelation === 'function') {
+        coefficient = ss.sampleCorrelation(volumeValues, rateValues);
+      } else {
+        // Fallback: manual Pearson correlation calculation
+        const n = volumeValues.length;
+        const meanV = d3.mean(volumeValues);
+        const meanR = d3.mean(rateValues);
+
+        let numerator = 0;
+        let denomV = 0;
+        let denomR = 0;
+
+        for (let i = 0; i < n; i++) {
+          const dV = volumeValues[i] - meanV;
+          const dR = rateValues[i] - meanR;
+          numerator += dV * dR;
+          denomV += dV * dV;
+          denomR += dR * dR;
+        }
+
+        const denominator = Math.sqrt(denomV * denomR);
+        coefficient = denominator !== 0 ? numerator / denominator : null;
+      }
+    } catch (err) {
+      console.warn('DataService: Error calculating workout correlation:', err);
+    }
+
+    // Interpret the correlation
+    let interpretation = 'No correlation';
+    if (coefficient != null && !isNaN(coefficient)) {
+      const absCoef = Math.abs(coefficient);
+      const direction = coefficient > 0 ? 'positive' : 'negative';
+      if (absCoef >= 0.7) {
+        interpretation = `Strong ${direction} correlation`;
+      } else if (absCoef >= 0.4) {
+        interpretation = `Moderate ${direction} correlation`;
+      } else if (absCoef >= 0.2) {
+        interpretation = `Weak ${direction} correlation`;
+      } else {
+        interpretation = 'No significant correlation';
+      }
+    }
+
+    console.log(`DataService: Calculated workout correlation: ${coefficient?.toFixed(3)} (${interpretation})`);
+    return {
+      coefficient: coefficient != null ? Math.round(coefficient * 1000) / 1000 : null,
+      weeklyData,
+      interpretation,
+      totalWeeks: weeklyData.length,
+    };
   },
 
   /** Aggregates processed data into weekly statistics (Used by StatsManager) */

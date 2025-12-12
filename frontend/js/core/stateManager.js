@@ -37,6 +37,8 @@ export const ActionTypes = {
   INITIALIZATION_FAILED: "INITIALIZATION_FAILED",
   SET_TREND_LINE_DATA: "SET_TREND_LINE_DATA",
   SET_GOAL_LINE_DATA: "SET_GOAL_LINE_DATA",
+  SET_PERIODIZATION_PHASES: "SET_PERIODIZATION_PHASES",
+  SET_WORKOUT_CORRELATION: "SET_WORKOUT_CORRELATION",
 };
 
 // Define the initial structure and default values of the state
@@ -93,6 +95,8 @@ const initialState = {
   goalAchievedDate: null,
   regressionResult: { slope: null, intercept: null, points: [], extendedPoints: [] },
   displayStats: {}, // Display stats are now part of the state
+  periodizationPhases: [], // Detected bulk/cut/maintenance phases
+  workoutCorrelation: { coefficient: null, weeklyData: [], interpretation: 'No data', totalWeeks: 0 },
 };
 
 // Use a deep clone for the initial state
@@ -337,6 +341,12 @@ function reducer(currentState, action) {
       // Expects payload like [...] (array of points)
       nextState.goalLinePoints = action.payload || [];
       break;
+    case ActionTypes.SET_PERIODIZATION_PHASES:
+      nextState.periodizationPhases = action.payload || [];
+      break;
+    case ActionTypes.SET_WORKOUT_CORRELATION:
+      nextState.workoutCorrelation = action.payload || { coefficient: null, weeklyData: [], interpretation: 'No data', totalWeeks: 0 };
+      break;
     default:
       console.warn(`[StateManager] Unknown action type: ${action.type}`);
       return currentState;
@@ -524,7 +534,7 @@ export const StateManager = {
    * @returns {function} An unsubscribe function.
    */
   subscribe(listener) {
-    if (typeof listener !== "function") return () => {};
+    if (typeof listener !== "function") return () => { };
     generalSubscribers.add(listener);
     // Return an unsubscribe function
     return () => {
@@ -540,7 +550,7 @@ export const StateManager = {
    * @returns {function} An unsubscribe function.
    */
   subscribeToSpecificEvent(eventName, listener) {
-    if (typeof listener !== "function") return () => {};
+    if (typeof listener !== "function") return () => { };
     if (!specificSubscribers[eventName]) {
       specificSubscribers[eventName] = new Set();
     }

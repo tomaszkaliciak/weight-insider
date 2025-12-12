@@ -30,6 +30,11 @@ export const CONFIG = Object.freeze({
   trendChangeWindowDays: 14, // Lookback/lookahead window (days) for detecting trend changes
   trendChangeMinSlopeDiffKgWeek: 0.3, // Minimum change in weekly slope (kg/wk) to mark a trend change
 
+  // --- Periodization Phase Detection ---
+  BULK_RATE_THRESHOLD_KG_WEEK: 0.15, // Weekly rate above this = bulking
+  CUT_RATE_THRESHOLD_KG_WEEK: -0.15, // Weekly rate below this = cutting
+  MIN_PHASE_DURATION_WEEKS: 2, // Minimum weeks to count as a distinct phase
+
   // --- Visual Appearance ---
   margins: {
     // SVG margins for charts
@@ -86,6 +91,14 @@ export const CONFIG = Object.freeze({
     scatterDotColor: "#34495e", // Dark Blue/Grey
     secondAxisColor: "#27ae60", // Green (If a second Y-axis were used)
     optimalGainZone: "hsla(120, 60%, 50%, 0.1)", // Light green area
+    // Macro chart colors
+    protein: "#3498db", // Blue
+    carbs: "#f1c40f", // Yellow
+    fat: "#e74c3c", // Red
+    // Periodization phase colors
+    bulkPhase: "#27ae60", // Green
+    cutPhase: "#e74c3c", // Red
+    maintenancePhase: "#95a5a6", // Grey
   },
 });
 

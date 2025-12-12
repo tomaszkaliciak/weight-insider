@@ -39,6 +39,8 @@ export const selectTrendConfig = (state) => state.trendConfig;
 export const selectTrendLine1Points = (state) => state.trendLine1Points;
 export const selectTrendLine2Points = (state) => state.trendLine2Points;
 export const selectGoalLinePoints = (state) => state.goalLinePoints;
+export const selectPeriodizationPhases = (state) => state.periodizationPhases;
+export const selectWorkoutCorrelation = (state) => state.workoutCorrelation;
 
 // --- Derived/Calculated Selectors ---
 
@@ -74,9 +76,9 @@ export const selectEffectiveRegressionRange = (state) => {
   // Use Trend Config start date if valid within analysis range, otherwise use analysis start
   const start =
     trendConfigStartDate instanceof Date && // Use trendConfigStartDate
-    !isNaN(trendConfigStartDate) &&
-    trendConfigStartDate >= analysisRange.start &&
-    trendConfigStartDate <= analysisRange.end
+      !isNaN(trendConfigStartDate) &&
+      trendConfigStartDate >= analysisRange.start &&
+      trendConfigStartDate <= analysisRange.end
       ? trendConfigStartDate
       : analysisRange.start;
 

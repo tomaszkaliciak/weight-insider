@@ -16,6 +16,12 @@ import { LegendManager } from "./ui/legendManager.js";
 import { InsightsGenerator } from "./ui/insightsGenerator.js";
 import { StatsDisplayRenderer } from "./ui/renderers/statsDisplayRenderer.js";
 import { AnnotationListRenderer } from "./ui/renderers/annotationListRenderer.js";
+import { PeriodizationRenderer } from "./ui/renderers/periodizationRenderer.js";
+import { WorkoutCorrelationRenderer } from "./ui/renderers/workoutCorrelationRenderer.js";
+import { PeriodComparisonRenderer } from "./ui/renderers/periodComparisonRenderer.js";
+import { GoalAlertRenderer } from "./ui/renderers/goalAlertRenderer.js";
+import { GoalSuggestionRenderer } from "./ui/renderers/goalSuggestionRenderer.js";
+import { EventCountdownRenderer } from "./ui/renderers/eventCountdownRenderer.js";
 import { WeeklySummaryUpdater } from "./ui/weeklySummaryUpdater.js";
 import { Utils } from "./core/utils.js";
 import { CONFIG } from "./config.js";
@@ -59,6 +65,12 @@ async function initialize() {
     MasterUpdater.init(); // Listens for state changes to trigger renders
     AnnotationListRenderer.init(); // Listens for annotation changes
     StatsDisplayRenderer.init(); // Listens for display stats updates
+    PeriodizationRenderer.init(); // Listens for periodization phase changes
+    WorkoutCorrelationRenderer.init(); // Listens for workout correlation updates
+    PeriodComparisonRenderer.init(); // Multi-period comparison tool
+    GoalAlertRenderer.init(); // Goal progress alerts
+    GoalSuggestionRenderer.init(); // Adaptive goal suggestions
+    EventCountdownRenderer.init(); // Competition/event countdown
     WeeklySummaryUpdater.init(); // Listens for weekly data/sort changes
     LegendManager.init(); // Listens for visibility/goal/etc changes
     InsightsGenerator.init(); // Listens for display stats updates

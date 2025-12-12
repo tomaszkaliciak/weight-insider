@@ -28,7 +28,7 @@ const ss = window.ss || {
     const meanVal = arr.reduce((a, b) => a + b, 0) / n;
     return Math.sqrt(
       arr.map((x) => Math.pow(x - meanVal, 2)).reduce((a, b) => a + b, 0) /
-        (n - 1),
+      (n - 1),
     );
   },
   sum: (arr) => arr.reduce((a, b) => a + b, 0),
@@ -322,61 +322,61 @@ export const StatsManager = {
    * @private
    */
   _calculateTrendLinePoints(stateSnapshot, rate) {
-      const trendConfig = stateSnapshot.trendConfig;
-      const processedData = stateSnapshot.processedData;
-      const analysisRange = stateSnapshot.analysisRange; // Use analysis range for view bounds
+    const trendConfig = stateSnapshot.trendConfig;
+    const processedData = stateSnapshot.processedData;
+    const analysisRange = stateSnapshot.analysisRange; // Use analysis range for view bounds
 
-      if (!trendConfig.isValid || rate == null || processedData.length === 0 || !analysisRange?.start || !analysisRange?.end) {
-          return [];
-      }
+    if (!trendConfig.isValid || rate == null || processedData.length === 0 || !analysisRange?.start || !analysisRange?.end) {
+      return [];
+    }
 
-      const currentXDomain = [analysisRange.start, analysisRange.end]; // Focus domain from state
+    const currentXDomain = [analysisRange.start, analysisRange.end]; // Focus domain from state
 
-      // Generate points slightly beyond the visible range for smoother panning/zooming
-      const bufferDays = 7; // Add a buffer
-      const viewStartDate = d3.timeDay.offset(currentXDomain[0], -bufferDays);
-      const viewEndDate = d3.timeDay.offset(currentXDomain[1], bufferDays);
+    // Generate points slightly beyond the visible range for smoother panning/zooming
+    const bufferDays = 7; // Add a buffer
+    const viewStartDate = d3.timeDay.offset(currentXDomain[0], -bufferDays);
+    const viewEndDate = d3.timeDay.offset(currentXDomain[1], bufferDays);
 
-      // Generate points across the visible range + buffer
-      // Using processedData ensures we have points even if filteredData is sparse at edges
-      const pointsInRange = processedData.filter(
-          (d) => d.date >= viewStartDate && d.date <= viewEndDate,
-      );
+    // Generate points across the visible range + buffer
+    // Using processedData ensures we have points even if filteredData is sparse at edges
+    const pointsInRange = processedData.filter(
+      (d) => d.date >= viewStartDate && d.date <= viewEndDate,
+    );
 
-      const points = pointsInRange
-          .map((d) => ({
-              date: d.date,
-              weight: DataService.calculateTrendWeight(
-                  trendConfig.startDate,
-                  trendConfig.initialWeight,
-                  rate,
-                  d.date,
-              ),
-          }))
-          .filter((p) => p.weight != null);
-
-      // Add explicit start/end points for the buffered view range
-      const trendStart = DataService.calculateTrendWeight(
+    const points = pointsInRange
+      .map((d) => ({
+        date: d.date,
+        weight: DataService.calculateTrendWeight(
           trendConfig.startDate,
           trendConfig.initialWeight,
           rate,
-          viewStartDate,
-      );
-      const trendEnd = DataService.calculateTrendWeight(
-          trendConfig.startDate,
-          trendConfig.initialWeight,
-          rate,
-          viewEndDate,
-      );
-      if (trendStart != null) points.unshift({ date: viewStartDate, weight: trendStart });
-      if (trendEnd != null) points.push({ date: viewEndDate, weight: trendEnd });
+          d.date,
+        ),
+      }))
+      .filter((p) => p.weight != null);
 
-      // Remove duplicates and sort
-      const uniquePoints = Array.from(
-          new Map(points.map((p) => [p.date.getTime(), p])).values(),
-      );
-      uniquePoints.sort((a, b) => a.date - b.date);
-      return uniquePoints;
+    // Add explicit start/end points for the buffered view range
+    const trendStart = DataService.calculateTrendWeight(
+      trendConfig.startDate,
+      trendConfig.initialWeight,
+      rate,
+      viewStartDate,
+    );
+    const trendEnd = DataService.calculateTrendWeight(
+      trendConfig.startDate,
+      trendConfig.initialWeight,
+      rate,
+      viewEndDate,
+    );
+    if (trendStart != null) points.unshift({ date: viewStartDate, weight: trendStart });
+    if (trendEnd != null) points.push({ date: viewEndDate, weight: trendEnd });
+
+    // Remove duplicates and sort
+    const uniquePoints = Array.from(
+      new Map(points.map((p) => [p.date.getTime(), p])).values(),
+    );
+    uniquePoints.sort((a, b) => a.date - b.date);
+    return uniquePoints;
   },
 
   /**
@@ -386,42 +386,42 @@ export const StatsManager = {
    * @private
    */
   _calculateGoalLinePoints(stateSnapshot) {
-      const goal = stateSnapshot.goal;
-      const processedData = stateSnapshot.processedData;
-      const visibility = stateSnapshot.seriesVisibility; // Need visibility state
+    const goal = stateSnapshot.goal;
+    const processedData = stateSnapshot.processedData;
+    const visibility = stateSnapshot.seriesVisibility; // Need visibility state
 
-      // TODO: Remove dependency on scales.xContext. Context domain should be in state.
-      const contextXDomain = scales.xContext?.domain();
+    // TODO: Remove dependency on scales.xContext. Context domain should be in state.
+    const contextXDomain = scales.xContext?.domain();
 
-      if (!visibility.goal || goal.weight == null || processedData.length === 0 || !contextXDomain) {
-          return [];
-      }
-
-      // Find last valid SMA point in the *entire* dataset to start the goal line
-      const lastSmaPoint = [...processedData]
-          .reverse()
-          .find((d) => d.sma != null);
-
-      if (lastSmaPoint?.date && lastSmaPoint.sma != null) {
-          const startDate = lastSmaPoint.date;
-          const startWeight = lastSmaPoint.sma;
-          // End date is goal date or the end of the *context* x-axis if no goal date
-          const endDateRaw = goal.date
-              ? goal.date
-              : contextXDomain?.[1] || startDate; // Fallback to start date if context missing
-
-          if (
-              endDateRaw instanceof Date &&
-              !isNaN(endDateRaw) &&
-              endDateRaw >= startDate
-          ) {
-              return [
-                  { date: startDate, weight: startWeight },
-                  { date: endDateRaw, weight: goal.weight },
-              ];
-          }
-      }
+    if (!visibility.goal || goal.weight == null || processedData.length === 0 || !contextXDomain) {
       return [];
+    }
+
+    // Find last valid SMA point in the *entire* dataset to start the goal line
+    const lastSmaPoint = [...processedData]
+      .reverse()
+      .find((d) => d.sma != null);
+
+    if (lastSmaPoint?.date && lastSmaPoint.sma != null) {
+      const startDate = lastSmaPoint.date;
+      const startWeight = lastSmaPoint.sma;
+      // End date is goal date or the end of the *context* x-axis if no goal date
+      const endDateRaw = goal.date
+        ? goal.date
+        : contextXDomain?.[1] || startDate; // Fallback to start date if context missing
+
+      if (
+        endDateRaw instanceof Date &&
+        !isNaN(endDateRaw) &&
+        endDateRaw >= startDate
+      ) {
+        return [
+          { date: startDate, weight: startWeight },
+          { date: endDateRaw, weight: goal.weight },
+        ];
+      }
+    }
+    return [];
   },
 
   /**
@@ -476,7 +476,7 @@ export const StatsManager = {
       displayStats.minWeightDate = minEntryObject?.date ?? null;
       displayStats.totalChange =
         displayStats.startingWeight != null &&
-        displayStats.currentWeight != null
+          displayStats.currentWeight != null
           ? displayStats.currentWeight - displayStats.startingWeight
           : null;
     } else {
@@ -541,11 +541,11 @@ export const StatsManager = {
         );
         // Calculate Rate Consistency (Std Dev of Smoothed Weekly Rate in filtered range)
         const validRates = results.filteredData
-            .map(d => d.smoothedWeeklyRate)
-            .filter(rate => rate != null && !isNaN(rate));
+          .map(d => d.smoothedWeeklyRate)
+          .filter(rate => rate != null && !isNaN(rate));
         displayStats.rateConsistencyStdDev = validRates.length >= 2 && typeof ss?.standardDeviation === 'function'
-            ? ss.standardDeviation(validRates)
-            : null;
+          ? ss.standardDeviation(validRates)
+          : null;
 
         displayStats.volatility = this._calculateVolatility(
           processedData,
@@ -616,35 +616,35 @@ export const StatsManager = {
           // Calculate extended points for the full analysis range
           let extendedPoints = [];
           if (regCalcResult.slope != null && regCalcResult.intercept != null && regCalcResult.firstDateMs != null && analysisRange.start && analysisRange.end) {
-              const { slope, intercept, firstDateMs } = regCalcResult;
-              const dayInMillis = 86400000;
+            const { slope, intercept, firstDateMs } = regCalcResult;
+            const dayInMillis = 86400000;
 
-              // Generate points covering the analysis range (visible area)
-              // Use a reasonable number of points or base on processedData dates in range
-              // For simplicity, let's just use the start and end of the analysis range
-              const analysisStartDate = analysisRange.start;
-              const analysisEndDate = analysisRange.end;
+            // Generate points covering the analysis range (visible area)
+            // Use a reasonable number of points or base on processedData dates in range
+            // For simplicity, let's just use the start and end of the analysis range
+            const analysisStartDate = analysisRange.start;
+            const analysisEndDate = analysisRange.end;
 
-              const xStart = (analysisStartDate.getTime() - firstDateMs) / dayInMillis;
-              const yStart = slope * xStart + intercept;
+            const xStart = (analysisStartDate.getTime() - firstDateMs) / dayInMillis;
+            const yStart = slope * xStart + intercept;
 
-              const xEnd = (analysisEndDate.getTime() - firstDateMs) / dayInMillis;
-              const yEnd = slope * xEnd + intercept;
+            const xEnd = (analysisEndDate.getTime() - firstDateMs) / dayInMillis;
+            const yEnd = slope * xEnd + intercept;
 
-              if (isFinite(yStart) && isFinite(yEnd)) {
-                  extendedPoints = [
-                      { date: analysisStartDate, regressionValue: yStart },
-                      { date: analysisEndDate, regressionValue: yEnd }
-                  ];
-              }
+            if (isFinite(yStart) && isFinite(yEnd)) {
+              extendedPoints = [
+                { date: analysisStartDate, regressionValue: yStart },
+                { date: analysisEndDate, regressionValue: yEnd }
+              ];
+            }
           }
 
           // Store both original and extended points
           results.regressionResult = {
-              slope: regCalcResult.slope,
-              intercept: regCalcResult.intercept,
-              points: regCalcResult.points, // Original points based on regression range
-              extendedPoints: extendedPoints // Points spanning the analysis range
+            slope: regCalcResult.slope,
+            intercept: regCalcResult.intercept,
+            points: regCalcResult.points, // Original points based on regression range
+            extendedPoints: extendedPoints // Points spanning the analysis range
           };
 
           displayStats.regressionSlopeWeekly =
@@ -734,10 +734,10 @@ export const StatsManager = {
     displayStats.requiredRateForGoal =
       displayStats.targetDate && !isAchieved
         ? this._calculateRequiredRateForGoal(
-            referenceWeightForGoal,
-            displayStats.targetWeight,
-            displayStats.targetDate,
-          )
+          referenceWeightForGoal,
+          displayStats.targetWeight,
+          displayStats.targetDate,
+        )
         : null;
     // Required Calorie Adjustment & Suggested Intake
     displayStats.requiredCalorieAdjustment = null;
@@ -748,14 +748,14 @@ export const StatsManager = {
     // Determine baseline TDEE and its source
     let baselineTDEE = null;
     if (displayStats.avgTDEE_Adaptive != null && !isNaN(displayStats.avgTDEE_Adaptive)) {
-        baselineTDEE = displayStats.avgTDEE_Adaptive;
-        displayStats.baselineTDEESource = 'Adaptive';
+      baselineTDEE = displayStats.avgTDEE_Adaptive;
+      displayStats.baselineTDEESource = 'Adaptive';
     } else if (displayStats.avgTDEE_WgtChange != null && !isNaN(displayStats.avgTDEE_WgtChange)) {
-        baselineTDEE = displayStats.avgTDEE_WgtChange;
-        displayStats.baselineTDEESource = 'Weight Change Trend';
+      baselineTDEE = displayStats.avgTDEE_WgtChange;
+      displayStats.baselineTDEESource = 'Weight Change Trend';
     } else if (displayStats.avgExpenditureGFit != null && !isNaN(displayStats.avgExpenditureGFit)) {
-        baselineTDEE = displayStats.avgExpenditureGFit;
-        displayStats.baselineTDEESource = 'Google Fit';
+      baselineTDEE = displayStats.avgExpenditureGFit;
+      displayStats.baselineTDEESource = 'Google Fit';
     }
 
     // Calculate required calorie adjustment based on target rate vs current trend
@@ -785,7 +785,7 @@ export const StatsManager = {
 
       // Calculate requiredNetCalories only if based on requiredRateForGoal (date-based)
       if (displayStats.requiredRateForGoal != null) {
-          displayStats.requiredNetCalories = targetDailyDeficitSurplus;
+        displayStats.requiredNetCalories = targetDailyDeficitSurplus;
       }
 
       const targetIntake = baselineTDEE + targetDailyDeficitSurplus;
@@ -870,6 +870,18 @@ export const StatsManager = {
         type: "SET_GOAL_ACHIEVED_DATE",
         payload: derivedData.goalAchievedDate,
       });
+      // Periodization Phase Detection
+      const phases = DataService.detectPeriodizationPhases(stateSnapshot.processedData);
+      StateManager.dispatch({
+        type: ActionTypes.SET_PERIODIZATION_PHASES,
+        payload: phases,
+      });
+      // Workout Correlation Calculation
+      const workoutCorrelation = DataService.calculateWorkoutCorrelation(stateSnapshot.processedData);
+      StateManager.dispatch({
+        type: ActionTypes.SET_WORKOUT_CORRELATION,
+        payload: workoutCorrelation,
+      });
       StateManager.dispatch({
         type: "SET_DISPLAY_STATS",
         payload: derivedData.displayStats,
@@ -881,22 +893,22 @@ export const StatsManager = {
       let trendPoints1 = [];
       let trendPoints2 = [];
       if (latestState.trendConfig.isValid) {
-          if (latestState.trendConfig.weeklyIncrease1 != null) {
-              trendPoints1 = this._calculateTrendLinePoints(latestState, latestState.trendConfig.weeklyIncrease1);
-          }
-          if (latestState.trendConfig.weeklyIncrease2 != null) {
-              trendPoints2 = this._calculateTrendLinePoints(latestState, latestState.trendConfig.weeklyIncrease2);
-          }
+        if (latestState.trendConfig.weeklyIncrease1 != null) {
+          trendPoints1 = this._calculateTrendLinePoints(latestState, latestState.trendConfig.weeklyIncrease1);
+        }
+        if (latestState.trendConfig.weeklyIncrease2 != null) {
+          trendPoints2 = this._calculateTrendLinePoints(latestState, latestState.trendConfig.weeklyIncrease2);
+        }
       }
       const goalPoints = this._calculateGoalLinePoints(latestState);
 
       StateManager.dispatch({
-          type: ActionTypes.SET_TREND_LINE_DATA,
-          payload: { trend1: trendPoints1, trend2: trendPoints2 }
+        type: ActionTypes.SET_TREND_LINE_DATA,
+        payload: { trend1: trendPoints1, trend2: trendPoints2 }
       });
       StateManager.dispatch({
-          type: ActionTypes.SET_GOAL_LINE_DATA,
-          payload: goalPoints
+        type: ActionTypes.SET_GOAL_LINE_DATA,
+        payload: goalPoints
       });
 
     } catch (error) {
