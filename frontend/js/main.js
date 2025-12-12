@@ -22,6 +22,14 @@ import { PeriodComparisonRenderer } from "./ui/renderers/periodComparisonRendere
 import { GoalAlertRenderer } from "./ui/renderers/goalAlertRenderer.js";
 import { GoalSuggestionRenderer } from "./ui/renderers/goalSuggestionRenderer.js";
 import { EventCountdownRenderer } from "./ui/renderers/eventCountdownRenderer.js";
+import { WeekendAnalysisRenderer } from "./ui/renderers/weekendAnalysisRenderer.js";
+import { PredictionBandsRenderer } from "./ui/renderers/predictionBandsRenderer.js";
+import { AdaptiveRateRenderer } from "./ui/renderers/adaptiveRateRenderer.js";
+import { CalorieAuditRenderer } from "./ui/renderers/calorieAuditRenderer.js";
+import { MonthlyReportRenderer } from "./ui/renderers/monthlyReportRenderer.js";
+import { WhatWorkedRenderer } from "./ui/renderers/whatWorkedRenderer.js";
+import { PlateauBreakerRenderer } from "./ui/renderers/plateauBreakerRenderer.js";
+import { RollingAveragesRenderer } from "./ui/renderers/rollingAveragesRenderer.js";
 import { WeeklySummaryUpdater } from "./ui/weeklySummaryUpdater.js";
 import { Utils } from "./core/utils.js";
 import { CONFIG } from "./config.js";
@@ -71,6 +79,14 @@ async function initialize() {
     GoalAlertRenderer.init(); // Goal progress alerts
     GoalSuggestionRenderer.init(); // Adaptive goal suggestions
     EventCountdownRenderer.init(); // Competition/event countdown
+    WeekendAnalysisRenderer.init(); // Weekend vs weekday patterns
+    PredictionBandsRenderer.init(); // Weight predictions with confidence
+    AdaptiveRateRenderer.init(); // Personal rate benchmarks
+    CalorieAuditRenderer.init(); // Calorie accuracy analysis
+    MonthlyReportRenderer.init(); // Monthly/quarterly reports
+    WhatWorkedRenderer.init(); // Pattern analysis from successful periods
+    PlateauBreakerRenderer.init(); // Plateau detection and suggestions
+    RollingAveragesRenderer.init(); // 7/14/30 day rolling averages
     WeeklySummaryUpdater.init(); // Listens for weekly data/sort changes
     LegendManager.init(); // Listens for visibility/goal/etc changes
     InsightsGenerator.init(); // Listens for display stats updates

@@ -51,6 +51,16 @@ Welcome to the Weight Insider documentation. This folder contains comprehensive 
 - 🏆 **Milestone Tracking** - Peak week, final prep alerts
 - 📊 **Progress Visualization** - Weight target progress bars
 
+### Advanced Analytics (NEW!)
+- 📅 **Weekend vs Weekday** - Compare eating patterns
+- 🔮 **Weight Predictions** - 4/8/12 week projections with confidence bands
+- 📊 **Adaptive Benchmarks** - Personal rate comparisons
+- 🔍 **Calorie Accuracy** - Audit your logging accuracy
+- 📈 **Monthly Reports** - Periodic progress summaries
+- 💡 **What Worked** - Identify successful patterns
+- 🚀 **Plateau Breaker** - Detection and suggestions
+- 〰️ **Rolling Averages** - 7/14/30 day trend comparison
+
 ---
 
 ## 🗂️ Project Structure
@@ -76,13 +86,21 @@ frontend/
     ├── ui/                 # UI modules
     │   ├── chartSetup.js
     │   ├── masterUpdater.js
-    │   └── renderers/      # Feature panels
+    │   └── renderers/      # Feature panels (14 files)
     │       ├── periodizationRenderer.js
     │       ├── workoutCorrelationRenderer.js
     │       ├── periodComparisonRenderer.js
     │       ├── goalAlertRenderer.js
     │       ├── goalSuggestionRenderer.js
-    │       └── eventCountdownRenderer.js
+    │       ├── eventCountdownRenderer.js
+    │       ├── weekendAnalysisRenderer.js      # NEW
+    │       ├── predictionBandsRenderer.js      # NEW
+    │       ├── adaptiveRateRenderer.js         # NEW
+    │       ├── calorieAuditRenderer.js         # NEW
+    │       ├── monthlyReportRenderer.js        # NEW
+    │       ├── whatWorkedRenderer.js           # NEW
+    │       ├── plateauBreakerRenderer.js       # NEW
+    │       └── rollingAveragesRenderer.js      # NEW
     └── interactions/       # Event handlers
         ├── eventHandlers.js
         └── chartInteractions.js
@@ -107,7 +125,8 @@ When adding new features:
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 2.0 | Dec 2025 | Added 6 new analysis features |
+| 2.1 | Dec 2025 | Added 8 advanced analytics features |
+| 2.0 | Dec 2025 | Added 6 core analysis features |
 | 1.0 | - | Initial release with core charting |
 
 ---

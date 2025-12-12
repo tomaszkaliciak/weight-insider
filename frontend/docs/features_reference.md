@@ -300,18 +300,214 @@ Processed Data
 
 ---
 
+## Advanced Analytics Features
+
+### Weekend vs Weekday Analysis
+
+**File:** `weekendAnalysisRenderer.js`
+
+**Analysis Method:**
+1. Classify each day by `date.getDay()` (0=Sun, 6=Sat)
+2. Separate weekday (Mon-Fri) vs weekend (Sat-Sun) buckets
+3. Calculate mean and standard deviation for each
+
+**Metrics Calculated:**
+| Metric | Formula |
+|--------|---------|
+| Avg Calories | Sum(calories) / count |
+| Avg Daily Change | Mean of day-to-day weight differences |
+| Volatility | Standard deviation of daily changes |
+| Workout Rate | Days with volume > 0 / total days × 100 |
+
+**Weekend Impact Calculation:**
+```javascript
+weekendDamage = (calorieDiff * 2) / 7700 * 7  // kg/week impact
+```
+
+---
+
+### Prediction Bands
+
+**File:** `predictionBandsRenderer.js`
+
+**Prediction Algorithm:**
+```javascript
+expectedChange = currentRate × weeks
+uncertainty = rateStdDev × sqrt(weeks) × 1.5
+expected = currentWeight + expectedChange
+optimistic = expected ± uncertainty (depending on rate direction)
+```
+
+**Confidence Calculation:**
+```javascript
+confidence = max(50, 95 - weeks × 3)  // Decreases over time
+```
+
+---
+
+### Adaptive Rate Benchmarks
+
+**File:** `adaptiveRateRenderer.js`
+
+**Percentile Calculation:**
+```javascript
+percentile = (belowCount / totalCount) × 100
+```
+
+**Classification Thresholds:**
+- Gaining: rate > 0.05 kg/week
+- Losing: rate < -0.05 kg/week
+- Maintenance: |rate| ≤ 0.05 kg/week
+
+**Benchmark Data:**
+- `bulkRates`: All weeks with rate > 0.1
+- `cutRates`: All weeks with rate < -0.1
+- Average, median, and max for each category
+
+---
+
+### Calorie Accuracy Audit
+
+**File:** `calorieAuditRenderer.js`
+
+**Accuracy Calculation:**
+```javascript
+expectedChange = -totalDeficit / KCALS_PER_KG
+totalDeficit = (TDEE × days) - totalCaloriesLogged
+discrepancy = actualChange - expectedChange
+dailyDiscrepancy = (discrepancy × KCALS_PER_KG) / days
+accuracy = max(0, 100 - |discrepancy / expectedChange| × 100)
+```
+
+**Accuracy Thresholds:**
+| Score | Classification |
+|-------|----------------|
+| ≥ 80% | Excellent |
+| 60-79% | Good |
+| 40-59% | Moderate |
+| < 40% | Poor |
+
+---
+
+### Monthly/Quarterly Reports
+
+**File:** `monthlyReportRenderer.js`
+
+**Monthly Stats Structure:**
+```javascript
+{
+  key: "2024-01",
+  monthName: "Jan",
+  daysLogged: number,
+  consistency: (logged / daysInMonth) × 100,
+  startWeight: first weight in month,
+  endWeight: last weight in month,
+  avgCalories: mean(calories),
+  avgRate: mean(smoothedWeeklyRate)
+}
+```
+
+**Quarterly Aggregation:**
+- Groups months by quarter (Q1=Jan-Mar, etc.)
+- Calculates combined weight change
+- Averages consistency across months
+
+---
+
+### What Worked Analysis
+
+**File:** `whatWorkedRenderer.js`
+
+**Pattern Detection:**
+1. **Find cut periods**: consecutive days with rate < -0.2
+2. **Find bulk periods**: consecutive days with rate > 0.1
+3. **Minimum period length**: 14 days
+
+**Insights Generated:**
+| Insight | Algorithm |
+|---------|-----------|
+| Best Cut Calories | Avg calories for period with most negative rate |
+| Best Bulk Calories | Avg calories for period with rate 0.1-0.4 |
+| Volume Impact | Compare high vs low volume quartile rates |
+| Longest Phase | Max duration across detected phases |
+| Consistency Impact | Compare 6+ logged days vs <5 logged days |
+
+---
+
+### Plateau Breaker
+
+**File:** `plateauBreakerRenderer.js`
+
+**Plateau Detection:**
+```javascript
+isInPlateau = avgAbsoluteRate < 0.15 (last 14 days)
+```
+
+**Historical Plateau Analysis:**
+- Detects periods where |rate| < 0.12 for 14+ days
+- Records how plateau ended (calorie change)
+- Stores break pattern for suggestions
+
+**Suggestion Priority:**
+| Priority | Suggestion Type |
+|----------|-----------------|
+| High | Based on user history |
+| High | Diet break (if > 21 days) |
+| Medium | Increase activity |
+| Medium | Water retention check |
+| Low | Tracking audit |
+
+---
+
+### Rolling Averages
+
+**File:** `rollingAveragesRenderer.js`
+
+**Moving Average Windows:**
+| Window | Data Points |
+|--------|-------------|
+| 7-day | Last 7 weight entries |
+| 14-day | Last 14 weight entries |
+| 30-day | Last 30 weight entries |
+
+**Trend Calculation:**
+```javascript
+trend = secondHalfAvg - firstHalfAvg  // For each window
+```
+
+**Momentum:**
+```javascript
+momentum = avg7day - avg30day
+```
+
+**Reversal Detection:**
+```javascript
+bullishReversal = shortTrend > 0.1 && longTrend < -0.1
+bearishReversal = shortTrend < -0.1 && longTrend > 0.1
+```
+
+---
+
 ## File Structure
 
-### New Renderer Components
+### All Renderer Components
 
 ```
 js/ui/renderers/
-├── periodizationRenderer.js    # Phase detection display
+├── periodizationRenderer.js         # Phase detection
 ├── workoutCorrelationRenderer.js    # Correlation analysis
-├── periodComparisonRenderer.js # Period comparison tool
-├── goalAlertRenderer.js        # Progress alerts
-├── goalSuggestionRenderer.js   # Adaptive suggestions
-└── eventCountdownRenderer.js   # Event countdown
+├── periodComparisonRenderer.js      # Period comparison
+├── goalAlertRenderer.js             # Progress alerts
+├── goalSuggestionRenderer.js        # Goal suggestions
+├── eventCountdownRenderer.js        # Event countdown
+├── weekendAnalysisRenderer.js       # Weekend vs weekday
+├── predictionBandsRenderer.js       # Weight predictions
+├── adaptiveRateRenderer.js          # Personal benchmarks
+├── calorieAuditRenderer.js          # Calorie accuracy
+├── monthlyReportRenderer.js         # Monthly reports
+├── whatWorkedRenderer.js            # Pattern analysis
+├── plateauBreakerRenderer.js        # Plateau detection
+└── rollingAveragesRenderer.js       # Rolling averages
 ```
 
 ### Initialization Order (`main.js`)
@@ -321,12 +517,20 @@ js/ui/renderers/
 MasterUpdater.init();
 AnnotationListRenderer.init();
 StatsDisplayRenderer.init();
-PeriodizationRenderer.init();        // NEW
-WorkoutCorrelationRenderer.init();   // NEW
-PeriodComparisonRenderer.init();     // NEW
-GoalAlertRenderer.init();            // NEW
-GoalSuggestionRenderer.init();       // NEW
-EventCountdownRenderer.init();       // NEW
+PeriodizationRenderer.init();
+WorkoutCorrelationRenderer.init();
+PeriodComparisonRenderer.init();
+GoalAlertRenderer.init();
+GoalSuggestionRenderer.init();
+EventCountdownRenderer.init();
+WeekendAnalysisRenderer.init();      // Advanced
+PredictionBandsRenderer.init();      // Advanced
+AdaptiveRateRenderer.init();         // Advanced
+CalorieAuditRenderer.init();         // Advanced
+MonthlyReportRenderer.init();        // Advanced
+WhatWorkedRenderer.init();           // Advanced
+PlateauBreakerRenderer.init();       // Advanced
+RollingAveragesRenderer.init();      // Advanced
 WeeklySummaryUpdater.init();
 LegendManager.init();
 InsightsGenerator.init();

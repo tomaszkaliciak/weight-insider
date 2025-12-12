@@ -11,7 +11,8 @@ Welcome to **Weight Insider** - an advanced weight tracking and analysis applica
 3. [Analysis Features](#analysis-features)
 4. [Goal Management](#goal-management)
 5. [Event & Competition Tracking](#event--competition-tracking)
-6. [Tips for Best Results](#tips-for-best-results)
+6. [Advanced Analytics](#advanced-analytics)
+7. [Tips for Best Results](#tips-for-best-results)
 
 ---
 
@@ -229,6 +230,156 @@ Track upcoming events like competitions, photoshoots, or special occasions.
 - Events are saved in your browser's local storage
 - Click **×** to remove an event
 - Past events are automatically hidden
+
+---
+
+## Advanced Analytics
+
+### 📅 Weekend vs Weekday Analysis
+
+**What it does:** Compares your eating and training patterns between weekdays and weekends.
+
+**Metrics Shown:**
+| Metric | Weekdays | Weekends |
+|--------|----------|----------|
+| Average Calories | Mon-Fri average | Sat-Sun average |
+| Daily Weight Change | Typical fluctuation | Weekend impact |
+| Volatility | Stability measure | Stability measure |
+| Training Rate | % days with workouts | % days with workouts |
+
+**Key Insight:** Shows "Weekend Calorie Difference" - if positive, you're eating more on weekends which may slow progress. The panel suggests a weekday calorie buffer if needed.
+
+---
+
+### 🔮 Weight Predictions
+
+**What it does:** Projects your future weight based on current trends with confidence intervals.
+
+**Time Frames:**
+| Period | Use Case |
+|--------|----------|
+| 4 weeks | Short-term planning |
+| 8 weeks | Medium-term goals |
+| 12 weeks | Competition prep, phases |
+
+**Reading the Predictions:**
+- **Expected** - Most likely weight based on current rate
+- **Range** - Best/worst case based on your rate variability
+- **Confidence %** - Higher = more reliable prediction
+
+---
+
+### 📊 Adaptive Benchmarks
+
+**What it does:** Compares your current rate to your personal history, not generic standards.
+
+**Features:**
+- **Percentile Ranking** - "You're in the 75th percentile of your bulk phases"
+- **Rate Comparison** - Current rate vs your historical average
+- **Personal Records** - Your best bulk and cut rates
+
+**Why it matters:** Generic advice says "lose 0.5-1kg/week" but YOUR sustainable rate might be different. This shows what actually works for you.
+
+---
+
+### 🔍 Calorie Accuracy Audit
+
+**What it does:** Compares expected weight change (from logged calories) vs actual change to identify logging accuracy issues.
+
+**Accuracy Score:**
+| Score | Meaning |
+|-------|---------|
+| 80-100% | Excellent - logging is accurate |
+| 60-79% | Good - minor discrepancies |
+| 40-59% | Moderate - check portion sizes |
+| <40% | Poor - significant underreporting likely |
+
+**Possible Reasons for Discrepancy:**
+- Underreporting (snacks, cooking oils, drinks)
+- TDEE estimate too high/low
+- Water retention fluctuations
+
+**Weekly Breakdown:** Shows expected vs actual change for each week.
+
+---
+
+### 📈 Monthly/Quarterly Reports
+
+**What it does:** Generates periodic summaries of your progress.
+
+**Monthly View:**
+- Start/end weight for each month
+- Average calories and rate
+- Consistency score (% of days logged)
+- Weight range (min-max)
+
+**Quarterly View:**
+- Aggregated progress across 3 months
+- Phase breakdown
+- Average consistency
+
+**Highlights:**
+- 🏆 Best Month - highest consistency
+- 📊 Total Progress - overall weight change
+
+---
+
+### 💡 What Worked
+
+**What it does:** Analyzes your most successful periods to identify winning patterns.
+
+**Insights Generated:**
+| Insight | Example |
+|---------|---------|
+| Best Cut Calories | "Around 1800 kcal/day achieved -0.7 kg/week" |
+| Best Bulk Calories | "Around 2600 kcal/day achieved +0.2 kg/week" |
+| Volume Impact | "Higher volume correlates with more weight loss" |
+| Longest Phase | "You can sustain cuts for 10+ weeks" |
+| Consistency Impact | "Consistent weeks average better results" |
+
+**Why it matters:** Instead of following generic advice, use YOUR proven strategies.
+
+---
+
+### 🚀 Plateau Breaker
+
+**What it does:** Detects if you're in a plateau and suggests strategies based on your history.
+
+**Plateau Detection:**
+- Triggers when absolute weekly rate < 0.15 kg for 14+ days
+- Shows duration and stable weight
+
+**Suggestions (Prioritized):**
+1. **Based on Your History** - What broke past plateaus
+2. **Diet Break** - If plateau > 21 days
+3. **Increase Activity** - Add steps or sessions
+4. **Water Retention Check** - Sodium, stress, sleep
+5. **Tracking Audit** - Re-weigh portions
+
+**Historical Plateaus:** Shows when past plateaus occurred and how they were broken.
+
+---
+
+### 〰️ Rolling Averages
+
+**What it does:** Displays 7-day, 14-day, and 30-day rolling averages for trend comparison.
+
+**Reading the Averages:**
+| Average | Purpose |
+|---------|---------|
+| 7-Day | Short-term trend, responsive |
+| 14-Day | Medium-term, balances noise |
+| 30-Day | Long-term trend, stable |
+
+**Momentum Indicator:**
+- Compares 7-day to 30-day average
+- **Gaining** = short-term trending higher
+- **Losing** = short-term trending lower
+- **Stable** = aligned trends
+
+**Reversal Detection:** Alerts when short-term trend opposes long-term (potential turning point).
+
+**Tip:** When 7-day average crosses above 30-day, it often signals a trend reversal.
 
 ---
 
