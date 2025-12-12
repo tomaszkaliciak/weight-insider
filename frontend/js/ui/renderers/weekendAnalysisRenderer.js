@@ -12,104 +12,101 @@ import { Utils } from '../../core/utils.js';
  * - Training frequency
  */
 export const WeekendAnalysisRenderer = {
-    _container: null,
+  _container: null,
 
-    init() {
-        this._container = document.getElementById('weekend-analysis-content');
-        if (!this._container) {
-            console.warn('[WeekendAnalysisRenderer] Container not found.');
-            return;
-        }
+  init() {
+    this._container = document.getElementById('weekend-analysis-content');
+    if (!this._container) {
+      console.warn('[WeekendAnalysisRenderer] Container not found.');
+      return;
+    }
 
-        StateManager.subscribe((stateChanges) => {
-            if (stateChanges.action.type.includes('FILTERED_DATA') ||
-                stateChanges.action.type.includes('PROCESSED_DATA')) {
-                this._analyze();
-            }
-        });
+    StateManager.subscribe((stateChanges) => {
+      if (stateChanges.action.type.includes('FILTERED_DATA') ||
+        stateChanges.action.type.includes('PROCESSED_DATA')) {
+        this._analyze();
+      }
+    });
 
-        setTimeout(() => this._analyze(), 800);
-        console.log('[WeekendAnalysisRenderer] Initialized.');
-    },
+    setTimeout(() => this._analyze(), 800);
+    console.log('[WeekendAnalysisRenderer] Initialized.');
+  },
 
-    _analyze() {
-        const state = StateManager.getState();
-        const filteredData = Selectors.selectFilteredData(state);
+  _analyze() {
+    const state = StateManager.getState();
+    const filteredData = Selectors.selectFilteredData(state);
 
-        if (!filteredData || filteredData.length < 14) {
-            this._renderNoData();
-            return;
-        }
+    if (!filteredData || filteredData.length < 14) {
+      this._renderNoData();
+      return;
+    }
 
-        const analysis = this._calculatePatterns(filteredData);
-        this._render(analysis);
-    },
+    const analysis = this._calculatePatterns(filteredData);
+    this._render(analysis);
+  },
 
-    _calculatePatterns(data) {
-        const weekdays = { calories: [], weights: [], changes: [], workouts: 0, days: 0 };
-        const weekends = { calories: [], weights: [], changes: [], workouts: 0, days: 0 };
+  _calculatePatterns(data) {
+    const weekdays = { calories: [], weights: [], changes: [], days: 0 };
+    const weekends = { calories: [], weights: [], changes: [], days: 0 };
 
-        data.forEach((d, i) => {
-            const dayOfWeek = d.date.getDay(); // 0 = Sunday, 6 = Saturday
-            const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-            const bucket = isWeekend ? weekends : weekdays;
+    data.forEach((d, i) => {
+      const dayOfWeek = d.date.getDay(); // 0 = Sunday, 6 = Saturday
+      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+      const bucket = isWeekend ? weekends : weekdays;
 
-            bucket.days++;
-            if (d.calorieIntake != null) bucket.calories.push(d.calorieIntake);
-            if (d.value != null) bucket.weights.push(d.value);
-            if (d.totalVolume != null && d.totalVolume > 0) bucket.workouts++;
+      bucket.days++;
+      if (d.calorieIntake != null) bucket.calories.push(d.calorieIntake);
+      if (d.value != null) bucket.weights.push(d.value);
 
-            // Calculate day-to-day change
-            if (i > 0 && d.value != null && data[i - 1].value != null) {
-                bucket.changes.push(d.value - data[i - 1].value);
-            }
-        });
+      // Calculate day-to-day change
+      if (i > 0 && d.value != null && data[i - 1].value != null) {
+        bucket.changes.push(d.value - data[i - 1].value);
+      }
+    });
 
-        const mean = arr => arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
-        const stdDev = arr => {
-            if (arr.length < 2) return null;
-            const m = mean(arr);
-            return Math.sqrt(arr.reduce((sum, x) => sum + Math.pow(x - m, 2), 0) / arr.length);
-        };
+    const mean = arr => arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
+    const stdDev = arr => {
+      if (arr.length < 2) return null;
+      const m = mean(arr);
+      return Math.sqrt(arr.reduce((sum, x) => sum + Math.pow(x - m, 2), 0) / arr.length);
+    };
 
-        return {
-            weekday: {
-                avgCalories: mean(weekdays.calories),
-                avgChange: mean(weekdays.changes),
-                volatility: stdDev(weekdays.changes),
-                workoutRate: weekdays.days > 0 ? (weekdays.workouts / weekdays.days * 100) : 0,
-                daysAnalyzed: weekdays.days
-            },
-            weekend: {
-                avgCalories: mean(weekends.calories),
-                avgChange: mean(weekends.changes),
-                volatility: stdDev(weekends.changes),
-                workoutRate: weekends.days > 0 ? (weekends.workouts / weekends.days * 100) : 0,
-                daysAnalyzed: weekends.days
-            },
-            calorieDiff: mean(weekends.calories) != null && mean(weekdays.calories) != null
-                ? mean(weekends.calories) - mean(weekdays.calories) : null,
-            weeklyWeekendImpact: mean(weekends.calories) != null && mean(weekdays.calories) != null
-                ? ((mean(weekends.calories) - mean(weekdays.calories)) * 2) / 7 : null // Avg daily impact spread over week
-        };
-    },
+    return {
+      weekday: {
+        avgCalories: mean(weekdays.calories),
+        avgChange: mean(weekdays.changes),
+        volatility: stdDev(weekdays.changes),
+        daysAnalyzed: weekdays.days
+      },
+      weekend: {
+        avgCalories: mean(weekends.calories),
+        avgChange: mean(weekends.changes),
+        volatility: stdDev(weekends.changes),
+        daysAnalyzed: weekends.days
+      },
+      calorieDiff: mean(weekends.calories) != null && mean(weekdays.calories) != null
+        ? mean(weekends.calories) - mean(weekdays.calories) : null,
+      weeklyWeekendImpact: mean(weekends.calories) != null && mean(weekdays.calories) != null
+        ? ((mean(weekends.calories) - mean(weekdays.calories)) * 2) / 7 : null // Avg daily impact spread over week
+    };
+  },
 
-    _render(analysis) {
-        if (!this._container) return;
+  _render(analysis) {
+    if (!this._container) return;
 
-        const formatVal = (v, dec = 0, suffix = '') => v != null ? `${v.toFixed(dec)}${suffix}` : 'N/A';
-        const formatDiff = (v, dec = 0, suffix = '') => {
-            if (v == null) return 'N/A';
-            const sign = v > 0 ? '+' : '';
-            const cls = v > 50 ? 'warning' : v < -50 ? 'good' : 'neutral';
-            return `<span class="${cls}">${sign}${v.toFixed(dec)}${suffix}</span>`;
-        };
+    const formatVal = (v, dec = 0, suffix = '') => v != null ? `${v.toFixed(dec)}${suffix}` : 'N/A';
+    const formatDiff = (v, dec = 0, suffix = '') => {
+      if (v == null) return 'N/A';
+      const sign = v > 0 ? '+' : '';
+      const cls = v > 50 ? 'warning' : v < -50 ? 'good' : 'neutral';
+      return `<span class="${cls}">${sign}${v.toFixed(dec)}${suffix}</span>`;
+    };
 
-        const weekendDamage = analysis.calorieDiff != null
-            ? (analysis.calorieDiff * 2 / 7700 * 7).toFixed(2) // kg/week impact
-            : null;
+    const weekendDamage = analysis.calorieDiff != null
+      ? (analysis.calorieDiff * 2 / 7700 * 7).toFixed(2) // kg/week impact
+      : null;
 
-        this._container.innerHTML = `
+    this._container.innerHTML = `
       <div class="weekend-analysis-grid">
         <div class="analysis-column">
           <h4 class="column-title">📅 Weekdays (Mon-Fri)</h4>
@@ -124,10 +121,6 @@ export const WeekendAnalysisRenderer = {
           <div class="stat-row">
             <span class="stat-label">Volatility</span>
             <span class="stat-value">±${formatVal(analysis.weekday.volatility, 2, ' kg')}</span>
-          </div>
-          <div class="stat-row">
-            <span class="stat-label">Training Days</span>
-            <span class="stat-value">${formatVal(analysis.weekday.workoutRate, 0, '%')}</span>
           </div>
         </div>
         
@@ -145,10 +138,6 @@ export const WeekendAnalysisRenderer = {
             <span class="stat-label">Volatility</span>
             <span class="stat-value">±${formatVal(analysis.weekend.volatility, 2, ' kg')}</span>
           </div>
-          <div class="stat-row">
-            <span class="stat-label">Training Days</span>
-            <span class="stat-value">${formatVal(analysis.weekend.workoutRate, 0, '%')}</span>
-          </div>
         </div>
       </div>
       
@@ -158,11 +147,11 @@ export const WeekendAnalysisRenderer = {
           <div class="summary-value">${formatDiff(analysis.calorieDiff, 0, ' kcal/day')}</div>
           <div class="summary-note">
             ${analysis.calorieDiff > 200
-                ? `⚠️ Weekly impact: ~${weekendDamage} kg slower progress`
-                : analysis.calorieDiff < -100
-                    ? '✅ Great discipline on weekends!'
-                    : '👍 Weekends well controlled'
-            }
+        ? `⚠️ Weekly impact: ~${weekendDamage} kg slower progress`
+        : analysis.calorieDiff < -100
+          ? '✅ Great discipline on weekends!'
+          : '👍 Weekends well controlled'
+      }
           </div>
         </div>
         
@@ -174,15 +163,15 @@ export const WeekendAnalysisRenderer = {
         ` : ''}
       </div>
     `;
-    },
+  },
 
-    _renderNoData() {
-        if (!this._container) return;
-        this._container.innerHTML = `
+  _renderNoData() {
+    if (!this._container) return;
+    this._container.innerHTML = `
       <div class="empty-state-message">
         <p>Not enough data</p>
         <small>Need at least 2 weeks of data for analysis</small>
       </div>
     `;
-    }
+  }
 };

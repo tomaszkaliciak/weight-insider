@@ -106,31 +106,6 @@ Add notes to mark important events:
 
 ---
 
-### 💪 Workout Correlation
-
-**What it does:** Analyzes the relationship between your training volume and weight changes.
-
-**How it works:**
-- Groups data by week
-- Calculates total training volume (sets × weight × reps)
-- Computes Pearson correlation coefficient (r) between volume and weight change
-
-**Interpreting Results:**
-
-| Correlation | Meaning |
-|-------------|---------|
-| **Strong positive** (r > 0.7) | Higher volume = more weight gain (muscle building) |
-| **Strong negative** (r < -0.7) | Higher volume = more weight loss |
-| **Moderate** (0.4-0.7) | Notable relationship exists |
-| **Weak** (0.2-0.4) | Minor relationship |
-| **None** (< 0.2) | No significant pattern |
-
-**How to use:**
-- View the **Workout Correlation** panel
-- Consider the interpretation context - during a bulk, positive correlation is expected
-
----
-
 ### ⚖️ Period Comparison
 
 **What it does:** Compare any two time periods side-by-side.
@@ -245,7 +220,6 @@ Track upcoming events like competitions, photoshoots, or special occasions.
 | Average Calories | Mon-Fri average | Sat-Sun average |
 | Daily Weight Change | Typical fluctuation | Weekend impact |
 | Volatility | Stability measure | Stability measure |
-| Training Rate | % days with workouts | % days with workouts |
 
 **Key Insight:** Shows "Weekend Calorie Difference" - if positive, you're eating more on weekends which may slow progress. The panel suggests a weekday calorie buffer if needed.
 
@@ -443,14 +417,6 @@ Your weight data is stored in `data.json` with the following structure:
   },
   "calorieIntake": {
     "2024-01-15": 2500
-  },
-  "workouts": {
-    "2024-01-15": {
-      "workoutCount": 1,
-      "totalSets": 25,
-      "totalVolume": 15000,
-      "isRestDay": false
-    }
   }
 }
 ```

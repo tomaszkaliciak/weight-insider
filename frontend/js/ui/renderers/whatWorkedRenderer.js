@@ -63,17 +63,13 @@ export const WhatWorkedRenderer = {
             if (bestBulk) insights.push(bestBulk);
         }
 
-        // 3. Find optimal training volume correlation
-        const volumeInsight = this._analyzeVolumePattern(data);
-        if (volumeInsight) insights.push(volumeInsight);
-
-        // 4. Analyze successful phase characteristics
+        // 3. Analyze successful phase characteristics
         if (phases && phases.length >= 2) {
             const phaseInsight = this._analyzeSuccessfulPhases(phases);
             if (phaseInsight) insights.push(phaseInsight);
         }
 
-        // 5. Find consistency patterns
+        // 4. Find consistency patterns
         const consistencyInsight = this._analyzeConsistencyImpact(data);
         if (consistencyInsight) insights.push(consistencyInsight);
 
@@ -185,40 +181,6 @@ export const WhatWorkedRenderer = {
             finding: `Around ${Math.round(best.avgCalories)} kcal/day`,
             detail: `Achieved ${best.avgRate.toFixed(2)} kg/week gain over ${best.duration} days`,
             recommendation: `For lean bulking, target ${Math.round(best.avgCalories - 100)} - ${Math.round(best.avgCalories + 100)} kcal/day`
-        };
-    },
-
-    _analyzeVolumePattern(data) {
-        const withVolume = data.filter(d => d.totalVolume != null && d.totalVolume > 0 && d.smoothedWeeklyRate != null);
-
-        if (withVolume.length < 14) return null;
-
-        // Group by volume quartiles
-        const volumes = withVolume.map(d => d.totalVolume).sort((a, b) => a - b);
-        const q1 = volumes[Math.floor(volumes.length * 0.25)];
-        const q3 = volumes[Math.floor(volumes.length * 0.75)];
-
-        const lowVolume = withVolume.filter(d => d.totalVolume <= q1);
-        const highVolume = withVolume.filter(d => d.totalVolume >= q3);
-
-        const avgRateLow = lowVolume.reduce((s, d) => s + d.smoothedWeeklyRate, 0) / lowVolume.length;
-        const avgRateHigh = highVolume.reduce((s, d) => s + d.smoothedWeeklyRate, 0) / highVolume.length;
-
-        const volumeDiff = avgRateHigh - avgRateLow;
-
-        return {
-            type: 'volume',
-            icon: '🏋️',
-            title: 'Training Volume Impact',
-            finding: volumeDiff > 0.1
-                ? 'Higher volume correlates with more weight gain'
-                : volumeDiff < -0.1
-                    ? 'Higher volume correlates with more weight loss'
-                    : 'Volume has minimal impact on your weight trend',
-            detail: `High volume days: ${avgRateHigh.toFixed(2)} kg/wk avg vs Low volume: ${avgRateLow.toFixed(2)} kg/wk`,
-            recommendation: volumeDiff > 0.1
-                ? 'Increase volume when bulking, reduce during aggressive cuts'
-                : 'Your weight responds consistently regardless of volume'
         };
     },
 

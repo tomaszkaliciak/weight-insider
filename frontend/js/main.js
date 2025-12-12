@@ -17,7 +17,6 @@ import { InsightsGenerator } from "./ui/insightsGenerator.js";
 import { StatsDisplayRenderer } from "./ui/renderers/statsDisplayRenderer.js";
 import { AnnotationListRenderer } from "./ui/renderers/annotationListRenderer.js";
 import { PeriodizationRenderer } from "./ui/renderers/periodizationRenderer.js";
-import { WorkoutCorrelationRenderer } from "./ui/renderers/workoutCorrelationRenderer.js";
 import { PeriodComparisonRenderer } from "./ui/renderers/periodComparisonRenderer.js";
 import { GoalAlertRenderer } from "./ui/renderers/goalAlertRenderer.js";
 import { GoalSuggestionRenderer } from "./ui/renderers/goalSuggestionRenderer.js";
@@ -74,7 +73,6 @@ async function initialize() {
     AnnotationListRenderer.init(); // Listens for annotation changes
     StatsDisplayRenderer.init(); // Listens for display stats updates
     PeriodizationRenderer.init(); // Listens for periodization phase changes
-    WorkoutCorrelationRenderer.init(); // Listens for workout correlation updates
     PeriodComparisonRenderer.init(); // Multi-period comparison tool
     GoalAlertRenderer.init(); // Goal progress alerts
     GoalSuggestionRenderer.init(); // Adaptive goal suggestions

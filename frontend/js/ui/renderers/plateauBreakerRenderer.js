@@ -223,20 +223,6 @@ export const PlateauBreakerRenderer = {
             priority: 'medium'
         });
 
-        // Volume-based suggestion
-        const recentVolume = data.slice(-14).filter(d => d.totalVolume != null).map(d => d.totalVolume);
-        if (recentVolume.length > 0) {
-            const avgVolume = recentVolume.reduce((a, b) => a + b, 0) / recentVolume.length;
-            suggestions.push({
-                icon: '🏋️',
-                title: 'Adjust Training',
-                description: avgVolume > 0
-                    ? 'Try a deload week (50% volume) to reduce inflammation and allow water weight to drop.'
-                    : 'Adding resistance training can boost metabolism and break the plateau.',
-                priority: 'low'
-            });
-        }
-
         return suggestions.sort((a, b) => {
             const priorityOrder = { high: 0, medium: 1, low: 2 };
             return priorityOrder[a.priority] - priorityOrder[b.priority];

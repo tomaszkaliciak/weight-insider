@@ -38,7 +38,6 @@ Welcome to the Weight Insider documentation. This folder contains comprehensive 
 
 ### Analysis Features
 - 🔄 **Periodization Analysis** - Auto-detect bulk/cut/maintenance phases
-- 💪 **Workout Correlation** - Training volume vs weight relationship
 - ⚖️ **Period Comparison** - Compare any two time periods
 
 ### Goal Management
@@ -86,9 +85,8 @@ frontend/
     ├── ui/                 # UI modules
     │   ├── chartSetup.js
     │   ├── masterUpdater.js
-    │   └── renderers/      # Feature panels (14 files)
+    │   └── renderers/      # Feature panels (13 files)
     │       ├── periodizationRenderer.js
-    │       ├── workoutCorrelationRenderer.js
     │       ├── periodComparisonRenderer.js
     │       ├── goalAlertRenderer.js
     │       ├── goalSuggestionRenderer.js
