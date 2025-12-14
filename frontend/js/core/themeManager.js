@@ -86,10 +86,19 @@ export const ThemeManager = {
   _applyTheme(newTheme) {
     const theme = newTheme === "dark" ? "dark" : "light";
     console.log(`[ThemeManager] Applying theme: ${theme}`);
+
+    // Add transitioning class for smooth animation
+    ui.body?.classed("theme-transitioning", true);
+
     ui.body?.classed("dark-theme", theme === "dark");
     localStorage.setItem(CONFIG.localStorageKeys.theme, theme);
     this._updateColorsObject(); // Recalculate colors based on new theme
     this._updateToggleButtonIcon(theme); // Update button icon
+
+    // Remove transitioning class after animation completes
+    setTimeout(() => {
+      ui.body?.classed("theme-transitioning", false);
+    }, 400);
   },
 
   /**

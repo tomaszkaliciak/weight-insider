@@ -1,5 +1,37 @@
 /* style.css - Consolidated Improvements, Layout Fix & Discoverability Enhancements */
 
+/* Theme Transition Animation */
+body.theme-transitioning,
+body.theme-transitioning * {
+    transition:
+        background-color 0.35s ease-out,
+        color 0.35s ease-out,
+        border-color 0.35s ease-out,
+        box-shadow 0.35s ease-out !important;
+}
+
+/* Theme toggle button animation */
+#theme-toggle {
+    position: relative;
+    overflow: hidden;
+}
+
+#theme-toggle svg {
+    transition: transform 0.3s ease-out, opacity 0.2s ease-out;
+}
+
+#theme-toggle:hover svg {
+    transform: rotate(-15deg) scale(1.1);
+}
+
+#theme-toggle:active svg {
+    transform: rotate(15deg) scale(0.95);
+}
+
+body.dark-theme #theme-toggle svg {
+    filter: drop-shadow(0 0 6px hsla(45, 80%, 60%, 0.5));
+}
+
 :root {
     /* Slightly desaturated hues */
     --hue-primary: 212;
@@ -233,8 +265,33 @@ header {
     justify-content: space-between;
     align-items: center;
     margin-bottom: clamp(35px, 6vh, 50px);
-    padding: 0;
+    padding: 15px 25px;
     flex-shrink: 0;
+    /* Sticky header with glassmorphism */
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: linear-gradient(135deg,
+            hsla(var(--hue-neutral), 25%, 99%, 0.88) 0%,
+            hsla(var(--hue-neutral), 25%, 97%, 0.78) 100%);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 0 0 16px 16px;
+    box-shadow: 0 2px 20px var(--shadow-color);
+    border-bottom: 1px solid var(--border-color-light);
+    margin-left: -25px;
+    margin-right: -25px;
+    width: calc(100% + 50px);
+    transition:
+        background-color var(--transition-speed) var(--transition-ease),
+        box-shadow var(--transition-speed) var(--transition-ease);
+}
+
+body.dark-theme header {
+    background: linear-gradient(135deg,
+            hsla(var(--hue-neutral), 15%, 12%, 0.92) 0%,
+            hsla(var(--hue-neutral), 15%, 10%, 0.82) 100%);
+    box-shadow: 0 2px 20px hsla(0, 0%, 0%, 0.3);
 }
 
 header h1 {
@@ -3155,6 +3212,95 @@ body.dark-theme .goal-achieved-badge.good {
     opacity: 0.8;
 }
 
+/* Skeleton Loading Animation */
+.skeleton-loader {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+}
+
+.skeleton-line {
+    height: 14px;
+    background: linear-gradient(90deg,
+            var(--bg-secondary) 25%,
+            hsla(var(--hue-neutral), 20%, 80%, 0.5) 50%,
+            var(--bg-secondary) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.5s infinite;
+    border-radius: 6px;
+}
+
+.skeleton-line.short {
+    width: 60%;
+}
+
+.skeleton-line.medium {
+    width: 80%;
+}
+
+.skeleton-line.full {
+    width: 100%;
+}
+
+.skeleton-stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.skeleton-stat .skeleton-label {
+    height: 12px;
+    width: 40%;
+    background: linear-gradient(90deg,
+            var(--bg-secondary) 25%,
+            hsla(var(--hue-neutral), 20%, 80%, 0.5) 50%,
+            var(--bg-secondary) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.5s infinite;
+    border-radius: 4px;
+}
+
+.skeleton-stat .skeleton-value {
+    height: 16px;
+    width: 25%;
+    background: linear-gradient(90deg,
+            var(--bg-secondary) 25%,
+            hsla(var(--hue-primary), 40%, 70%, 0.3) 50%,
+            var(--bg-secondary) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.5s infinite;
+    border-radius: 4px;
+}
+
+@keyframes skeleton-shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+body.dark-theme .skeleton-line,
+body.dark-theme .skeleton-stat .skeleton-label {
+    background: linear-gradient(90deg,
+            var(--bg-secondary) 25%,
+            hsla(var(--hue-neutral), 10%, 35%, 0.6) 50%,
+            var(--bg-secondary) 75%);
+    background-size: 200% 100%;
+}
+
+body.dark-theme .skeleton-stat .skeleton-value {
+    background: linear-gradient(90deg,
+            var(--bg-secondary) 25%,
+            hsla(var(--hue-primary), 30%, 45%, 0.4) 50%,
+            var(--bg-secondary) 75%);
+    background-size: 200% 100%;
+}
+
 /* Period Comparison Styles */
 .period-comparison-controls {
     display: flex;
@@ -5669,4 +5815,210 @@ body.dark-theme .goal-achieved-badge.good {
         flex-direction: column;
         gap: 10px;
     }
+}
+
+/* Progress Ring Component */
+.progress-ring-wrapper {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 130px;
+    height: 130px;
+    margin: 0 auto 16px;
+}
+
+.progress-ring {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.progress-ring-bg {
+    stroke: var(--border-color-light);
+}
+
+.progress-ring-fill {
+    transition: stroke-dashoffset 0.6s ease-out, stroke 0.3s ease;
+}
+
+.progress-ring-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+.progress-ring-label {
+    display: block;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.progress-ring-detail {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+/* Quick Stats Bar */
+.quick-stats-bar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: var(--bg-tertiary);
+    border-radius: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.quick-stat {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--bg-secondary);
+    border-radius: 20px;
+    border: 1px solid var(--border-color-light);
+}
+
+.quick-stat-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.quick-stat-value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.quick-stat-unit {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+.quick-stat-divider {
+    width: 1px;
+    height: 24px;
+    background: var(--border-color-light);
+}
+
+@media (max-width: 600px) {
+    .quick-stats-bar {
+        gap: 6px;
+        padding: 8px;
+    }
+
+    .quick-stat {
+        padding: 4px 8px;
+    }
+
+    .quick-stat-divider {
+        display: none;
+    }
+}
+
+/* Collapsible Right Sidebar */
+.right-sidebar {
+    position: relative;
+    transition: width 0.3s ease, min-width 0.3s ease, opacity 0.3s ease;
+}
+
+.right-sidebar.collapsed {
+    width: 40px !important;
+    min-width: 40px !important;
+    overflow: hidden;
+}
+
+.right-sidebar.collapsed>*:not(.sidebar-toggle) {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.sidebar-toggle {
+    position: absolute;
+    left: -12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 48px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px 0 0 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    transition: all 0.2s ease;
+    box-shadow: -2px 0 8px var(--shadow-color);
+}
+
+.sidebar-toggle:hover {
+    background: var(--bg-tertiary);
+    left: -14px;
+}
+
+.sidebar-toggle svg {
+    transition: transform 0.3s ease;
+    color: var(--text-muted);
+}
+
+.right-sidebar.collapsed .sidebar-toggle svg {
+    transform: rotate(180deg);
+}
+
+/* Expand chart when sidebar collapsed */
+.main-content:has(.right-sidebar.collapsed) .chart-section {
+    flex: 1;
+}
+
+/* Fullscreen Chart Button */
+.chart-fullscreen-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    transition: all 0.2s ease;
+    opacity: 0.7;
+}
+
+.chart-fullscreen-btn:hover {
+    background: var(--bg-tertiary);
+    opacity: 1;
+    transform: scale(1.05);
+}
+
+.chart-fullscreen-btn svg {
+    color: var(--text-muted);
+}
+
+.chart-section {
+    position: relative;
+}
+
+.chart-section:fullscreen {
+    background: var(--bg-primary);
+    padding: 20px;
+}
+
+.chart-section:fullscreen .chart-fullscreen-btn svg {
+    transform: rotate(45deg);
 }

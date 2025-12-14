@@ -270,9 +270,9 @@
 
                     <section id="periodization-card" class="card collapsible" aria-labelledby="periodization-heading">
                         <h2 id="periodization-heading">
-                            <button class="card-toggle-btn" aria-expanded="true" aria-controls="periodization-content"
+                            <button class="card-toggle-btn" aria-expanded="false" aria-controls="periodization-content"
                                 title="Toggle Section Visibility">
-                                <span class="toggle-icon">▼</span>
+                                <span class="toggle-icon">▶</span>
                             </button>
                             <span class="icon" aria-hidden="true">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
@@ -285,7 +285,7 @@
                             </span>
                             Periodization Analysis
                         </h2>
-                        <div class="card-content" id="periodization-content">
+                        <div class="card-content collapsed" id="periodization-content">
                             <div id="periodization-list" class="periodization-list">
                                 <p class="empty-state">Loading phases...</p>
                             </div>
@@ -785,6 +785,32 @@
 
         <!-- Chart Section (Main chart + Context + Legend) -->
         <div class="chart-section card" aria-label="Weight and Performance Metric Charts">
+            <!-- Quick Stats Bar -->
+            <div id="quick-stats-bar" class="quick-stats-bar">
+                <div class="quick-stat">
+                    <span class="quick-stat-label">Current</span>
+                    <span id="qs-current-weight" class="quick-stat-value">--</span>
+                    <span class="quick-stat-unit">kg</span>
+                </div>
+                <div class="quick-stat-divider"></div>
+                <div class="quick-stat">
+                    <span class="quick-stat-label">Weekly</span>
+                    <span id="qs-weekly-change" class="quick-stat-value">--</span>
+                    <span class="quick-stat-unit">kg/wk</span>
+                </div>
+                <div class="quick-stat-divider"></div>
+                <div class="quick-stat">
+                    <span class="quick-stat-label">Tracked</span>
+                    <span id="qs-days-tracked" class="quick-stat-value">--</span>
+                    <span class="quick-stat-unit">days</span>
+                </div>
+                <div class="quick-stat-divider"></div>
+                <div class="quick-stat">
+                    <span class="quick-stat-label">To Goal</span>
+                    <span id="qs-to-goal" class="quick-stat-value">--</span>
+                    <span class="quick-stat-unit">kg</span>
+                </div>
+            </div>
             <div id="chart-container" role="img"
                 aria-label="Main weight chart showing raw data, smoothed trend (SMA), bands, regression, expected weight, manual trends, goal line, annotations, and highlighted points. Use mouse wheel or trackpad to zoom/pan. Drag horizontally on chart to select regression range.">
             </div>
@@ -801,6 +827,16 @@
                 Scroll/Pinch to Zoom/Pan • Drag Horizontally for Regression
                 Range
             </div>
+            <!-- Fullscreen Toggle -->
+            <button id="chart-fullscreen-btn" class="chart-fullscreen-btn" title="Toggle Fullscreen (Press 'F')"
+                aria-label="Toggle fullscreen chart">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path
+                        d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3">
+                    </path>
+                </svg>
+            </button>
         </div>
 
         <!-- NEW: Secondary Analysis Section (Collapsible) -->
@@ -834,7 +870,14 @@
         </details>
 
         <!-- Right Sidebar -->
-        <div class="right-sidebar">
+        <div class="right-sidebar" id="right-sidebar">
+            <button id="sidebar-toggle" class="sidebar-toggle" title="Toggle Sidebar (Press 'S')"
+                aria-label="Toggle right sidebar">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+            </button>
             <section id="controls-section" class="card collapsible" aria-labelledby="controls-heading">
                 <h2 id="controls-heading">
                     <button class="card-toggle-btn" aria-expanded="true" aria-controls="controls-content"
@@ -983,6 +1026,7 @@
                                 class="stat-value feedback">N/A</span>
                         </div>
                         <h4>Progress</h4>
+                        <div id="goal-progress-ring"></div>
                         <hr class="subtle-hr" />
                         <div class="stat-item"
                             title="Estimated time to reach your Target Weight based on your current trend (Smoothed Rate or Regression Slope).">

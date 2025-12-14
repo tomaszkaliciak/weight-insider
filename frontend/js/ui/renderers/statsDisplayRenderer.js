@@ -3,6 +3,15 @@ import { Utils } from "../../core/utils.js";
 import { StateManager } from "../../core/stateManager.js";
 import { EventHandlers } from "../../interactions/eventHandlers.js";
 import * as Selectors from "../../core/selectors.js";
+import { AnimatedNumbers } from "../animatedNumbers.js";
+
+// Keys that should have animated number transitions
+const ANIMATED_KEYS = new Set([
+  'startingWeight', 'currentWeight', 'currentSma', 'totalChange',
+  'maxWeight', 'minWeight', 'avgIntake', 'avgExpenditure', 'avgNetBalance',
+  'estimatedDeficitSurplus', 'weightToGoal', 'regressionSlope',
+  'rollingWeeklyChangeSma', 'volatilityScore', 'rollingVolatility'
+]);
 
 export const StatsDisplayRenderer = {
   /**
@@ -47,6 +56,10 @@ export const StatsDisplayRenderer = {
         } else if (key === "suggestedIntakeTarget") { // Changed key
           // Display single target value, or N/A
           element.textContent = value != null ? fv(value, 0) : "N/A";
+        } else if (ANIMATED_KEYS.has(key) && typeof value === 'number' && !isNaN(value)) {
+          // Animate numeric stats for premium feel
+          const decimals = args !== undefined ? args : 1;
+          AnimatedNumbers.animate(element, value, { decimals, duration: 400 });
         } else {
           element.textContent = formattedValue; // Default
         }

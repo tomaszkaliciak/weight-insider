@@ -41,6 +41,9 @@ import { CONFIG } from "./config.js";
 import * as Selectors from "./core/selectors.js";
 import { ResizeHandler } from "./interactions/resizeHandler.js";
 import { SidebarTabs } from "./ui/sidebarTabs.js";
+import { ProgressRing } from "./ui/components/progressRing.js";
+import { QuickStatsRenderer } from "./ui/renderers/quickStatsRenderer.js";
+import { KeyboardNav } from "./interactions/keyboardNav.js";
 /**
  * Initializes the application step-by-step.
  */
@@ -103,6 +106,9 @@ async function initialize() {
     WeeklySummaryUpdater.init(); // Listens for weekly data/sort changes
     LegendManager.init(); // Listens for visibility/goal/etc changes
     InsightsGenerator.init(); // Listens for display stats updates
+    ProgressRing.init(); // Goal progress ring visualization
+    QuickStatsRenderer.init(); // Quick stats bar above chart
+    KeyboardNav.init(); // Keyboard shortcuts for navigation
 
     // 7. Fetch and Process Data
     const rawDataObjects = await DataService.fetchData();
