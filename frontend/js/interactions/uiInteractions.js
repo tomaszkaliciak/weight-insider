@@ -1,6 +1,8 @@
 // js/interactions/uiInteractions.js
 // Handles general UI interactions like theme toggling, card collapsing, etc.
 
+import { ResizeHandler } from "./resizeHandler.js";
+
 export const UIInteractions = {
   handleThemeToggle() {
     // Dynamically import ThemeManager only when needed
@@ -31,6 +33,8 @@ export const UIInteractions = {
         console.error("Failed to save card collapse state", e);
       }
     }
+    // Trigger resize to fix chart layout if layout changed
+    ResizeHandler.handleResize();
   },
 
   // Add a setup function if needed, e.g., for the body click listener

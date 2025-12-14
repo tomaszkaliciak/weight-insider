@@ -76,6 +76,9 @@
                             <span id="current-sma" class="stat-value">N/A</span><span class="stat-unit">KG</span>
                         </div>
                     </div>
+                    <div id="trend-flux-container" class="trend-flux-container" style="display:none;">
+                        <!-- Injected by StatsDisplayRenderer -->
+                    </div>
                     <div class="stat-item">
                         <span>Total Change:</span>
                         <div>
@@ -536,6 +539,20 @@
                         </div>
                     </section>
 
+                    <section id="energy-balance-card" class="card collapsible" aria-labelledby="energy-balance-heading">
+                        <h2 id="energy-balance-heading">
+                            <button class="card-toggle-btn" aria-expanded="false"
+                                aria-controls="energy-balance-content">
+                                <span class="toggle-icon">▶</span>
+                            </button>
+                            <span class="icon">⚖️</span>
+                            Energy Balance Dashboard
+                        </h2>
+                        <div class="card-content collapsed" id="energy-balance-content">
+                            <p class="empty-state">Calculating energy balance...</p>
+                        </div>
+                    </section>
+
                     <section id="streak-tracker-card" class="card collapsible" aria-labelledby="streak-tracker-heading">
                         <h2 id="streak-tracker-heading">
                             <button class="card-toggle-btn" aria-expanded="false"
@@ -878,6 +895,18 @@
                     <polyline points="15 18 9 12 15 6"></polyline>
                 </svg>
             </button>
+            <section id="smart-coach-card" class="card collapsible" aria-labelledby="smart-coach-heading">
+                <h2 id="smart-coach-heading">
+                    <button class="card-toggle-btn" aria-expanded="true" aria-controls="smart-coach-content">
+                        <span class="toggle-icon">▼</span>
+                    </button>
+                    <span class="icon">🤖</span>
+                    Smart Coach
+                </h2>
+                <div class="card-content expanded" id="smart-coach-content">
+                    <p class="empty-state">Analyzing TDEE...</p>
+                </div>
+            </section>
             <section id="controls-section" class="card collapsible" aria-labelledby="controls-heading">
                 <h2 id="controls-heading">
                     <button class="card-toggle-btn" aria-expanded="true" aria-controls="controls-content"

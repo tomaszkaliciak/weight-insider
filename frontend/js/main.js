@@ -45,6 +45,8 @@ import { ProgressRing } from "./ui/components/progressRing.js";
 import { QuickStatsRenderer } from "./ui/renderers/quickStatsRenderer.js";
 import { KeyboardNav } from "./interactions/keyboardNav.js";
 import { SparklineRenderer } from "./ui/renderers/sparklineRenderer.js";
+import { EnergyBalanceRenderer } from "./ui/renderers/energyBalanceRenderer.js";
+import { SmartCoachRenderer } from "./ui/renderers/smartCoachRenderer.js";
 /**
  * Initializes the application step-by-step.
  */
@@ -99,6 +101,8 @@ async function initialize() {
     PlateauBreakerRenderer.init(); // Plateau detection and suggestions
     RollingAveragesRenderer.init(); // 7/14/30 day rolling averages
     TdeeAccuracyRenderer.init(); // TDEE accuracy dashboard
+    EnergyBalanceRenderer.init(); // Energy balance dashboard (Intake vs TDEE)
+    SmartCoachRenderer.init(); // Dynamic daily calorie targets
     CalorieHeatmapRenderer.init(); // Calorie calendar heatmap
     StreakTrackerRenderer.init(); // Streak tracking and achievements
     WaterWeightRenderer.init(); // Water weight predictor

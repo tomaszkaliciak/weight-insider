@@ -18,51 +18,17 @@ import { ChartInteractions } from "./chartInteractions.js"; // Needed for restor
  * @param {object} analysisRange - The analysis range {start, end} stored before resize.
  */
 function restoreViewAfterResize(analysisRange) {
-    const lastZoomTransform = Selectors.selectLastZoomTransform(StateManager.getState());
-    if (
-        zoom &&
-        ui.zoomCaptureRect &&
-        !ui.zoomCaptureRect.empty() &&
-        lastZoomTransform &&
-        scales.xContext
-    ) {
-        if (
-            typeof lastZoomTransform.k === "number" &&
-            typeof lastZoomTransform.x === "number" &&
-            typeof lastZoomTransform.y === "number"
-        ) {
-            const reconstructedTransform = d3.zoomIdentity
-                .translate(lastZoomTransform.x, lastZoomTransform.y)
-                .scale(lastZoomTransform.k);
-
-            // Temporarily disable zoom listener during programmatic transform
-            ui.zoomCaptureRect.on("zoom", null);
-            ui.zoomCaptureRect.call(zoom.transform, reconstructedTransform);
-            ui.zoomCaptureRect.on("zoom", ChartInteractions.zoomed); // Reattach listener from ChartInteractions
-
-            // --- Set Focus Domain Directly from Stored Analysis Range ---
-            if (analysisRange?.start && analysisRange?.end) {
-                console.log("[ResizeHandler] Restoring focus domain from pre-resize range:", analysisRange);
-                scales.x.domain([analysisRange.start, analysisRange.end]);
-            } else {
-                console.warn("[ResizeHandler] restoreViewAfterResize: No valid analysisRange provided to restore.");
-            }
-
-            // --- Sync Context Brush ---
-            if (brushes.context && ui.brushGroup && !ui.brushGroup.empty() && scales.xContext && analysisRange?.start && analysisRange?.end) {
-                const brushSelection = [
-                    scales.xContext(analysisRange.start),
-                    scales.xContext(analysisRange.end)
-                ];
-                // Temporarily disable brush listener during programmatic move
-                ui.brushGroup.on("brush.handler", null).on("end.handler", null);
-                if (brushSelection.every((v) => !isNaN(v))) {
-                    ui.brushGroup.call(brushes.context.move, brushSelection);
-                }
-                // Reattach brush listeners
-                ui.brushGroup.on("brush.handler end.handler", ChartInteractions.contextBrushed); // Reattach listener from ChartInteractions
-            }
+    // Standardize restoring view by setting domain first, then syncing interactions
+    if (analysisRange?.start && analysisRange?.end) {
+        if (scales.x) {
+            console.log("[ResizeHandler] Restoring focus domain from pre-resize range:", analysisRange);
+            scales.x.domain([analysisRange.start, analysisRange.end]);
+            // Use the central sync function to update Zoom transform and Context Brush positions
+            // This recalculates the correct transform for the new chart width
+            ChartInteractions.syncBrushAndZoomToFocus();
         }
+    } else {
+        console.warn("[ResizeHandler] restoreViewAfterResize: No valid analysisRange provided to restore.");
     }
 }
 

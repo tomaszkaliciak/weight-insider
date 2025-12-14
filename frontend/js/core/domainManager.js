@@ -61,11 +61,12 @@ export const DomainManager = {
       ) {
         contextDomainEnd = goal.date;
       }
-      // Set initial focus view end date to last data point date
-      initialFocusEnd = dataEndDate;
-      // Set initial focus view start date N months before end date, clamped by data start
+      // Set initial focus view end date to context end (which includes goal if set)
+      initialFocusEnd = contextDomainEnd;
+      // Set initial focus view start date N months before DATA end date
+      // This ensures we always see recent data, even if goal is far in future
       const defaultFocusStart = d3.timeMonth.offset(
-        initialFocusEnd,
+        dataEndDate,
         -CONFIG.initialViewMonths,
       );
       initialFocusStart =
@@ -217,8 +218,8 @@ export const DomainManager = {
    */
   updateContextXDomain(stateSnapshot) { // Renamed: Removed leading underscore
     if (!scales.xContext) {
-        console.warn("DomainManager: Context X scale not initialized.");
-        return;
+      console.warn("DomainManager: Context X scale not initialized.");
+      return;
     }
     const processedData = Selectors.selectProcessedData(stateSnapshot);
     const goal = Selectors.selectGoal(stateSnapshot);
@@ -242,7 +243,7 @@ export const DomainManager = {
         "DomainManager: No valid date range in data for context. Using fallback.",
       );
       const today = new Date();
-      const past = d3.timeMonth.offset(today, -CONFIG.initialViewMonths); 
+      const past = d3.timeMonth.offset(today, -CONFIG.initialViewMonths);
       contextDomainStart = past;
       contextDomainEnd = today;
     } else {

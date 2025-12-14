@@ -183,6 +183,51 @@ export const StatsDisplayRenderer = {
     updateElement("suggestedIntakeTarget", displayStats.suggestedIntakeTarget); // Changed key, uses new special handling
     updateElement("suggestedIntakeSource", displayStats.baselineTDEESource); // Added: Display TDEE source (assumes element exists)
     updateElement("currentRateFeedback", displayStats.targetRateFeedback); // Special handling
+
+    // --- Trend Flux Insight  ---
+    // Calculates the difference between Scale Weight and Trend Weight
+    this._renderTrendFlux(displayStats);
+
+    // Call any other specific updaters if needed
+    if (ui.statElements["currentRateFeedback"]) {
+      // Re-apply class for rate feedback if needed (redundant safety)
+    }
+  },
+
+  _renderTrendFlux(stats) {
+    const container = document.getElementById('trend-flux-container');
+    if (!container) return;
+
+    const scale = stats.currentWeight;
+    const trend = stats.currentSma;
+
+    if (scale != null && trend != null && !isNaN(scale) && !isNaN(trend)) {
+      const flux = scale - trend;
+      const absFlux = Math.abs(flux);
+
+      container.style.display = 'block';
+      let message = '';
+      let className = 'trend-flux';
+
+      if (absFlux < 0.1) {
+        // Scale matches Trend (Balanced)
+        message = `Scale matches Trend.<br><small>Perfectly aligned.</small>`;
+        className += ' flux-neutral'; // Need to add CSS for this if desired, or reuse existing
+      } else if (flux > 0) {
+        // Scale is higher than trend (Water retention, inflammation, etc.)
+        message = `Scale is <strong>+${flux.toFixed(1)}kg</strong> over Trend.<br><small>Likely water fluctuation.</small>`;
+        className += ' flux-high';
+      } else {
+        // Scale is lower than trend (Whoosh, new low)
+        message = `Scale is <strong>-${absFlux.toFixed(1)}kg</strong> under Trend.<br><small>New low detected!</small>`;
+        className += ' flux-low';
+      }
+
+      container.innerHTML = `<div class="${className}">${message}</div>`;
+    } else {
+      console.warn('[StatsDisplayRenderer] Trend Flux missing data:', { scale, trend });
+      container.style.display = 'none';
+    }
   },
 
   init() {

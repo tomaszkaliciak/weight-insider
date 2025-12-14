@@ -2785,9 +2785,7 @@ body.dark-theme .goal-achieved-badge.good {
         height: 160px;
     }
 
-    .axis-label.scatter-axis-label-y {
-        dy: 1.2em;
-    }
+    /* .axis-label.scatter-axis-label-y override removed - invalid CSS property dy */
 
     #context-chart-container {
         height: 55px;
@@ -6042,4 +6040,155 @@ body.dark-theme .skeleton-stat .skeleton-value {
     display: inline-flex;
     align-items: center;
     gap: 6px;
+}
+
+/* Energy Balance Dashboard */
+.energy-balance-summary {
+    display: flex;
+    justify-content: space-around;
+    padding: 10px;
+    margin-bottom: 5px;
+    background-color: var(--bg-secondary);
+    border-radius: var(--border-radius-sm);
+}
+
+.balance-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.balance-stat .label {
+    font-size: 0.8em;
+    color: var(--text-muted);
+}
+
+.balance-stat .value {
+    font-weight: 600;
+    font-size: 1.1em;
+}
+
+.balance-stat .value.surplus {
+    color: var(--success-color);
+}
+
+.balance-stat .value.deficit {
+    color: var(--danger-color);
+}
+
+.energy-balance-chart {
+    width: 100%;
+    height: 180px;
+    background: var(--bg-card);
+    border-radius: var(--border-radius-md);
+    padding: 5px;
+}
+
+.energy-balance-chart rect {
+    transition: opacity 0.2s;
+}
+
+.energy-balance-chart rect:hover {
+    opacity: 1;
+    stroke: var(--text-primary);
+    stroke-width: 1px;
+}
+
+/* Trend Flux Insight */
+.trend-flux-container {
+    margin: 8px 0;
+    padding: 8px 12px;
+    border-radius: var(--border-radius-sm);
+    background-color: var(--bg-secondary);
+    font-size: 0.9em;
+    text-align: center;
+}
+
+.trend-flux {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.trend-flux strong {
+    font-weight: 600;
+}
+
+.trend-flux.flux-high {
+    color: var(--text-muted);
+    /* Neutral/Reassuring */
+    border-left: 3px solid var(--warning-color);
+}
+
+.trend-flux.flux-low {
+    color: var(--success-color);
+    /* Positive reinforcement */
+    border-left: 3px solid var(--success-color);
+}
+
+.trend-flux.flux-neutral {
+    color: var(--text-muted);
+    border-left: 3px solid var(--text-muted);
+}
+
+/* Trend Flux small text */
+.trend-flux small {
+    font-size: 0.85em;
+    opacity: 0.8;
+}
+
+/* Smart Coach */
+.coach-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.coach-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s ease;
+}
+
+.coach-card.active {
+    border-color: var(--primary-color);
+    background: var(--bg-secondary);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.coach-card.recommended {
+    border-left: 3px solid var(--info-color);
+}
+
+.coach-label {
+    font-size: 0.9em;
+    color: var(--text-muted);
+}
+
+.coach-value {
+    font-weight: 700;
+    font-size: 1.1em;
+    color: var(--text-primary);
+}
+
+.coach-value small {
+    font-size: 0.7em;
+    font-weight: normal;
+    color: var(--text-muted);
+}
+
+.coach-footer {
+    text-align: center;
+    font-size: 0.85em;
+    color: var(--text-muted);
+    padding-top: 5px;
+    border-top: 1px solid var(--border-color);
 }
