@@ -58,6 +58,24 @@ export const SparklineRenderer = {
             .filter(v => v != null);
 
         this._tryRender('#avg-intake', intakeHistory);
+
+        // 4. Total Change Sparkline (Weight trend relative to start)
+        // Uses the same weight history but contextually meaningful
+        this._tryRender('#total-change', weightHistory);
+
+        // 5. Rolling Volatility Sparkline
+        const volatilityHistory = recentData
+            .map(d => d.rollingVolatility)
+            .filter(v => v != null);
+
+        this._tryRender('#rolling-volatility', volatilityHistory);
+
+        // 6. Expenditure Sparkline (Adaptive TDEE or GFit)
+        const expenditureHistory = recentData
+            .map(d => d.adaptiveTDEE || d.googleFitTDEE)
+            .filter(v => v != null);
+
+        this._tryRender('#avg-expenditure', expenditureHistory);
     },
 
     _tryRender(selector, history) {

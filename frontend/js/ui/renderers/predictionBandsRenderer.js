@@ -11,83 +11,84 @@ import { Utils } from '../../core/utils.js';
  * - Best case / worst case scenarios
  */
 export const PredictionBandsRenderer = {
-    _container: null,
+  _container: null,
 
-    init() {
-        this._container = document.getElementById('prediction-bands-content');
-        if (!this._container) {
-            console.warn('[PredictionBandsRenderer] Container not found.');
-            return;
-        }
+  init() {
+    this._container = document.getElementById('prediction-bands-content');
+    if (!this._container) {
+      console.warn('[PredictionBandsRenderer] Container not found.');
+      return;
+    }
 
-        StateManager.subscribe((stateChanges) => {
-            if (stateChanges.action.type.includes('DISPLAY_STATS') ||
-                stateChanges.action.type.includes('FILTERED_DATA')) {
-                this._predict();
-            }
-        });
+    StateManager.subscribe((stateChanges) => {
+      if (stateChanges.action.type.includes('DISPLAY_STATS') ||
+        stateChanges.action.type.includes('FILTERED_DATA')) {
+        this._predict();
+      }
+    });
 
-        setTimeout(() => this._predict(), 900);
-        console.log('[PredictionBandsRenderer] Initialized.');
-    },
+    setTimeout(() => this._predict(), 900);
+    console.log('[PredictionBandsRenderer] Initialized.');
+  },
 
-    _predict() {
-        const state = StateManager.getState();
-        const displayStats = state.displayStats || {};
-        const filteredData = Selectors.selectFilteredData(state);
+  _predict() {
+    const state = StateManager.getState();
+    const displayStats = state.displayStats || {};
+    const filteredData = Selectors.selectFilteredData(state);
 
-        if (!filteredData || filteredData.length < 14 || displayStats.latestWeight == null) {
-            this._renderNoData();
-            return;
-        }
+    // Check if we have enough data span (at least 7 points) rather than strict 14 days
+    if (!filteredData || filteredData.length < 7 || displayStats.latestWeight == null) {
+      this._renderNoData();
+      return;
+    }
 
-        const predictions = this._calculatePredictions(filteredData, displayStats);
-        this._render(predictions, displayStats);
-    },
+    const predictions = this._calculatePredictions(filteredData, displayStats);
+    this._render(predictions, displayStats);
+  },
 
-    _calculatePredictions(data, stats) {
-        const currentWeight = stats.latestWeight;
-        const currentRate = stats.latestWeeklyRate || 0;
+  _calculatePredictions(data, stats) {
+    const currentWeight = stats.latestWeight;
+    const currentRate = stats.latestWeeklyRate || 0;
 
-        // Calculate rate volatility from historical data
-        const rates = data
-            .filter(d => d.smoothedWeeklyRate != null)
-            .map(d => d.smoothedWeeklyRate);
+    // Calculate rate volatility from historical data
+    const rates = data
+      .filter(d => d.smoothedWeeklyRate != null)
+      .map(d => d.smoothedWeeklyRate);
 
-        const rateStdDev = rates.length > 2
-            ? Math.sqrt(rates.reduce((sum, r) => sum + Math.pow(r - currentRate, 2), 0) / rates.length)
-            : Math.abs(currentRate) * 0.3; // Default 30% uncertainty
+    const rateStdDev = rates.length > 2
+      ? Math.sqrt(rates.reduce((sum, r) => sum + Math.pow(r - currentRate, 2), 0) / rates.length)
+      : Math.abs(currentRate) * 0.3; // Default 30% uncertainty
 
-        const timeFrames = [
-            { weeks: 4, label: '4 weeks' },
-            { weeks: 8, label: '8 weeks' },
-            { weeks: 12, label: '12 weeks' }
-        ];
+    const timeFrames = [
+      { weeks: 4, label: '4 weeks' },
+      { weeks: 8, label: '8 weeks' },
+      { weeks: 12, label: '12 weeks' }
+    ];
 
-        return timeFrames.map(tf => {
-            const expectedChange = currentRate * tf.weeks;
-            const uncertainty = rateStdDev * Math.sqrt(tf.weeks) * 1.5; // Uncertainty grows with sqrt of time
+    return timeFrames.map(tf => {
+      const expectedChange = currentRate * tf.weeks;
+      const uncertainty = rateStdDev * Math.sqrt(tf.weeks) * 1.5; // Uncertainty grows with sqrt of time
 
-            return {
-                weeks: tf.weeks,
-                label: tf.label,
-                expected: currentWeight + expectedChange,
-                optimistic: currentWeight + expectedChange + (currentRate > 0 ? uncertainty : -uncertainty),
-                pessimistic: currentWeight + expectedChange + (currentRate > 0 ? -uncertainty : uncertainty),
-                confidence: Math.max(50, 95 - tf.weeks * 3) // Confidence decreases over time
-            };
-        });
-    },
+      return {
+        weeks: tf.weeks,
+        label: tf.label,
+        expected: currentWeight + expectedChange,
+        optimistic: currentWeight + expectedChange + (currentRate > 0 ? uncertainty : -uncertainty),
+        pessimistic: currentWeight + expectedChange + (currentRate > 0 ? -uncertainty : uncertainty),
+        confidence: Math.max(50, 95 - tf.weeks * 3) // Confidence decreases over time
+      };
+    });
+  },
 
-    _render(predictions, stats) {
-        if (!this._container) return;
+  _render(predictions, stats) {
+    if (!this._container) return;
 
-        const currentWeight = stats.latestWeight;
-        const currentRate = stats.latestWeeklyRate || 0;
-        const direction = currentRate > 0 ? 'gaining' : currentRate < 0 ? 'losing' : 'maintaining';
-        const directionIcon = currentRate > 0 ? '📈' : currentRate < 0 ? '📉' : '➡️';
+    const currentWeight = stats.latestWeight;
+    const currentRate = stats.latestWeeklyRate || 0;
+    const direction = currentRate > 0 ? 'gaining' : currentRate < 0 ? 'losing' : 'maintaining';
+    const directionIcon = currentRate > 0 ? '📈' : currentRate < 0 ? '📉' : '➡️';
 
-        this._container.innerHTML = `
+    this._container.innerHTML = `
       <div class="prediction-header">
         <div class="current-status">
           <span class="status-icon">${directionIcon}</span>
@@ -129,15 +130,15 @@ export const PredictionBandsRenderer = {
         </small>
       </div>
     `;
-    },
+  },
 
-    _renderNoData() {
-        if (!this._container) return;
-        this._container.innerHTML = `
+  _renderNoData() {
+    if (!this._container) return;
+    this._container.innerHTML = `
       <div class="empty-state-message">
         <p>Insufficient data for predictions</p>
         <small>Need at least 2 weeks of weight data</small>
       </div>
     `;
-    }
+  }
 };
