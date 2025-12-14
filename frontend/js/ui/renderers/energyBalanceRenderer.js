@@ -76,11 +76,23 @@ export const EnergyBalanceRenderer = {
         const totalSurplus = validBalances.filter(b => b > 0).reduce((a, b) => a + b, 0);
         const totalDeficit = validBalances.filter(b => b < 0).reduce((a, b) => a + b, 0);
 
+        // Calculate detailed stats for tooltip
+        const surplusDays = balanceData.filter(d => d.balance > 0).length;
+        const deficitDays = balanceData.filter(d => d.balance < 0).length;
+        const netTotal = validBalances.reduce((a, b) => a + b, 0);
+
         // Prepare DOM
         this._container.innerHTML = `
             <div class="energy-balance-summary">
-                <div class="balance-stat">
-                    <span class="label">Avg Daily Balance</span>
+                <div class="balance-stat" 
+                     title="Average Daily Balance: ${Math.round(avgBalance)} kcal
+Net Total: ${netTotal > 0 ? '+' : ''}${Math.round(netTotal)} kcal (over ${balanceData.length} days)
+—
+Surplus Days: ${surplusDays} (Total: +${Math.round(totalSurplus)})
+Deficit Days: ${deficitDays} (Total: ${Math.round(totalDeficit)})
+—
+Formula: Daily Intake - Daily TDEE">
+                    <span class="label">Avg Daily Balance <span class="info-icon">ⓘ</span></span>
                     <span class="value ${avgBalance > 0 ? 'surplus' : 'deficit'}">
                         ${avgBalance > 0 ? '+' : ''}${Math.round(avgBalance)} kcal
                     </span>

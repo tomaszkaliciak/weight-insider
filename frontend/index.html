@@ -539,19 +539,7 @@
                         </div>
                     </section>
 
-                    <section id="energy-balance-card" class="card collapsible" aria-labelledby="energy-balance-heading">
-                        <h2 id="energy-balance-heading">
-                            <button class="card-toggle-btn" aria-expanded="false"
-                                aria-controls="energy-balance-content">
-                                <span class="toggle-icon">▶</span>
-                            </button>
-                            <span class="icon">⚖️</span>
-                            Energy Balance Dashboard
-                        </h2>
-                        <div class="card-content collapsed" id="energy-balance-content">
-                            <p class="empty-state">Calculating energy balance...</p>
-                        </div>
-                    </section>
+
 
                     <section id="streak-tracker-card" class="card collapsible" aria-labelledby="streak-tracker-heading">
                         <h2 id="streak-tracker-heading">
@@ -864,8 +852,11 @@
                 </h2>
             </summary>
             <div class="secondary-analysis-content">
-                <div id="balance-chart-container" role="img"
-                    aria-label="Daily calorie balance chart (Intake - GFit TDEE)."></div>
+                <div id="energy-balance-content" role="img"
+                    aria-label="Energy Balance Dashboard showing partial surplus/deficit and averages.">
+                    <p class="empty-state">Calculating energy balance...</p>
+                </div>
+                <!-- Old balance container removed -->
                 <div id="rate-of-change-container" role="img"
                     aria-label="Smoothed weekly rate of weight change chart (kg/week)."></div>
                 <div id="tdee-reconciliation-container" role="img"

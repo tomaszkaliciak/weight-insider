@@ -231,6 +231,9 @@ export const StatsDisplayRenderer = {
   },
 
   init() {
+    // Bind context to ensure 'this' is correct when called by StateManager
+    this._render = this._render.bind(this);
+
     // Subscribe specifically to the event carrying the display stats
     StateManager.subscribeToSpecificEvent(
       "state:displayStatsUpdated",
