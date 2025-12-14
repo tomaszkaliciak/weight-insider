@@ -44,6 +44,7 @@ import { SidebarTabs } from "./ui/sidebarTabs.js";
 import { ProgressRing } from "./ui/components/progressRing.js";
 import { QuickStatsRenderer } from "./ui/renderers/quickStatsRenderer.js";
 import { KeyboardNav } from "./interactions/keyboardNav.js";
+import { SparklineRenderer } from "./ui/renderers/sparklineRenderer.js";
 /**
  * Initializes the application step-by-step.
  */
@@ -109,6 +110,7 @@ async function initialize() {
     ProgressRing.init(); // Goal progress ring visualization
     QuickStatsRenderer.init(); // Quick stats bar above chart
     KeyboardNav.init(); // Keyboard shortcuts for navigation
+    SparklineRenderer.init(); // Inline trend charts
 
     // 7. Fetch and Process Data
     const rawDataObjects = await DataService.fetchData();
