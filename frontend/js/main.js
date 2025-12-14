@@ -40,7 +40,7 @@ import { Utils } from "./core/utils.js";
 import { CONFIG } from "./config.js";
 import * as Selectors from "./core/selectors.js";
 import { ResizeHandler } from "./interactions/resizeHandler.js";
-
+import { SidebarTabs } from "./ui/sidebarTabs.js";
 /**
  * Initializes the application step-by-step.
  */
@@ -54,6 +54,9 @@ async function initialize() {
         "Essential UI elements (body, chartContainer) not found.",
       );
     }
+
+    // 1b. Initialize Sidebar Tabs
+    SidebarTabs.init();
 
     // 2. Load Settings (Read from CONFIG, dispatch to state)
     const initialSettings = {

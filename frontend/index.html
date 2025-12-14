@@ -40,7 +40,8 @@
     <main class="dashboard-container">
         <!-- Left Sidebar -->
         <div class="left-sidebar">
-            <section id="all-time-stats-card" class="card collapsible" aria-labelledby="all-time-stats-heading">
+            <section id="all-time-stats-card" class="card collapsible primary-card"
+                aria-labelledby="all-time-stats-heading">
                 <h2 id="all-time-stats-heading">
                     <button class="card-toggle-btn" aria-expanded="true" aria-controls="all-time-stats-content"
                         title="Toggle Section Visibility">
@@ -202,518 +203,585 @@
                             </div>
                         </div>
                     </div>
-                </div>
             </section>
 
-            <section id="analysis-settings-card" class="card collapsible" aria-labelledby="analysis-settings-heading">
-                <h2 id="analysis-settings-heading">
-                    <button class="card-toggle-btn" aria-expanded="true" aria-controls="analysis-settings-content"
-                        title="Toggle Section Visibility">
-                        <span class="toggle-icon">▼</span>
-                    </button>
-                    <span class="icon" aria-hidden="true">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            class="feather feather-clock">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <polyline points="12 6 12 12 16 14"></polyline>
-                        </svg>
-                    </span>
-                    Analysis Range Settings
-                </h2>
-                <div class="card-content" id="analysis-settings-content">
-                    <div id="analysis-range-controls">
-                        <div class="form-row">
-                            <label for="analysisStartDate">Start Date:</label><input type="text" id="analysisStartDate"
-                                placeholder="DD-MM-YYYY"
-                                aria-label="Start date for custom analysis range (DD-MM-YYYY)" />
-                        </div>
-                        <div class="form-row">
-                            <label for="analysisEndDate">End Date:</label><input type="text" id="analysisEndDate"
-                                placeholder="DD-MM-YYYY" aria-label="End date for custom analysis range (DD-MM-YYYY)" />
-                        </div>
-                        <div class="button-group">
-                            <button id="updateAnalysisRange"
-                                title="Apply the selected Start and End Dates to filter the analysis results and update the chart view.">
-                                Apply Range
+            <!-- Tab Navigation -->
+            <nav class="sidebar-tabs" role="tablist" aria-label="Sidebar sections">
+                <button class="tab-btn active" data-tab="overview" role="tab" aria-selected="true">
+                    <span class="tab-icon">📊</span>
+                    <span class="tab-label">Overview</span>
+                </button>
+                <button class="tab-btn" data-tab="goals" role="tab" aria-selected="false">
+                    <span class="tab-icon">🎯</span>
+                    <span class="tab-label">Goals</span>
+                </button>
+                <button class="tab-btn" data-tab="analytics" role="tab" aria-selected="false">
+                    <span class="tab-icon">📈</span>
+                    <span class="tab-label">Analytics</span>
+                </button>
+                <button class="tab-btn" data-tab="settings" role="tab" aria-selected="false">
+                    <span class="tab-icon">⚙️</span>
+                    <span class="tab-label">Settings</span>
+                </button>
+            </nav>
+
+            <!-- Tab Panels Container -->
+            <div class="tab-panels">
+                <!-- OVERVIEW TAB -->
+                <div class="tab-panel active" data-tab="overview" role="tabpanel" aria-hidden="false">
+                    <section id="analysis-settings-card" class="card collapsible"
+                        aria-labelledby="analysis-settings-heading">
+                        <h2 id="analysis-settings-heading">
+                            <button class="card-toggle-btn" aria-expanded="true"
+                                aria-controls="analysis-settings-content" title="Toggle Section Visibility">
+                                <span class="toggle-icon">▼</span>
                             </button>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <section id="periodization-card" class="card collapsible" aria-labelledby="periodization-heading">
-                <h2 id="periodization-heading">
-                    <button class="card-toggle-btn" aria-expanded="true" aria-controls="periodization-content"
-                        title="Toggle Section Visibility">
-                        <span class="toggle-icon">▼</span>
-                    </button>
-                    <span class="icon" aria-hidden="true">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            class="feather feather-layers">
-                            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-                            <polyline points="2 17 12 22 22 17"></polyline>
-                            <polyline points="2 12 12 17 22 12"></polyline>
-                        </svg>
-                    </span>
-                    Periodization Analysis
-                </h2>
-                <div class="card-content" id="periodization-content">
-                    <div id="periodization-list" class="periodization-list">
-                        <p class="empty-state">Loading phases...</p>
-                    </div>
-                </div>
-            </section>
-
-            <section id="period-comparison-card" class="card collapsible" aria-labelledby="period-comparison-heading">
-                <h2 id="period-comparison-heading">
-                    <button class="card-toggle-btn" aria-expanded="true" aria-controls="period-comparison-content"
-                        title="Toggle Section Visibility">
-                        <span class="toggle-icon">▼</span>
-                    </button>
-                    <span class="icon" aria-hidden="true">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            class="feather feather-git-compare">
-                            <circle cx="18" cy="18" r="3"></circle>
-                            <circle cx="6" cy="6" r="3"></circle>
-                            <path d="M13 6h3a2 2 0 0 1 2 2v7"></path>
-                            <path d="M11 18H8a2 2 0 0 1-2-2V9"></path>
-                        </svg>
-                    </span>
-                    Period Comparison
-                </h2>
-                <div class="card-content" id="period-comparison-content">
-                    <p class="empty-state">Loading comparison tool...</p>
-                </div>
-            </section>
-
-            <section id="goal-alerts-card" class="card collapsible" aria-labelledby="goal-alerts-heading">
-                <h2 id="goal-alerts-heading">
-                    <button class="card-toggle-btn" aria-expanded="true" aria-controls="goal-alerts-content"
-                        title="Toggle Section Visibility">
-                        <span class="toggle-icon">▼</span>
-                    </button>
-                    <span class="icon" aria-hidden="true">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            class="feather feather-bell">
-                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-                        </svg>
-                    </span>
-                    Goal Alerts
-                </h2>
-                <div class="card-content" id="goal-alerts-content">
-                    <div id="goal-alerts-list" class="goal-alerts-list">
-                        <p class="empty-state">Checking alerts...</p>
-                    </div>
-                </div>
-            </section>
-
-            <section id="goal-suggestions-card" class="card collapsible" aria-labelledby="goal-suggestions-heading">
-                <h2 id="goal-suggestions-heading">
-                    <button class="card-toggle-btn" aria-expanded="true" aria-controls="goal-suggestions-content"
-                        title="Toggle Section Visibility">
-                        <span class="toggle-icon">▼</span>
-                    </button>
-                    <span class="icon" aria-hidden="true">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            class="feather feather-target">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <circle cx="12" cy="12" r="6"></circle>
-                            <circle cx="12" cy="12" r="2"></circle>
-                        </svg>
-                    </span>
-                    Goal Suggestions
-                </h2>
-                <div class="card-content" id="goal-suggestions-content">
-                    <div id="goal-suggestions-list" class="goal-suggestions-list">
-                        <p class="empty-state">Analyzing your data...</p>
-                    </div>
-                </div>
-            </section>
-
-            <section id="event-countdown-card" class="card collapsible" aria-labelledby="event-countdown-heading">
-                <h2 id="event-countdown-heading">
-                    <button class="card-toggle-btn" aria-expanded="true" aria-controls="event-countdown-content"
-                        title="Toggle Section Visibility">
-                        <span class="toggle-icon">▼</span>
-                    </button>
-                    <span class="icon" aria-hidden="true">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            class="feather feather-clock">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <polyline points="12 6 12 12 16 14"></polyline>
-                        </svg>
-                    </span>
-                    Event Countdown
-                </h2>
-                <div class="card-content" id="event-countdown-content">
-                    <p class="empty-state">Loading events...</p>
-                </div>
-            </section>
-
-            <!-- Advanced Analytics Features -->
-            <section id="weekend-analysis-card" class="card collapsible" aria-labelledby="weekend-analysis-heading">
-                <h2 id="weekend-analysis-heading">
-                    <button class="card-toggle-btn" aria-expanded="false" aria-controls="weekend-analysis-content">
-                        <span class="toggle-icon">▶</span>
-                    </button>
-                    <span class="icon">📅</span>
-                    Weekend vs Weekday
-                </h2>
-                <div class="card-content collapsed" id="weekend-analysis-content">
-                    <p class="empty-state">Analyzing patterns...</p>
-                </div>
-            </section>
-
-            <section id="prediction-bands-card" class="card collapsible" aria-labelledby="prediction-bands-heading">
-                <h2 id="prediction-bands-heading">
-                    <button class="card-toggle-btn" aria-expanded="false" aria-controls="prediction-bands-content">
-                        <span class="toggle-icon">▶</span>
-                    </button>
-                    <span class="icon">🔮</span>
-                    Weight Predictions
-                </h2>
-                <div class="card-content collapsed" id="prediction-bands-content">
-                    <p class="empty-state">Calculating predictions...</p>
-                </div>
-            </section>
-
-            <section id="adaptive-rate-card" class="card collapsible" aria-labelledby="adaptive-rate-heading">
-                <h2 id="adaptive-rate-heading">
-                    <button class="card-toggle-btn" aria-expanded="false" aria-controls="adaptive-rate-content">
-                        <span class="toggle-icon">▶</span>
-                    </button>
-                    <span class="icon">📊</span>
-                    Adaptive Benchmarks
-                </h2>
-                <div class="card-content collapsed" id="adaptive-rate-content">
-                    <p class="empty-state">Analyzing your history...</p>
-                </div>
-            </section>
-
-            <section id="calorie-audit-card" class="card collapsible" aria-labelledby="calorie-audit-heading">
-                <h2 id="calorie-audit-heading">
-                    <button class="card-toggle-btn" aria-expanded="false" aria-controls="calorie-audit-content">
-                        <span class="toggle-icon">▶</span>
-                    </button>
-                    <span class="icon">🔍</span>
-                    Calorie Accuracy
-                </h2>
-                <div class="card-content collapsed" id="calorie-audit-content">
-                    <p class="empty-state">Auditing accuracy...</p>
-                </div>
-            </section>
-
-            <section id="monthly-report-card" class="card collapsible" aria-labelledby="monthly-report-heading">
-                <h2 id="monthly-report-heading">
-                    <button class="card-toggle-btn" aria-expanded="false" aria-controls="monthly-report-content">
-                        <span class="toggle-icon">▶</span>
-                    </button>
-                    <span class="icon">📈</span>
-                    Monthly Reports
-                </h2>
-                <div class="card-content collapsed" id="monthly-report-content">
-                    <p class="empty-state">Generating reports...</p>
-                </div>
-            </section>
-
-            <section id="what-worked-card" class="card collapsible" aria-labelledby="what-worked-heading">
-                <h2 id="what-worked-heading">
-                    <button class="card-toggle-btn" aria-expanded="false" aria-controls="what-worked-content">
-                        <span class="toggle-icon">▶</span>
-                    </button>
-                    <span class="icon">💡</span>
-                    What Worked
-                </h2>
-                <div class="card-content collapsed" id="what-worked-content">
-                    <p class="empty-state">Finding patterns...</p>
-                </div>
-            </section>
-
-            <section id="plateau-breaker-card" class="card collapsible" aria-labelledby="plateau-breaker-heading">
-                <h2 id="plateau-breaker-heading">
-                    <button class="card-toggle-btn" aria-expanded="false" aria-controls="plateau-breaker-content">
-                        <span class="toggle-icon">▶</span>
-                    </button>
-                    <span class="icon">🚀</span>
-                    Plateau Breaker
-                </h2>
-                <div class="card-content collapsed" id="plateau-breaker-content">
-                    <p class="empty-state">Checking for plateaus...</p>
-                </div>
-            </section>
-
-            <section id="rolling-averages-card" class="card collapsible" aria-labelledby="rolling-averages-heading">
-                <h2 id="rolling-averages-heading">
-                    <button class="card-toggle-btn" aria-expanded="false" aria-controls="rolling-averages-content">
-                        <span class="toggle-icon">▶</span>
-                    </button>
-                    <span class="icon">〰️</span>
-                    Rolling Averages
-                </h2>
-                <div class="card-content collapsed" id="rolling-averages-content">
-                    <p class="empty-state">Calculating averages...</p>
-                </div>
-            </section>
-
-            <section id="tdee-accuracy-card" class="card collapsible" aria-labelledby="tdee-accuracy-heading">
-                <h2 id="tdee-accuracy-heading">
-                    <button class="card-toggle-btn" aria-expanded="false" aria-controls="tdee-accuracy-content">
-                        <span class="toggle-icon">▶</span>
-                    </button>
-                    <span class="icon">🎯</span>
-                    TDEE Accuracy
-                </h2>
-                <div class="card-content collapsed" id="tdee-accuracy-content">
-                    <p class="empty-state">Analyzing TDEE...</p>
-                </div>
-            </section>
-
-            <section id="calorie-heatmap-card" class="card collapsible" aria-labelledby="calorie-heatmap-heading">
-                <h2 id="calorie-heatmap-heading">
-                    <button class="card-toggle-btn" aria-expanded="false" aria-controls="calorie-heatmap-content">
-                        <span class="toggle-icon">▶</span>
-                    </button>
-                    <span class="icon">📅</span>
-                    Calorie Heatmap
-                </h2>
-                <div class="card-content collapsed" id="calorie-heatmap-content">
-                    <p class="empty-state">Loading calendar...</p>
-                </div>
-            </section>
-
-            <section id="streak-tracker-card" class="card collapsible" aria-labelledby="streak-tracker-heading">
-                <h2 id="streak-tracker-heading">
-                    <button class="card-toggle-btn" aria-expanded="false" aria-controls="streak-tracker-content">
-                        <span class="toggle-icon">▶</span>
-                    </button>
-                    <span class="icon">🔥</span>
-                    Streak Tracker
-                </h2>
-                <div class="card-content collapsed" id="streak-tracker-content">
-                    <p class="empty-state">Counting streaks...</p>
-                </div>
-            </section>
-
-            <section id="water-weight-card" class="card collapsible" aria-labelledby="water-weight-heading">
-                <h2 id="water-weight-heading">
-                    <button class="card-toggle-btn" aria-expanded="false" aria-controls="water-weight-content">
-                        <span class="toggle-icon">▶</span>
-                    </button>
-                    <span class="icon">💧</span>
-                    Water Weight
-                </h2>
-                <div class="card-content collapsed" id="water-weight-content">
-                    <p class="empty-state">Analyzing fluctuations...</p>
-                </div>
-            </section>
-
-            <section id="reverse-diet-card" class="card collapsible" aria-labelledby="reverse-diet-heading">
-                <h2 id="reverse-diet-heading">
-                    <button class="card-toggle-btn" aria-expanded="false" aria-controls="reverse-diet-content">
-                        <span class="toggle-icon">▶</span>
-                    </button>
-                    <span class="icon">📈</span>
-                    Reverse Diet
-                </h2>
-                <div class="card-content collapsed" id="reverse-diet-content">
-                    <p class="empty-state">Calculating plan...</p>
-                </div>
-            </section>
-
-            <section id="rate-optimizer-card" class="card collapsible" aria-labelledby="rate-optimizer-heading">
-                <h2 id="rate-optimizer-heading">
-                    <button class="card-toggle-btn" aria-expanded="false" aria-controls="rate-optimizer-content">
-                        <span class="toggle-icon">▶</span>
-                    </button>
-                    <span class="icon">⚡</span>
-                    Rate Optimizer
-                </h2>
-                <div class="card-content collapsed" id="rate-optimizer-content">
-                    <p class="empty-state">Optimizing rate...</p>
-                </div>
-            </section>
-
-            <section id="analysis-results-card" class="card collapsible">
-                <h2 id="analysis-results-heading">
-                    <button class="card-toggle-btn" aria-expanded="true" aria-controls="analysis-results-content"
-                        title="Toggle Section Visibility">
-                        <span class="toggle-icon">▼</span>
-                    </button>
-                    <span class="icon" aria-hidden="true">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            class="feather feather-trending-up">
-                            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
-                            <polyline points="17 6 23 6 23 12"></polyline>
-                        </svg>
-                    </span>
-                    Analysis Results
-                </h2>
-                <div class="card-content" id="analysis-results-content">
-                    <!-- Existing Summary -->
-                    <div id="insight-summary" class="insight-summary">
-                        <p>Loading analysis...</p>
-                    </div>
-
-                    <hr class="subtle-hr" />
-                    <div class="insight-group">
-                        <h4>
-                            Energy Balance Estimation
-                            <span class="info-icon"
-                                title="Average daily calorie intake, expenditure reported by Google Fit, and the resulting net balance within the analysis range. Estimated Daily Balance is calculated from the weight trend (smoothed rate or regression)."><svg
-                                    xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                                    fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                                    stroke-linejoin="round" class="feather feather-info">
+                            <span class="icon" aria-hidden="true">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" class="feather feather-clock">
                                     <circle cx="12" cy="12" r="10"></circle>
-                                    <line x1="12" y1="16" x2="12" y2="12"></line>
-                                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                                </svg></span>
-                        </h4>
-                        <div class="stat-item">
-                            <span>Avg Intake:</span>
-                            <div>
-                                <span id="avg-intake" class="stat-value">N/A</span><span class="stat-unit">kcal/d</span>
+                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                </svg>
+                            </span>
+                            Analysis Range Settings
+                        </h2>
+                        <div class="card-content" id="analysis-settings-content">
+                            <div id="analysis-range-controls">
+                                <div class="form-row">
+                                    <label for="analysisStartDate">Start Date:</label><input type="text"
+                                        id="analysisStartDate" placeholder="DD-MM-YYYY"
+                                        aria-label="Start date for custom analysis range (DD-MM-YYYY)" />
+                                </div>
+                                <div class="form-row">
+                                    <label for="analysisEndDate">End Date:</label><input type="text"
+                                        id="analysisEndDate" placeholder="DD-MM-YYYY"
+                                        aria-label="End date for custom analysis range (DD-MM-YYYY)" />
+                                </div>
+                                <div class="button-group">
+                                    <button id="updateAnalysisRange"
+                                        title="Apply the selected Start and End Dates to filter the analysis results and update the chart view.">
+                                        Apply Range
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                        <div class="stat-item">
-                            <span>Avg Expend (GFit):</span>
-                            <div>
-                                <span id="avg-expenditure" class="stat-value">N/A</span><span
-                                    class="stat-unit">kcal/d</span>
+                    </section>
+
+                    <section id="periodization-card" class="card collapsible" aria-labelledby="periodization-heading">
+                        <h2 id="periodization-heading">
+                            <button class="card-toggle-btn" aria-expanded="true" aria-controls="periodization-content"
+                                title="Toggle Section Visibility">
+                                <span class="toggle-icon">▼</span>
+                            </button>
+                            <span class="icon" aria-hidden="true">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" class="feather feather-layers">
+                                    <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                                    <polyline points="2 17 12 22 22 17"></polyline>
+                                    <polyline points="2 12 12 17 22 12"></polyline>
+                                </svg>
+                            </span>
+                            Periodization Analysis
+                        </h2>
+                        <div class="card-content" id="periodization-content">
+                            <div id="periodization-list" class="periodization-list">
+                                <p class="empty-state">Loading phases...</p>
                             </div>
                         </div>
-                        <div class="stat-item">
-                            <span>Avg Net (Intake - GFit):</span>
-                            <div>
-                                <span id="avg-net-balance" class="stat-value">N/A</span><span
-                                    class="stat-unit">kcal/d</span>
-                            </div>
+                    </section>
+
+                    <section id="period-comparison-card" class="card collapsible"
+                        aria-labelledby="period-comparison-heading">
+                        <h2 id="period-comparison-heading">
+                            <button class="card-toggle-btn" aria-expanded="true"
+                                aria-controls="period-comparison-content" title="Toggle Section Visibility">
+                                <span class="toggle-icon">▼</span>
+                            </button>
+                            <span class="icon" aria-hidden="true">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" class="feather feather-git-compare">
+                                    <circle cx="18" cy="18" r="3"></circle>
+                                    <circle cx="6" cy="6" r="3"></circle>
+                                    <path d="M13 6h3a2 2 0 0 1 2 2v7"></path>
+                                    <path d="M11 18H8a2 2 0 0 1-2-2V9"></path>
+                                </svg>
+                            </span>
+                            Period Comparison
+                        </h2>
+                        <div class="card-content" id="period-comparison-content">
+                            <p class="empty-state">Loading comparison tool...</p>
                         </div>
-                        <div class="stat-item"
-                            title="Estimated average daily calorie surplus (+) or deficit (-) based on the calculated weekly rate of weight change (Smoothed Rate or Regression Slope). Assumes 7700 kcal per kg of weight change.">
-                            <span>Est. Daily Balance (from Trend):
-                                <span class="info-icon"
-                                    title="Calculated from the primary weight trend (Smoothed Rate or Regression) using 7700 kcal/kg."><svg
-                                        xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                                        fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                                        stroke-linejoin="round" class="feather feather-info">
-                                        <circle cx="12" cy="12" r="10"></circle>
-                                        <line x1="12" y1="16" x2="12" y2="12"></line>
-                                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                                    </svg></span></span>
-                            <div>
-                                <span id="estimated-deficit-surplus" class="stat-value">N/A</span><span
-                                    class="stat-unit">kcal/d</span>
-                            </div>
-                        </div>
-                    </div>
-                    <hr class="subtle-hr" />
-                    <div class="insight-group">
-                        <h4>
-                            TDEE Estimation Comparison
-                            <span class="info-icon"
-                                title="Comparison of different Total Daily Energy Expenditure (TDEE) estimates within the analysis range. GFit: Average from Google Fit. Weight Trend: Calculated from average intake and weight change rate (using 7700 kcal/kg). Adaptive: Calculated over a longer window (typically 28 days) using intake and SMA change, potentially more robust to short-term fluctuations. Difference: Smoothed average difference between Trend TDEE and GFit TDEE."><svg
-                                    xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                                    fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                                    stroke-linejoin="round" class="feather feather-info">
-                                    <circle cx="12" cy="12" r="10"></circle>
-                                    <line x1="12" y1="16" x2="12" y2="12"></line>
-                                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                                </svg></span>
-                        </h4>
-                        <div class="stat-item">
-                            <span>Avg TDEE (GFit):</span>
-                            <div>
-                                <span id="avg-tdee-gfit" class="stat-value">N/A</span><span
-                                    class="stat-unit">kcal/d</span>
-                            </div>
-                        </div>
-                        <div class="stat-item"
-                            title="TDEE estimated based on average calorie intake and the rate of weight change (smoothed or regression) within the analysis range.">
-                            <span>Est. TDEE (from Weight Trend):
-                                <span class="info-icon"
-                                    title="Calculated as: Avg Intake - Est. Daily Balance (from Trend)."><svg
-                                        xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                                        fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                                        stroke-linejoin="round" class="feather feather-info">
-                                        <circle cx="12" cy="12" r="10"></circle>
-                                        <line x1="12" y1="16" x2="12" y2="12"></line>
-                                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                                    </svg></span></span>
-                            <div>
-                                <span id="avg-tdee-wgt-change" class="stat-value">N/A</span><span
-                                    class="stat-unit">kcal/d</span>
-                            </div>
-                        </div>
-                        <div class="stat-item"
-                            title="TDEE estimated over a longer window (28 days) using average intake and the change in the smoothed weight average (SMA). This method aims to be more stable against daily noise.">
-                            <span>Est. TDEE (Adaptive):
-                                <span class="info-icon"
-                                    title="Calculated over ~28 days using avg intake and SMA change. More robust to noise."><svg
-                                        xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                                        fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                                        stroke-linejoin="round" class="feather feather-info">
-                                        <circle cx="12" cy="12" r="10"></circle>
-                                        <line x1="12" y1="16" x2="12" y2="12"></line>
-                                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                                    </svg></span></span>
-                            <div>
-                                <span id="avg-tdee-adaptive" class="stat-value">N/A</span><span
-                                    class="stat-unit">kcal/d</span>
-                            </div>
-                        </div>
-                        <div class="stat-item"
-                            title="The 14-day smoothed average difference between the TDEE estimated from weight trend and the TDEE reported by Google Fit. A consistent positive or negative difference might indicate systematic over/under-reporting by GFit relative to actual expenditure reflected in weight change.">
-                            <span>Avg TDEE Difference (Trend - GFit):</span>
-                            <div>
-                                <span id="avg-tdee-difference" class="stat-value">N/A</span><span
-                                    class="stat-unit">kcal/d</span>
-                            </div>
-                        </div>
-                    </div>
-                    <hr class="subtle-hr" />
-                    <div class="insight-group">
-                        <h4>
-                            Logging Consistency
-                            <span class="info-icon"
-                                title="Percentage of days within the analysis range that have logged data for Weight and Calories respectively. Higher consistency leads to more reliable analysis."><svg
-                                    xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                                    fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                                    stroke-linejoin="round" class="feather feather-info">
-                                    <circle cx="12" cy="12" r="10"></circle>
-                                    <line x1="12" y1="16" x2="12" y2="12"></line>
-                                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                                </svg></span>
-                        </h4>
-                        <div class="stat-item"
-                            title="Percentage of days within the analysis range with a logged weight entry.">
-                            <span>Weight Logging Consistency:</span>
-                            <div>
-                                <span id="weight-consistency" class="stat-value">N/A</span><span
-                                    class="stat-unit">%</span><span id="weight-consistency-details"
-                                    class="stat-details"></span>
-                            </div>
-                        </div>
-                        <div class="stat-item"
-                            title="Percentage of days within the analysis range with a logged calorie intake entry.">
-                            <span>Calorie Logging Consistency:</span>
-                            <div>
-                                <span id="calorie-consistency" class="stat-value">N/A</span><span
-                                    class="stat-unit">%</span><span id="calorie-consistency-details"
-                                    class="stat-details"></span>
-                            </div>
-                        </div>
-                    </div>
+                    </section>
                 </div>
-            </section>
+                <!-- END OVERVIEW TAB -->
+
+                <!-- GOALS TAB -->
+                <div class="tab-panel" data-tab="goals" role="tabpanel" aria-hidden="true">
+                    <section id="goal-alerts-card" class="card collapsible card--goals"
+                        aria-labelledby="goal-alerts-heading">
+                        <h2 id="goal-alerts-heading">
+                            <button class="card-toggle-btn" aria-expanded="true" aria-controls="goal-alerts-content"
+                                title="Toggle Section Visibility">
+                                <span class="toggle-icon">▼</span>
+                            </button>
+                            <span class="icon" aria-hidden="true">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" class="feather feather-bell">
+                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                                </svg>
+                            </span>
+                            Goal Alerts
+                        </h2>
+                        <div class="card-content" id="goal-alerts-content">
+                            <div id="goal-alerts-list" class="goal-alerts-list">
+                                <p class="empty-state">Checking alerts...</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="goal-suggestions-card" class="card collapsible"
+                        aria-labelledby="goal-suggestions-heading">
+                        <h2 id="goal-suggestions-heading">
+                            <button class="card-toggle-btn" aria-expanded="true"
+                                aria-controls="goal-suggestions-content" title="Toggle Section Visibility">
+                                <span class="toggle-icon">▼</span>
+                            </button>
+                            <span class="icon" aria-hidden="true">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" class="feather feather-target">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <circle cx="12" cy="12" r="6"></circle>
+                                    <circle cx="12" cy="12" r="2"></circle>
+                                </svg>
+                            </span>
+                            Goal Suggestions
+                        </h2>
+                        <div class="card-content" id="goal-suggestions-content">
+                            <div id="goal-suggestions-list" class="goal-suggestions-list">
+                                <p class="empty-state">Analyzing your data...</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="event-countdown-card" class="card collapsible"
+                        aria-labelledby="event-countdown-heading">
+                        <h2 id="event-countdown-heading">
+                            <button class="card-toggle-btn" aria-expanded="true" aria-controls="event-countdown-content"
+                                title="Toggle Section Visibility">
+                                <span class="toggle-icon">▼</span>
+                            </button>
+                            <span class="icon" aria-hidden="true">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" class="feather feather-clock">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                </svg>
+                            </span>
+                            Event Countdown
+                        </h2>
+                        <div class="card-content" id="event-countdown-content">
+                            <p class="empty-state">Loading events...</p>
+                        </div>
+                    </section>
+                </div>
+                <!-- END GOALS TAB -->
+
+                <!-- ANALYTICS TAB -->
+                <div class="tab-panel" data-tab="analytics" role="tabpanel" aria-hidden="true">
+                    <section id="weekend-analysis-card" class="card collapsible card--analytics"
+                        aria-labelledby="weekend-analysis-heading">
+                        <h2 id="weekend-analysis-heading">
+                            <button class="card-toggle-btn" aria-expanded="false"
+                                aria-controls="weekend-analysis-content">
+                                <span class="toggle-icon">▶</span>
+                            </button>
+                            <span class="icon">📅</span>
+                            Weekend vs Weekday
+                        </h2>
+                        <div class="card-content collapsed" id="weekend-analysis-content">
+                            <p class="empty-state">Analyzing patterns...</p>
+                        </div>
+                    </section>
+
+                    <section id="prediction-bands-card" class="card collapsible"
+                        aria-labelledby="prediction-bands-heading">
+                        <h2 id="prediction-bands-heading">
+                            <button class="card-toggle-btn" aria-expanded="false"
+                                aria-controls="prediction-bands-content">
+                                <span class="toggle-icon">▶</span>
+                            </button>
+                            <span class="icon">🔮</span>
+                            Weight Predictions
+                        </h2>
+                        <div class="card-content collapsed" id="prediction-bands-content">
+                            <p class="empty-state">Calculating predictions...</p>
+                        </div>
+                    </section>
+
+                    <section id="adaptive-rate-card" class="card collapsible" aria-labelledby="adaptive-rate-heading">
+                        <h2 id="adaptive-rate-heading">
+                            <button class="card-toggle-btn" aria-expanded="false" aria-controls="adaptive-rate-content">
+                                <span class="toggle-icon">▶</span>
+                            </button>
+                            <span class="icon">📊</span>
+                            Adaptive Benchmarks
+                        </h2>
+                        <div class="card-content collapsed" id="adaptive-rate-content">
+                            <p class="empty-state">Analyzing your history...</p>
+                        </div>
+                    </section>
+
+                    <section id="calorie-audit-card" class="card collapsible" aria-labelledby="calorie-audit-heading">
+                        <h2 id="calorie-audit-heading">
+                            <button class="card-toggle-btn" aria-expanded="false" aria-controls="calorie-audit-content">
+                                <span class="toggle-icon">▶</span>
+                            </button>
+                            <span class="icon">🔍</span>
+                            Calorie Accuracy
+                        </h2>
+                        <div class="card-content collapsed" id="calorie-audit-content">
+                            <p class="empty-state">Auditing accuracy...</p>
+                        </div>
+                    </section>
+
+                    <section id="monthly-report-card" class="card collapsible" aria-labelledby="monthly-report-heading">
+                        <h2 id="monthly-report-heading">
+                            <button class="card-toggle-btn" aria-expanded="false"
+                                aria-controls="monthly-report-content">
+                                <span class="toggle-icon">▶</span>
+                            </button>
+                            <span class="icon">📈</span>
+                            Monthly Reports
+                        </h2>
+                        <div class="card-content collapsed" id="monthly-report-content">
+                            <p class="empty-state">Generating reports...</p>
+                        </div>
+                    </section>
+
+                    <section id="what-worked-card" class="card collapsible" aria-labelledby="what-worked-heading">
+                        <h2 id="what-worked-heading">
+                            <button class="card-toggle-btn" aria-expanded="false" aria-controls="what-worked-content">
+                                <span class="toggle-icon">▶</span>
+                            </button>
+                            <span class="icon">💡</span>
+                            What Worked
+                        </h2>
+                        <div class="card-content collapsed" id="what-worked-content">
+                            <p class="empty-state">Finding patterns...</p>
+                        </div>
+                    </section>
+
+                    <section id="plateau-breaker-card" class="card collapsible"
+                        aria-labelledby="plateau-breaker-heading">
+                        <h2 id="plateau-breaker-heading">
+                            <button class="card-toggle-btn" aria-expanded="false"
+                                aria-controls="plateau-breaker-content">
+                                <span class="toggle-icon">▶</span>
+                            </button>
+                            <span class="icon">🚀</span>
+                            Plateau Breaker
+                        </h2>
+                        <div class="card-content collapsed" id="plateau-breaker-content">
+                            <p class="empty-state">Checking for plateaus...</p>
+                        </div>
+                    </section>
+
+                    <section id="rolling-averages-card" class="card collapsible"
+                        aria-labelledby="rolling-averages-heading">
+                        <h2 id="rolling-averages-heading">
+                            <button class="card-toggle-btn" aria-expanded="false"
+                                aria-controls="rolling-averages-content">
+                                <span class="toggle-icon">▶</span>
+                            </button>
+                            <span class="icon">〰️</span>
+                            Rolling Averages
+                        </h2>
+                        <div class="card-content collapsed" id="rolling-averages-content">
+                            <p class="empty-state">Calculating averages...</p>
+                        </div>
+                    </section>
+
+                    <section id="tdee-accuracy-card" class="card collapsible" aria-labelledby="tdee-accuracy-heading">
+                        <h2 id="tdee-accuracy-heading">
+                            <button class="card-toggle-btn" aria-expanded="false" aria-controls="tdee-accuracy-content">
+                                <span class="toggle-icon">▶</span>
+                            </button>
+                            <span class="icon">🎯</span>
+                            TDEE Accuracy
+                        </h2>
+                        <div class="card-content collapsed" id="tdee-accuracy-content">
+                            <p class="empty-state">Analyzing TDEE...</p>
+                        </div>
+                    </section>
+
+                    <section id="calorie-heatmap-card" class="card collapsible"
+                        aria-labelledby="calorie-heatmap-heading">
+                        <h2 id="calorie-heatmap-heading">
+                            <button class="card-toggle-btn" aria-expanded="false"
+                                aria-controls="calorie-heatmap-content">
+                                <span class="toggle-icon">▶</span>
+                            </button>
+                            <span class="icon">📅</span>
+                            Calorie Heatmap
+                        </h2>
+                        <div class="card-content collapsed" id="calorie-heatmap-content">
+                            <p class="empty-state">Loading calendar...</p>
+                        </div>
+                    </section>
+
+                    <section id="streak-tracker-card" class="card collapsible" aria-labelledby="streak-tracker-heading">
+                        <h2 id="streak-tracker-heading">
+                            <button class="card-toggle-btn" aria-expanded="false"
+                                aria-controls="streak-tracker-content">
+                                <span class="toggle-icon">▶</span>
+                            </button>
+                            <span class="icon">🔥</span>
+                            Streak Tracker
+                        </h2>
+                        <div class="card-content collapsed" id="streak-tracker-content">
+                            <p class="empty-state">Counting streaks...</p>
+                        </div>
+                    </section>
+
+                    <section id="water-weight-card" class="card collapsible" aria-labelledby="water-weight-heading">
+                        <h2 id="water-weight-heading">
+                            <button class="card-toggle-btn" aria-expanded="false" aria-controls="water-weight-content">
+                                <span class="toggle-icon">▶</span>
+                            </button>
+                            <span class="icon">💧</span>
+                            Water Weight
+                        </h2>
+                        <div class="card-content collapsed" id="water-weight-content">
+                            <p class="empty-state">Analyzing fluctuations...</p>
+                        </div>
+                    </section>
+
+                    <section id="reverse-diet-card" class="card collapsible" aria-labelledby="reverse-diet-heading">
+                        <h2 id="reverse-diet-heading">
+                            <button class="card-toggle-btn" aria-expanded="false" aria-controls="reverse-diet-content">
+                                <span class="toggle-icon">▶</span>
+                            </button>
+                            <span class="icon">📈</span>
+                            Reverse Diet
+                        </h2>
+                        <div class="card-content collapsed" id="reverse-diet-content">
+                            <p class="empty-state">Calculating plan...</p>
+                        </div>
+                    </section>
+
+                    <section id="rate-optimizer-card" class="card collapsible" aria-labelledby="rate-optimizer-heading">
+                        <h2 id="rate-optimizer-heading">
+                            <button class="card-toggle-btn" aria-expanded="false"
+                                aria-controls="rate-optimizer-content">
+                                <span class="toggle-icon">▶</span>
+                            </button>
+                            <span class="icon">⚡</span>
+                            Rate Optimizer
+                        </h2>
+                        <div class="card-content collapsed" id="rate-optimizer-content">
+                            <p class="empty-state">Optimizing rate...</p>
+                        </div>
+                    </section>
+
+                    <section id="analysis-results-card" class="card collapsible">
+                        <h2 id="analysis-results-heading">
+                            <button class="card-toggle-btn" aria-expanded="true"
+                                aria-controls="analysis-results-content" title="Toggle Section Visibility">
+                                <span class="toggle-icon">▼</span>
+                            </button>
+                            <span class="icon" aria-hidden="true">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" class="feather feather-trending-up">
+                                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                                    <polyline points="17 6 23 6 23 12"></polyline>
+                                </svg>
+                            </span>
+                            Analysis Results
+                        </h2>
+                        <div class="card-content" id="analysis-results-content">
+                            <!-- Existing Summary -->
+                            <div id="insight-summary" class="insight-summary">
+                                <p>Loading analysis...</p>
+                            </div>
+
+                            <hr class="subtle-hr" />
+                            <div class="insight-group">
+                                <h4>
+                                    Energy Balance Estimation
+                                    <span class="info-icon"
+                                        title="Average daily calorie intake, expenditure reported by Google Fit, and the resulting net balance within the analysis range. Estimated Daily Balance is calculated from the weight trend (smoothed rate or regression)."><svg
+                                            xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                                            stroke-linecap="round" stroke-linejoin="round" class="feather feather-info">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                                        </svg></span>
+                                </h4>
+                                <div class="stat-item">
+                                    <span>Avg Intake:</span>
+                                    <div>
+                                        <span id="avg-intake" class="stat-value">N/A</span><span
+                                            class="stat-unit">kcal/d</span>
+                                    </div>
+                                </div>
+                                <div class="stat-item">
+                                    <span>Avg Expend (GFit):</span>
+                                    <div>
+                                        <span id="avg-expenditure" class="stat-value">N/A</span><span
+                                            class="stat-unit">kcal/d</span>
+                                    </div>
+                                </div>
+                                <div class="stat-item">
+                                    <span>Avg Net (Intake - GFit):</span>
+                                    <div>
+                                        <span id="avg-net-balance" class="stat-value">N/A</span><span
+                                            class="stat-unit">kcal/d</span>
+                                    </div>
+                                </div>
+                                <div class="stat-item"
+                                    title="Estimated average daily calorie surplus (+) or deficit (-) based on the calculated weekly rate of weight change (Smoothed Rate or Regression Slope). Assumes 7700 kcal per kg of weight change.">
+                                    <span>Est. Daily Balance (from Trend):
+                                        <span class="info-icon"
+                                            title="Calculated from the primary weight trend (Smoothed Rate or Regression) using 7700 kcal/kg."><svg
+                                                xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                                                stroke-linecap="round" stroke-linejoin="round"
+                                                class="feather feather-info">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <line x1="12" y1="16" x2="12" y2="12"></line>
+                                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                                            </svg></span></span>
+                                    <div>
+                                        <span id="estimated-deficit-surplus" class="stat-value">N/A</span><span
+                                            class="stat-unit">kcal/d</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <hr class="subtle-hr" />
+                            <div class="insight-group">
+                                <h4>
+                                    TDEE Estimation Comparison
+                                    <span class="info-icon"
+                                        title="Comparison of different Total Daily Energy Expenditure (TDEE) estimates within the analysis range. GFit: Average from Google Fit. Weight Trend: Calculated from average intake and weight change rate (using 7700 kcal/kg). Adaptive: Calculated over a longer window (typically 28 days) using intake and SMA change, potentially more robust to short-term fluctuations. Difference: Smoothed average difference between Trend TDEE and GFit TDEE."><svg
+                                            xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                                            stroke-linecap="round" stroke-linejoin="round" class="feather feather-info">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                                        </svg></span>
+                                </h4>
+                                <div class="stat-item">
+                                    <span>Avg TDEE (GFit):</span>
+                                    <div>
+                                        <span id="avg-tdee-gfit" class="stat-value">N/A</span><span
+                                            class="stat-unit">kcal/d</span>
+                                    </div>
+                                </div>
+                                <div class="stat-item"
+                                    title="TDEE estimated based on average calorie intake and the rate of weight change (smoothed or regression) within the analysis range.">
+                                    <span>Est. TDEE (from Weight Trend):
+                                        <span class="info-icon"
+                                            title="Calculated as: Avg Intake - Est. Daily Balance (from Trend)."><svg
+                                                xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                                                stroke-linecap="round" stroke-linejoin="round"
+                                                class="feather feather-info">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <line x1="12" y1="16" x2="12" y2="12"></line>
+                                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                                            </svg></span></span>
+                                    <div>
+                                        <span id="avg-tdee-wgt-change" class="stat-value">N/A</span><span
+                                            class="stat-unit">kcal/d</span>
+                                    </div>
+                                </div>
+                                <div class="stat-item"
+                                    title="TDEE estimated over a longer window (28 days) using average intake and the change in the smoothed weight average (SMA). This method aims to be more stable against daily noise.">
+                                    <span>Est. TDEE (Adaptive):
+                                        <span class="info-icon"
+                                            title="Calculated over ~28 days using avg intake and SMA change. More robust to noise."><svg
+                                                xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                                                stroke-linecap="round" stroke-linejoin="round"
+                                                class="feather feather-info">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <line x1="12" y1="16" x2="12" y2="12"></line>
+                                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                                            </svg></span></span>
+                                    <div>
+                                        <span id="avg-tdee-adaptive" class="stat-value">N/A</span><span
+                                            class="stat-unit">kcal/d</span>
+                                    </div>
+                                </div>
+                                <div class="stat-item"
+                                    title="The 14-day smoothed average difference between the TDEE estimated from weight trend and the TDEE reported by Google Fit. A consistent positive or negative difference might indicate systematic over/under-reporting by GFit relative to actual expenditure reflected in weight change.">
+                                    <span>Avg TDEE Difference (Trend - GFit):</span>
+                                    <div>
+                                        <span id="avg-tdee-difference" class="stat-value">N/A</span><span
+                                            class="stat-unit">kcal/d</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <hr class="subtle-hr" />
+                            <div class="insight-group">
+                                <h4>
+                                    Logging Consistency
+                                    <span class="info-icon"
+                                        title="Percentage of days within the analysis range that have logged data for Weight and Calories respectively. Higher consistency leads to more reliable analysis."><svg
+                                            xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                                            stroke-linecap="round" stroke-linejoin="round" class="feather feather-info">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                                        </svg></span>
+                                </h4>
+                                <div class="stat-item"
+                                    title="Percentage of days within the analysis range with a logged weight entry.">
+                                    <span>Weight Logging Consistency:</span>
+                                    <div>
+                                        <span id="weight-consistency" class="stat-value">N/A</span><span
+                                            class="stat-unit">%</span><span id="weight-consistency-details"
+                                            class="stat-details"></span>
+                                    </div>
+                                </div>
+                                <div class="stat-item"
+                                    title="Percentage of days within the analysis range with a logged calorie intake entry.">
+                                    <span>Calorie Logging Consistency:</span>
+                                    <div>
+                                        <span id="calorie-consistency" class="stat-value">N/A</span><span
+                                            class="stat-unit">%</span><span id="calorie-consistency-details"
+                                            class="stat-details"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+                <!-- END ANALYTICS TAB -->
+
+                <!-- SETTINGS TAB -->
+                <div class="tab-panel" data-tab="settings" role="tabpanel" aria-hidden="true">
+                    <p class="empty-state" style="padding: 20px; text-align: center;">
+                        Settings are available in the right sidebar under "View & Interaction Controls"
+                    </p>
+                </div>
+                <!-- END SETTINGS TAB -->
+
+            </div>
+            <!-- END TAB PANELS -->
         </div>
+        <!-- END LEFT SIDEBAR -->
 
         <!-- Chart Section (Main chart + Context + Legend) -->
         <div class="chart-section card" aria-label="Weight and Performance Metric Charts">
@@ -748,7 +816,8 @@
                 <div id="rate-of-change-container" role="img"
                     aria-label="Smoothed weekly rate of weight change chart (kg/week)."></div>
                 <div id="tdee-reconciliation-container" role="img"
-                    aria-label="Smoothed difference between Trend-Estimated TDEE and Google Fit TDEE (kcal/day)."></div>
+                    aria-label="Smoothed difference between Trend-Estimated TDEE and Google Fit TDEE (kcal/day).">
+                </div>
                 <div id="correlation-scatter-container" role="img"
                     aria-label="Scatter plot showing Weekly Net Calories vs. Weekly Rate of Change from the Analysis Range.">
                 </div>
