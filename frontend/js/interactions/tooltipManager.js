@@ -28,22 +28,47 @@ export const TooltipManager = {
       const tooltipNode = ui.tooltip.node();
       if (!tooltipNode) return;
 
-      // Basic positioning logic (copied from eventHandlers)
-      let tooltipX = event.pageX + margin;
-      let tooltipY = event.pageY - margin - tooltipNode.offsetHeight;
-      const bodyWidth = document.body.clientWidth;
-      if (tooltipX + tooltipNode.offsetWidth > bodyWidth - margin) {
-        tooltipX = event.pageX - margin - tooltipNode.offsetWidth;
+      // Handle Fullscreen Mode Reparenting
+      const fse = document.fullscreenElement;
+      if (fse && tooltipNode.parentNode !== fse) {
+        fse.appendChild(tooltipNode);
+      } else if (!fse && tooltipNode.parentNode !== document.body) {
+        document.body.appendChild(tooltipNode);
+      }
+
+      // Calculate Coordinates
+      let pageX = event.pageX;
+      let pageY = event.pageY;
+      let containerWidth = document.body.clientWidth;
+
+      // If in fullscreen, adjust coordinates relative to the fullscreen container
+      if (fse) {
+        const rect = fse.getBoundingClientRect();
+        // Use client coordinates for fullscreen calculations for stability
+        pageX = event.clientX - rect.left;
+        pageY = event.clientY - rect.top;
+        containerWidth = fse.clientWidth;
+      }
+
+      let tooltipX = pageX + margin;
+      let tooltipY = pageY - margin - tooltipNode.offsetHeight;
+
+      const tooltipWidth = tooltipNode.offsetWidth;
+
+      // Boundary Checks
+      if (tooltipX + tooltipWidth > containerWidth - margin) {
+        tooltipX = pageX - margin - tooltipWidth;
       }
       if (tooltipY < margin) {
-        tooltipY = event.pageY + margin;
+        tooltipY = pageY + margin;
       }
 
       ui.tooltip
         .html(htmlContent)
         .style("left", `${tooltipX}px`)
         .style("top", `${tooltipY}px`)
-        .style("opacity", 0.95); // Make visible
+        .style("opacity", 0.95)
+        .style("z-index", 9999); // Ensure high z-index
     };
 
     // Use timeout for initial appearance delay
@@ -95,21 +120,21 @@ export const TooltipManager = {
    * Clears any active tooltip hide timeout. Useful when pinning.
    */
   clearHideTimeout() {
-      const currentTimeoutId = Selectors.selectState(
-          StateManager.getState(),
-      ).tooltipTimeoutId;
-      if (currentTimeoutId) clearTimeout(currentTimeoutId);
-      StateManager.dispatch({ type: ActionTypes.SET_TOOLTIP_TIMEOUT_ID, payload: null });
+    const currentTimeoutId = Selectors.selectState(
+      StateManager.getState(),
+    ).tooltipTimeoutId;
+    if (currentTimeoutId) clearTimeout(currentTimeoutId);
+    StateManager.dispatch({ type: ActionTypes.SET_TOOLTIP_TIMEOUT_ID, payload: null });
   },
 
-   /**
-   * Forces the tooltip to be visible immediately (e.g., after pinning).
-   * Assumes content has already been set.
-   */
+  /**
+  * Forces the tooltip to be visible immediately (e.g., after pinning).
+  * Assumes content has already been set.
+  */
   forceShow() {
-      if (ui.tooltip && !ui.tooltip.empty()) {
-          ui.tooltip.style("opacity", 0.95);
-      }
+    if (ui.tooltip && !ui.tooltip.empty()) {
+      ui.tooltip.style("opacity", 0.95);
+    }
   }
 };
 
