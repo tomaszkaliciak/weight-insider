@@ -6206,3 +6206,109 @@ body.dark-theme .skeleton-stat .skeleton-value {
     padding-top: 5px;
     border-top: 1px solid var(--border-color);
 }
+
+/* Weekly Review Card */
+.weekly-review-card {
+    background: var(--panel-bg);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--border-color);
+    position: relative;
+    overflow: hidden;
+}
+
+.weekly-review-card.positive {
+    background: linear-gradient(135deg, var(--panel-bg) 0%, hsla(var(--hue-secondary), 50%, 50%, 0.1) 100%);
+    border-left: 5px solid hsl(var(--hue-secondary), 55%, 50%);
+}
+
+.weekly-review-card.negative {
+    background: linear-gradient(135deg, var(--panel-bg) 0%, hsla(var(--hue-tertiary), 50%, 50%, 0.1) 100%);
+    border-left: 5px solid hsl(var(--hue-tertiary), 60%, 55%);
+}
+
+.weekly-review-card.neutral {
+    border-left: 5px solid var(--text-muted);
+}
+
+.review-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.review-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: var(--text-primary);
+}
+
+.review-dates {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    background: var(--bg-primary);
+    padding: 4px 8px;
+    border-radius: 12px;
+}
+
+.review-metrics {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 16px;
+}
+
+.review-metrics .metric {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.review-metrics .label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+}
+
+.review-metrics .value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.review-metrics .value.good {
+    color: hsl(var(--hue-secondary), 55%, 50%);
+}
+
+.review-metrics .value.warn {
+    color: hsl(var(--hue-tertiary), 60%, 55%);
+}
+
+.review-summary {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    padding-top: 16px;
+    border-top: 1px dashed var(--border-color);
+}
+
+/* Fix for interactive goal line hit area - ensure it doesn't occlude */
+.goal-line-hit {
+    fill: none !important;
+    stroke: transparent !important;
+    cursor: grab;
+}
+
+.goal-line-hit:active {
+    cursor: grabbing;
+}
+
+/* Ensure Goal Zone is subtle */
+.goal-zone-rect {
+    pointer-events: none;
+    fill: var(--goal-color);
+    fill-opacity: 0.05 !important;
+    /* Reduced opacity */
+}

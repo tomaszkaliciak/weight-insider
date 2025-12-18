@@ -47,6 +47,7 @@ import { KeyboardNav } from "./interactions/keyboardNav.js";
 import { SparklineRenderer } from "./ui/renderers/sparklineRenderer.js";
 import { EnergyBalanceRenderer } from "./ui/renderers/energyBalanceRenderer.js";
 import { SmartCoachRenderer } from "./ui/renderers/smartCoachRenderer.js";
+import { WeeklyReviewRenderer } from "./ui/renderers/weeklyReviewRenderer.js";
 /**
  * Initializes the application step-by-step.
  */
@@ -98,6 +99,7 @@ async function initialize() {
     CalorieAuditRenderer.init(); // Calorie accuracy analysis
     MonthlyReportRenderer.init(); // Monthly/quarterly reports
     WhatWorkedRenderer.init(); // Pattern analysis from successful periods
+    WeeklyReviewRenderer.init(); // Smart 7-day review
     PlateauBreakerRenderer.init(); // Plateau detection and suggestions
     RollingAveragesRenderer.init(); // 7/14/30 day rolling averages
     TdeeAccuracyRenderer.init(); // TDEE accuracy dashboard

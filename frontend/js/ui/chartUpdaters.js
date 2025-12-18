@@ -147,19 +147,19 @@ export const FocusChartUpdater = {
       (d) => d.upperBound,
     );
     const regressionLineGen = d3
-        .line()
-        .x((d) => currentXScale(d.date))
-        .y((d) => currentYScale(d.regressionValue))
-        .curve(d3.curveLinear)
-        .defined((d) => {
-            const dateValid = d.date instanceof Date && !isNaN(d.date);
-            const valueValid = d.regressionValue != null;
-            const scaledYFinite = valueValid ? isFinite(currentYScale(d.regressionValue)) : false;
-            const scaledXFinite = dateValid ? isFinite(currentXScale(d.date)) : false;
-            const result = dateValid && valueValid && scaledYFinite && scaledXFinite;
+      .line()
+      .x((d) => currentXScale(d.date))
+      .y((d) => currentYScale(d.regressionValue))
+      .curve(d3.curveLinear)
+      .defined((d) => {
+        const dateValid = d.date instanceof Date && !isNaN(d.date);
+        const valueValid = d.regressionValue != null;
+        const scaledYFinite = valueValid ? isFinite(currentYScale(d.regressionValue)) : false;
+        const scaledXFinite = dateValid ? isFinite(currentXScale(d.date)) : false;
+        const result = dateValid && valueValid && scaledYFinite && scaledXFinite;
 
-            return result;
-        });
+        return result;
+      });
     const goalLineGen = lineGenFactory((d) => d.weight);
     const trendLineGen = lineGenFactory((d) => d.weight); // Generic trend line using 'weight' property
 
@@ -186,6 +186,7 @@ export const FocusChartUpdater = {
       regressionLineGen,
     );
     updateSelection(ui.goalLine, goalLineData, goalLineGen);
+    updateSelection(ui.goalLineHit, goalLineData, goalLineGen); // Update hit area
     updateSelection(ui.trendLine1, trendLine1Data, trendLineGen); // Use pre-calculated data
     updateSelection(ui.trendLine2, trendLine2Data, trendLineGen); // Use pre-calculated data
   },
@@ -294,13 +295,13 @@ export const FocusChartUpdater = {
     // Find the specific data point to highlight from the visible data
     const highlightDataPoint = highlightedDate
       ? visibleRawWeightData.find(
-          (d) =>
-            d.value != null &&
-            d.date instanceof Date &&
-            d.date.getTime() === highlightedDate.getTime() &&
-            isFinite(scales.x(d.date)) &&
-            isFinite(scales.y(d.value)), // Check if plottable
-        )
+        (d) =>
+          d.value != null &&
+          d.date instanceof Date &&
+          d.date.getTime() === highlightedDate.getTime() &&
+          isFinite(scales.x(d.date)) &&
+          isFinite(scales.y(d.value)), // Check if plottable
+      )
       : null;
 
     const highlightMarker = ui.highlightGroup

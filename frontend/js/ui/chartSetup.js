@@ -210,9 +210,8 @@ function createSVGElements() {
     ui.regressionLine = ui.chartArea // Regression line
       .append("path")
       .attr("class", "trend-line regression-line");
-    ui.goalLine = ui.chartArea // Goal line
-      .append("path")
-      .attr("class", "trend-line goal-line");
+    ui.goalLine = ui.chartArea.append("path").attr("class", "goal-line");
+    // goalLineHit moved to end of focus group
     ui.bfLine = ui.chartArea.append("path").attr("class", "line bf-line"); // Bodyfat line (unused)
 
     // 3. Main Data Lines (SMA, EMA - drawn after reference lines)
@@ -264,6 +263,15 @@ function createSVGElements() {
       .append("g")
       .attr("class", "regression-brush");
 
+    // Goal Line Hit Area (Appended last to be on top of brushes/overlays)
+    ui.goalLineHit = ui.focus
+      .append("path") // Appended to focus (not chartArea) to avoid clipping and overlay issues
+      .attr("class", "goal-line-hit")
+      .style("stroke", "transparent")
+      .style("stroke-width", "15px")
+      .style("fill", "none")
+      .style("cursor", "ns-resize");
+
     // Axis Labels (Appended to main SVG, positioned relative to margins/dimensions)
     ui.svg
       .append("text")
@@ -309,10 +317,10 @@ function createSVGElements() {
       .attr("class", "axis axis--x")
       .attr("transform", `translate(0,${height})`); // Axis last
     ui.brushGroup = ui.context
-        .append("g")
-        .attr("class", "brush context-brush"); // Brush on very top
+      .append("g")
+      .attr("class", "brush context-brush"); // Brush on very top
   } else {
-      console.warn("chartSetup: Context dimensions invalid or container missing. Context chart/brush disabled.")
+    console.warn("chartSetup: Context dimensions invalid or container missing. Context chart/brush disabled.")
   }
 
   // --- Balance Chart ---
@@ -780,6 +788,14 @@ export function initializeChartSetup() {
   createAxes(); // Populates exported axes
   createBrushes(); // Populates exported brushes, adds brushGroup to uiCache
   createZoom(); // Populates exported zoom
+
+  // Initialize Interactions
+  if (ui.goalLineHit && !ui.goalLineHit.empty()) {
+    // Safeguard: Ensure hit area is transparent and has no fill
+    ui.goalLineHit.attr("fill", "none");
+    ChartInteractions.setupGoalDrag();
+  }
+
   console.log("chartSetup: Setup complete.");
   return true;
 }

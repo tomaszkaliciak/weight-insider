@@ -32,10 +32,63 @@ function restoreViewAfterResize(analysisRange) {
     }
 }
 
+// Store last measured dimensions
+let lastWidth = window.innerWidth;
+let lastHeight = window.innerHeight;
+
 // Debounced resize handler
 const handleResizeDebounced = Utils.debounce(() => {
-    console.log("[ResizeHandler] Debounced resize detected, re-rendering chart...");
+    console.log("[ResizeHandler] handleResizeDebounced triggered.");
 
+    // Check if dimensions actually changed significantly to avoid infinite loops
+    // or triggering on minor layout shifts (e.g., scrollbars toggling, or chart updates).
+    const currentWidth = window.innerWidth;
+    const currentHeight = window.innerHeight;
+
+    // Tolerance in pixels (handle mobile url bar appearing/disappearing or scrollbars)
+    const tolerance = 2;
+
+    if (Math.abs(currentWidth - lastWidth) <= tolerance && Math.abs(currentHeight - lastHeight) <= tolerance) {
+        console.log("[ResizeHandler] Dimensions unchanged (within tolerance). Skipping resize logic.");
+        return;
+    }
+
+    console.log(`[ResizeHandler] Dimensions changed. Width: ${lastWidth} -> ${currentWidth}, Height: ${lastHeight} -> ${currentHeight}`);
+    lastWidth = currentWidth;
+    lastHeight = currentHeight;
+
+    // Strategy: Breaking the layout dependency.
+    // The chart SVG (with fixed large dimensions from fullscreen) forces the container 
+    // and parent section to stay large even after fullscreen exit.
+    // We must temporarily "collapse" the chart to allow the DOM to snap back to its 
+    // natural grid/flex size, then measure that, then re-expand the chart.
+
+    // 1. Collapse SVGs to allow container to shrink
+    const svgSelectors = [
+        "#chart-container svg",
+        "#context-chart-container svg",
+        "#balance-chart-container svg",
+        "#rate-of-change-container svg",
+        "#tdee-reconciliation-container svg",
+        "#correlation-scatter-container svg"
+    ];
+
+    // Set explicit small size to release layout constraints
+    svgSelectors.forEach(selector => {
+        const el = document.querySelector(selector);
+        if (el) {
+            el.setAttribute("width", "10");
+            el.setAttribute("height", "10");
+            el.style.width = "10px";
+            el.style.height = "10px";
+        }
+    });
+
+    // 2. Force Repaint/Reflow (read a layout property)
+    // This forces the browser to recalculate the chart-section size based on the now-small children
+    document.body.offsetHeight;
+
+    // 3. Normal Update process begins (Measurements will now be correct)
     const preResizeState = StateManager.getState();
     const currentAnalysisRange = Selectors.selectAnalysisRange(preResizeState);
 
@@ -45,23 +98,22 @@ const handleResizeDebounced = Utils.debounce(() => {
 
     // Re-initialize chart dimensions and scales
     if (initializeChartSetup()) {
-        const stateSnapshot = StateManager.getState(); // Get potentially updated state after setup
+        const stateSnapshot = StateManager.getState();
         if (
             Selectors.selectIsInitialized(stateSnapshot) &&
-            Selectors.selectProcessedData(stateSnapshot)?.length > 0
+            Selectors.selectProcessedData(stateSnapshot).length > 0
         ) {
-            // Update context domain based on full data
+            // CRITICAL: restore the context domain BEFORE restoring the focus view.
+            // initializeChartSetup() recreates scales with default domains [0, 1].
+            // restoreViewAfterResize() calls syncBrushAndZoomToFocus(), which relies
+            // on scales.xContext.domain() to calculate the correct zoom transform.
             DomainManager.updateContextXDomain(stateSnapshot);
 
-            // Restore the previous view (zoom/pan/domain)
             restoreViewAfterResize(currentAnalysisRange);
-
-            // Trigger a full redraw
             MasterUpdater.updateAllCharts();
         } else if (Selectors.selectIsInitialized(stateSnapshot)) {
-            console.warn("[ResizeHandler] No data to display after resize setup.");
-            DomainManager.setEmptyDomains(); // Ensure domains are empty if no data
-            MasterUpdater.updateAllCharts(); // Redraw empty state
+            DomainManager.setEmptyDomains();
+            MasterUpdater.updateAllCharts();
         }
     } else {
         console.error("[ResizeHandler] Chart redraw on resize failed during setup phase.");

@@ -23,6 +23,7 @@ const debouncedInteractionEnd = Utils.debounce(
 
     // --- Final State Updates After Interaction ---
     // 1. Set final analysis range based on the *current* scales.x domain
+    console.log("[ChartInteractions] Debounced End: Checking final domain:", scales.x?.domain());
     const finalXDomain = scales.x?.domain();
     if (
       finalXDomain &&
@@ -65,19 +66,19 @@ const debouncedInteractionEnd = Utils.debounce(
 
 // Helper to get chart dimensions (consider moving to utils or chartSetup if used elsewhere)
 function getChartDimensions(chartKey) {
-    let width = 0, height = 0;
-    try {
-        if (chartKey === 'focus' && scales.x && scales.y) {
-            const xRange = scales.x.range();
-            const yRange = scales.y.range();
-            width = Math.abs(xRange[1] - xRange[0]);
-            height = Math.abs(yRange[0] - yRange[1]);
-        }
-        // Add cases for other charts if needed
-    } catch (e) {
-        console.warn(`ChartInteractions: Error getting dimensions for ${chartKey}`, e);
+  let width = 0, height = 0;
+  try {
+    if (chartKey === 'focus' && scales.x && scales.y) {
+      const xRange = scales.x.range();
+      const yRange = scales.y.range();
+      width = Math.abs(xRange[1] - xRange[0]);
+      height = Math.abs(yRange[0] - yRange[1]);
     }
-    return { width, height };
+    // Add cases for other charts if needed
+  } catch (e) {
+    console.warn(`ChartInteractions: Error getting dimensions for ${chartKey}`, e);
+  }
+  return { width, height };
 }
 
 
@@ -170,7 +171,7 @@ export const ChartInteractions = {
   },
 
   trendChangeMouseOver(event, d) {
-     if (!d) return;
+    if (!d) return;
     const direction = d.magnitude > 0 ? "acceleration" : "deceleration";
     const rateChange = Math.abs(d.magnitude * 7);
     const tt = `<strong>Trend Change (${Utils.formatDateShort(d.date)})</strong><br>Significant ${direction} detected.<br>Rate Δ ≈ ${Utils.formatValue(rateChange, 2)} kg/wk`;
@@ -180,9 +181,70 @@ export const ChartInteractions = {
     TooltipManager.hide();
   },
 
+  // --- Goal Line Drag Interaction ---
+  setupGoalDrag() {
+    if (!ui.goalLineHit || ui.goalLineHit.empty()) return;
+
+    // Import FormHandlers dynamically to avoid circular dependency if needed, 
+    // OR direct import if safe (ChartInteractions <-> FormHandlers cycle is risk).
+    // Better: Helper function or dispatch custom event.
+    // Assuming FormHandlers imported via window or accessible.
+    // Since FormHandlers imports ChartInteractions, importing FormHandlers here creates cycle.
+    // Solution: Use UI inputs and Button click or window event.
+    // OR just use StateManager directly if just updating state?
+    // FormHandlers adds validation and persistence logic.
+    // I will trigger the specific button click or duplicate logic (safer: button click).
+
+    const dragBehavior = d3.drag()
+      .on("start", function (event) {
+        d3.select(this).classed("dragging", true);
+        d3.select("body").style("cursor", "ns-resize");
+
+        // Capture starting Y based on CURRENT input value (source of truth for line)
+        const currentWeight = parseFloat(ui.goalWeightInput.property("value"));
+        if (!isNaN(currentWeight) && scales.y) {
+          this.startLineY = scales.y(currentWeight);
+        } else {
+          this.startLineY = event.y;
+        }
+      })
+      .on("drag", function (event) {
+        if (!scales.y || this.startLineY == null) return;
+
+        const currentY = event.y;
+        const dy = currentY - this.startLineY;
+
+        // Visual Translation
+        ui.goalLine.attr("transform", `translate(0, ${dy})`);
+        ui.goalLineHit.attr("transform", `translate(0, ${dy})`);
+
+        // Update Input
+        const newWeight = scales.y.invert(currentY);
+        ui.goalWeightInput.property("value", newWeight.toFixed(1));
+      })
+      .on("end", function (event) {
+        d3.select(this).classed("dragging", false);
+        d3.select("body").style("cursor", null);
+
+        // Reset visual transform (State update will redraw correctly)
+        ui.goalLine.attr("transform", null);
+        ui.goalLineHit.attr("transform", null);
+
+        // Trigger Update
+        const form = Utils.getElementByIdSafe("goal-form");
+        if (form) {
+          form.dispatchEvent(new Event("submit"));
+        }
+      });
+
+    ui.goalLineHit.call(dragBehavior);
+    console.log("ChartInteractions: Goal Drag setup complete.");
+  },
+
   // --- Brush and Zoom Handlers ---
   contextBrushed(event) {
     if (!event || !event.sourceEvent || event.sourceEvent.type === "zoom" || isBrushing) return;
+    console.log("[ChartInteractions] contextBrushed called. Type:", event.type, "Selection:", event.selection);
     if (!event.selection && event.type !== "end") return;
 
     isBrushing = true;
@@ -219,7 +281,7 @@ export const ChartInteractions = {
     MasterUpdater.updateAllCharts({ isInteractive: true });
 
     if (event.type === "end") {
-      console.log("[ChartInteractions] Context Brush end.");
+      console.log("[ChartInteractions] Context Brush end. Event:", event);
       debouncedInteractionEnd();
     }
     setTimeout(() => { isBrushing = false; }, 50);
@@ -282,7 +344,7 @@ export const ChartInteractions = {
       newRange = { start: startDate, end: endDate };
       const toleranceMs = 86400000 / 4;
       if (Math.abs((currentRange.start?.getTime() ?? -Infinity) - startDate.getTime()) > toleranceMs ||
-          Math.abs((currentRange.end?.getTime() ?? -Infinity) - endDate.getTime()) > toleranceMs) {
+        Math.abs((currentRange.end?.getTime() ?? -Infinity) - endDate.getTime()) > toleranceMs) {
         rangeUpdated = true;
       }
     } else {

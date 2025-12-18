@@ -90,13 +90,18 @@ export const DataService = {
     let mergedData = [];
     for (const dateStr of allDates) {
       // Basic validation of date string format (YYYY-MM-DD)
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      // Basic validation of date string format (YYYY-M-D or YYYY-MM-DD)
+      if (!/^\d{4}-\d{1,2}-\d{1,2}$/.test(dateStr)) {
         console.warn(
           `DataService: Skipping invalid date key format: ${dateStr}`,
         );
         continue;
       }
-      const dateObj = new Date(dateStr + "T00:00:00"); // Ensure parsing as local date at midnight
+
+      // Robust parsing for unpadded dates
+      const [y, m, d] = dateStr.split("-").map(Number);
+      const dateObj = new Date(y, m - 1, d); // Local midnight
+
       if (isNaN(dateObj.getTime())) {
         console.warn(
           `DataService: Skipping invalid date string after parsing: ${dateStr}`,

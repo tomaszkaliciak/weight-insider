@@ -25,6 +25,22 @@ export const EventHandlers = {
   // --- Setup ---
   setupAll() {
     console.log("EventHandlers: Setting up event listeners...");
+    // Use ResizeObserver monitoring the Fullscreen Element (.chart-section)
+    // This is more reliable as it is the element that actually changes state
+    const chartSection = document.querySelector('.chart-section');
+    if (chartSection) {
+      const ro = new ResizeObserver((entries) => {
+        // Trigger resize handler whenever specific layout element changes
+        ResizeHandler.handleResize();
+      });
+      ro.observe(chartSection);
+    } else if (ui.chartContainer && ui.chartContainer.node()) {
+      // Fallback to container if section is missing
+      const ro = new ResizeObserver(() => ResizeHandler.handleResize());
+      ro.observe(ui.chartContainer.node());
+    }
+
+    // Backup listener for window resize
     window.addEventListener("resize", ResizeHandler.handleResize);
     ui.themeToggle?.on("click", UIInteractions.handleThemeToggle);
     d3.select("#goal-setting-form").on(
