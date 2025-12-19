@@ -45,14 +45,6 @@ const handleResizeDebounced = Utils.debounce(() => {
     const currentWidth = window.innerWidth;
     const currentHeight = window.innerHeight;
 
-    // Tolerance in pixels (handle mobile url bar appearing/disappearing or scrollbars)
-    const tolerance = 2;
-
-    if (Math.abs(currentWidth - lastWidth) <= tolerance && Math.abs(currentHeight - lastHeight) <= tolerance) {
-        console.log("[ResizeHandler] Dimensions unchanged (within tolerance). Skipping resize logic.");
-        return;
-    }
-
     console.log(`[ResizeHandler] Dimensions changed. Width: ${lastWidth} -> ${currentWidth}, Height: ${lastHeight} -> ${currentHeight}`);
     lastWidth = currentWidth;
     lastHeight = currentHeight;
@@ -124,7 +116,17 @@ const handleResizeDebounced = Utils.debounce(() => {
 export const ResizeHandler = {
     handleResize: handleResizeDebounced,
     // Expose restoreViewAfterResize as it's called from main.js during init
-    restoreViewAfterResize: restoreViewAfterResize
+    restoreViewAfterResize: restoreViewAfterResize,
+    init() {
+        window.addEventListener("resize", this.handleResize);
+        document.addEventListener("fullscreenchange", () => {
+            console.log("[ResizeHandler] Fullscreen change detected.");
+            // Reset last dimensions to force a resize update even if window size is the same
+            lastWidth = 0;
+            lastHeight = 0;
+            this.handleResize();
+        });
+    }
 };
 
 console.log("ResizeHandler module loaded.");

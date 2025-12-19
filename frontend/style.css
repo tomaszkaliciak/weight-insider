@@ -6032,6 +6032,19 @@ body.dark-theme .skeleton-stat .skeleton-value {
 .chart-section:fullscreen {
     background: var(--bg-primary);
     padding: 20px;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: none !important;
+    max-height: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+.chart-section:fullscreen #chart-container {
+    flex-grow: 1 !important;
+    width: 100% !important;
+    height: auto !important;
+    /* Allow flex to take over */
 }
 
 .chart-section:fullscreen .chart-fullscreen-btn svg {

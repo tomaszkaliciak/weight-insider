@@ -158,7 +158,10 @@ async function initialize() {
       "[Main Init] Dispatched initial trend config from UI defaults.",
     );
 
-    // 10. Initialize StatsManager (Sets up subscriptions for derived data calc)
+    // 10. Initialize Resize Handler (Binds window resize and fullscreen events)
+    ResizeHandler.init();
+
+    // 11. Initialize StatsManager (Sets up subscriptions for derived data calc)
     StatsManager.init(); // Sets up subscriptions, initial calc triggered by INITIALIZATION_COMPLETE
 
     // 11. Initialize Chart Setup (Creates SVGs, scales, axes - BEFORE domain setup)

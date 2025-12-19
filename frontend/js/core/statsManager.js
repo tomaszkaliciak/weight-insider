@@ -679,15 +679,24 @@ export const StatsManager = {
 
             // Calculate Correlation with Daily Fluctuations (Rolling Volatility)
             // We want to see if higher carb intake correlates with higher water weight (volatility)
-            const carbsPct = macroData.map(d => (d.carbs * 4 / d.calorieIntake));
-            const volatility = macroData.map(d => d.rollingVolatility).filter(v => v !== null);
+            const correlationPairs = macroData
+              .filter(d => d.rollingVolatility !== null)
+              .map(d => ({
+                carbsPct: (d.carbs * 4 / d.calorieIntake),
+                volatility: d.rollingVolatility
+              }));
 
-            if (carbsPct.length === volatility.length && volatility.length >= 7) {
+            if (correlationPairs.length >= 7) {
               try {
-                displayStats.carbVolatilityCorrelation = ss.sampleCorrelation(carbsPct, volatility);
+                const x = correlationPairs.map(p => p.carbsPct);
+                const y = correlationPairs.map(p => p.volatility);
+                displayStats.carbVolatilityCorrelation = ss.sampleCorrelation(x, y);
               } catch (e) {
+                console.warn("[StatsManager] Macro correlation calculation failed:", e);
                 displayStats.carbVolatilityCorrelation = null;
               }
+            } else {
+              displayStats.carbVolatilityCorrelation = null;
             }
           } else {
             displayStats.macroSplit = null;
