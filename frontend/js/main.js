@@ -48,6 +48,8 @@ import { SparklineRenderer } from "./ui/renderers/sparklineRenderer.js";
 import { EnergyBalanceRenderer } from "./ui/renderers/energyBalanceRenderer.js";
 import { SmartCoachRenderer } from "./ui/renderers/smartCoachRenderer.js";
 import { WeeklyReviewRenderer } from "./ui/renderers/weeklyReviewRenderer.js";
+import { ExecutiveHubRenderer } from "./ui/renderers/executiveHubRenderer.js";
+import { MacroCorrelationRenderer } from "./ui/renderers/macroCorrelationRenderer.js";
 /**
  * Initializes the application step-by-step.
  */
@@ -86,6 +88,8 @@ async function initialize() {
     // 6. Initialize UI Modules that Subscribe to State
     // These need to be ready *before* data/stats updates start flowing
     MasterUpdater.init(); // Listens for state changes to trigger renders
+    ExecutiveHubRenderer.init(); // Premium High-Impact Summary
+    MacroCorrelationRenderer.init(); // Premium Macro Analysis
     AnnotationListRenderer.init(); // Listens for annotation changes
     StatsDisplayRenderer.init(); // Listens for display stats updates
     PeriodizationRenderer.init(); // Listens for periodization phase changes

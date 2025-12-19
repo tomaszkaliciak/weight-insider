@@ -652,6 +652,47 @@ export const StatsManager = {
               ? results.regressionResult.slope * 7
               : null;
           displayStats.regressionStartDate = effectiveRegRange.start;
+
+          // --- Macro Impact Analytics (Premium Feature) ---
+          const macroData = results.filteredData.filter(d =>
+            d.calorieIntake > 0 &&
+            d.protein !== null &&
+            d.carbs !== null &&
+            d.fat !== null
+          );
+
+          if (macroData.length >= 7) {
+            // Calculate average macro percentages
+            let totalCals = 0, totalP = 0, totalC = 0, totalF = 0;
+            macroData.forEach(d => {
+              totalCals += d.calorieIntake;
+              totalP += d.protein;
+              totalC += d.carbs;
+              totalF += d.fat;
+            });
+
+            displayStats.macroSplit = {
+              protein: Math.round((totalP * 4 / totalCals) * 100),
+              carbs: Math.round((totalC * 4 / totalCals) * 100),
+              fat: Math.round((totalF * 9 / totalCals) * 100)
+            };
+
+            // Calculate Correlation with Daily Fluctuations (Rolling Volatility)
+            // We want to see if higher carb intake correlates with higher water weight (volatility)
+            const carbsPct = macroData.map(d => (d.carbs * 4 / d.calorieIntake));
+            const volatility = macroData.map(d => d.rollingVolatility).filter(v => v !== null);
+
+            if (carbsPct.length === volatility.length && volatility.length >= 7) {
+              try {
+                displayStats.carbVolatilityCorrelation = ss.sampleCorrelation(carbsPct, volatility);
+              } catch (e) {
+                displayStats.carbVolatilityCorrelation = null;
+              }
+            }
+          } else {
+            displayStats.macroSplit = null;
+            displayStats.carbVolatilityCorrelation = null;
+          }
         } else {
           /* ... defaults ... */
           results.regressionResult = {

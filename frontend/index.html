@@ -595,6 +595,19 @@
                         </div>
                     </section>
 
+                    <section id="macro-impact-card" class="card collapsible" aria-labelledby="macro-impact-heading">
+                        <h2 id="macro-impact-heading">
+                            <button class="card-toggle-btn" aria-expanded="false" aria-controls="macro-impact-content">
+                                <span class="toggle-icon">▶</span>
+                            </button>
+                            <span class="icon">🥑</span>
+                            Macro Impact
+                        </h2>
+                        <div class="card-content collapsed" id="macro-impact-content">
+                            <p class="empty-state">Calculating correlations...</p>
+                        </div>
+                    </section>
+
                     <section id="analysis-results-card" class="card collapsible">
                         <h2 id="analysis-results-heading">
                             <button class="card-toggle-btn" aria-expanded="true"
@@ -788,8 +801,15 @@
         </div>
         <!-- END LEFT SIDEBAR -->
 
+        <!-- Executive Dashboard Hub (Premium Feature) -->
+        <div id="executive-hub" class="executive-hub glass-box">
+            <div id="executive-hub-content" class="executive-hub-content">
+                <div class="hub-loading">Initialising Executive Insights...</div>
+            </div>
+        </div>
+
         <!-- Chart Section (Main chart + Context + Legend) -->
-        <div class="chart-section card" aria-label="Weight and Performance Metric Charts">
+        <section class="chart-section main-card animate-on-load" aria-label="Weight and Performance Metric Charts">
             <!-- Quick Stats Bar -->
             <div id="quick-stats-bar" class="quick-stats-bar">
                 <div class="quick-stat">
@@ -842,7 +862,7 @@
                     </path>
                 </svg>
             </button>
-        </div>
+        </section>
 
         <!-- NEW: Secondary Analysis Section (Collapsible) -->
         <details class="card secondary-analysis-section" id="secondary-analysis-section" open>
@@ -914,12 +934,18 @@
                                 d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
                                 d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83
                                 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0
-                                1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0
-                                0 1 0-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2
-                                0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2
-                                2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2
-                                2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0
-                                2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1
+                                1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2
+                                2 0
+                                0 1 0-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2
+                                2 2
+                                0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1
+                                0-2.83 2
+                                2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1
+                                2-2 2
+                                2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1
+                                2.83 0
+                                2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0
+                                0 1
                                 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
                             </path>
                         </svg>

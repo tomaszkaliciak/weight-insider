@@ -446,7 +446,10 @@ body.dark-theme .status-message.warn {
 .dashboard-container {
     display: grid;
     grid-template-columns: clamp(330px, 26%, 420px) 1fr clamp(330px, 26%, 420px);
-    grid-template-areas: "sidebarL main     sidebarR" "sidebarL secondary sidebarR";
+    grid-template-areas:
+        "hub      hub      hub"
+        "sidebarL main     sidebarR"
+        "sidebarL secondary sidebarR";
     gap: clamp(25px, 4vw, 45px);
     /* Increased target/max gap */
     width: 100%;
@@ -6311,4 +6314,168 @@ body.dark-theme .skeleton-stat .skeleton-value {
     fill: var(--goal-color);
     fill-opacity: 0.05 !important;
     /* Reduced opacity */
+}
+
+
+/* --- Premium Features: Executive Hub --- */
+.executive-hub {
+    grid-area: hub;
+    width: 100%;
+    max-width: 1800px;
+    margin-bottom: 30px;
+    padding: 25px;
+    border-radius: 20px;
+    position: relative;
+    overflow: hidden;
+    z-index: 10;
+    transition: all var(--transition-speed) var(--transition-ease);
+}
+
+.glass-box {
+    background: hsla(var(--hue-neutral), 25%, 98%, 0.6);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid hsla(var(--hue-neutral), 25%, 100%, 0.4);
+    box-shadow:
+        0 8px 32px 0 hsla(var(--hue-neutral), 25%, 10%, 0.05),
+        inset 0 0 0 1px hsla(var(--hue-neutral), 25%, 100%, 0.1);
+}
+
+body.dark-theme .glass-box {
+    background: hsla(222, 47%, 11%, 0.6);
+    border: 1px solid hsla(217, 33%, 25%, 0.4);
+    box-shadow:
+        0 8px 32px 0 hsla(0, 0%, 0%, 0.3),
+        inset 0 0 0 1px hsla(217, 33%, 25%, 0.1);
+}
+
+.executive-hub-content {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    gap: 30px;
+    flex-wrap: wrap;
+}
+
+.hub-metric {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    flex: 1;
+    min-width: 150px;
+    position: relative;
+}
+
+.hub-metric:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    right: -15px;
+    top: 20%;
+    height: 60%;
+    width: 1px;
+    background: var(--border-color);
+    opacity: 0.5;
+}
+
+@media (max-width: 900px) {
+    .hub-metric:not(:last-child)::after {
+        display: none;
+    }
+}
+
+.hub-label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.hub-value {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1;
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+}
+
+.hub-unit {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.hub-status {
+    margin-top: 10px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 20px;
+}
+
+.hub-status.optimal {
+    background: hsla(var(--hue-secondary), 50%, 50%, 0.15);
+    color: hsl(var(--hue-secondary), 55%, 45%);
+}
+
+.hub-status.warning {
+    background: hsla(var(--hue-tertiary), 50%, 50%, 0.15);
+    color: hsl(var(--hue-tertiary), 60%, 50%);
+}
+
+.hub-status.neutral {
+    background: hsla(var(--hue-neutral), 15%, 55%, 0.15);
+    color: var(--text-secondary);
+}
+
+.hub-loading {
+    width: 100%;
+    text-align: center;
+    font-style: italic;
+    color: var(--text-muted);
+    padding: 20px;
+}
+
+/* Macro Correlation Card Styles */
+.macro-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.macro-item {
+    padding: 15px;
+    border-radius: 12px;
+    background: var(--bg-tertiary);
+    text-align: center;
+    border: 1px solid var(--border-color-light);
+}
+
+.macro-item .label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-bottom: 5px;
+    display: block;
+}
+
+.macro-item .value {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.protein-text {
+    color: var(--primary-color);
+}
+
+.carbs-text {
+    color: var(--secondary-color);
+}
+
+.fat-text {
+    color: var(--accent-color);
 }
