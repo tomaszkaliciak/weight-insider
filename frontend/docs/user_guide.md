@@ -357,6 +357,191 @@ Track upcoming events like competitions, photoshoots, or special occasions.
 
 ---
 
+## Premium Analytics
+
+### 🔥 TDEE Accuracy Dashboard
+
+**What it does:** Compares different TDEE estimation methods to find which is most accurate for you.
+
+**Methods Compared:**
+| Method | Source |
+|--------|--------|
+| Trend-Based | Calculated from your intake vs weight change |
+| Adaptive | 28-day rolling calculation |
+| Google Fit | Device-based estimation |
+
+**Reading the Results:**
+- Higher accuracy % = that method works best for you
+- Large variance = your TDEE fluctuates significantly
+
+---
+
+### 📆 Calorie Heatmap
+
+**What it does:** Shows a calendar-style heatmap of your daily calorie intake.
+
+**Color Coding:**
+- 🟢 **Light** - Lower intake days (deficit)
+- 🟡 **Medium** - Maintenance range
+- 🔴 **Dark** - Higher intake days (surplus)
+
+**Patterns to Look For:**
+- Weekend clusters of high intake
+- Holiday spikes
+- Monthly patterns
+
+---
+
+### 🏆 Streak Tracker
+
+**What it does:** Gamifies consistency by tracking your logging streaks.
+
+**Streak Types:**
+| Streak | What It Tracks |
+|--------|---------------|
+| 📊 **Logging** | Consecutive days with weight data |
+| 🎯 **Goal** | Days within your calorie target |
+| ⭐ **Perfect** | Both criteria met |
+
+**Benefits:**
+- Motivation through visible progress
+- Pattern recognition (when do streaks break?)
+
+---
+
+### 💧 Water Weight Predictor
+
+**What it does:** Estimates water retention based on carb and sodium intake.
+
+**How It Works:**
+- Each gram of carbs stores ~3g of water
+- High sodium increases water retention
+- Shows predicted vs actual weight fluctuation
+
+**Use Cases:**
+- Explains sudden weight jumps after high-carb meals
+- Helps distinguish fat gain from water retention
+
+---
+
+### 🔄 Reverse Dieting Calculator
+
+**What it does:** Plans gradual calorie increases after a cut to minimize fat regain.
+
+**Phases Available:**
+| Phase | Duration | Weekly Increase |
+|-------|----------|-----------------|
+| Quick | 4 weeks | +200 kcal/week |
+| Standard | 8 weeks | +100 kcal/week |
+| Conservative | 12 weeks | +50 kcal/week |
+
+**When to Use:**
+- After completing a cut
+- Transitioning to maintenance
+- Preparing for a bulk
+
+---
+
+### ⚡ Rate Optimizer
+
+**What it does:** Analyzes your history to find your optimal gain/loss rate.
+
+**Insights Provided:**
+- Your most sustainable rate ranges
+- Rate vs adherence correlation
+- Sweet spot recommendations
+
+**Why It Matters:** Aggressive rates may be counterproductive if they lead to poor adherence.
+
+---
+
+### 🧠 Smart Coach
+
+**What it does:** Provides personalized coaching tips based on your current data.
+
+**Tip Categories:**
+- 📊 **Consistency** - Logging and weighing habits
+- 📈 **Progress** - Rate and trajectory feedback
+- 🚧 **Obstacles** - Plateau and stall strategies
+- 🎯 **Goals** - Pacing and timeline advice
+
+---
+
+### 📋 Weekly Review
+
+**What it does:** Generates comprehensive weekly progress summaries.
+
+**Report Sections:**
+| Section | Content |
+|---------|---------|
+| Summary | Weight change, rate, trajectory |
+| Nutrition | Avg calories, macro split |
+| Training | Volume, consistency |
+| Insights | Key observations and recommendations |
+
+---
+
+### 🎯 Executive Hub
+
+**What it does:** Provides a high-level KPI dashboard for quick status checks.
+
+**KPIs Displayed:**
+- Current weight (raw and SMA)
+- Weekly rate of change
+- Days to goal (if set)
+- Logging consistency %
+- Trend direction indicator
+
+**Best For:** Quick morning check-ins without diving into details.
+
+---
+
+### 🥗 Macro-Weight Correlation
+
+**What it does:** Analyzes how your macro ratios correlate with weight changes.
+
+**Correlations Analyzed:**
+- Carb % vs Weight Volatility (water retention)
+- Protein % vs Rate (muscle retention)
+- Fat % vs Consistency
+
+**Key Insight:** Higher carb days often correlate with water weight spikes.
+
+---
+
+### 🔳 Advanced Insight Matrix
+
+**What it does:** Creates a multi-variable correlation heatmap for deep analysis.
+
+**Variables Included:**
+| Inputs | Outcomes |
+|--------|----------|
+| Calories | Weight Change |
+| Protein % | TDEE |
+| Carbs % | Weekly Rate |
+| Fat % | - |
+| Volatility | - |
+
+**Reading the Matrix:**
+- 🟩 **Green** - Positive correlation (both increase together)
+- 🟥 **Red** - Negative correlation (inverse relationship)
+- ⬜ **Gray** - No significant correlation
+
+**Hover** over cells for detailed interpretation.
+
+---
+
+### ⚖️ Energy Balance
+
+**What it does:** Visualizes your daily calorie deficit or surplus.
+
+**Display Features:**
+- Daily bar chart (green = deficit, red = surplus)
+- Cumulative weekly balance
+- Running total vs goal
+
+---
+
 ## Tips for Best Results
 
 ### Weighing Consistency
@@ -402,6 +587,7 @@ A typical yearly structure:
 |-----|--------|
 | **Escape** | Clear selection/tooltip |
 | **R** | Reset zoom to full view |
+| **1-4** | Switch sidebar tabs |
 
 ---
 
@@ -417,6 +603,18 @@ Your weight data is stored in `data.json` with the following structure:
   },
   "calorieIntake": {
     "2024-01-15": 2500
+  },
+  "protein": {
+    "2024-01-15": 150
+  },
+  "carbs": {
+    "2024-01-15": 250
+  },
+  "fat": {
+    "2024-01-15": 80
+  },
+  "bodyFat": {
+    "2024-01-15": 15.5
   }
 }
 ```
@@ -429,9 +627,13 @@ Your weight data is stored in `data.json` with the following structure:
 |-------|----------|
 | Chart not loading | Check browser console for errors, ensure data.json is valid |
 | CORS error | Use a local server (`live-server`), don't open file directly |
-| Stats showing N/A | Ensure enough data points exist in the selected range |
+| Stats showing N/A | Ensure enough data points exist in the selected range (min 7-14 days) |
 | Goal line missing | Verify goal date is within visible range |
+| Premium features empty | Need sufficient data: 14+ days for correlations, 7+ for macros |
+| Matrix cells gray | Insufficient data pairs for that correlation |
+| Slow performance | Large data files may need pagination or date range filtering |
 
 ---
 
 *For technical documentation on program flow and architecture, see [program_flow.md](program_flow.md).*
+

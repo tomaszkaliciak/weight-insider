@@ -586,9 +586,47 @@ sequenceDiagram
 
 **Explanation:** Events are persisted in localStorage independently of main state. Progress bars update when weight data changes.
 
+### 4.7 Advanced Insight Matrix Flow
+
+```mermaid
+sequenceDiagram
+    participant StatsManager
+    participant simple-statistics
+    participant StateManager
+    participant CorrelationMatrixRenderer
+
+    StatsManager->>StatsManager: _calculateDerivedData()
+    StatsManager->>StatsManager: _calculateCorrelationMatrix(filteredData)
+    loop For each pair of variables
+        StatsManager->>simple-statistics: sampleCorrelation(x, y)
+    end
+    StatsManager->>StateManager: dispatch(SET_DISPLAY_STATS, {correlationMatrix})
+    StateManager-->>CorrelationMatrixRenderer: Notify: displayStatsUpdated
+    CorrelationMatrixRenderer->>CorrelationMatrixRenderer: render(matrix)
+    CorrelationMatrixRenderer->>CorrelationMatrixRenderer: _getColorForValue(val)
+```
+
+**Explanation:** The correlation matrix is computed during the main stats cycle using `simple-statistics`. The renderer uses a non-linear color scale to highlight strengths.
+
 ---
 
-## 5. Architecture Overview
+## 5. Premium Formulas
+
+**Water Weight Prediction**
+* `Water Weight (kg) = (Daily Carbs - Avg Carbs) * 3 / 1000 + (Daily Sodium - Avg Sodium) * 0.005`
+* *Note: Simplified model assuming 3-4g water per 1g glycogen.*
+
+**Adaptive TDEE (28-day Window)**
+* `TDEE = (Total Intake + (Weight Start - Weight End) * 7700) / 28`
+* Uses a longer smoothing window than the standard trend-based TDEE for higher stability.
+
+**Calorie Accuracy Score**
+* `Expected Change = (Intake - TDEE) / 7700`
+* `Accuracy = 1 - (|Actual Change - Expected Change| / |Expected Change|)`
+
+---
+
+## 6. Architecture Overview
 
 ### Component Relationships
 
@@ -625,21 +663,27 @@ graph TB
     MU --> CHART
     DOM --> MU
 
-    subgraph "New Feature Renderers"
-        PR[PeriodizationRenderer]
-        WCR[WorkoutCorrelationRenderer]
-        PCR[PeriodComparisonRenderer]
-        GAR[GoalAlertRenderer]
-        GSR[GoalSuggestionRenderer]
-        ECR[EventCountdownRenderer]
+    subgraph "Core Renderers"
+        PR[Periodization]
+        WCR[WorkoutCorrelation]
+        PCR[PeriodComparison]
+        GAR[GoalAlerts]
+        GSR[GoalSuggestions]
+        ECR[EventCountdown]
     end
 
-    SEL --> PR
-    SEL --> WCR
-    SEL --> PCR
-    SEL --> GAR
-    SEL --> GSR
-    SEL --> ECR
+    subgraph "Premium Renderers"
+        CMR[CorrelationMatrix]
+        TAR[TdeeAccuracy]
+        CHR[CalorieHeatmap]
+        STR[StreakTracker]
+        WWR[WaterWeight]
+        RDO[RateOptimizer]
+        SC[SmartCoach]
+    end
+
+    SEL --> Core
+    SEL --> Premium
 ```
 
 ---

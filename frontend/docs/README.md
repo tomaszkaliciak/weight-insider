@@ -39,6 +39,7 @@ Welcome to the Weight Insider documentation. This folder contains comprehensive 
 ### Analysis Features
 - 🔄 **Periodization Analysis** - Auto-detect bulk/cut/maintenance phases
 - ⚖️ **Period Comparison** - Compare any two time periods
+- 💪 **Workout Correlation** - Training volume vs weight change
 
 ### Goal Management
 - 🎯 **Goal Setting** - Target weight and date
@@ -50,7 +51,7 @@ Welcome to the Weight Insider documentation. This folder contains comprehensive 
 - 🏆 **Milestone Tracking** - Peak week, final prep alerts
 - 📊 **Progress Visualization** - Weight target progress bars
 
-### Advanced Analytics (NEW!)
+### Advanced Analytics
 - 📅 **Weekend vs Weekday** - Compare eating patterns
 - 🔮 **Weight Predictions** - 4/8/12 week projections with confidence bands
 - 📊 **Adaptive Benchmarks** - Personal rate comparisons
@@ -60,6 +61,20 @@ Welcome to the Weight Insider documentation. This folder contains comprehensive 
 - 🚀 **Plateau Breaker** - Detection and suggestions
 - 〰️ **Rolling Averages** - 7/14/30 day trend comparison
 
+### Premium Analytics (New!)
+- 🔥 **TDEE Accuracy Dashboard** - Compare estimated vs actual TDEE
+- 📆 **Calorie Heatmap** - Calendar view of daily intake patterns
+- 🏆 **Streak Tracker** - Track logging and goal consistency
+- 💧 **Water Weight Predictor** - Estimate water retention patterns
+- 🔄 **Reverse Dieting Calculator** - Plan post-diet calorie increases
+- ⚡ **Rate Optimizer** - Find your optimal gain/loss rate
+- 🧠 **Smart Coach** - AI-powered personalized advice
+- 📋 **Weekly Review** - Comprehensive weekly summaries
+- 🎯 **Executive Hub** - High-level KPI dashboard
+- 🥗 **Macro-Weight Correlation** - Macros vs weight analysis
+- 🔳 **Advanced Insight Matrix** - Multi-variable correlation heatmap
+- ⚖️ **Energy Balance** - Visual deficit/surplus tracking
+
 ---
 
 ## 🗂️ Project Structure
@@ -67,7 +82,7 @@ Welcome to the Weight Insider documentation. This folder contains comprehensive 
 ```
 frontend/
 ├── index.html              # Main HTML
-├── style.css               # All styles
+├── style.css               # All styles (~6500 lines)
 ├── data.json               # Your data
 ├── docs/                   # 📍 You are here
 │   ├── README.md
@@ -81,27 +96,58 @@ frontend/
     │   ├── dataService.js
     │   ├── stateManager.js
     │   ├── statsManager.js
-    │   └── ...
+    │   ├── domainManager.js
+    │   ├── themeManager.js
+    │   ├── goalManager.js
+    │   ├── annotationManager.js
+    │   ├── selectors.js
+    │   └── utils.js
     ├── ui/                 # UI modules
     │   ├── chartSetup.js
+    │   ├── chartUpdaters.js
     │   ├── masterUpdater.js
-    │   └── renderers/      # Feature panels (13 files)
+    │   ├── legendManager.js
+    │   ├── insightsGenerator.js
+    │   ├── sidebarTabs.js
+    │   ├── tooltipManager.js
+    │   ├── weeklySummaryUpdater.js
+    │   ├── components/     # Reusable components
+    │   │   └── progressRing.js
+    │   └── renderers/      # Feature panels (29 files)
+    │       ├── statsDisplayRenderer.js
+    │       ├── annotationListRenderer.js
     │       ├── periodizationRenderer.js
     │       ├── periodComparisonRenderer.js
     │       ├── goalAlertRenderer.js
     │       ├── goalSuggestionRenderer.js
     │       ├── eventCountdownRenderer.js
-    │       ├── weekendAnalysisRenderer.js      # NEW
-    │       ├── predictionBandsRenderer.js      # NEW
-    │       ├── adaptiveRateRenderer.js         # NEW
-    │       ├── calorieAuditRenderer.js         # NEW
-    │       ├── monthlyReportRenderer.js        # NEW
-    │       ├── whatWorkedRenderer.js           # NEW
-    │       ├── plateauBreakerRenderer.js       # NEW
-    │       └── rollingAveragesRenderer.js      # NEW
+    │       ├── weekendAnalysisRenderer.js
+    │       ├── predictionBandsRenderer.js
+    │       ├── adaptiveRateRenderer.js
+    │       ├── calorieAuditRenderer.js
+    │       ├── monthlyReportRenderer.js
+    │       ├── whatWorkedRenderer.js
+    │       ├── plateauBreakerRenderer.js
+    │       ├── rollingAveragesRenderer.js
+    │       ├── tdeeAccuracyRenderer.js      # Premium
+    │       ├── calorieHeatmapRenderer.js    # Premium
+    │       ├── streakTrackerRenderer.js     # Premium
+    │       ├── waterWeightRenderer.js       # Premium
+    │       ├── reverseDietRenderer.js       # Premium
+    │       ├── rateOptimizerRenderer.js     # Premium
+    │       ├── smartCoachRenderer.js        # Premium
+    │       ├── weeklyReviewRenderer.js      # Premium
+    │       ├── executiveHubRenderer.js      # Premium
+    │       ├── macroCorrelationRenderer.js  # Premium
+    │       ├── correlationMatrixRenderer.js # Premium
+    │       ├── energyBalanceRenderer.js     # Premium
+    │       ├── quickStatsRenderer.js        # Premium
+    │       └── sparklineRenderer.js         # Premium
     └── interactions/       # Event handlers
         ├── eventHandlers.js
-        └── chartInteractions.js
+        ├── chartInteractions.js
+        ├── resizeHandler.js
+        └── keyboardNav.js
 ```
 
 ---
@@ -123,6 +169,7 @@ When adding new features:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 3.0 | Dec 2025 | Added 12 premium analytics features, correlation matrix |
 | 2.1 | Dec 2025 | Added 8 advanced analytics features |
 | 2.0 | Dec 2025 | Added 6 core analysis features |
 | 1.0 | - | Initial release with core charting |
