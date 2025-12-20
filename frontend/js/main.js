@@ -50,6 +50,7 @@ import { SmartCoachRenderer } from "./ui/renderers/smartCoachRenderer.js";
 import { WeeklyReviewRenderer } from "./ui/renderers/weeklyReviewRenderer.js";
 import { ExecutiveHubRenderer } from "./ui/renderers/executiveHubRenderer.js";
 import { MacroCorrelationRenderer } from "./ui/renderers/macroCorrelationRenderer.js";
+import { CorrelationMatrixRenderer } from "./ui/renderers/correlationMatrixRenderer.js";
 /**
  * Initializes the application step-by-step.
  */
@@ -90,6 +91,7 @@ async function initialize() {
     MasterUpdater.init(); // Listens for state changes to trigger renders
     ExecutiveHubRenderer.init(); // Premium High-Impact Summary
     MacroCorrelationRenderer.init(); // Premium Macro Analysis
+    CorrelationMatrixRenderer.init(); // Premium Insight Matrix
     AnnotationListRenderer.init(); // Listens for annotation changes
     StatsDisplayRenderer.init(); // Listens for display stats updates
     PeriodizationRenderer.init(); // Listens for periodization phase changes

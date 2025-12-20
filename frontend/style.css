@@ -6492,3 +6492,94 @@ body.dark-theme .glass-box {
 .fat-text {
     color: var(--accent-color);
 }
+
+/* --- Correlation Matrix Heatmap --- */
+.correlation-matrix-container {
+    width: 100%;
+    overflow-x: auto;
+    padding: 10px 0;
+}
+
+.correlation-grid {
+    display: grid;
+    gap: 4px;
+    margin-top: 15px;
+    font-size: 0.7rem;
+    min-width: 400px;
+    /* Ensure labels don't crush on small sidebars */
+}
+
+.matrix-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    color: var(--text-secondary);
+    padding: 2px;
+    text-align: center;
+    line-height: 1.1;
+}
+
+.matrix-label.row-label {
+    justify-content: flex-end;
+    padding-right: 8px;
+    white-space: nowrap;
+    font-size: 0.65rem;
+}
+
+.matrix-label.col-label {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    padding-bottom: 8px;
+    height: 70px;
+    font-size: 0.65rem;
+}
+
+.matrix-cell {
+    aspect-ratio: 1;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 700;
+    transition: transform 0.2s ease, filter 0.2s ease;
+    cursor: help;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    min-width: 28px;
+}
+
+.matrix-cell:hover {
+    transform: scale(1.15);
+    z-index: 5;
+    filter: brightness(1.15);
+}
+
+.matrix-cell.empty {
+    background: hsla(0, 0%, 50%, 0.1);
+    color: var(--text-muted);
+    font-weight: 400;
+    text-shadow: none;
+}
+
+.matrix-legend {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid var(--border-color);
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+}

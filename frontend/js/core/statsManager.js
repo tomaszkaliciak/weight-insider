@@ -123,6 +123,84 @@ export const StatsManager = {
     const dailyDeficitSurplus = dailyKgChange * CONFIG.KCALS_PER_KG;
     return avgIntake - dailyDeficitSurplus;
   },
+  /**
+   * Calculates a correlation matrix for a set of input and output variables.
+   * @param {Array<Object>} filteredData - The data points within the current analysis range.
+   * @returns {Object|null} The correlation matrix object or null if insufficient data.
+   */
+  _calculateCorrelationMatrix(filteredData) {
+    if (!filteredData || filteredData.length < 10) return null;
+
+    // 1. Prepare variables for each day
+    // We need days with complete data for the variables we care about
+    const matrixData = filteredData.map((d, i, arr) => {
+      const prev = i > 0 ? arr[i - 1] : null;
+      const weightDelta = (d.value != null && prev && prev.value != null) ? (d.value - prev.value) : null;
+
+      return {
+        calories: d.calorieIntake,
+        proteinPct: (d.protein && d.calorieIntake) ? (d.protein * 4 / d.calorieIntake) : null,
+        carbsPct: (d.carbs && d.calorieIntake) ? (d.carbs * 4 / d.calorieIntake) : null,
+        fatPct: (d.fat && d.calorieIntake) ? (d.fat * 9 / d.calorieIntake) : null,
+        volatility: d.rollingVolatility,
+        weightDelta: weightDelta,
+        tdee: d.adaptiveTDEE || d.tdeeTrend,
+        rate: d.smoothedWeeklyRate
+      };
+    });
+
+    const variables = [
+      { id: 'calories', label: 'Calories' },
+      { id: 'proteinPct', label: 'Protein %' },
+      { id: 'carbsPct', label: 'Carbs %' },
+      { id: 'fatPct', label: 'Fat %' },
+      { id: 'volatility', label: 'Volatility' },
+      { id: 'weightDelta', label: 'Weight Δ' },
+      { id: 'tdee', label: 'TDEE' },
+      { id: 'rate', label: 'Rate' }
+    ];
+
+    const matrix = {
+      labels: variables.map(v => v.label),
+      ids: variables.map(v => v.id),
+      values: []
+    };
+
+    // 2. Calculate Pearson correlation for each pair
+    for (let i = 0; i < variables.length; i++) {
+      const row = [];
+      for (let j = 0; j < variables.length; j++) {
+        if (i === j) {
+          row.push(1.0);
+          continue;
+        }
+
+        // Extract pairs where both variables are non-null
+        const varI = variables[i].id;
+        const varJ = variables[j].id;
+
+        const pairs = matrixData
+          .filter(d => d[varI] !== null && d[varJ] !== null)
+          .map(d => [d[varI], d[varJ]]);
+
+        if (pairs.length >= 7) {
+          try {
+            const x = pairs.map(p => p[0]);
+            const y = pairs.map(p => p[1]);
+            const corr = ss.sampleCorrelation(x, y);
+            row.push(isNaN(corr) ? 0 : corr);
+          } catch (e) {
+            row.push(0);
+          }
+        } else {
+          row.push(null); // Insufficient data for this pair
+        }
+      }
+      matrix.values.push(row);
+    }
+
+    return matrix;
+  },
   _estimateDeficitSurplusFromTrend(weeklyKgChange) {
     if (weeklyKgChange == null || isNaN(weeklyKgChange)) return null;
     const dailyKgChange = weeklyKgChange / 7;
@@ -480,7 +558,6 @@ export const StatsManager = {
           ? displayStats.currentWeight - displayStats.startingWeight
           : null;
     } else {
-      /* ... defaults ... */
       Object.assign(displayStats, {
         startingWeight: null,
         currentWeight: null,
@@ -539,7 +616,7 @@ export const StatsManager = {
           processedData,
           analysisRange.end,
         );
-        // Calculate Rate Consistency (Std Dev of Smoothed Weekly Rate in filtered range)
+        // Calculate Rate Consistency
         const validRates = results.filteredData
           .map(d => d.smoothedWeeklyRate)
           .filter(rate => rate != null && !isNaN(rate));
@@ -600,34 +677,27 @@ export const StatsManager = {
           analysisRange.end,
         );
 
-        // Regression
+        // Regression & Macro
         if (effectiveRegRange.start && effectiveRegRange.end) {
           const regressionData = processedData.filter(
             (d) =>
               d.date instanceof Date &&
               d.date >= effectiveRegRange.start &&
               d.date <= effectiveRegRange.end,
-          ); // Use processedData for full range
+          );
           const regCalcResult = DataService.calculateLinearRegression(
             regressionData,
             effectiveRegRange.start,
-          ); // Pass start date
+          );
 
-          // Calculate extended points for the full analysis range
           let extendedPoints = [];
           if (regCalcResult.slope != null && regCalcResult.intercept != null && regCalcResult.firstDateMs != null && analysisRange.start && analysisRange.end) {
             const { slope, intercept, firstDateMs } = regCalcResult;
             const dayInMillis = 86400000;
-
-            // Generate points covering the analysis range (visible area)
-            // Use a reasonable number of points or base on processedData dates in range
-            // For simplicity, let's just use the start and end of the analysis range
             const analysisStartDate = analysisRange.start;
             const analysisEndDate = analysisRange.end;
-
             const xStart = (analysisStartDate.getTime() - firstDateMs) / dayInMillis;
             const yStart = slope * xStart + intercept;
-
             const xEnd = (analysisEndDate.getTime() - firstDateMs) / dayInMillis;
             const yEnd = slope * xEnd + intercept;
 
@@ -639,12 +709,11 @@ export const StatsManager = {
             }
           }
 
-          // Store both original and extended points
           results.regressionResult = {
             slope: regCalcResult.slope,
             intercept: regCalcResult.intercept,
-            points: regCalcResult.points, // Original points based on regression range
-            extendedPoints: extendedPoints // Points spanning the analysis range
+            points: regCalcResult.points,
+            extendedPoints: extendedPoints
           };
 
           displayStats.regressionSlopeWeekly =
@@ -653,7 +722,7 @@ export const StatsManager = {
               : null;
           displayStats.regressionStartDate = effectiveRegRange.start;
 
-          // --- Macro Impact Analytics (Premium Feature) ---
+          // Macro Impact Analytics
           const macroData = results.filteredData.filter(d =>
             d.calorieIntake > 0 &&
             d.protein !== null &&
@@ -662,7 +731,6 @@ export const StatsManager = {
           );
 
           if (macroData.length >= 7) {
-            // Calculate average macro percentages
             let totalCals = 0, totalP = 0, totalC = 0, totalF = 0;
             macroData.forEach(d => {
               totalCals += d.calorieIntake;
@@ -677,8 +745,6 @@ export const StatsManager = {
               fat: Math.round((totalF * 9 / totalCals) * 100)
             };
 
-            // Calculate Correlation with Daily Fluctuations (Rolling Volatility)
-            // We want to see if higher carb intake correlates with higher water weight (volatility)
             const correlationPairs = macroData
               .filter(d => d.rollingVolatility !== null)
               .map(d => ({
@@ -692,27 +758,27 @@ export const StatsManager = {
                 const y = correlationPairs.map(p => p.volatility);
                 displayStats.carbVolatilityCorrelation = ss.sampleCorrelation(x, y);
               } catch (e) {
-                console.warn("[StatsManager] Macro correlation calculation failed:", e);
                 displayStats.carbVolatilityCorrelation = null;
               }
             } else {
               displayStats.carbVolatilityCorrelation = null;
             }
+
+            displayStats.correlationMatrix = this._calculateCorrelationMatrix(results.filteredData);
           } else {
             displayStats.macroSplit = null;
             displayStats.carbVolatilityCorrelation = null;
+            displayStats.correlationMatrix = null;
           }
         } else {
-          /* ... defaults ... */
-          results.regressionResult = {
-            slope: null,
-            intercept: null,
-            points: [],
-            extendedPoints: [],
-          };
+          results.regressionResult = { slope: null, intercept: null, points: [], extendedPoints: [] };
           displayStats.regressionSlopeWeekly = null;
           displayStats.regressionStartDate = null;
+          displayStats.macroSplit = null;
+          displayStats.carbVolatilityCorrelation = null;
+          displayStats.correlationMatrix = null;
         }
+
         // TDEE from Trend
         const trendForTDEECalc =
           displayStats.regressionSlopeWeekly ??
@@ -723,15 +789,13 @@ export const StatsManager = {
         );
         displayStats.estimatedDeficitSurplus =
           this._estimateDeficitSurplusFromTrend(trendForTDEECalc);
+
         // Goal Achievement Check
         const weightThreshold = 0.1;
         if (goal.weight != null) {
           let achievedPoint = null;
           for (const d of results.filteredData) {
-            if (
-              d.sma != null &&
-              Math.abs(goal.weight - d.sma) <= weightThreshold
-            ) {
+            if (d.sma != null && Math.abs(goal.weight - d.sma) <= weightThreshold) {
               achievedPoint = d;
               break;
             }
@@ -741,16 +805,12 @@ export const StatsManager = {
           results.goalAchievedDate = null;
         }
       } else {
-        /* ... defaults ... */
         results.weeklySummaryData = [];
         results.correlationScatterData = [];
         results.goalAchievedDate = null;
         results.regressionResult = { slope: null, intercept: null, points: [], extendedPoints: [] };
-        Object.assign(displayStats, {
-        });
       }
     } else {
-      /* ... defaults ... */
       results.filteredData = [];
       results.plateaus = [];
       results.trendChangePoints = [];
@@ -758,44 +818,26 @@ export const StatsManager = {
       results.correlationScatterData = [];
       results.goalAchievedDate = null;
       results.regressionResult = { slope: null, intercept: null, points: [], extendedPoints: [] };
-      Object.assign(displayStats, {
-      });
     }
 
     // Goal Related Display Stats
     displayStats.targetWeight = goal.weight;
     displayStats.targetRate = goal.targetRate;
     displayStats.targetDate = goal.date;
-    const referenceWeightForGoal =
-      displayStats.currentSma ?? displayStats.currentWeight;
-    const currentTrendForGoal =
-      displayStats.regressionSlopeWeekly ?? displayStats.currentWeeklyRate;
+    const referenceWeightForGoal = displayStats.currentSma ?? displayStats.currentWeight;
+    const currentTrendForGoal = displayStats.regressionSlopeWeekly ?? displayStats.currentWeeklyRate;
     const isAchieved = results.goalAchievedDate instanceof Date;
-    displayStats.weightToGoal =
-      referenceWeightForGoal != null && displayStats.targetWeight != null
-        ? displayStats.targetWeight - referenceWeightForGoal
-        : null;
-    displayStats.estimatedTimeToGoal = this._estimateTimeToGoal(
-      referenceWeightForGoal,
-      displayStats.targetWeight,
-      currentTrendForGoal,
-      isAchieved,
-    );
-    displayStats.requiredRateForGoal =
-      displayStats.targetDate && !isAchieved
-        ? this._calculateRequiredRateForGoal(
-          referenceWeightForGoal,
-          displayStats.targetWeight,
-          displayStats.targetDate,
-        )
-        : null;
-    // Required Calorie Adjustment & Suggested Intake
-    displayStats.requiredCalorieAdjustment = null;
-    displayStats.requiredNetCalories = null; // Specific to date-based goal
-    displayStats.suggestedIntakeTarget = null; // Changed from range
-    displayStats.baselineTDEESource = null; // Added to store TDEE source
+    displayStats.weightToGoal = (referenceWeightForGoal != null && displayStats.targetWeight != null)
+      ? displayStats.targetWeight - referenceWeightForGoal : null;
+    displayStats.estimatedTimeToGoal = this._estimateTimeToGoal(referenceWeightForGoal, displayStats.targetWeight, currentTrendForGoal, isAchieved);
+    displayStats.requiredRateForGoal = (displayStats.targetDate && !isAchieved)
+      ? this._calculateRequiredRateForGoal(referenceWeightForGoal, displayStats.targetWeight, displayStats.targetDate) : null;
 
-    // Determine baseline TDEE and its source
+    displayStats.requiredCalorieAdjustment = null;
+    displayStats.requiredNetCalories = null;
+    displayStats.suggestedIntakeTarget = null;
+    displayStats.baselineTDEESource = null;
+
     let baselineTDEE = null;
     if (displayStats.avgTDEE_Adaptive != null && !isNaN(displayStats.avgTDEE_Adaptive)) {
       baselineTDEE = displayStats.avgTDEE_Adaptive;
@@ -808,64 +850,26 @@ export const StatsManager = {
       displayStats.baselineTDEESource = 'Google Fit';
     }
 
-    // Calculate required calorie adjustment based on target rate vs current trend
-    if (
-      displayStats.targetRate != null &&
-      currentTrendForGoal != null &&
-      !isNaN(currentTrendForGoal) &&
-      !isNaN(displayStats.targetRate) &&
-      baselineTDEE != null // No need to check isNaN again
-    ) {
-      const rateDifferenceKgWeek =
-        displayStats.targetRate - currentTrendForGoal;
-      displayStats.requiredCalorieAdjustment =
-        (rateDifferenceKgWeek / 7) * CONFIG.KCALS_PER_KG;
+    if (displayStats.targetRate != null && currentTrendForGoal != null && baselineTDEE != null) {
+      const rateDifferenceKgWeek = displayStats.targetRate - currentTrendForGoal;
+      displayStats.requiredCalorieAdjustment = (rateDifferenceKgWeek / 7) * CONFIG.KCALS_PER_KG;
     }
 
-    // Calculate suggested intake based on EITHER requiredRateForGoal OR targetRate
     const effectiveTargetRate = displayStats.requiredRateForGoal ?? displayStats.targetRate;
-
-    if (
-      effectiveTargetRate != null &&
-      !isNaN(effectiveTargetRate) &&
-      baselineTDEE != null // Already checked for null/NaN above
-    ) {
-      const targetDailyDeficitSurplus =
-        (effectiveTargetRate / 7) * CONFIG.KCALS_PER_KG;
-
-      // Calculate requiredNetCalories only if based on requiredRateForGoal (date-based)
-      if (displayStats.requiredRateForGoal != null) {
-        displayStats.requiredNetCalories = targetDailyDeficitSurplus;
-      }
-
+    if (effectiveTargetRate != null && baselineTDEE != null) {
+      const targetDailyDeficitSurplus = (effectiveTargetRate / 7) * CONFIG.KCALS_PER_KG;
+      if (displayStats.requiredRateForGoal != null) displayStats.requiredNetCalories = targetDailyDeficitSurplus;
       const targetIntake = baselineTDEE + targetDailyDeficitSurplus;
-      if (!isNaN(targetIntake)) {
-        displayStats.suggestedIntakeTarget = Math.round(targetIntake); // Set single target value
-      }
+      if (!isNaN(targetIntake)) displayStats.suggestedIntakeTarget = Math.round(targetIntake);
     }
-    // Target Rate Feedback
+
     displayStats.targetRateFeedback = { text: "N/A", class: "" };
-    if (
-      displayStats.targetRate != null &&
-      currentTrendForGoal != null &&
-      !isNaN(currentTrendForGoal) &&
-      !isNaN(displayStats.targetRate)
-    ) {
+    if (displayStats.targetRate != null && currentTrendForGoal != null) {
       const diff = currentTrendForGoal - displayStats.targetRate;
       const absDiff = Math.abs(diff);
-      if (absDiff < 0.03) {
-        displayStats.targetRateFeedback = { text: "On Target", class: "good" };
-      } else if (diff > 0) {
-        displayStats.targetRateFeedback = {
-          text: `Faster (+${Utils.formatValue(diff, 2)})`,
-          class: "warn",
-        };
-      } else {
-        displayStats.targetRateFeedback = {
-          text: `Slower (${Utils.formatValue(diff, 2)})`,
-          class: "warn",
-        };
-      }
+      if (absDiff < 0.03) displayStats.targetRateFeedback = { text: "On Target", class: "good" };
+      else if (diff > 0) displayStats.targetRateFeedback = { text: `Faster (+${Utils.formatValue(diff, 2)})`, class: "warn" };
+      else displayStats.targetRateFeedback = { text: `Slower (${Utils.formatValue(diff, 2)})`, class: "warn" };
     }
     return results;
   },
