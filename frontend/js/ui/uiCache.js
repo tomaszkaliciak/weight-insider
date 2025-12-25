@@ -1,7 +1,9 @@
 // js/ui/uiCache.js
 // Manages the caching of D3 selections and direct DOM node references for UI elements.
 
+import * as d3 from 'd3';
 import { Utils } from "../core/utils.js";
+
 
 // Export the ui object immediately, it will be populated by cacheSelectors
 export const ui = {

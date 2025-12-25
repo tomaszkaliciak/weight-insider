@@ -280,6 +280,17 @@ export const MasterUpdater = {
           TDEEDiffChartUpdater.addHoverDots(filteredData);
         }
 
+        // Update Correlation Scatter Plot (if visible)
+        const isScatterVisible = VisibilityManager.isVisible(ui.correlationScatterContainer?.node());
+        if (isScatterVisible && scales.xScatter && scales.yScatter) {
+          const scatterData = Selectors.selectCorrelationScatterData(stateSnapshot);
+          if (scatterData && scatterData.length > 0) {
+            DomainManager._setScatterPlotDomains(stateSnapshot);
+            ScatterPlotUpdater.updateAxes();
+            ScatterPlotUpdater.updateChart(scatterData, options);
+          }
+        }
+
         // Sync & UI Helpers
         if (!options.isInteractive) {
           ChartInteractions.syncBrushAndZoomToFocus();

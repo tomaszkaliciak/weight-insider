@@ -1,6 +1,7 @@
 // js/core/domainManager.js
 // Manages the calculation and setting of domains for chart scales.
 
+import * as d3 from 'd3';
 import { scales } from "../ui/chartSetup.js";
 import { StateManager } from "./stateManager.js";
 import { CONFIG } from "../config.js";
@@ -14,6 +15,7 @@ import {
 } from "./domainCalculations.js";
 import { Utils } from "./utils.js";
 import * as Selectors from "./selectors.js";
+
 
 export const DomainManager = {
   /**

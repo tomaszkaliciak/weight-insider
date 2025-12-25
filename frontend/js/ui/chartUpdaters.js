@@ -4,6 +4,7 @@
 // Updaters receive necessary data and state flags as arguments from MasterUpdater.
 // Event handler *logic* resides in EventHandlers.js, but handlers are *attached* here during element creation/update.
 
+import * as d3 from 'd3';
 import { CONFIG } from "../config.js";
 import { ui } from "./uiCache.js";
 import { scales, axes, brushes } from "./chartSetup.js";
@@ -11,6 +12,7 @@ import { colors } from "../core/themeManager.js";
 import { ChartInteractions } from "../interactions/chartInteractions.js";
 import { TooltipManager } from "../interactions/tooltipManager.js";
 import { Utils } from "../core/utils.js";
+
 
 // --- Focus Chart Updater ---
 export const FocusChartUpdater = {

@@ -1,6 +1,7 @@
 // js/interactions/chartInteractions.js
 // Handles chart-specific user interactions like hover, click, brush, zoom.
 
+import * as d3 from 'd3';
 import { StateManager, ActionTypes } from "../core/stateManager.js";
 import { ui } from "../ui/uiCache.js";
 import { scales, brushes, zoom } from "../ui/chartSetup.js";
@@ -9,6 +10,7 @@ import { Utils } from "../core/utils.js";
 import { MasterUpdater } from "../ui/masterUpdater.js";
 import * as Selectors from "../core/selectors.js";
 import { TooltipManager } from "./tooltipManager.js";
+
 
 // Internal flags (not exported)
 let isZooming = false;

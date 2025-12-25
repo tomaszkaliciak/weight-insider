@@ -1,41 +1,10 @@
 // js/core/dataService.js
 // Handles fetching, merging, initial processing, and utility calculations for weight data.
 
+import * as d3 from 'd3';
+import * as ss from 'simple-statistics';
 import { CONFIG } from "../config.js";
 import { Utils } from "./utils.js";
-
-// Assume simple-statistics (ss) is loaded globally or provide check/fallback
-const ss = window.ss || {
-  sampleCorrelation: () => {
-    console.warn("ss.sampleCorrelation unavailable");
-    return NaN;
-  },
-  linearRegression: () => {
-    console.warn("ss.linearRegression unavailable");
-    return { m: NaN, b: NaN };
-  },
-  standardDeviation: (arr) => {
-    console.warn(
-      "ss.standardDeviation unavailable, using basic implementation.",
-    );
-    const n = arr.length;
-    if (n < 2) return 0;
-    const meanVal = arr.reduce((a, b) => a + b, 0) / n;
-    return Math.sqrt(
-      arr.map((x) => Math.pow(x - meanVal, 2)).reduce((a, b) => a + b, 0) /
-      (n - 1),
-    );
-  },
-  sum: (arr) => arr.reduce((a, b) => a + b, 0),
-  mean: (arr) =>
-    arr.length === 0 ? 0 : arr.reduce((a, b) => a + b, 0) / arr.length,
-  tDistributionQuantile: (p, df) => {
-    console.warn(
-      "ss.tDistributionQuantile unavailable, using placeholder 1.96 for CI",
-    );
-    return 1.96;
-  },
-};
 
 export const DataService = {
   // --- Fetching & Basic Merging ---

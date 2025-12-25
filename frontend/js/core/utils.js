@@ -1,8 +1,10 @@
 // js/core/utils.js
 // Provides common utility functions used throughout the application.
 
+import * as d3 from 'd3';
 import { ui } from "../ui/uiCache.js";
 import { CONFIG } from "../config.js";
+
 
 // Assume simple-statistics (ss) might be needed elsewhere, keep reference if used
 // const ss = window.ss || { /* ... fallback implementations ... */ };

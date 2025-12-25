@@ -1,10 +1,12 @@
 // js/ui/renderers/energyBalanceRenderer.js
 // Visualizes Energy Balance (Intake vs TDEE) as a diverging bar chart
 
+import * as d3 from 'd3';
 import { StateManager } from '../../core/stateManager.js';
 import * as Selectors from '../../core/selectors.js';
 import { Utils } from '../../core/utils.js';
 import { CONFIG } from '../../config.js';
+
 
 export const EnergyBalanceRenderer = {
     _container: null,

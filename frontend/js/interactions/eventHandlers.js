@@ -1,6 +1,7 @@
 // js/interactions/eventHandlers.js
 // Handles user interactions, focusing on dispatching actions to StateManager.
 
+import * as d3 from 'd3';
 import { StateManager } from "../core/stateManager.js";
 import { ui } from "../ui/uiCache.js";
 import {

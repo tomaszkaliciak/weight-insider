@@ -1,9 +1,11 @@
 // js/core/domainCalculations.js
 // Functions for calculating chart domains based on data and state.
 
+import * as d3 from 'd3';
 import { CONFIG } from "../config.js";
 import { DataService } from "./dataService.js";
 import * as Selectors from "./selectors.js";
+
 
 /**
  * Calculates the Y domain for the context chart based on state visibility.

@@ -1,9 +1,11 @@
 // js/ui/renderers/periodizationRenderer.js
 // Renders periodization phases (bulk/cut/maintenance) in the sidebar panel.
 
+import * as d3 from 'd3';
 import { StateManager } from "../../core/stateManager.js";
 import * as Selectors from "../../core/selectors.js";
 import { Utils } from "../../core/utils.js";
+
 
 const container = () => d3.select("#periodization-list");
 

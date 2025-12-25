@@ -1,10 +1,12 @@
 // chartSetup.js
 // Handles the creation and setup of SVG elements, scales, axes, brushes, and zoom.
 
+import * as d3 from 'd3';
 import { CONFIG } from "../config.js";
 import { ui } from "./uiCache.js";
 import { ChartInteractions } from "../interactions/chartInteractions.js";
 import { Utils } from "../core/utils.js";
+
 
 // --- D3 Constructs (Exported, populated by setup) ---
 export const scales = {
