@@ -3,9 +3,12 @@
 
 import { StateManager } from '../../core/stateManager.js';
 import { Utils } from '../../core/utils.js';
+import { VisibilityManager } from '../visibilityManager.js';
 
 export const MacroCorrelationRenderer = {
     _container: null,
+    _isVisible: false,
+    _lastStats: null,
 
     init() {
         this._container = document.getElementById('macro-impact-content');
@@ -14,11 +17,19 @@ export const MacroCorrelationRenderer = {
             return;
         }
 
-        StateManager.subscribeToSpecificEvent('state:displayStatsUpdated', (stats) => {
-            this._render(stats);
+        VisibilityManager.observe(this._container.parentElement, (isVisible) => {
+            this._isVisible = isVisible;
+            if (isVisible && this._lastStats) {
+                this._render(this._lastStats);
+            }
         });
 
-        console.log('[MacroCorrelationRenderer] Initialized.');
+        StateManager.subscribeToSpecificEvent('state:displayStatsUpdated', (stats) => {
+            this._lastStats = stats;
+            if (this._isVisible) {
+                this._render(stats);
+            }
+        });
     },
 
     _render(stats) {

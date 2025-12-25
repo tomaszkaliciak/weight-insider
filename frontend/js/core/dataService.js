@@ -433,9 +433,6 @@ export const DataService = {
         : validData;
 
     if (filteredData.length < CONFIG.MIN_POINTS_FOR_REGRESSION) {
-      console.log(
-        `[DataService Reg] Not enough points (${filteredData.length}) for regression starting ${startDate?.toISOString().slice(0, 10)}.`,
-      );
       return { slope: null, intercept: null, points: [], firstDateMs: null };
     }
 
@@ -478,9 +475,6 @@ export const DataService = {
         })
         .filter((p) => p.regressionValue !== null); // Filter out points where regression couldn't be calculated
 
-      console.log(
-        `[DataService Reg] Success. Slope: ${slope.toFixed(4)}, Intercept: ${intercept.toFixed(2)}, Points: ${plotPoints.length}`,
-      );
       return { slope, intercept, points: plotPoints, firstDateMs };
     } catch (e) {
       console.error("DataService: Error calculating linear regression:", e);

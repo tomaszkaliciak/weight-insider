@@ -879,7 +879,6 @@ export const StatsManager = {
    * dispatches actions to update derived state, and publishes consolidated event.
    */
   update() {
-    console.log("[StatsManager update] Triggered.");
     try {
       const stateSnapshot = StateManager.getState();
 
@@ -887,9 +886,6 @@ export const StatsManager = {
         !Selectors.selectProcessedData(stateSnapshot) ||
         Selectors.selectProcessedData(stateSnapshot).length === 0
       ) {
-        console.warn(
-          "[StatsManager update] Skipping update - no processed data available.",
-        );
         return;
       }
 
@@ -986,9 +982,6 @@ export const StatsManager = {
 
     relevantEvents.forEach((eventName) => {
       StateManager.subscribeToSpecificEvent(eventName, () => {
-        console.log(
-          `[StatsManager] Received primary event: ${eventName}. Triggering update.`,
-        );
         // Use setTimeout to batch potential rapid changes and avoid re-entry
         setTimeout(() => {
           this.update();

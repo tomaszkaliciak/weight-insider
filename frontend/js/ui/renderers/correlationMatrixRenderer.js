@@ -3,14 +3,29 @@
 
 import { StateManager } from "../../core/stateManager.js";
 import { Utils } from "../../core/utils.js";
+import { VisibilityManager } from "../visibilityManager.js";
 
 export const CorrelationMatrixRenderer = {
     containerId: "correlation-matrix-grid",
+    _isVisible: false,
+    _lastMatrix: null,
 
     init() {
-        console.log("CorrelationMatrixRenderer: Initializing...");
+        const container = document.getElementById(this.containerId);
+        if (container) {
+            VisibilityManager.observe(container.parentElement, (isVisible) => {
+                this._isVisible = isVisible;
+                if (isVisible && this._lastMatrix) {
+                    this.render(this._lastMatrix);
+                }
+            });
+        }
+
         StateManager.subscribeToSpecificEvent("state:displayStatsUpdated", (stats) => {
-            this.render(stats.correlationMatrix);
+            this._lastMatrix = stats.correlationMatrix;
+            if (this._isVisible) {
+                this.render(this._lastMatrix);
+            }
         });
     },
 
