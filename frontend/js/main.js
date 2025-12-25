@@ -51,6 +51,8 @@ import { WeeklyReviewRenderer } from "./ui/renderers/weeklyReviewRenderer.js";
 import { ExecutiveHubRenderer } from "./ui/renderers/executiveHubRenderer.js";
 import { MacroCorrelationRenderer } from "./ui/renderers/macroCorrelationRenderer.js";
 import { CorrelationMatrixRenderer } from "./ui/renderers/correlationMatrixRenderer.js";
+import { MetabolicAdaptationRenderer } from "./ui/renderers/metabolicAdaptationRenderer.js";
+import { GoalSimulatorRenderer } from "./ui/renderers/goalSimulatorRenderer.js";
 /**
  * Initializes the application step-by-step.
  */
@@ -116,6 +118,8 @@ async function initialize() {
     WaterWeightRenderer.init(); // Water weight predictor
     ReverseDietRenderer.init(); // Reverse diet calculator
     RateOptimizerRenderer.init(); // Optimal rate suggestions
+    MetabolicAdaptationRenderer.init(); // Metabolic adaptation tracker
+    GoalSimulatorRenderer.init(); // Goal simulator projections
     WeeklySummaryUpdater.init(); // Listens for weekly data/sort changes
     LegendManager.init(); // Listens for visibility/goal/etc changes
     InsightsGenerator.init(); // Listens for display stats updates
