@@ -6880,3 +6880,666 @@ body.dark-theme .glass-box {
     height: 12px;
     border-radius: 2px;
 }
+
+/* ========== STREAK TRACKER DASHBOARD ========== */
+.streak-dashboard {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.current-streaks h4,
+.best-streaks h4,
+.consistency-bar h4,
+.achievements h4 {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    letter-spacing: 0.02em;
+}
+
+.streak-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 12px;
+}
+
+.streak-card {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color-light);
+    border-radius: 12px;
+    padding: 16px 12px;
+    text-align: center;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.streak-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px var(--shadow-hover);
+}
+
+.streak-card.hot {
+    border-color: var(--accent-color);
+    background: linear-gradient(135deg, var(--bg-tertiary) 0%, hsla(var(--hue-accent), 70%, 60%, 0.05) 100%);
+}
+
+.streak-card.deficit {
+    border-color: var(--deficit-color);
+}
+
+.streak-card.surplus {
+    border-color: var(--surplus-color);
+}
+
+.streak-value {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1;
+    margin-bottom: 4px;
+}
+
+.streak-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.streak-fire {
+    font-size: 1.2rem;
+    margin-top: 8px;
+    filter: drop-shadow(0 0 4px hsla(var(--hue-accent), 70%, 60%, 0.4));
+}
+
+.best-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.best-item {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color-light);
+    border-radius: 8px;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.best-icon {
+    font-size: 1.2rem;
+    opacity: 0.9;
+}
+
+.best-value {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text-primary);
+}
+
+.best-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-left: auto;
+}
+
+.consistency-bar .progress-bar {
+    height: 12px;
+    background: var(--bg-tertiary);
+    border-radius: 6px;
+    overflow: hidden;
+    margin: 8px 0;
+}
+
+.consistency-bar .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    border-radius: 6px;
+    transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.consistency-detail {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-align: right;
+}
+
+.achievement-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.achievement-badge {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color-light);
+    border-radius: 20px;
+    padding: 6px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    cursor: help;
+}
+
+.badge-icon {
+    font-size: 1.1rem;
+}
+
+.badge-name {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.badge-desc {
+    display: none;
+}
+
+/* ========== WEEKEND ANALYSIS DASHBOARD ========== */
+.weekend-analysis-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.analysis-column {
+    background: var(--bg-tertiary);
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid var(--border-color-light);
+}
+
+.analysis-column .column-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: var(--text-primary);
+}
+
+.analysis-column .stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-color-light);
+}
+
+.analysis-column .stat-row:last-child {
+    border-bottom: none;
+}
+
+.analysis-column .stat-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.analysis-column .stat-value {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.weekend-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.summary-card {
+    background: var(--bg-primary);
+    border-left: 4px solid var(--primary-color);
+    padding: 16px;
+    border-radius: 0 8px 8px 0;
+    box-shadow: 0 2px 8px var(--shadow-color);
+}
+
+.summary-card.warning {
+    border-left-color: var(--warning-color);
+}
+
+.summary-card.good {
+    border-left-color: var(--success-color);
+}
+
+.summary-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
+
+.summary-value {
+    font-size: 1.4rem;
+    font-weight: 800;
+    margin-bottom: 8px;
+}
+
+.summary-value .warning {
+    color: var(--danger-color);
+}
+
+.summary-value .good {
+    color: var(--success-color);
+}
+
+.summary-note {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.suggestion-box {
+    background: hsla(var(--hue-primary), 60%, 58%, 0.1);
+    border: 1px dashed var(--primary-color);
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+
+/* ========== REVERSE DIETING DASHBOARD ========== */
+.reverse-diet-dashboard {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.phase-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.phase-badge.cut {
+    background: hsla(var(--hue-secondary), 55%, 50%, 0.15);
+    color: var(--deficit-color);
+}
+
+.phase-badge.bulk {
+    background: hsla(var(--hue-tertiary), 70%, 60%, 0.15);
+    color: var(--surplus-color);
+}
+
+.phase-badge.maintenance {
+    background: hsla(var(--hue-primary), 60%, 58%, 0.15);
+    color: var(--primary-color);
+}
+
+.reverse-plan .plan-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 20px 0;
+    background: var(--bg-tertiary);
+    border-radius: 12px;
+    margin: 12px 0;
+}
+
+.plan-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.plan-stat .stat-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+}
+
+.plan-stat .stat-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+.plan-arrow {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.schedule-table {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.schedule-header,
+.schedule-row {
+    display: grid;
+    grid-template-columns: 80px 100px 1fr;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+}
+
+.schedule-header {
+    font-weight: 700;
+    color: var(--text-muted);
+}
+
+.schedule-row {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color-light);
+    border-radius: 6px;
+}
+
+.schedule-row.highlight {
+    border-color: var(--success-color);
+    background: hsla(var(--hue-secondary), 50%, 55%, 0.05);
+}
+
+/* ========== GOAL SUGGESTIONS DASHBOARD ========== */
+.suggestions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.suggestion-card {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color-light);
+    border-radius: 14px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: all 0.25s ease;
+    border-top: 5px solid var(--primary-color);
+}
+
+.suggestion-card:hover {
+    transform: scale(1.02);
+    box-shadow: 0 8px 24px var(--shadow-hover);
+}
+
+.suggestion-card--cut {
+    border-top-color: var(--deficit-color);
+}
+
+.suggestion-card--bulk {
+    border-top-color: var(--surplus-color);
+}
+
+.suggestion-card--maintenance {
+    border-top-color: var(--primary-color);
+}
+
+.suggestion-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.suggestion-icon {
+    font-size: 1.4rem;
+}
+
+.suggestion-title {
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+.suggestion-target {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 8px;
+}
+
+.target-weight {
+    font-size: 1.6rem;
+    font-weight: 800;
+}
+
+.target-change {
+    font-size: 0.9rem;
+    font-weight: 600;
+    opacity: 0.8;
+}
+
+.suggestion-details {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.suggestion-confidence {
+    font-size: 0.75rem;
+    font-style: italic;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+.apply-suggestion-btn {
+    margin-top: 8px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+}
+
+.apply-suggestion-btn:hover {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+/* ========== WATER WEIGHT DASHBOARD ========== */
+.water-weight-dashboard {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.status-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    border-radius: 12px;
+}
+
+.status-banner.warning {
+    background: hsla(var(--hue-accent), 70%, 60%, 0.15);
+    border: 1px solid var(--warning-color);
+}
+
+.status-banner.positive {
+    background: hsla(var(--hue-secondary), 50%, 55%, 0.15);
+    border: 1px solid var(--success-color);
+}
+
+.status-banner.info {
+    background: hsla(var(--hue-primary), 60%, 58%, 0.15);
+    border: 1px solid var(--info-color);
+}
+
+.status-banner.normal {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color-light);
+}
+
+.status-icon {
+    font-size: 1.5rem;
+}
+
+.status-text {
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+.water-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.water-stats .stat-card {
+    background: var(--bg-tertiary);
+    padding: 12px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 1.3rem;
+    font-weight: 800;
+}
+
+.stat-note {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+.woosh-alert,
+.spike-info {
+    display: flex;
+    gap: 12px;
+    padding: 16px;
+    border-radius: 12px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color-light);
+}
+
+.woosh-alert {
+    border-left: 4px solid var(--secondary-color);
+}
+
+.spike-info {
+    border-left: 4px solid var(--accent-color);
+}
+
+.day-pattern-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    margin-top: 8px;
+}
+
+.day-box {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    background: var(--bg-tertiary);
+}
+
+.day-box.up {
+    background: hsla(var(--hue-tertiary), 70%, 60%, 0.1);
+}
+
+.day-box.down {
+    background: hsla(var(--hue-secondary), 50%, 55%, 0.1);
+}
+
+.day-name {
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    font-weight: 700;
+}
+
+.day-change {
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+/* ========== RATE OPTIMIZER DASHBOARD ========== */
+.rate-optimizer-dashboard {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.current-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.phase-name {
+    font-weight: 800;
+    font-size: 1.1rem;
+}
+
+.current-rate-display {
+    text-align: center;
+    padding: 24px 0;
+}
+
+.current-rate-display .rate-value {
+    font-size: 3rem;
+    font-weight: 900;
+    line-height: 1;
+}
+
+.rate-assessment {
+    text-align: center;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin: 0 auto;
+    width: fit-content;
+}
+
+.rate-assessment.success {
+    background: hsla(var(--hue-secondary), 50%, 55%, 0.15);
+    color: var(--success-color);
+}
+
+.rate-assessment.warning {
+    background: hsla(var(--hue-accent), 70%, 60%, 0.15);
+    color: var(--warning-color);
+}
+
+.rate-assessment.danger {
+    background: hsla(var(--hue-tertiary), 70%, 60%, 0.15);
+    color: var(--danger-color);
+}
+
+.rate-cards {
+    display: flex;
+    gap: 12px;
+}
+
+.rate-card {
+    flex: 1;
+    padding: 16px;
+    border-radius: 12px;
+    background: var(--bg-tertiary);
+    border: 2px solid transparent;
+}
+
+.rate-card.active {
+    border-color: var(--primary-color);
+    background: var(--bg-primary);
+}
+
+.optimal {
+    font-size: 1.2rem;
+    font-weight: 800;
+    display: block;
+}
+
+.range {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}

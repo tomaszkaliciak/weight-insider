@@ -111,15 +111,15 @@ export const WeekendAnalysisRenderer = {
         <div class="analysis-column">
           <h4 class="column-title">📅 Weekdays (Mon-Fri)</h4>
           <div class="stat-row">
-            <span class="stat-label">Avg Calories</span>
+            <span class="stat-label">Average Intake</span>
             <span class="stat-value">${formatVal(analysis.weekday.avgCalories, 0, ' kcal')}</span>
           </div>
-          <div class="stat-row">
-            <span class="stat-label">Avg Daily Change</span>
+          <div class="stat-row" title="Average weight change per day during the week">
+            <span class="stat-label">Avg Daily Δ</span>
             <span class="stat-value">${formatVal(analysis.weekday.avgChange, 2, ' kg')}</span>
           </div>
-          <div class="stat-row">
-            <span class="stat-label">Volatility</span>
+          <div class="stat-row" title="Typical daily fluctuation (standard deviation)">
+            <span class="stat-label">Typical Bounce</span>
             <span class="stat-value">±${formatVal(analysis.weekday.volatility, 2, ' kg')}</span>
           </div>
         </div>
@@ -127,15 +127,15 @@ export const WeekendAnalysisRenderer = {
         <div class="analysis-column">
           <h4 class="column-title">🎉 Weekends (Sat-Sun)</h4>
           <div class="stat-row">
-            <span class="stat-label">Avg Calories</span>
+            <span class="stat-label">Average Intake</span>
             <span class="stat-value">${formatVal(analysis.weekend.avgCalories, 0, ' kcal')}</span>
           </div>
-          <div class="stat-row">
-            <span class="stat-label">Avg Daily Change</span>
+          <div class="stat-row" title="Average weight change per day during the weekend">
+            <span class="stat-label">Avg Daily Δ</span>
             <span class="stat-value">${formatVal(analysis.weekend.avgChange, 2, ' kg')}</span>
           </div>
-          <div class="stat-row">
-            <span class="stat-label">Volatility</span>
+          <div class="stat-row" title="Typical daily fluctuation (standard deviation)">
+            <span class="stat-label">Typical Bounce</span>
             <span class="stat-value">±${formatVal(analysis.weekend.volatility, 2, ' kg')}</span>
           </div>
         </div>
@@ -143,22 +143,21 @@ export const WeekendAnalysisRenderer = {
       
       <div class="weekend-summary">
         <div class="summary-card ${analysis.calorieDiff > 200 ? 'warning' : analysis.calorieDiff < -100 ? 'good' : ''}">
-          <div class="summary-title">Weekend Calorie Difference</div>
-          <div class="summary-value">${formatDiff(analysis.calorieDiff, 0, ' kcal/day')}</div>
+          <div class="summary-title">Weekend Calorie Impact</div>
+          <div class="summary-value">${formatDiff(analysis.calorieDiff, 0, ' kcal / day')}</div>
           <div class="summary-note">
             ${analysis.calorieDiff > 200
-        ? `⚠️ Weekly impact: ~${weekendDamage} kg slower progress`
+        ? `⚠️ Higher weekend intake slows progress by ~${weekendDamage} kg / week.`
         : analysis.calorieDiff < -100
-          ? '✅ Great discipline on weekends!'
-          : '👍 Weekends well controlled'
+          ? '✅ Exceptional discipline! You stay tighter on weekends.'
+          : '👍 Consistent intake maintained throughout the entire week.'
       }
           </div>
         </div>
         
         ${analysis.calorieDiff > 300 ? `
           <div class="suggestion-box">
-            <strong>💡 Tip:</strong> Consider a ${Math.round(analysis.calorieDiff * 2 / 5)} kcal buffer on weekdays 
-            to offset weekend eating while staying on track.
+            <strong>💡 Optimization Tip:</strong> Since your weekend intake is significantly higher, consider creating a ${Math.round(analysis.calorieDiff * 2 / 5)} kcal "buffer" on weekdays. This keeps your weekly average on track while allowing for more flexibility.
           </div>
         ` : ''}
       </div>

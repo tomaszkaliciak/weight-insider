@@ -201,62 +201,67 @@ export const GoalSuggestionRenderer = {
             return;
         }
 
-        const formatGoalDate = (weeks) => {
-            const date = new Date();
-            date.setDate(date.getDate() + weeks * 7);
-            return Utils.formatDateShort(date);
-        };
-
         this._container.innerHTML = `
-      <div class="suggestions-header">
-        <div class="analysis-summary">
-          <span class="summary-item">📊 ${analysis.dataWeeks} weeks of data</span>
-          <span class="summary-item">⚡ ${(analysis.rateConsistency * 100).toFixed(0)}% consistency</span>
-        </div>
-      </div>
       <div class="suggestions-grid">
-        ${suggestions.map(s => `
-          <div class="suggestion-card suggestion-card--${s.type}" data-suggestion='${JSON.stringify(s)}'>
-            <div class="suggestion-header">
-              <span class="suggestion-icon">${s.icon}</span>
-              <span class="suggestion-title">${s.title}</span>
-            </div>
-            <div class="suggestion-body">
+        ${suggestions.map(s => {
+            const class_suffix = s.type === 'cut' ? 'cut' : s.type === 'bulk' ? 'bulk' : 'maintenance';
+            const icon = s.icon || (s.type === 'cut' ? '📉' : s.type === 'bulk' ? '📈' : '⚖️');
+
+            return `
+            <div class="suggestion-card suggestion-card--${class_suffix}">
+              <div class="suggestion-header">
+                <span class="suggestion-icon">${icon}</span>
+                <span class="suggestion-title">${s.title}</span>
+              </div>
+              
               <div class="suggestion-target">
-                <span class="target-weight">${s.targetWeight} kg</span>
-                <span class="target-change">${s.rate >= 0 ? '+' : ''}${(s.rate * s.duration).toFixed(1)} kg</span>
+                <span class="target-weight">${s.targetWeight.toFixed(1)} <small>kg</small></span>
+                <span class="target-change">${s.rate > 0 ? '+' : ''}${s.rate.toFixed(2)} <small>kg/wk</small></span>
               </div>
+
               <div class="suggestion-details">
-                <span class="detail-item">📅 ${s.duration} weeks</span>
-                <span class="detail-item">📉 ${s.rate.toFixed(2)} kg/wk</span>
+                <span>ETA: ${s.duration} weeks</span>
+                <span>Confidence: High</span>
               </div>
-              <div class="suggestion-confidence">${s.confidence}</div>
+
+              <div class="suggestion-confidence">
+                ${s.confidence}
+              </div>
+
+              <button class="apply-suggestion-btn" data-weight="${s.targetWeight}" data-weeks="${s.duration}" 
+                      title="Set this as your active goal">
+                Apply Plan
+              </button>
             </div>
-            <button class="apply-suggestion-btn" onclick="window.applySuggestion(${s.targetWeight}, ${s.duration})">
-              Apply Goal
-            </button>
-          </div>
-        `).join('')}
+          `;
+        }).join('')}
       </div>
     `;
 
-        // Add global function to apply suggestions
-        window.applySuggestion = (targetWeight, weeks) => {
-            const goalDate = new Date();
-            goalDate.setDate(goalDate.getDate() + weeks * 7);
-
-            // Dispatch goal update
-            StateManager.dispatch({
-                type: 'SET_GOAL',
-                payload: {
-                    weight: targetWeight,
-                    date: goalDate,
-                    targetRate: null // Will be calculated
-                }
+        // Add event listeners to buttons
+        this._container.querySelectorAll('.apply-suggestion-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetWeight = parseFloat(btn.dataset.weight);
+                const weeks = parseInt(btn.dataset.weeks);
+                this._applySuggestion(targetWeight, weeks);
             });
+        });
+    },
 
-            Utils.showStatusMessage(`Goal set: ${targetWeight} kg by ${Utils.formatDateShort(goalDate)}`, 'success');
-        };
+    _applySuggestion(targetWeight, weeks) {
+        const goalDate = new Date();
+        goalDate.setDate(goalDate.getDate() + weeks * 7);
+
+        StateManager.dispatch({
+            type: 'SET_GOAL',
+            payload: {
+                weight: targetWeight,
+                date: goalDate,
+                targetRate: null
+            }
+        });
+
+        Utils.showStatusMessage(`Goal set: ${targetWeight} kg by ${Utils.formatDateShort(goalDate)}`, 'success');
     },
 
     _renderNoData() {
@@ -264,7 +269,7 @@ export const GoalSuggestionRenderer = {
         this._container.innerHTML = `
       <div class="empty-state-message">
         <p>Not enough data</p>
-        <small>Need at least 2 weeks of data for suggestions</small>
+        <small>Need at least 2 weeks of data for recommendations</small>
       </div>
     `;
     }
