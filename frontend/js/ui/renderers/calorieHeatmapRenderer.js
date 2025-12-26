@@ -131,13 +131,22 @@ export const CalorieHeatmapRenderer = {
             const dayData = dataMap[key];
             const calories = dayData?.calorieIntake;
             const weight = dayData?.value;
+            const isOutlier = dayData?.isOutlier;
             const dayClass = this._getDayClass(calories);
+
+            const hasWeight = weight != null;
+            const hasCals = calories != null && calories > 0;
 
             calendarHtml += `
         <div class="day-cell ${dayClass}" data-date="${key}" 
-             title="${calories ? calories + ' kcal' : 'No data'}${weight ? ' | ' + weight.toFixed(1) + ' kg' : ''}">
+             title="${calories ? calories + ' kcal' : 'No calorie data'}${weight ? ' | ' + weight.toFixed(1) + ' kg' : ' | No weight data'}">
           <span class="day-num">${day}</span>
           ${calories ? `<span class="day-cal">${Math.round(calories)}</span>` : ''}
+          <div class="day-health-markers">
+            ${!hasWeight ? '<span class="marker missing-weight" title="Missing weight entry">⚖️</span>' : ''}
+            ${!hasCals ? '<span class="marker missing-cal" title="Missing calorie log">🥗</span>' : ''}
+            ${isOutlier ? '<span class="marker outlier" title="Outlier detected">⭐</span>' : ''}
+          </div>
         </div>
       `;
         }
@@ -183,28 +192,39 @@ export const CalorieHeatmapRenderer = {
         if (!detailEl) return;
 
         if (!dayData) {
-            detailEl.innerHTML = '<p>No data for this day</p>';
+            detailEl.innerHTML = '<p class="empty-detail">No data recorded for this day.</p>';
         } else {
             const [y, m, d] = dateKey.split('-').map(Number);
             const dateStr = `${d}/${m + 1}/${y}`;
+            const isOutlier = dayData.isOutlier;
+            const hasCals = dayData.calorieIntake > 0;
+            const hasWeight = dayData.value != null;
+
             detailEl.innerHTML = `
         <div class="detail-header">${dateStr}</div>
         <div class="detail-stats">
           <div class="detail-stat">
             <span class="label">Weight</span>
-            <span class="value">${dayData.value?.toFixed(1) || 'N/A'} kg</span>
+            <span class="value">${hasWeight ? dayData.value.toFixed(1) + ' kg' : '<span class="missing">Missing</span>'}</span>
           </div>
           <div class="detail-stat">
             <span class="label">Calories</span>
-            <span class="value">${dayData.calorieIntake || 'N/A'} kcal</span>
+            <span class="value">${hasCals ? dayData.calorieIntake + ' kcal' : '<span class="missing">Missing</span>'}</span>
           </div>
+          ${hasCals ? `
           <div class="detail-stat">
-            <span class="label">vs Target</span>
+            <span class="label">Net Balance</span>
             <span class="value ${dayData.calorieIntake > this._targetCalories ? 'over' : 'under'}">
-              ${dayData.calorieIntake ? (dayData.calorieIntake - this._targetCalories > 0 ? '+' : '') +
-                    Math.round(dayData.calorieIntake - this._targetCalories) + ' kcal' : 'N/A'}
+              ${(dayData.calorieIntake - this._targetCalories > 0 ? '+' : '') +
+                    Math.round(dayData.calorieIntake - this._targetCalories)} kcal
             </span>
-          </div>
+          </div>` : ''}
+        </div>
+        <div class="day-health-status">
+            ${isOutlier ? '<div class="health-alert outlier">⚠️ This weight entry was flagged as an outlier.</div>' : ''}
+            ${!hasWeight ? '<div class="health-alert missing">⚠️ No weight recorded for this day.</div>' : ''}
+            ${!hasCals ? '<div class="health-alert missing">⚠️ No calorie log for this day.</div>' : ''}
+            ${hasWeight && hasCals && !isOutlier ? '<div class="health-alert good">✅ All data present and consistent.</div>' : ''}
         </div>
       `;
         }

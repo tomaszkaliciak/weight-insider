@@ -4340,17 +4340,40 @@ body.dark-theme .skeleton-stat .skeleton-value {
 
 .audit-details {
     display: flex;
-    gap: 16px;
+    justify-content: space-between;
+    gap: 12px;
     background: var(--panel-bg);
-    padding: 10px;
-    border-radius: 6px;
-    margin-bottom: 12px;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    border: 1px solid var(--border-color-light);
+}
+
+.audit-details.secondary {
+    background: transparent;
+    border: none;
+    padding: 4px 12px;
+    margin-top: -4px;
 }
 
 .detail-item {
     display: flex;
     flex-direction: column;
-    font-size: 0.75rem;
+    gap: 2px;
+}
+
+.detail-item.warning .detail-value {
+    color: var(--warning-color);
+    font-weight: 700;
+}
+
+.detail-item.info .detail-value {
+    color: var(--info-color);
+}
+
+display: flex;
+flex-direction: column;
+font-size: 0.75rem;
 }
 
 .detail-label {
@@ -5131,6 +5154,62 @@ body.dark-theme .skeleton-stat .skeleton-value {
 
 .day-detail .detail-stat .value.under {
     color: #10b981;
+}
+
+.day-detail .detail-stat .value .missing {
+    color: var(--text-muted);
+    font-size: 0.85em;
+    font-style: italic;
+}
+
+.day-health-markers {
+    display: flex;
+    gap: 2px;
+    margin-top: 2px;
+    height: 12px;
+    align-items: center;
+    justify-content: center;
+}
+
+.day-health-markers .marker {
+    font-size: 8px;
+    opacity: 0.8;
+}
+
+.day-health-status {
+    margin-top: 15px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color-light);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.health-alert {
+    font-size: 0.75rem;
+    padding: 6px 10px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.health-alert.outlier {
+    background: hsla(var(--hue-tertiary), 70%, 58%, 0.1);
+    color: var(--outlier-color);
+    border: 1px solid hsla(var(--hue-tertiary), 70%, 58%, 0.2);
+}
+
+.health-alert.missing {
+    background: hsla(var(--hue-accent), 70%, 60%, 0.1);
+    color: var(--warning-color);
+    border: 1px solid hsla(var(--hue-accent), 70%, 60%, 0.2);
+}
+
+.health-alert.good {
+    background: hsla(var(--hue-secondary), 50%, 55%, 0.1);
+    color: var(--success-color);
+    border: 1px solid hsla(var(--hue-secondary), 50%, 55%, 0.2);
 }
 
 /* ========== STREAK TRACKER ========== */
