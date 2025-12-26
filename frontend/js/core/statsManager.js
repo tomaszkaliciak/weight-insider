@@ -9,6 +9,7 @@ import { StateManager, ActionTypes } from "./stateManager.js"; // Added ActionTy
 import { Utils } from "./utils.js";
 import { DataService } from "./dataService.js";
 import * as Selectors from "./selectors.js";
+
 import { scales } from "../ui/chartSetup.js"; // TODO: Remove this dependency - contextDomain should be in state
 
 export const StatsManager = {
@@ -462,9 +463,13 @@ export const StatsManager = {
         !isNaN(endDateRaw) &&
         endDateRaw >= startDate
       ) {
+        // Ensure goal weight is a number (defensive parsing in case stored as string)
+        const goalWeight = typeof goal.weight === 'number' ? goal.weight : parseFloat(goal.weight);
+        if (isNaN(goalWeight)) return [];
+
         return [
           { date: startDate, weight: startWeight },
-          { date: endDateRaw, weight: goal.weight },
+          { date: endDateRaw, weight: goalWeight },
         ];
       }
     }
@@ -909,6 +914,7 @@ export const StatsManager = {
       // --- Dispatch actions for newly calculated line data ---
       // Calculate line points using the *latest* state snapshot
       const latestState = StateManager.getState(); // Get latest state AFTER other dispatches
+
       let trendPoints1 = [];
       let trendPoints2 = [];
       if (latestState.trendConfig.isValid) {
@@ -944,7 +950,7 @@ export const StatsManager = {
       "state:analysisRangeChanged", // User changes view via brush, zoom, or date inputs
       "state:interactiveRegressionRangeChanged", // User changes regression brush
       "state:trendConfigChanged", // Affects trend lines and default regression start
-      // "state:goalChanged", // REMOVED: Goal line calculated with other stats based on inputs below
+      "state:goalChanged", // Re-enabled: update() cycle is safe now that achievement event is separate
       "state:initializationComplete", // Trigger initial calculation
       // Consider adding state:processedDataChanged if data can change dynamically
     ];
@@ -957,6 +963,8 @@ export const StatsManager = {
         }, 0);
       });
     });
+
+    // Separate subscription removed - standard update() cycle handles it now
 
     console.log("[StatsManager Init] Refined subscriptions complete.");
   },

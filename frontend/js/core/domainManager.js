@@ -316,6 +316,10 @@ export const DomainManager = {
       return;
     }
 
+    // --- Update Context X Domain to include goal date if set ---
+    // This ensures goal line can be drawn to future dates
+    this.updateContextXDomain(stateSnapshot);
+
     // --- Update Focus Y Domain ---
     // This now relies on filteredData and regressionResult being correctly updated in the state
     // by StatsManager *before* this function is called by MasterUpdater.

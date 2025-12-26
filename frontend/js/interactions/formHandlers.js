@@ -76,12 +76,18 @@ export const FormHandlers = {
     const dateVal = ui.goalDateInput?.property("value");
     const rateVal = ui.goalTargetRateInput?.property("value");
 
+    // Parse values to proper types (weight and rate as numbers, date as Date object)
+    const parsedWeight = weightVal ? parseFloat(weightVal) : null;
+    const parsedRate = rateVal ? parseFloat(rateVal) : null;
+    // Parse date as local midnight
+    const parsedDate = dateVal ? new Date(dateVal + "T00:00:00") : null;
+
     StateManager.dispatch({
       type: ActionTypes.LOAD_GOAL, // Use ActionTypes
       payload: {
-        weight: weightVal || null,
-        date: dateVal || null,
-        targetRate: rateVal || null,
+        weight: parsedWeight != null && !isNaN(parsedWeight) ? parsedWeight : null,
+        date: parsedDate instanceof Date && !isNaN(parsedDate.getTime()) ? parsedDate : null,
+        targetRate: parsedRate != null && !isNaN(parsedRate) ? parsedRate : null,
       },
     });
     // Dynamically import GoalManager only when needed

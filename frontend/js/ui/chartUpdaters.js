@@ -709,9 +709,13 @@ export const FocusChartUpdater = {
 
     // --- Update Goal Zone Rect ---
     if (ui.goalZoneRect && !ui.goalZoneRect.empty()) {
-      const goalWeight = goal?.weight;
+      // Ensure goal weight is a number Use parseFloat to be safe
+      const rawGoalWeight = goal?.weight;
+      const goalWeight = rawGoalWeight != null ? parseFloat(rawGoalWeight) : null;
+
       if (goalWeight != null && isFinite(goalWeight)) {
         const buffer = 0.15;
+        // Fix: Ensure we are doing math on numbers
         const yUpper = scales.y(goalWeight + buffer);
         const yLower = scales.y(goalWeight - buffer);
         if (isFinite(yUpper) && isFinite(yLower) && yLower >= yUpper) {
@@ -740,9 +744,10 @@ export const FocusChartUpdater = {
       goalAchievedDate instanceof Date &&
       !isNaN(goalAchievedDate) &&
       goal?.weight != null &&
-      isFinite(goal.weight);
+      isFinite(parseFloat(goal.weight));
     const markerData = showMarker ? [goalAchievedDate] : [];
     const markerSymbol = "🚩";
+    const goalWeightForMarker = goal?.weight != null ? parseFloat(goal.weight) : null;
 
     if (ui.goalAchievedGroup && !ui.goalAchievedGroup.empty()) {
       const markers = ui.goalAchievedGroup
@@ -754,7 +759,7 @@ export const FocusChartUpdater = {
             .append("text")
             .attr("class", "goal-achieved-marker")
             .attr("x", (d) => scales.x(d))
-            .attr("y", (d) => scales.y(goal.weight))
+            .attr("y", (d) => scales.y(goalWeightForMarker))
             .attr("dy", "-0.5em")
             .attr("text-anchor", "middle")
             .style("font-size", "1.3em")
@@ -770,7 +775,7 @@ export const FocusChartUpdater = {
             .transition()
             .duration(dur)
             .attr("x", (d) => scales.x(d))
-            .attr("y", (d) => scales.y(goal.weight))
+            .attr("y", (d) => scales.y(goalWeightForMarker))
             .style("opacity", 1),
         (exit) =>
           exit

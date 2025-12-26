@@ -420,7 +420,7 @@ export const StateManager = {
       DELETE_ANNOTATION: "state:annotationsChanged",
       TOGGLE_SERIES_VISIBILITY: "state:visibilityChanged",
       LOAD_GOAL: "state:goalChanged",
-      SET_GOAL_ACHIEVED_DATE: "state:goalChanged",
+      SET_GOAL_ACHIEVED_DATE: "state:goalAchievementUpdated",
       SET_THEME: "state:themeUpdated",
       SET_ANALYSIS_RANGE: "state:analysisRangeChanged",
       SET_INTERACTIVE_REGRESSION_RANGE:
