@@ -715,32 +715,111 @@ body.dark-theme .card.primary-card {
 }
 
 /* --- Cards --- */
+/* Modern Card Styles */
 .card {
     background-color: var(--bg-secondary);
-    border-radius: 16px;
-    padding: clamp(22px, 2.8vw, 30px);
-    box-shadow: 0 4px 15px var(--shadow-color);
-    border: 1px solid var(--border-color-light);
-    transition:
-        box-shadow var(--transition-speed) var(--transition-ease),
-        border-color var(--transition-speed) var(--transition-ease),
-        transform var(--transition-speed) var(--transition-ease),
-        background-color var(--transition-speed) var(--transition-ease);
+    border-radius: 24px;
+    /* Softer roundness */
+    padding: clamp(24px, 3vw, 32px);
+    box-shadow:
+        0 4px 6px -1px rgba(0, 0, 0, 0.02),
+        0 10px 15px -3px rgba(0, 0, 0, 0.04),
+        0 0 0 1px var(--border-color-light);
+    /* Subtle border replacement */
+    border: none;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    /* For glassmorphism effects */
+}
+
+/* Glassmorphism Effect for Headers/Overlays */
+.glass-panel {
+    background: linear-gradient(135deg,
+            hsla(var(--hue-neutral), 20%, 99%, 0.8) 0%,
+            hsla(var(--hue-neutral), 20%, 95%, 0.6) 100%);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-color-light);
+}
+
+body.dark-theme .glass-panel {
+    background: linear-gradient(135deg,
+            hsla(var(--hue-neutral), 20%, 20%, 0.8) 0%,
+            hsla(var(--hue-neutral), 20%, 15%, 0.6) 100%);
 }
 
 .secondary-analysis-section.card {
     padding: 0;
+    border-radius: 16px;
 }
 
 .chart-section.card {
-    padding: 15px;
+    padding: 20px;
 }
 
 .card:not(.secondary-analysis-section):not(.chart-section):hover {
-    box-shadow: 0 6px 20px var(--shadow-hover);
-    transform: translateY(-3px);
+    box-shadow:
+        0 10px 15px -3px rgba(0, 0, 0, 0.04),
+        0 20px 25px -5px rgba(0, 0, 0, 0.05);
+    /* Deeper shadow on hover */
+    transform: translateY(-4px);
+    /* Lift effect */
+}
+
+/* --- Hero Typography Utilities --- */
+.text-hero {
+    font-size: clamp(2rem, 4vw, 2.5rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    color: var(--text-primary);
+    background: linear-gradient(120deg, var(--text-primary), var(--text-secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    /* Subtle gradient text */
+    display: inline-block;
+}
+
+/* Plain text fallback for dark mode readability if needed, or keeping gradient */
+body.dark-theme .text-hero {
+    background: linear-gradient(120deg, #fff, #cbd5e1);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.text-subhero {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.25em;
+}
+
+/* --- Grid Utilities --- */
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.stat-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.stat-group {
+    background: var(--bg-tertiary);
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
 
 .card h2,

@@ -40,176 +40,8 @@
     <main class="dashboard-container">
         <!-- Left Sidebar -->
         <div class="left-sidebar">
-            <section id="all-time-stats-card" class="card collapsible primary-card"
-                aria-labelledby="all-time-stats-heading">
-                <h2 id="all-time-stats-heading">
-                    <button class="card-toggle-btn" aria-expanded="true" aria-controls="all-time-stats-content"
-                        title="Toggle Section Visibility">
-                        <span class="toggle-icon">▼</span>
-                    </button>
-                    <span class="icon" aria-hidden="true">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                            class="feather feather-activity">
-                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-                        </svg>
-                    </span>
-                    Weight Overview <small>(All Time)</small>
-                </h2>
-                <div class="card-content" id="all-time-stats-content">
-                    <!-- Weight Stats -->
-                    <div class="stat-item">
-                        <span>Starting Weight:</span>
-                        <div>
-                            <span id="starting-weight" class="stat-value">N/A</span><span class="stat-unit">KG</span>
-                        </div>
-                    </div>
-                    <div class="stat-item">
-                        <span>Latest Weight:</span>
-                        <div>
-                            <span id="current-weight" class="stat-value">N/A</span><span class="stat-unit">KG</span>
-                        </div>
-                    </div>
-                    <div class="stat-item">
-                        <span>Latest SMA:</span>
-                        <div>
-                            <span id="current-sma" class="stat-value">N/A</span><span class="stat-unit">KG</span>
-                        </div>
-                    </div>
-                    <div id="trend-flux-container" class="trend-flux-container" style="display:none;">
-                        <!-- Injected by StatsDisplayRenderer -->
-                    </div>
-                    <div class="stat-item">
-                        <span>Total Change:</span>
-                        <div>
-                            <span id="total-change" class="stat-value">N/A</span><span class="stat-unit">KG</span>
-                        </div>
-                    </div>
-                    <div class="stat-item highlight-trigger" title="Click date to highlight on chart">
-                        <span>Max Weight:</span>
-                        <div>
-                            <span id="max-weight" class="stat-value">N/A</span><span class="stat-unit">KG</span> on
-                            <span id="max-weight-date" class="stat-date highlightable">N/A</span>
-                        </div>
-                    </div>
-                    <div class="stat-item highlight-trigger" title="Click date to highlight on chart">
-                        <span>Min Weight:</span>
-                        <div>
-                            <span id="min-weight" class="stat-value">N/A</span><span class="stat-unit">KG</span> on
-                            <span id="min-weight-date" class="stat-date highlightable">N/A</span>
-                        </div>
-                    </div>
-                    <!-- Body Comp Stats -->
-                    <div class="stat-item">
-                        <span>Starting LBM:</span>
-                        <div>
-                            <span id="starting-lbm" class="stat-value">N/A</span><span class="stat-unit">KG</span>
-                        </div>
-                    </div>
-                    <div class="stat-item">
-                        <span>Latest LBM (SMA):</span>
-                        <div>
-                            <span id="current-lbm-sma" class="stat-value">N/A</span><span class="stat-unit">KG</span>
-                        </div>
-                    </div>
-                    <div class="stat-item">
-                        <span>LBM Change:</span>
-                        <div>
-                            <span id="total-lbm-change" class="stat-value">N/A</span><span class="stat-unit">KG</span>
-                        </div>
-                    </div>
-                    <div class="stat-item">
-                        <span>Latest FM (SMA):</span>
-                        <div>
-                            <span id="current-fm-sma" class="stat-value">N/A</span><span class="stat-unit">KG</span>
-                        </div>
-                    </div>
-                    <div class="stat-item">
-                        <span>FM Change:</span>
-                        <div>
-                            <span id="total-fm-change" class="stat-value">N/A</span><span class="stat-unit">KG</span>
-                        </div>
-                    </div>
-                    <!-- Trends & Correlation -->
-                    <div class="insight-group">
-                        <h4>
-                            Trends & Correlation
-                            <span class="info-icon"
-                                title="Trends/correlation calculated based on Analysis Range. Volatility = Std Dev of raw weight around SMA (excl. outliers). Rolling Volatility = Same calculation, but over the last N days (see config). Smoothed Rate = 7d avg daily SMA change. Regression Slope uses selected range. Correlation = Pearson's r (Net Cal vs Rate, min 4 wks)."><svg
-                                    xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                                    fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                                    stroke-linejoin="round" class="feather feather-info">
-                                    <circle cx="12" cy="12" r="10"></circle>
-                                    <line x1="12" y1="16" x2="12" y2="12"></line>
-                                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                                </svg></span>
-                        </h4>
-                        <div class="stat-item stat-item--value-left"
-                            title="Overall Volatility: Standard deviation of raw weight points around the smoothed average (SMA) for the entire Analysis Range, excluding outliers.">
-                            <span>Overall Volatility:</span>
-                            <div>
-                                <span id="volatility-score" class="stat-value">N/A</span><span
-                                    class="stat-unit">KG</span>
-                            </div>
-                        </div>
-                        <div class="stat-item"
-                            title="Rolling Volatility (Last 14 days): Standard deviation of daily raw weight vs SMA over the most recent 14 days in the Analysis Range, excluding outliers. Indicates recent measurement consistency.">
-                            <span>Rolling Volatility (14d):</span>
-                            <div>
-                                <span id="rolling-volatility" class="stat-value">N/A</span>
-                                <span class="stat-unit">KG</span>
-                            </div>
-                        </div>
-                        <div class="stat-item">
-                            <span
-                                title="Smoothed Weekly Rate: The 7-day smoothed rate of weight change based on the SMA trend, calculated for the end of the analysis range.">Smoothed
-                                Weekly Δ Rate:</span>
-                            <div>
-                                <span id="rolling-weekly-change-sma" class="stat-value">N/A</span><span
-                                    class="stat-unit">KG/wk</span>
-                            </div>
-                        </div>
-                        <div class="stat-item"
-                            title="Rate Consistency (Std Dev): Standard deviation of the Smoothed Weekly Rate values within the Analysis Range. Lower values indicate more consistent progress.">
-                            <span>Rate Consistency (Std Dev):
-                                <span class="info-icon"
-                                    title="Std Dev of Smoothed Weekly Rate in Analysis Range. Lower = more consistent."><svg
-                                        xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
-                                        fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                                        stroke-linejoin="round" class="feather feather-info">
-                                        <circle cx="12" cy="12" r="10"></circle>
-                                        <line x1="12" y1="16" x2="12" y2="12"></line>
-                                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                                    </svg></span></span>
-                            <div>
-                                <span id="rate-consistency-stddev" data-stat-key="rateConsistencyStdDev"
-                                    class="stat-value">N/A</span><span class="stat-unit">KG/wk</span>
-                            </div>
-                        </div>
-                        <div class="stat-item">
-                            <span
-                                title="Regression Slope: The weekly rate of change calculated from the linear regression line fitted to non-outlier data within the selected regression range (defaults to analysis range start).">Lin.
-                                Reg. Slope
-                                <small>(from
-                                    <span id="regression-start-date-label">Range Start</span>)</small></span>
-                            <div>
-                                <span id="regression-slope" class="stat-value">N/A</span><span
-                                    class="stat-unit">KG/wk</span>
-                            </div>
-                        </div>
-                        <div class="stat-item"
-                            title="Correlation (Net Cal vs Rate): Pearson correlation between average weekly net calories (Intake - GFit TDEE) and average weekly weight change rate. Closer to +/-1 indicates a stronger linear relationship. Requires min. 4 weeks data in Analysis Range.">
-                            <span>Correlation (Net Cal vs Rate):</span>
-                            <div>
-                                <span id="netcal-rate-correlation" class="stat-value">N/A</span><span
-                                    class="stat-unit">r</span>
-                            </div>
-                        </div>
-                    </div>
-            </section>
-
-            <!-- Tab Navigation -->
-            <nav class="sidebar-tabs" role="tablist" aria-label="Sidebar sections">
+            <!-- Navigation (Moved to Top) -->
+            <nav class="sidebar-tabs glass-panel" role="tablist" aria-label="Sidebar sections">
                 <button class="tab-btn active" data-tab="overview" role="tab" aria-selected="true">
                     <span class="tab-icon">📊</span>
                     <span class="tab-label">Overview</span>
@@ -227,6 +59,72 @@
                     <span class="tab-label">Settings</span>
                 </button>
             </nav>
+
+            <section id="all-time-stats-card" class="card collapsible primary-card"
+                aria-labelledby="all-time-stats-heading">
+                <h2 id="all-time-stats-heading">
+                    <button class="card-toggle-btn" aria-expanded="true" aria-controls="all-time-stats-content"
+                        title="Toggle Section Visibility">
+                        <span class="toggle-icon">▼</span>
+                    </button>
+                    <span class="icon" aria-hidden="true">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            class="feather feather-activity">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                        </svg>
+                    </span>
+                    Weight Overview
+                </h2>
+                <div class="card-content" id="all-time-stats-content">
+                    <!-- Hero Section: Current Weight -->
+                    <div style="text-align: center; margin-bottom: 24px;">
+                        <div class="text-subhero">Current Weight</div>
+                        <div>
+                            <span id="current-weight" class="text-hero">N/A</span>
+                            <span style="font-size: 1.2rem; font-weight: 500; color: var(--text-muted);">kg</span>
+                        </div>
+                        <div class="trend-flux-container" id="trend-flux-container"
+                            style="display:none; justify-content: center; margin-top: 8px;">
+                            <!-- Injected by StatsDisplayRenderer -->
+                        </div>
+                    </div>
+
+                    <!-- Primary Stats Grid -->
+                    <div class="stat-grid">
+                        <div class="stat-group">
+                            <div class="text-subhero">Latest SMA</div>
+                            <div>
+                                <span id="current-sma" class="stat-value" style="font-size: 1.4rem;">N/A</span>
+                                <span class="stat-unit">kg</span>
+                            </div>
+                        </div>
+                        <div class="stat-group">
+                            <div class="text-subhero">Total Change</div>
+                            <div>
+                                <span id="total-change" class="stat-value" style="font-size: 1.4rem;">N/A</span>
+                                <span class="stat-unit">kg</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Secondary Stats Grid (3 Col) -->
+                    <div class="stat-grid-3" style="margin-top: 16px;">
+                        <div style="text-align: center;">
+                            <div class="stat-label">Start</div>
+                            <div><span id="starting-weight" class="stat-value">N/A</span></div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div class="stat-label">Min</div>
+                            <div><span id="min-weight" class="stat-value">N/A</span></div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div class="stat-label">Max</div>
+                            <div><span id="max-weight" class="stat-value">N/A</span></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
             <!-- Tab Panels Container -->
             <div class="tab-panels">
