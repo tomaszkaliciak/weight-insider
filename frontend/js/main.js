@@ -53,6 +53,7 @@ import { MacroCorrelationRenderer } from "./ui/renderers/macroCorrelationRendere
 import { CorrelationMatrixRenderer } from "./ui/renderers/correlationMatrixRenderer.js";
 import { MetabolicAdaptationRenderer } from "./ui/renderers/metabolicAdaptationRenderer.js";
 import { GoalSimulatorRenderer } from "./ui/renderers/goalSimulatorRenderer.js";
+import { EnergySankeyRenderer } from "./ui/renderers/energySankeyRenderer.js";
 /**
  * Initializes the application step-by-step.
  */
@@ -112,6 +113,7 @@ async function initialize() {
     RollingAveragesRenderer.init(); // 7/14/30 day rolling averages
     TdeeAccuracyRenderer.init(); // TDEE accuracy dashboard
     EnergyBalanceRenderer.init(); // Energy balance dashboard (Intake vs TDEE)
+    EnergySankeyRenderer.init(); // Energy flow Sankey diagram
     SmartCoachRenderer.init(); // Dynamic daily calorie targets
     CalorieHeatmapRenderer.init(); // Calorie calendar heatmap
     StreakTrackerRenderer.init(); // Streak tracking and achievements
