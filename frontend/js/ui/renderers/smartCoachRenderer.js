@@ -12,7 +12,7 @@ export const SmartCoachRenderer = {
     _isVisible: false,
 
     init() {
-        this._container = document.getElementById('smart-coach-content');
+        this._container = document.getElementById('smart-coach-container');
         if (!this._container) {
             console.warn('[SmartCoachRenderer] Container not found.');
             return;

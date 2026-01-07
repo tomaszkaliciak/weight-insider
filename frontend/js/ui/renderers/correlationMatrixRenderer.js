@@ -6,7 +6,7 @@ import { Utils } from "../../core/utils.js";
 import { VisibilityManager } from "../visibilityManager.js";
 
 export const CorrelationMatrixRenderer = {
-    containerId: "correlation-matrix-grid",
+    containerId: "correlation-matrix-container",
     _isVisible: false,
     _lastMatrix: null,
 

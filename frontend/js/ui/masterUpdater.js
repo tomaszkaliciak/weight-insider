@@ -137,6 +137,10 @@ export const MasterUpdater = {
           return;
         }
 
+        // --- Remove Loading Spinner ---
+        const spinner = document.getElementById("loading-spinner");
+        if (spinner) spinner.style.display = "none";
+
         // Performance Check: Visibility
         const isMainVisible = VisibilityManager.isVisible(ui.chartContainer?.node());
         if (!isMainVisible && options.isInteractive) {

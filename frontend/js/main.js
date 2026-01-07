@@ -54,6 +54,9 @@ import { CorrelationMatrixRenderer } from "./ui/renderers/correlationMatrixRende
 import { MetabolicAdaptationRenderer } from "./ui/renderers/metabolicAdaptationRenderer.js";
 import { GoalSimulatorRenderer } from "./ui/renderers/goalSimulatorRenderer.js";
 import { EnergySankeyRenderer } from "./ui/renderers/energySankeyRenderer.js";
+import { DataTableModal } from "./ui/dataTableModal.js";
+import { ChartControls } from "./ui/chartControls.js";
+
 /**
  * Initializes the application step-by-step.
  */
@@ -70,6 +73,10 @@ async function initialize() {
 
     // 1b. Initialize Sidebar Tabs
     SidebarTabs.init();
+
+    // 1c. Initialize Chart Controls (Fullscreen, etc.)
+    ChartControls.init();
+
 
     // 2. Load Settings (Read from CONFIG, dispatch to state)
     const initialSettings = {
@@ -129,6 +136,7 @@ async function initialize() {
     QuickStatsRenderer.init(); // Quick stats bar above chart
     KeyboardNav.init(); // Keyboard shortcuts for navigation
     SparklineRenderer.init(); // Inline trend charts
+    DataTableModal.init(); // Handles Data Table modal
 
     // 7. Fetch and Process Data
     const rawDataObjects = await DataService.fetchData();

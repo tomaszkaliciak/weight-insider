@@ -20,9 +20,41 @@ export const SidebarTabs = {
      * Sets up click handlers and restores previous tab state.
      */
     init() {
-        this._tabButtons = document.querySelectorAll('.sidebar-tabs .tab-btn');
+        const isBentoMode = !!document.querySelector('.dashboard-container.bento-mode');
+        this._tabButtons = document.querySelectorAll('.left-sidebar .tab-btn');
         this._tabPanels = document.querySelectorAll('.tab-panels .tab-panel');
 
+        if (isBentoMode) {
+            console.log('[SidebarTabs] Bento mode detected. Initializing scroll anchors.');
+            this._tabButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const targetId = e.currentTarget.getAttribute('data-target');
+                    if (targetId) {
+                        e.preventDefault();
+
+                        // Update active state
+                        this._tabButtons.forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+
+                        // Smooth scroll
+                        const targetEl = document.getElementById(targetId);
+                        if (targetEl) {
+                            const headerOffset = 80;
+                            const elementPosition = targetEl.getBoundingClientRect().top;
+                            const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+                            window.scrollTo({
+                                top: offsetPosition,
+                                behavior: "smooth"
+                            });
+                        }
+                    }
+                });
+            });
+            return;
+        }
+
+        // --- Standard Tab Logic (Legacy) ---
         if (this._tabButtons.length === 0 || this._tabPanels.length === 0) {
             console.warn('[SidebarTabs] No tabs or panels found. Skipping initialization.');
             return;
