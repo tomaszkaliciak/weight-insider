@@ -444,36 +444,20 @@ body.dark-theme .status-message.warn {
     background-color: hsla(var(--hue-accent), 65%, 60%, 0.92);
 }
 
-/* --- Dashboard Layout (Using Grid Areas) --- */
+/* --- Dashboard Layout (Simplified - No Sidebar) --- */
 .dashboard-container {
-    display: grid;
-    grid-template-columns: clamp(330px, 26%, 420px) 1fr clamp(330px, 26%, 420px);
-    grid-template-areas:
-        "hub      hub      hub"
-        "sidebarL main     sidebarR"
-        "sidebarL secondary sidebarR";
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     gap: clamp(15px, 2vw, 25px);
-    /* Reduced gap */
-    /* Increased target/max gap */
     width: 100%;
-    max-width: 1800px;
-    align-items: stretch;
+    max-width: 1400px;
     flex-grow: 1;
 }
 
 .left-sidebar {
-    grid-area: sidebarL;
-    max-height: calc(100vh - 100px);
-    position: sticky;
-    top: 90px;
-    display: flex;
-    flex-direction: column;
-    /* Visual Rail Styling */
-    border-right: 1px solid var(--border-color-light);
-    padding-right: 15px;
-    margin-right: -15px;
-    /* Pull subsequent content slightly closer visually if needed, but grid gap handles mostly */
-    min-height: 0;
+    display: none;
+    /* Sidebar removed */
 }
 
 .chart-section {
@@ -7888,11 +7872,12 @@ body.dark-theme .glass-box {
 /* --- PROJECT BENTO: GRID ENGINE --- */
 
 .dashboard-container.bento-mode {
-    display: grid;
-    grid-template-columns: 78px 1fr;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     min-height: 100vh;
     background-color: var(--bg-primary);
-    padding: 0;
+    padding: 20px;
 }
 
 .left-sidebar.bento-rail {
@@ -8035,23 +8020,18 @@ body.dark-theme .glass-box {
     min-height: 400px;
 }
 
-/* --- BENTO MODE FIXES --- */
+/* --- BENTO MODE FIXES (Sidebar Removed) --- */
 .dashboard-container.bento-mode {
     grid-template-areas: none !important;
-    grid-template-columns: 78px 1fr !important;
-    display: grid !important;
-}
-
-.left-sidebar.bento-rail {
-    grid-column: 1 !important;
-    grid-area: auto !important;
-    width: 78px !important;
+    grid-template-columns: 1fr !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
 }
 
 .bento-canvas {
-    grid-column: 2 !important;
-    grid-area: auto !important;
     width: 100% !important;
+    max-width: 1400px !important;
 }
 
 /* --- TRENDLINES FORM --- */
@@ -8297,16 +8277,52 @@ body.dark-theme .glass-box {
 
 #executive-hub-content {
     font-size: 0.9em !important;
-    overflow-y: hidden !important;
+    overflow: hidden !important;
+    /* No scrollbars at all */
 }
 
 #executive-hub-card .widget-header {
     margin-bottom: 8px !important;
-    /* More breathing room */
     font-size: 1rem !important;
 }
 
 /* Reduce standard bento row height slightly to compact overall view */
 .bento-canvas {
     gap: 16px !important;
+}
+
+/* --- Sparkline Visibility Improvements --- */
+.stat-group svg path,
+.stat-group svg line {
+    stroke-width: 2px;
+    stroke-opacity: 0.8;
+}
+
+.stat-group .sparkline {
+    opacity: 0.75;
+}
+
+/* --- Empty State Polish --- */
+.empty-state,
+[data-empty="true"],
+.no-data-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    color: var(--text-muted);
+    font-style: italic;
+    text-align: center;
+    font-size: 0.9em;
+    background: var(--bg-tertiary);
+    border-radius: 12px;
+    min-height: 80px;
+}
+
+.empty-state::before {
+    content: "📊";
+    font-size: 1.5em;
+    margin-bottom: 8px;
+    opacity: 0.5;
 }
