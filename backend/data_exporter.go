@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"os"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -25,6 +24,7 @@ const (
 	ApiKey           = "FITATU-MOBILE-APP"
 	ContentType      = "application/json;charset=UTF-8"
 	CredentialsFile  = "credentials.json"
+	DataJSONPath     = "../frontend/data.json"
 )
 
 type WeightInsiderData struct {
@@ -68,7 +68,6 @@ type PlanDataDay struct {
 	calendarDay time.Time
 }
 
-// total_calories_burned_record_table
 type TotalCaloriesBurnedRecord struct {
 	RowID                  int64
 	AppInfoID              sql.NullInt64
@@ -82,7 +81,6 @@ func decodeBase64(s string) ([]byte, error) {
 	if missing != 0 {
 		s += strings.Repeat("=", 4-missing)
 	}
-
 	decoded, err := base64.RawURLEncoding.DecodeString(s)
 	if err != nil {
 		decoded, err = base64.StdEncoding.DecodeString(s)
@@ -114,14 +112,12 @@ func DecodeJWT(token string) (*JWT, error) {
 	}
 
 	var header map[string]any
-	err = json.Unmarshal(headerJSON, &header)
-	if err != nil {
+	if err := json.Unmarshal(headerJSON, &header); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal header: %w", err)
 	}
 
 	var payload map[string]any
-	err = json.Unmarshal(payloadJSON, &payload)
-	if err != nil {
+	if err := json.Unmarshal(payloadJSON, &payload); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal payload: %w", err)
 	}
 
@@ -137,13 +133,10 @@ func loadCredentials(filename string) (*Credentials, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error reading file %s: %w", filename, err)
 	}
-
 	var credentials Credentials
-	err = json.Unmarshal(byteValue, &credentials)
-	if err != nil {
+	if err := json.Unmarshal(byteValue, &credentials); err != nil {
 		return nil, fmt.Errorf("error unmarshalling JSON: %w", err)
 	}
-
 	return &credentials, nil
 }
 
@@ -152,26 +145,20 @@ func makeHTTPRequest(client *http.Client, method, url string, body io.Reader, he
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
-
 	for key, value := range headers {
 		req.Header.Set(key, value)
 	}
 
-	requestDump, err := httputil.DumpRequestOut(req, true)
-	if err != nil {
-		log.Printf("Error dumping request: %v\n", err)
-	}
+	requestDump, _ := httputil.DumpRequestOut(req, true)
 	fmt.Printf("Request:\n%s\n", string(requestDump))
 
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("error sending request: %w", err)
 	}
-
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("request failed with status code: %d", resp.StatusCode)
 	}
-
 	return resp, nil
 }
 
@@ -200,8 +187,7 @@ func fitatuLogin(client *http.Client, credentials *Credentials) (string, string,
 	}
 
 	var responseData map[string]any
-	err = json.Unmarshal(body, &responseData)
-	if err != nil {
+	if err := json.Unmarshal(body, &responseData); err != nil {
 		return "", "", fmt.Errorf("error unmarshaling JSON: %w", err)
 	}
 
@@ -212,7 +198,6 @@ func fitatuLogin(client *http.Client, credentials *Credentials) (string, string,
 
 	refreshToken, ok := responseData["refresh_token"].(string)
 	if !ok {
-		log.Println("Refresh token not found or not a string, using empty string")
 		refreshToken = ""
 	}
 
@@ -221,7 +206,6 @@ func fitatuLogin(client *http.Client, credentials *Credentials) (string, string,
 
 func fetchWeightData(client *http.Client, userID, token string) (*WeightData, error) {
 	url := fmt.Sprintf("%s/users/%s/measurements/chart/weight", FitatuAPIBaseURL, userID)
-
 	headers := map[string]string{
 		"api-secret":    ApiSecret,
 		"api-key":       ApiKey,
@@ -241,50 +225,14 @@ func fetchWeightData(client *http.Client, userID, token string) (*WeightData, er
 	}
 
 	var weightData WeightData
-	err = json.Unmarshal(body, &weightData)
-	if err != nil {
+	if err := json.Unmarshal(body, &weightData); err != nil {
 		return nil, fmt.Errorf("error unmarshaling JSON: %w", err)
 	}
-
 	return &weightData, nil
 }
 
-func updateWeightDataJSON(filename string, newWeights map[string]float64) error {
-	file, err := os.ReadFile(filename)
-	var insiderData WeightInsiderData
-
-	if err == nil && len(file) > 0 {
-		if err := json.Unmarshal(file, &insiderData); err != nil {
-			return fmt.Errorf("error unmarshalling existing data from %s: %w", filename, err)
-		}
-	} else if !os.IsNotExist(err) {
-		return fmt.Errorf("error reading file %s: %w", filename, err)
-	}
-
-	if insiderData.Weights == nil {
-		insiderData.Weights = make(map[string]float64)
-	}
-	for date, weight := range newWeights {
-		insiderData.Weights[date] = weight
-	}
-
-	updatedData, err := json.MarshalIndent(insiderData, "", "  ")
-	if err != nil {
-		return fmt.Errorf("error marshalling updated data to JSON: %w", err)
-	}
-
-	if err := os.WriteFile(filename, updatedData, 0644); err != nil {
-		return fmt.Errorf("error writing updated data to file %s: %w", filename, err)
-	}
-
-	return nil
-}
-
-func fetchintakeData(client *http.Client, userID, token string, time time.Time) (*PlanData, error) {
-
-	year, month, day := time.Date()
-
-	url := fmt.Sprintf("%s/diet-and-activity-plan/%s/day/%s-%s-%s", FitatuAPIBaseURL, userID, strconv.Itoa(year), strconv.Itoa(int(month)), strconv.Itoa(day))
+func fetchintakeData(client *http.Client, userID, token string, dateToCheck time.Time) (*PlanData, error) {
+	url := fmt.Sprintf("%s/diet-and-activity-plan/%s/day/%s", FitatuAPIBaseURL, userID, dateToCheck.Format("2006-01-02"))
 
 	headers := map[string]string{
 		"api-secret":    ApiSecret,
@@ -305,45 +253,10 @@ func fetchintakeData(client *http.Client, userID, token string, time time.Time) 
 	}
 
 	var planData PlanData
-	err = json.Unmarshal(body, &planData)
-	if err != nil {
+	if err := json.Unmarshal(body, &planData); err != nil {
 		return nil, fmt.Errorf("error unmarshaling JSON: %w", err)
 	}
-
 	return &planData, nil
-}
-
-func updateIntakeDataJSON(filename string, newintakeData map[time.Time]float64) error {
-	file, err := os.ReadFile(filename)
-	var insiderData WeightInsiderData
-
-	if err == nil && len(file) > 0 {
-		if err := json.Unmarshal(file, &insiderData); err != nil {
-			return fmt.Errorf("error unmarshalling existing data from %s: %w", filename, err)
-		}
-	} else if !os.IsNotExist(err) {
-		return fmt.Errorf("error reading file %s: %w", filename, err)
-	}
-
-	if insiderData.CalorieIntake == nil {
-		insiderData.CalorieIntake = make(map[string]int)
-	}
-	for date, intake := range newintakeData {
-
-		dataString := fmt.Sprintf("%s-%s-%s", strconv.Itoa(date.Year()), strconv.Itoa(int(date.Month())), strconv.Itoa(date.Day()))
-		insiderData.CalorieIntake[dataString] = int(intake)
-	}
-
-	updatedData, err := json.MarshalIndent(insiderData, "", "  ")
-	if err != nil {
-		return fmt.Errorf("error marshalling updated data to JSON: %w", err)
-	}
-
-	if err := os.WriteFile(filename, updatedData, 0644); err != nil {
-		return fmt.Errorf("error writing updated data to file %s: %w", filename, err)
-	}
-
-	return nil
 }
 
 func fetchTotalCaloriesBurnedRecords(db *sql.DB) ([]TotalCaloriesBurnedRecord, error) {
@@ -368,55 +281,62 @@ func fetchTotalCaloriesBurnedRecords(db *sql.DB) ([]TotalCaloriesBurnedRecord, e
 
 func getCaloriesBurnedRecords(records []TotalCaloriesBurnedRecord) map[string]float64 {
 	fmt.Println("\n--- Total Calories Burned Records ---")
-
 	data := make(map[string]float64)
 
 	for _, r := range records {
 		energy := r.Energy.Float64 / 1000
-
 		unixTimestamp := time.Unix(r.LocalDateTimeStartTime.Int64/1000, 0)
-		year, month, day := unixTimestamp.Date()
 
-		date := strconv.Itoa(year) + "-" + strconv.Itoa(int(month)) + "-" + strconv.Itoa(day)
+		date := unixTimestamp.Format("2006-01-02")
 
 		// we trust appinfoid 1 (com.google.android.apps.fitness) for now to avoid dealing with duplicates between apps
 		if r.AppInfoID.Int64 == 1 {
 			data[date] += energy
 		}
 	}
-
-	for day, kcal := range data {
-		data[day] = kcal
-		fmt.Printf("Calories Burned: %.2f kcal, Start Time: %s\n",
-			kcal,
-			day,
-		)
-	}
-
 	return data
 }
 
-func updateExpenditureDataJSON(filename string, newExpenditureData map[string]float64) error {
+func loadOrInitData(filename string) (*WeightInsiderData, error) {
+	data := &WeightInsiderData{
+		BodyFat:              make(map[string]float64),
+		CalorieIntake:        make(map[string]int),
+		GoogleFitExpenditure: make(map[string]int),
+		Weights:              make(map[string]float64),
+	}
+
 	file, err := os.ReadFile(filename)
-	var insiderData WeightInsiderData
+	if os.IsNotExist(err) {
+		return data, nil
+	} else if err != nil {
+		return nil, fmt.Errorf("error reading file %s: %w", filename, err)
+	}
 
-	if err == nil && len(file) > 0 {
-		if err := json.Unmarshal(file, &insiderData); err != nil {
-			return fmt.Errorf("error unmarshalling existing data from %s: %w", filename, err)
+	if len(file) > 0 {
+		if err := json.Unmarshal(file, data); err != nil {
+			log.Printf("Warning: Failed to unmarshal existing JSON (might be corrupted): %v. Starting fresh.", err)
+			return data, nil
 		}
-	} else if !os.IsNotExist(err) {
-		return fmt.Errorf("error reading file %s: %w", filename, err)
 	}
 
-	if insiderData.GoogleFitExpenditure == nil {
-		insiderData.GoogleFitExpenditure = make(map[string]int)
+	if data.BodyFat == nil {
+		data.BodyFat = make(map[string]float64)
 	}
-	for date, expenditure := range newExpenditureData {
-
-		insiderData.GoogleFitExpenditure[date] = int(expenditure)
+	if data.CalorieIntake == nil {
+		data.CalorieIntake = make(map[string]int)
+	}
+	if data.GoogleFitExpenditure == nil {
+		data.GoogleFitExpenditure = make(map[string]int)
+	}
+	if data.Weights == nil {
+		data.Weights = make(map[string]float64)
 	}
 
-	updatedData, err := json.MarshalIndent(insiderData, "", "  ")
+	return data, nil
+}
+
+func saveData(filename string, data *WeightInsiderData) error {
+	updatedData, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
 		return fmt.Errorf("error marshalling updated data to JSON: %w", err)
 	}
@@ -424,7 +344,6 @@ func updateExpenditureDataJSON(filename string, newExpenditureData map[string]fl
 	if err := os.WriteFile(filename, updatedData, 0644); err != nil {
 		return fmt.Errorf("error writing updated data to file %s: %w", filename, err)
 	}
-
 	return nil
 }
 
@@ -436,68 +355,55 @@ func main() {
 		log.Fatalf("Failed to load credentials: %v", err)
 	}
 
-	token, refreshToken, err := fitatuLogin(client, credentials)
+	token, _, err := fitatuLogin(client, credentials)
 	if err != nil {
 		log.Fatalf("Login failed: %v", err)
 	}
-
-	fmt.Printf("Token: %s\n", token)
-	fmt.Printf("Refresh Token: %s\n", refreshToken)
+	fmt.Println("Login successful.")
 
 	jwtData, err := DecodeJWT(token)
 	if err != nil {
 		log.Fatalf("Error decoding JWT: %v", err)
 	}
-
-	fmt.Println("Header:", jwtData.Header)
-	fmt.Println("Payload:", jwtData.Payload)
-	fmt.Println("Signature:", jwtData.Signature)
-
 	idValue, ok := jwtData.Payload["id"].(string)
 	if !ok {
-		log.Fatalf("JWT ID not found or not a string")
+		log.Fatalf("JWT ID not found")
 	}
 
-	fmt.Println("JWT ID is: ", idValue)
+	fmt.Printf("Loading existing data from %s...\n", DataJSONPath)
+	insiderData, err := loadOrInitData(DataJSONPath)
+	if err != nil {
+		log.Fatalf("Failed to load existing data: %v", err)
+	}
 
+	fmt.Println("Fetching weight data...")
 	weightData, err := fetchWeightData(client, idValue, token)
 	if err != nil {
-		log.Fatalf("Failed to fetch weight data: %v", err)
+		log.Printf("Failed to fetch weight data: %v", err)
+	} else {
+		for date, weight := range weightData.Weights {
+			insiderData.Weights[date] = weight
+		}
+		fmt.Printf("Updated %d weight records.\n", len(weightData.Weights))
 	}
 
-	fmt.Printf("Weight data: %+v\n", weightData.Weights)
-
-	dataJSONPath := "../frontend/data.json"
-	if err := updateWeightDataJSON(dataJSONPath, weightData.Weights); err != nil {
-		log.Fatalf("Failed to update data.json: %v", err)
-	}
-	fmt.Printf("Successfully updated weights in %s\n", dataJSONPath)
-
+	fmt.Println("Fetching intake data (last 90 days)...")
 	now := time.Now().UTC()
-
 	numRequests := 90
-	requestData := make([]PlanDataDay, numRequests)
-	for i := 0; i < numRequests; i++ {
-		requestData[i].calendarDay = now.AddDate(0, 0, -i)
-	}
 
 	var wg sync.WaitGroup
 	wg.Add(numRequests)
-
 	results := make(chan PlanDataDay, numRequests)
 
 	for i := 0; i < numRequests; i++ {
-		go func(dateToCheck PlanDataDay) {
+		go func(dayOffset int) {
 			defer wg.Done()
-
-			intakeData, err := fetchintakeData(client, idValue, token, dateToCheck.calendarDay)
-
+			dateToCheck := now.AddDate(0, 0, -dayOffset)
+			intakeData, err := fetchintakeData(client, idValue, token, dateToCheck)
 			if err == nil {
-				dateToCheck.planData = *intakeData
+				results <- PlanDataDay{planData: *intakeData, calendarDay: dateToCheck}
 			}
-
-			results <- dateToCheck
-		}(requestData[i])
+		}(i)
 	}
 
 	go func() {
@@ -505,51 +411,43 @@ func main() {
 		close(results)
 	}()
 
-	var finalResults []PlanDataDay
+	countIntake := 0
 	for result := range results {
-		finalResults = append(finalResults, result)
-	}
-
-	intakeData := make(map[time.Time]float64)
-
-	for _, result := range finalResults {
-
 		sum := 0.0
-
 		for _, value := range result.planData.DietPlan {
 			for _, element := range value.Items {
 				sum += element.Energy
 			}
 		}
-
-		// ignore days I didnt log anything
-		if sum == 0.0 {
-			continue
+		if sum > 0 {
+			dateKey := result.calendarDay.Format("2006-01-02")
+			insiderData.CalorieIntake[dateKey] = int(sum)
+			countIntake++
 		}
-
-		intakeData[result.calendarDay] = sum
 	}
+	fmt.Printf("Updated %d intake records.\n", countIntake)
 
-	if err := updateIntakeDataJSON(dataJSONPath, intakeData); err != nil {
-		log.Fatalf("Failed to update data.json: %v", err)
-	}
-	fmt.Printf("Successfully updated intake in %s\n", dataJSONPath)
-
+	fmt.Println("Fetching expenditure from DB...")
 	db, err := sql.Open("sqlite3", "./health_connect_export.db")
 	if err != nil {
-		log.Fatalf("Fatal: Failed to open database: %v", err)
+		log.Printf("Failed to open database: %v", err)
+	} else {
+		caloriesBurnedRecords, err := fetchTotalCaloriesBurnedRecords(db)
+		if err != nil {
+			log.Printf("Could not fetch total calories burned records: %v", err)
+		} else {
+			expenditureRecords := getCaloriesBurnedRecords(caloriesBurnedRecords)
+			for date, kcal := range expenditureRecords {
+				insiderData.GoogleFitExpenditure[date] = int(kcal)
+			}
+			fmt.Printf("Updated %d expenditure records.\n", len(expenditureRecords))
+		}
+		db.Close()
 	}
-	defer db.Close()
 
-	caloriesBurnedRecords, err := fetchTotalCaloriesBurnedRecords(db)
-	if err != nil {
-		log.Fatalf("Fatal: Could not fetch total calories burned records: %v", err)
+	fmt.Printf("Saving all data to %s...\n", DataJSONPath)
+	if err := saveData(DataJSONPath, insiderData); err != nil {
+		log.Fatalf("Failed to save data.json: %v", err)
 	}
-
-	records := getCaloriesBurnedRecords(caloriesBurnedRecords)
-
-	if err := updateExpenditureDataJSON(dataJSONPath, records); err != nil {
-		log.Fatalf("Failed to update data.json: %v", err)
-	}
-	fmt.Printf("Successfully updated expenditure in %s\n", dataJSONPath)
+	fmt.Println("Success! All data updated and valid JSON saved.")
 }
