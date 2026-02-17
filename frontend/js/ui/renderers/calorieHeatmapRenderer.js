@@ -64,10 +64,36 @@ export const CalorieHeatmapRenderer = {
 
     _buildCalendarData(data) {
         // Build a map of date -> data
+        // When duplicate date entries exist (e.g. from "2026-01-02" and "2026-1-2" in data.json),
+        // prefer the entry with more relevant data (calorieIntake, weight value).
         const dataMap = {};
         data.forEach(d => {
+            if (!(d.date instanceof Date) || isNaN(d.date.getTime())) {
+                return; // Skip invalid dates
+            }
             const key = `${d.date.getFullYear()}-${d.date.getMonth()}-${d.date.getDate()}`;
-            dataMap[key] = d;
+            const existing = dataMap[key];
+            if (!existing) {
+                dataMap[key] = d;
+            } else {
+                // Merge: keep whichever entry has more data, or combine them
+                dataMap[key] = {
+                    ...existing,
+                    ...d,
+                    // Prefer non-null values from either entry
+                    calorieIntake: d.calorieIntake ?? existing.calorieIntake,
+                    value: d.value ?? existing.value,
+                    googleFitTDEE: d.googleFitTDEE ?? existing.googleFitTDEE,
+                    bfPercent: d.bfPercent ?? existing.bfPercent,
+                    protein: d.protein ?? existing.protein,
+                    carbs: d.carbs ?? existing.carbs,
+                    fat: d.fat ?? existing.fat,
+                    sma: d.sma ?? existing.sma,
+                    ema: d.ema ?? existing.ema,
+                    isOutlier: d.isOutlier || existing.isOutlier,
+                    netBalance: d.netBalance ?? existing.netBalance,
+                };
+            }
         });
         return dataMap;
     },

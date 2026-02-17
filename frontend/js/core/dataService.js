@@ -57,8 +57,10 @@ export const DataService = {
       ...Object.keys(workouts),
     ]);
     let mergedData = [];
+    // Normalize date keys: group all variant formats (e.g. "2026-1-2" and "2026-01-02")
+    // into a canonical YYYY-MM-DD format to avoid duplicate entries for the same date.
+    const normalizedDates = new Map(); // canonical key -> Set of original keys
     for (const dateStr of allDates) {
-      // Basic validation of date string format (YYYY-MM-DD)
       // Basic validation of date string format (YYYY-M-D or YYYY-MM-DD)
       if (!/^\d{4}-\d{1,2}-\d{1,2}$/.test(dateStr)) {
         console.warn(
@@ -66,39 +68,61 @@ export const DataService = {
         );
         continue;
       }
-
-      // Robust parsing for unpadded dates
       const [y, m, d] = dateStr.split("-").map(Number);
+      // Canonical zero-padded key
+      const canonical = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      if (!normalizedDates.has(canonical)) {
+        normalizedDates.set(canonical, new Set());
+      }
+      normalizedDates.get(canonical).add(dateStr);
+    }
+
+    for (const [canonical, originalKeys] of normalizedDates) {
+      const [y, m, d] = canonical.split("-").map(Number);
       const dateObj = new Date(y, m - 1, d); // Local midnight
 
       if (isNaN(dateObj.getTime())) {
         console.warn(
-          `DataService: Skipping invalid date string after parsing: ${dateStr}`,
+          `DataService: Skipping invalid date string after parsing: ${canonical}`,
         );
         continue;
       }
-      // Note: Fields not present in raw data will default to null/undefined here
-      const intake = calorieIntake[dateStr] ?? null;
-      const expenditure = googleFitExpenditure[dateStr] ?? null;
-      const netBalance = this._calculateDailyBalance(intake, expenditure); // Use internal helper
+
+      // Helper: find first non-null value across all variant keys for a given data source
+      const findValue = (source) => {
+        for (const key of originalKeys) {
+          if (source[key] != null) return source[key];
+        }
+        return null;
+      };
+
+      const intake = findValue(calorieIntake);
+      const expenditure = findValue(googleFitExpenditure);
+      const netBalance = this._calculateDailyBalance(intake, expenditure);
+      const workoutData = (() => {
+        for (const key of originalKeys) {
+          if (workouts[key] != null) return workouts[key];
+        }
+        return null;
+      })();
 
       mergedData.push({
-        dateString: dateStr,
+        dateString: canonical,
         date: dateObj, // Store Date object
-        value: weights[dateStr] ?? null,
-        bfPercent: bodyFat[dateStr] ?? null,
+        value: findValue(weights),
+        bfPercent: findValue(bodyFat),
         calorieIntake: intake,
         googleFitTDEE: expenditure,
         netBalance: netBalance,
         // Macro data
-        protein: protein[dateStr] ?? null,
-        carbs: carbs[dateStr] ?? null,
-        fat: fat[dateStr] ?? null,
+        protein: findValue(protein),
+        carbs: findValue(carbs),
+        fat: findValue(fat),
         // Workout data
-        workoutCount: workouts[dateStr]?.workoutCount ?? null,
-        totalSets: workouts[dateStr]?.totalSets ?? null,
-        totalVolume: workouts[dateStr]?.totalVolume ?? null,
-        isRestDay: workouts[dateStr]?.isRestDay ?? null,
+        workoutCount: workoutData?.workoutCount ?? null,
+        totalSets: workoutData?.totalSets ?? null,
+        totalVolume: workoutData?.totalVolume ?? null,
+        isRestDay: workoutData?.isRestDay ?? null,
         // Initialize all derived fields to null initially
         sma: null,
         ema: null,
