@@ -28,7 +28,6 @@ export const RollingAveragesRenderer = {
         });
 
         setTimeout(() => this._calculate(), 1150);
-        console.log('[RollingAveragesRenderer] Initialized.');
     },
 
     _calculate() {

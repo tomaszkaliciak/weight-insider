@@ -28,7 +28,6 @@ export const WaterWeightRenderer = {
     });
 
     setTimeout(() => this._analyze(), 1350);
-    console.log('[WaterWeightRenderer] Initialized.');
   },
 
   _analyze() {

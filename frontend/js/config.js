@@ -103,4 +103,3 @@ export const CONFIG = Object.freeze({
 });
 
 // Log loading for confirmation
-console.log("Config module loaded.");

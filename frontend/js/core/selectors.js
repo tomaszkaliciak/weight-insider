@@ -154,4 +154,3 @@ export const selectFocusChartMarkerData = (state) => {
 
 // Add more selectors as needed for specific UI components or calculations...
 
-console.log("Selectors module loaded."); // Log loading

@@ -28,7 +28,6 @@ export const PredictionBandsRenderer = {
     });
 
     setTimeout(() => this._predict(), 900);
-    console.log('[PredictionBandsRenderer] Initialized.');
   },
 
   _predict() {

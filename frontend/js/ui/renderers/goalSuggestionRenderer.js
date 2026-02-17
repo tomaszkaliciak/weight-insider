@@ -32,7 +32,6 @@ export const GoalSuggestionRenderer = {
 
         // Initial generation after a delay
         setTimeout(() => this._generateSuggestions(), 1000);
-        console.log('[GoalSuggestionRenderer] Initialized.');
     },
 
     _generateSuggestions() {

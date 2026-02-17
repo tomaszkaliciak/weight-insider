@@ -21,7 +21,6 @@ export const SparklineRenderer = {
             this._renderSparklines(stats);
         });
 
-        console.log('[SparklineRenderer] Initialized.');
     },
 
     _renderSparklines(stats) {

@@ -9,7 +9,6 @@ import { Utils } from "./utils.js";
 export const DataService = {
   // --- Fetching & Basic Merging ---
   async fetchData() {
-    console.log("DataService: Fetching data from data.json...");
     try {
       const response = await fetch("../data.json"); // Adjust path if needed
       if (!response.ok) {
@@ -18,7 +17,6 @@ export const DataService = {
         );
       }
       const rawDataObjects = await response.json();
-      console.log("DataService: Successfully fetched and parsed data.json");
       return rawDataObjects;
     } catch (error) {
       console.error("DataService: Failed to load or parse data.json:", error);
@@ -37,7 +35,6 @@ export const DataService = {
   },
 
   mergeRawData(rawDataObjects) {
-    console.log("DataService: Merging raw data sources...");
     const weights = rawDataObjects.bodyWeight || rawDataObjects.weights || {};
     const calorieIntake = rawDataObjects.calorieIntake || {};
     const googleFitExpenditure = rawDataObjects.googleFitExpenditure || {};
@@ -147,9 +144,6 @@ export const DataService = {
     }
     // Sort by date ascending
     mergedData.sort((a, b) => a.date - b.date);
-    console.log(
-      `DataService: Merged data for ${mergedData.length} unique dates.`,
-    );
     return mergedData;
   },
 
@@ -583,7 +577,6 @@ export const DataService = {
         };
       });
 
-    console.log(`DataService: Detected ${finalPhases.length} periodization phases.`);
     return finalPhases;
   },
 
@@ -694,7 +687,6 @@ export const DataService = {
       }
     }
 
-    console.log(`DataService: Calculated workout correlation: ${coefficient?.toFixed(3)} (${interpretation})`);
     return {
       coefficient: coefficient != null ? Math.round(coefficient * 1000) / 1000 : null,
       weeklyData,

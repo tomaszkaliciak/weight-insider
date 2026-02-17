@@ -29,7 +29,6 @@ export const WhatWorkedRenderer = {
         });
 
         setTimeout(() => this._analyze(), 1050);
-        console.log('[WhatWorkedRenderer] Initialized.');
     },
 
     _analyze() {

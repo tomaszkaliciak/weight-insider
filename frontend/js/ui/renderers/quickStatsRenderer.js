@@ -17,7 +17,6 @@ export const QuickStatsRenderer = {
         };
 
         if (!this._elements.currentWeight) {
-            console.log('[QuickStatsRenderer] Container not found, skipping init.');
             return;
         }
 
@@ -25,7 +24,6 @@ export const QuickStatsRenderer = {
             this._render(stats);
         });
 
-        console.log('[QuickStatsRenderer] Initialized.');
     },
 
     _render(stats) {

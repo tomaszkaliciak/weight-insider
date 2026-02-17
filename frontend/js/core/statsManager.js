@@ -966,6 +966,5 @@ export const StatsManager = {
 
     // Separate subscription removed - standard update() cycle handles it now
 
-    console.log("[StatsManager Init] Refined subscriptions complete.");
   },
 };

@@ -28,7 +28,6 @@ export const RateOptimizerRenderer = {
     });
 
     setTimeout(() => this._analyze(), 1450);
-    console.log('[RateOptimizerRenderer] Initialized.');
   },
 
   _analyze() {

@@ -42,10 +42,6 @@ export const GoalManager = {
     }
     // Dispatch action to update state with the loaded or default goal
     StateManager.dispatch({ type: "LOAD_GOAL", payload: loadedGoalData });
-    console.log(
-      "GoalManager: Dispatched LOAD_GOAL action with payload:",
-      loadedGoalData,
-    );
     // UI updates are handled by components subscribing to state:goalChanged or state:displayStatsUpdated
   },
 
@@ -73,7 +69,6 @@ export const GoalManager = {
         CONFIG.localStorageKeys.goal,
         JSON.stringify(goalToStore),
       );
-      console.log("GoalManager: Goal saved to localStorage:", goalToStore);
     } catch (e) {
       console.error("GoalManager: Error saving goal to localStorage", e);
       Utils.showStatusMessage(
@@ -89,6 +84,5 @@ export const GoalManager = {
    */
   init() {
     this.load();
-    console.log("[GoalManager Init] Initialized and loaded goal.");
   },
 };

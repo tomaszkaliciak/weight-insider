@@ -11,7 +11,6 @@ import { ChartInteractions } from "./chartInteractions.js";
 
 // Debounced handler for analysis range date inputs
 const debouncedRangeInputChange = Utils.debounce(() => {
-  console.log("[FormHandlers] Debounced range input change handler triggered.");
   const startVal = ui.analysisStartDateInput?.property("value");
   const endVal = ui.analysisEndDateInput?.property("value");
   const startDate = Utils.parseDateDMY(startVal);
@@ -32,7 +31,6 @@ const debouncedRangeInputChange = Utils.debounce(() => {
       currentRange.start?.getTime() !== newStart.getTime() ||
       currentRange.end?.getTime() !== newEnd.getTime()
     ) {
-      console.log("[FormHandlers Debounce] Dispatching range change from inputs:", newStart, newEnd);
       StateManager.dispatch({ type: ActionTypes.SET_ANALYSIS_RANGE, payload: { start: newStart, end: newEnd } });
       StateManager.dispatch({ type: ActionTypes.SET_PINNED_TOOLTIP, payload: null });
       StateManager.dispatch({ type: ActionTypes.SET_HIGHLIGHTED_DATE, payload: null });
@@ -43,7 +41,6 @@ const debouncedRangeInputChange = Utils.debounce(() => {
 
       Utils.showStatusMessage("Analysis range updated from input.", "info", 1500);
     } else {
-      console.log("[FormHandlers Debounce] Range input change detected, but value is same as current state. No dispatch.");
     }
   } else if (startVal || endVal) {
     Utils.showStatusMessage("Invalid date range entered in inputs.", "error");
@@ -53,7 +50,6 @@ const debouncedRangeInputChange = Utils.debounce(() => {
 
 export const FormHandlers = {
   handleTrendlineInputChange() {
-    console.log("[FormHandlers] Trendline input changed.");
     const startDateVal = ui.trendStartDateInput?.property("value");
     const initialWeightVal = ui.trendInitialWeightInput?.property("value");
     const weeklyIncrease1Val = ui.trendWeeklyIncrease1Input?.property("value");
@@ -99,12 +95,10 @@ export const FormHandlers = {
   },
 
   handleAnalysisRangeUpdate() {
-    console.log("[FormHandlers] Apply Range button clicked.");
     debouncedRangeInputChange.flush(); // Use internal debounced function
   },
 
   handleAnalysisRangeInputChange() {
-    console.log("[FormHandlers] Date input change detected.");
     debouncedRangeInputChange(); // Use internal debounced function
   },
 
@@ -151,5 +145,3 @@ export const FormHandlers = {
   // Add a setup function if needed to attach listeners managed by this module
   // setup() { ... }
 };
-
-console.log("FormHandlers module loaded.");

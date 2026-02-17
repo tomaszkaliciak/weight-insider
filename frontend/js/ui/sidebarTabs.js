@@ -25,7 +25,6 @@ export const SidebarTabs = {
         this._tabPanels = document.querySelectorAll('.tab-panels .tab-panel');
 
         if (isBentoMode) {
-            console.log('[SidebarTabs] Bento mode detected. Initializing scroll anchors.');
             this._tabButtons.forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const targetId = e.currentTarget.getAttribute('data-target');
@@ -75,7 +74,6 @@ export const SidebarTabs = {
         this.switchTab(savedTab, false); // false = don't animate on initial load
 
         this._initialized = true;
-        console.log('[SidebarTabs] Initialized with active tab:', savedTab);
     },
 
     /**

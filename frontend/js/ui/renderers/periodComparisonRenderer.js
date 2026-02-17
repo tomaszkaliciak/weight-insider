@@ -24,7 +24,6 @@ export const PeriodComparisonRenderer = {
 
     this._setupEventListeners();
     this._render();
-    console.log('[PeriodComparisonRenderer] Initialized.');
   },
 
   _setupEventListeners() {

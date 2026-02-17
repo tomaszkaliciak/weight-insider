@@ -20,7 +20,6 @@ export const KeyboardNav = {
         this._setupFullscreenButton();
 
         this._initialized = true;
-        console.log('[KeyboardNav] Initialized.');
     },
 
     _handleKeyDown(e) {
@@ -101,7 +100,6 @@ export const KeyboardNav = {
         });
 
         if (collapsed > 0) {
-            console.log(`[KeyboardNav] Collapsed ${collapsed} cards.`);
         }
     },
 
@@ -109,7 +107,6 @@ export const KeyboardNav = {
         const sidebar = document.getElementById('right-sidebar');
         if (sidebar) {
             sidebar.classList.toggle('collapsed');
-            console.log(`[KeyboardNav] Sidebar ${sidebar.classList.contains('collapsed') ? 'collapsed' : 'expanded'}.`);
         }
     },
 
@@ -126,7 +123,6 @@ export const KeyboardNav = {
 
         if (!document.fullscreenElement) {
             chartSection.requestFullscreen().catch(err => {
-                console.log(`[KeyboardNav] Fullscreen error: ${err.message}`);
             });
         } else {
             document.exitFullscreen();

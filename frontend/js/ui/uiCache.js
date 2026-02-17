@@ -227,7 +227,6 @@ const elementIdMap = {
  * @throws {Error} If critical UI elements are missing.
  */
 export function cacheSelectors() {
-  console.log("uiCache: Caching UI element selections...");
   ui.body = d3.select("body"); // Special case for body
 
   let missingCritical = false;
@@ -271,5 +270,4 @@ export function cacheSelectors() {
       "Missing critical UI elements required for initialization. Check console.",
     );
   }
-  console.log("uiCache: UI element caching finished.");
 }

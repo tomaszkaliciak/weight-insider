@@ -108,7 +108,6 @@ const specificSubscribers = {}; // { eventName: Set<callback> }
 
 // --- Reducer Logic ---
 function reducer(currentState, action) {
-  console.log("[StateManager] Reducing action:", action.type, action.payload);
   const nextState = Utils.deepClone(currentState); // Clone before modifying
 
   switch (action.type) {
@@ -352,7 +351,6 @@ function reducer(currentState, action) {
       return currentState;
   }
 
-  console.log("[StateManager] State updated.");
   return nextState;
 }
 
@@ -539,7 +537,6 @@ export const StateManager = {
     // Return an unsubscribe function
     return () => {
       generalSubscribers.delete(listener);
-      console.log(`[StateManager] General subscriber unsubscribed.`);
     };
   },
 
@@ -555,18 +552,13 @@ export const StateManager = {
       specificSubscribers[eventName] = new Set();
     }
     specificSubscribers[eventName].add(listener);
-    console.log(`[StateManager] Specific subscriber added for: ${eventName}`);
     // Return an unsubscribe function
     return () => {
       if (specificSubscribers[eventName]) {
         specificSubscribers[eventName].delete(listener);
-        console.log(
-          `[StateManager] Specific subscriber unsubscribed from: ${eventName}`,
-        );
       }
     };
   },
 };
 
 // Optional: Log initial state setup
-console.log("[StateManager] Initialized (using internal eventing).");

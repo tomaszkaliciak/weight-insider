@@ -29,7 +29,6 @@ export const PlateauBreakerRenderer = {
         });
 
         setTimeout(() => this._analyze(), 1100);
-        console.log('[PlateauBreakerRenderer] Initialized.');
     },
 
     _analyze() {

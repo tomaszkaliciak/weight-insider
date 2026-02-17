@@ -39,7 +39,6 @@ export const DataTableModal = {
         }
 
         this._initialized = true;
-        console.log('[DataTableModal] Initialized.');
     },
 
     open() {

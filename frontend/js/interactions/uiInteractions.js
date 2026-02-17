@@ -40,5 +40,3 @@ export const UIInteractions = {
   // Add a setup function if needed, e.g., for the body click listener
   // setup() { ... }
 };
-
-console.log("UIInteractions module loaded.");

@@ -29,7 +29,6 @@ export const WeekendAnalysisRenderer = {
     });
 
     setTimeout(() => this._analyze(), 800);
-    console.log('[WeekendAnalysisRenderer] Initialized.');
   },
 
   _analyze() {

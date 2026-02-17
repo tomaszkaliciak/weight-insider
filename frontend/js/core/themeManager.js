@@ -62,7 +62,6 @@ export const ThemeManager = {
       secondAxisColor: getColor("--second-axis-color", "secondAxisColor"), // Keep if used
       optimalGainZone: getColor("--optimal-gain-zone-color", "optimalGainZone"),
     });
-    console.log("[ThemeManager] Updated colors object:", colors);
     // No need to dispatch event here, components needing colors can just import `colors`
   },
 
@@ -85,7 +84,6 @@ export const ThemeManager = {
    */
   _applyTheme(newTheme) {
     const theme = newTheme === "dark" ? "dark" : "light";
-    console.log(`[ThemeManager] Applying theme: ${theme}`);
 
     // Add transitioning class for smooth animation
     ui.body?.classed("theme-transitioning", true);
@@ -107,7 +105,6 @@ export const ThemeManager = {
   toggleTheme() {
     const currentTheme = Selectors.selectCurrentTheme(StateManager.getState()); // Read state
     const newTheme = currentTheme === "light" ? "dark" : "light";
-    console.log(`[ThemeManager] Dispatching SET_THEME action: ${newTheme}`);
     StateManager.dispatch({ type: "SET_THEME", payload: newTheme });
     // The _applyTheme method will be called via the state subscription.
   },
@@ -119,9 +116,6 @@ export const ThemeManager = {
   init() {
     const savedTheme = localStorage.getItem(CONFIG.localStorageKeys.theme);
     const initialTheme = savedTheme === "dark" ? "dark" : "light";
-    console.log(
-      `[ThemeManager Init] Initial theme determined as: ${initialTheme}`,
-    );
 
     // IMPORTANT: Dispatch the initial theme *before* applying it or subscribing
     // This ensures the state is correct before any reactions happen.
@@ -131,7 +125,6 @@ export const ThemeManager = {
       // Payload is { theme: newTheme }
       this._applyTheme(payload.theme);
     });
-    console.log("[ThemeManager Init] Subscribed to state:themeUpdated.");
 
     // Apply the initial theme based on the now-dispatched state
     this._applyTheme(initialTheme);

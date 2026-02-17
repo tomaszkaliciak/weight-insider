@@ -25,7 +25,6 @@ import { ResizeHandler } from "./resizeHandler.js";
 export const EventHandlers = {
   // --- Setup ---
   setupAll() {
-    console.log("EventHandlers: Setting up event listeners...");
     // Use ResizeObserver monitoring the Fullscreen Element (.chart-section)
     // This is more reliable as it is the element that actually changes state
     const chartSection = document.querySelector('.chart-section');
@@ -121,6 +120,5 @@ export const EventHandlers = {
         }
       }
     });
-    console.log("EventHandlers: Setup complete.");
   },
 };

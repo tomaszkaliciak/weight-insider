@@ -46,7 +46,6 @@ export const WeeklySummaryUpdater = {
    * @param {object} tableState - Object containing { weeklyData, sortKey, sortDir }.
    */
   _renderTable({ weeklyData, sortKey, sortDir }) {
-    console.log("[WeeklySummaryUpdater] _renderTable called.");
     const container = ui.weeklySummaryContainer;
     if (!container || container.empty()) {
       console.warn("WeeklySummaryUpdater: Container element not found.");
@@ -201,9 +200,6 @@ export const WeeklySummaryUpdater = {
         this._renderTable({ weeklyData, sortKey, sortDir });
       }
     });
-    console.log(
-      "[WeeklySummaryUpdater Init] Subscribed to relevant state changes.",
-    );
     // Perform initial render based on current state
     const initialState = StateManager.getState();
     const initialWeeklyData = Selectors.selectWeeklySummaryData(initialState);

@@ -15,9 +15,6 @@ export const LegendManager = {
    * @param {boolean} isVisible - The desired visibility state.
    */
   toggleSeriesVisibility(seriesId, isVisible) {
-    console.log(
-      `[LM Toggle] Dispatching actions for "${seriesId}" to ${isVisible}.`,
-    );
     const currentVisibilityState = Selectors.selectSeriesVisibility(
       StateManager.getState(),
     ); // Use selector
@@ -36,7 +33,6 @@ export const LegendManager = {
     });
 
     // State change subscriptions will handle UI updates (rebuilding legend, redrawing charts)
-    console.log(`[LM Toggle] END: Dispatched actions for "${seriesId}"`);
   },
 
   /**
@@ -44,7 +40,6 @@ export const LegendManager = {
    * based on the current application state (visibility, goal, annotations, etc.).
    */
   _build() {
-    console.log("[LM Build] Build function called.");
 
     if (!ui.legendContainer || ui.legendContainer.empty()) {
       console.warn("[LM Build] Legend container not found.");
@@ -179,10 +174,6 @@ export const LegendManager = {
         : []),
     ];
 
-    console.log(
-      "[LM Build] Legend items config generated:",
-      legendItemsConfig.map((i) => i.id),
-    );
 
     // Create legend items based on the config and current visibility state
     legendItemsConfig.forEach((item) => {
@@ -207,9 +198,6 @@ export const LegendManager = {
           const visibilityOnClick = Selectors.selectSeriesVisibility(
             StateManager.getState(),
           )[item.id];
-          console.log(
-            `[Legend Click] Clicked on: ${item.id}. Current visibility: ${visibilityOnClick}. Toggling to ${!visibilityOnClick}.`,
-          );
           // Call method to dispatch toggle actions
           LegendManager.toggleSeriesVisibility(item.id, !visibilityOnClick);
         });
@@ -250,7 +238,6 @@ export const LegendManager = {
 
       itemDiv.append("span").attr("class", "legend-text").text(item.label);
     });
-    console.log("[LM Build] Finished legend build.");
   },
 
   /**
@@ -270,14 +257,10 @@ export const LegendManager = {
 
     rebuildEvents.forEach((eventName) => {
       StateManager.subscribeToSpecificEvent(eventName, () => {
-        console.log(
-          `[LegendManager] Received event: ${eventName}. Rebuilding legend.`,
-        );
         this._build(); // Rebuild the legend fully
       });
     });
 
-    console.log("[LM Init] Subscribed to relevant state changes.");
     // Initial build will happen upon 'state:initializationComplete'
   },
 };

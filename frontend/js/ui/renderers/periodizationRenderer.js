@@ -96,7 +96,6 @@ export const PeriodizationRenderer = {
 
             // Only re-render if phases actually changed
             if (JSON.stringify(newPhases) !== JSON.stringify(prevPhases)) {
-                console.log("[PeriodizationRenderer] Phases changed, re-rendering.");
                 render(newPhases);
             }
         });
@@ -107,6 +106,5 @@ export const PeriodizationRenderer = {
             render(Selectors.selectPeriodizationPhases(state));
         });
 
-        console.log("[PeriodizationRenderer] Initialized.");
     },
 };

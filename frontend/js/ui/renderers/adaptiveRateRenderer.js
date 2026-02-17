@@ -29,7 +29,6 @@ export const AdaptiveRateRenderer = {
         });
 
         setTimeout(() => this._analyze(), 850);
-        console.log('[AdaptiveRateRenderer] Initialized.');
     },
 
     _analyze() {

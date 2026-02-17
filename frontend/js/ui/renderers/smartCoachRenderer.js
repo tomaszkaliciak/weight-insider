@@ -38,7 +38,6 @@ export const SmartCoachRenderer = {
             this._render();
         }
 
-        console.log('[SmartCoachRenderer] Initialized.');
     },
 
     /**

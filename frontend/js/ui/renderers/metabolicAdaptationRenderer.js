@@ -38,7 +38,6 @@ export const MetabolicAdaptationRenderer = {
             this._render();
         }
 
-        console.log('[MetabolicAdaptationRenderer] Initialized.');
     },
 
     /**
@@ -92,7 +91,6 @@ export const MetabolicAdaptationRenderer = {
         }
 
         if (tdeeSeries.length < 14) {
-            console.log('[MetabolicAdaptationRenderer] Insufficient TDEE series length:', tdeeSeries.length);
             return null;
         }
 

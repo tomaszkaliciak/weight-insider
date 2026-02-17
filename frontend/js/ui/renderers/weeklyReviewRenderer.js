@@ -28,7 +28,6 @@ export const WeeklyReviewRenderer = {
         // Also listen to initial load
         StateManager.subscribeToSpecificEvent("state:initializationComplete", () => this._render());
 
-        console.log("WeeklyReviewRenderer initialized.");
     },
 
     _render() {

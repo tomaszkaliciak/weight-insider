@@ -20,12 +20,10 @@ let isDraggingRegressionBrush = false;
 // Debounced function for handling the end of brush/zoom interactions
 const debouncedInteractionEnd = Utils.debounce(
   () => {
-    console.log("[ChartInteractions] Debounced Interaction End triggered.");
     const state = StateManager.getState(); // Get current state
 
     // --- Final State Updates After Interaction ---
     // 1. Set final analysis range based on the *current* scales.x domain
-    console.log("[ChartInteractions] Debounced End: Checking final domain:", scales.x?.domain());
     const finalXDomain = scales.x?.domain();
     if (
       finalXDomain &&
@@ -46,10 +44,6 @@ const debouncedInteractionEnd = Utils.debounce(
           type: ActionTypes.SET_ANALYSIS_RANGE, // Use ActionTypes
           payload: finalAnalysisRange,
         });
-        console.log(
-          "[ChartInteractions Debounce] Dispatched final SET_ANALYSIS_RANGE:",
-          finalAnalysisRange,
-        );
       }
     }
 
@@ -61,7 +55,6 @@ const debouncedInteractionEnd = Utils.debounce(
     // Reset interaction flags
     isZooming = false;
     isBrushing = false;
-    console.log("[ChartInteractions] Interaction End debounce finished.");
   },
   300, // Delay in ms after last interaction event (zoom/brush)
 );
@@ -240,13 +233,11 @@ export const ChartInteractions = {
       });
 
     ui.goalLineHit.call(dragBehavior);
-    console.log("ChartInteractions: Goal Drag setup complete.");
   },
 
   // --- Brush and Zoom Handlers ---
   contextBrushed(event) {
     if (!event || !event.sourceEvent || event.sourceEvent.type === "zoom" || isBrushing) return;
-    console.log("[ChartInteractions] contextBrushed called. Type:", event.type, "Selection:", event.selection);
     if (!event.selection && event.type !== "end") return;
 
     isBrushing = true;
@@ -283,7 +274,6 @@ export const ChartInteractions = {
     MasterUpdater.updateAllCharts({ isInteractive: true });
 
     if (event.type === "end") {
-      console.log("[ChartInteractions] Context Brush end. Event:", event);
       debouncedInteractionEnd();
     }
     setTimeout(() => { isBrushing = false; }, 50);
@@ -354,12 +344,10 @@ export const ChartInteractions = {
     }
 
     if (rangeUpdated) {
-      console.log("[ChartInteractions] Regression brush range changed, dispatching update.");
       StateManager.dispatch({ type: ActionTypes.SET_INTERACTIVE_REGRESSION_RANGE, payload: newRange }); // Use ActionTypes
       StateManager.dispatch({ type: ActionTypes.SET_PINNED_TOOLTIP, payload: null }); // Use ActionTypes
       Utils.showStatusMessage(newRange.start ? "Regression range updated." : "Regression range reset.", "info", 1500);
     } else {
-      console.log("[ChartInteractions] Regression brush range not changed significantly.");
       MasterUpdater.updateAllCharts({ isInteractive: false });
     }
     setTimeout(() => { isDraggingRegressionBrush = false; }, 50);
@@ -488,5 +476,3 @@ export const ChartInteractions = {
   },
 
 };
-
-console.log("ChartInteractions module loaded.");

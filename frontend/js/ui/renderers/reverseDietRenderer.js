@@ -29,7 +29,6 @@ export const ReverseDietRenderer = {
     });
 
     setTimeout(() => this._analyze(), 1400);
-    console.log('[ReverseDietRenderer] Initialized.');
   },
 
   _analyze() {

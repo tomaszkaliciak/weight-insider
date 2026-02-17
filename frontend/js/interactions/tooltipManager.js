@@ -137,5 +137,3 @@ export const TooltipManager = {
     }
   }
 };
-
-console.log("TooltipManager module loaded.");

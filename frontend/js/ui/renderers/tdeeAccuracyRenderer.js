@@ -12,121 +12,120 @@ import { CONFIG } from '../../config.js';
  * - Show accuracy metrics
  */
 export const TdeeAccuracyRenderer = {
-    _container: null,
+  _container: null,
 
-    init() {
-        this._container = document.getElementById('tdee-accuracy-content');
-        if (!this._container) {
-            console.warn('[TdeeAccuracyRenderer] Container not found.');
-            return;
-        }
+  init() {
+    this._container = document.getElementById('tdee-accuracy-content');
+    if (!this._container) {
+      console.warn('[TdeeAccuracyRenderer] Container not found.');
+      return;
+    }
 
-        StateManager.subscribe((stateChanges) => {
-            if (stateChanges.action.type.includes('DISPLAY_STATS') ||
-                stateChanges.action.type.includes('FILTERED_DATA')) {
-                this._analyze();
-            }
-        });
+    StateManager.subscribe((stateChanges) => {
+      if (stateChanges.action.type.includes('DISPLAY_STATS') ||
+        stateChanges.action.type.includes('FILTERED_DATA')) {
+        this._analyze();
+      }
+    });
 
-        setTimeout(() => this._analyze(), 1200);
-        console.log('[TdeeAccuracyRenderer] Initialized.');
-    },
+    setTimeout(() => this._analyze(), 1200);
+  },
 
-    _analyze() {
-        const state = StateManager.getState();
-        const filteredData = Selectors.selectFilteredData(state);
-        const displayStats = state.displayStats || {};
+  _analyze() {
+    const state = StateManager.getState();
+    const filteredData = Selectors.selectFilteredData(state);
+    const displayStats = state.displayStats || {};
 
-        if (!filteredData || filteredData.length < 14) {
-            this._renderNoData();
-            return;
-        }
+    if (!filteredData || filteredData.length < 7) {
+      this._renderNoData();
+      return;
+    }
 
-        const analysis = this._calculateAccuracy(filteredData, displayStats);
-        this._render(analysis);
-    },
+    const analysis = this._calculateAccuracy(filteredData, displayStats);
+    this._render(analysis);
+  },
 
-    _calculateAccuracy(data, stats) {
-        const KCALS_PER_KG = CONFIG.KCALS_PER_KG || 7700;
+  _calculateAccuracy(data, stats) {
+    const KCALS_PER_KG = CONFIG.KCALS_PER_KG || 7700;
 
-        // Get days with both calorie intake and Health Connect data
-        const daysWithBoth = data.filter(d =>
-            d.calorieIntake != null && d.googleFitExpenditure != null
-        );
+    // Get days with both calorie intake and Health Connect data
+    const daysWithBoth = data.filter(d =>
+      d.calorieIntake != null && d.googleFitTDEE != null
+    );
 
-        const daysWithCalories = data.filter(d => d.calorieIntake != null);
-        const daysWithTdee = data.filter(d => d.googleFitExpenditure != null);
+    const daysWithCalories = data.filter(d => d.calorieIntake != null);
+    const daysWithTdee = data.filter(d => d.googleFitTDEE != null);
 
-        if (daysWithBoth.length < 7) {
-            return { insufficient: true, reason: 'Need at least 7 days with both calorie and TDEE data' };
-        }
+    if (daysWithBoth.length < 7) {
+      return { insufficient: true, reason: 'Need at least 7 days with both calorie and TDEE data' };
+    }
 
-        // Average logged calories
-        const avgLoggedCalories = daysWithCalories.reduce((s, d) => s + d.calorieIntake, 0) / daysWithCalories.length;
+    // Average logged calories
+    const avgLoggedCalories = daysWithCalories.reduce((s, d) => s + d.calorieIntake, 0) / daysWithCalories.length;
 
-        // Average Health Connect TDEE
-        const avgHealthConnectTdee = daysWithTdee.reduce((s, d) => s + d.googleFitExpenditure, 0) / daysWithTdee.length;
+    // Average Health Connect TDEE
+    const avgHealthConnectTdee = daysWithTdee.reduce((s, d) => s + d.googleFitTDEE, 0) / daysWithTdee.length;
 
-        // Calculate "true" TDEE from actual weight change
-        const weights = data.filter(d => d.value != null);
-        const firstWeight = weights.length > 0 ? weights[0].value : null;
-        const lastWeight = weights.length > 0 ? weights[weights.length - 1].value : null;
-        const actualWeightChange = firstWeight && lastWeight ? lastWeight - firstWeight : null;
+    // Calculate "true" TDEE from actual weight change
+    const weights = data.filter(d => d.value != null);
+    const firstWeight = weights.length > 0 ? weights[0].value : null;
+    const lastWeight = weights.length > 0 ? weights[weights.length - 1].value : null;
+    const actualWeightChange = firstWeight && lastWeight ? lastWeight - firstWeight : null;
 
-        // True TDEE = Avg Calories - (Weight Change in kg * KCALS_PER_KG / days)
-        const daysSpan = (data[data.length - 1].date - data[0].date) / (1000 * 60 * 60 * 24);
-        const dailyCalorieBalance = actualWeightChange != null ? (actualWeightChange * KCALS_PER_KG) / daysSpan : 0;
-        const trueTdee = avgLoggedCalories - dailyCalorieBalance;
+    // True TDEE = Avg Calories - (Weight Change in kg * KCALS_PER_KG / days)
+    const daysSpan = (data[data.length - 1].date - data[0].date) / (1000 * 60 * 60 * 24);
+    const dailyCalorieBalance = actualWeightChange != null ? (actualWeightChange * KCALS_PER_KG) / daysSpan : 0;
+    const trueTdee = avgLoggedCalories - dailyCalorieBalance;
 
-        // Accuracy of Health Connect TDEE
-        const tdeeError = avgHealthConnectTdee - trueTdee;
-        const tdeeAccuracyPct = trueTdee > 0 ? 100 - Math.abs(tdeeError / trueTdee * 100) : null;
+    // Accuracy of Health Connect TDEE
+    const tdeeError = avgHealthConnectTdee - trueTdee;
+    const tdeeAccuracyPct = trueTdee > 0 ? 100 - Math.abs(tdeeError / trueTdee * 100) : null;
 
-        // Daily comparison
-        const dailyDiffs = daysWithBoth.map(d => ({
-            date: d.date,
-            logged: d.calorieIntake,
-            healthConnect: d.googleFitExpenditure,
-            diff: d.calorieIntake - d.googleFitExpenditure
-        }));
+    // Daily comparison
+    const dailyDiffs = daysWithBoth.map(d => ({
+      date: d.date,
+      logged: d.calorieIntake,
+      healthConnect: d.googleFitTDEE,
+      diff: d.calorieIntake - d.googleFitTDEE
+    }));
 
-        const avgDailyDiff = dailyDiffs.reduce((s, d) => s + d.diff, 0) / dailyDiffs.length;
+    const avgDailyDiff = dailyDiffs.reduce((s, d) => s + d.diff, 0) / dailyDiffs.length;
 
-        return {
-            insufficient: false,
-            avgLoggedCalories: Math.round(avgLoggedCalories),
-            avgHealthConnectTdee: Math.round(avgHealthConnectTdee),
-            trueTdee: Math.round(trueTdee),
-            tdeeError: Math.round(tdeeError),
-            tdeeAccuracy: tdeeAccuracyPct,
-            avgDailyDiff: Math.round(avgDailyDiff),
-            daysAnalyzed: daysWithBoth.length,
-            actualWeightChange,
-            daysSpan: Math.round(daysSpan),
-            isDeficit: avgDailyDiff < 0,
-            isSurplus: avgDailyDiff > 0
-        };
-    },
+    return {
+      insufficient: false,
+      avgLoggedCalories: Math.round(avgLoggedCalories),
+      avgHealthConnectTdee: Math.round(avgHealthConnectTdee),
+      trueTdee: Math.round(trueTdee),
+      tdeeError: Math.round(tdeeError),
+      tdeeAccuracy: tdeeAccuracyPct,
+      avgDailyDiff: Math.round(avgDailyDiff),
+      daysAnalyzed: daysWithBoth.length,
+      actualWeightChange,
+      daysSpan: Math.round(daysSpan),
+      isDeficit: avgDailyDiff < 0,
+      isSurplus: avgDailyDiff > 0
+    };
+  },
 
-    _render(analysis) {
-        if (!this._container) return;
+  _render(analysis) {
+    if (!this._container) return;
 
-        if (analysis.insufficient) {
-            this._container.innerHTML = `
+    if (analysis.insufficient) {
+      this._container.innerHTML = `
         <div class="empty-state-message">
           <p>${analysis.reason || 'Insufficient data'}</p>
         </div>
       `;
-            return;
-        }
+      return;
+    }
 
-        const diffClass = analysis.avgDailyDiff > 100 ? 'surplus' :
-            analysis.avgDailyDiff < -100 ? 'deficit' : 'balanced';
-        const tdeeAccuracyClass = analysis.tdeeAccuracy >= 95 ? 'excellent' :
-            analysis.tdeeAccuracy >= 90 ? 'good' :
-                analysis.tdeeAccuracy >= 80 ? 'moderate' : 'poor';
+    const diffClass = analysis.avgDailyDiff > 100 ? 'surplus' :
+      analysis.avgDailyDiff < -100 ? 'deficit' : 'balanced';
+    const tdeeAccuracyClass = analysis.tdeeAccuracy >= 95 ? 'excellent' :
+      analysis.tdeeAccuracy >= 90 ? 'good' :
+        analysis.tdeeAccuracy >= 80 ? 'moderate' : 'poor';
 
-        this._container.innerHTML = `
+    this._container.innerHTML = `
       <div class="tdee-dashboard">
         <div class="tdee-main-stats">
           <div class="tdee-stat-card">
@@ -155,7 +154,7 @@ export const TdeeAccuracyRenderer = {
             <div class="analysis-value">${analysis.avgDailyDiff > 0 ? '+' : ''}${analysis.avgDailyDiff} kcal</div>
             <div class="analysis-desc">
               ${analysis.isDeficit ? '📉 In a calorie deficit' :
-                analysis.isSurplus ? '📈 In a calorie surplus' : '⚖️ Near maintenance'}
+        analysis.isSurplus ? '📈 In a calorie surplus' : '⚖️ Near maintenance'}
             </div>
           </div>
           <div class="analysis-card ${tdeeAccuracyClass}">
@@ -163,8 +162,8 @@ export const TdeeAccuracyRenderer = {
             <div class="analysis-value">${analysis.tdeeAccuracy?.toFixed(0) || 'N/A'}%</div>
             <div class="analysis-desc">
               ${analysis.tdeeError > 0 ? `Overestimates by ~${analysis.tdeeError} kcal` :
-                analysis.tdeeError < 0 ? `Underestimates by ~${Math.abs(analysis.tdeeError)} kcal` :
-                    'Highly accurate'}
+        analysis.tdeeError < 0 ? `Underestimates by ~${Math.abs(analysis.tdeeError)} kcal` :
+          'Highly accurate'}
             </div>
           </div>
         </div>
@@ -186,15 +185,15 @@ export const TdeeAccuracyRenderer = {
         </div>
       </div>
     `;
-    },
+  },
 
-    _renderNoData() {
-        if (!this._container) return;
-        this._container.innerHTML = `
+  _renderNoData() {
+    if (!this._container) return;
+    this._container.innerHTML = `
       <div class="empty-state-message">
         <p>Need more data</p>
         <small>Requires at least 2 weeks with calorie and Health Connect data</small>
       </div>
     `;
-    }
+  }
 };

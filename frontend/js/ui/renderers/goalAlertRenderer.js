@@ -34,7 +34,6 @@ export const GoalAlertRenderer = {
 
         // Initial check
         setTimeout(() => this._checkAlerts(), 500);
-        console.log('[GoalAlertRenderer] Initialized.');
     },
 
     _checkAlerts() {

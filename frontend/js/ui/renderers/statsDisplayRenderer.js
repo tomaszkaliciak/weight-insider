@@ -19,10 +19,6 @@ export const StatsDisplayRenderer = {
    * @param {object} displayStats - The displayStats object received from the state update event.
    */
   _render(displayStats) {
-    console.log(
-      "[StatsDisplayRenderer] _render called with displayStats:",
-      JSON.stringify(displayStats),
-    );
     if (!displayStats || typeof displayStats !== "object") {
       console.warn(
         "StatsDisplayRenderer: _render called without valid stats data. Rendering N/A.",
@@ -238,9 +234,6 @@ export const StatsDisplayRenderer = {
     StateManager.subscribeToSpecificEvent(
       "state:displayStatsUpdated",
       this._render,
-    );
-    console.log(
-      "[StatsDisplayRenderer Init] Subscribed to state:displayStatsUpdated.",
     );
     // Render initial empty state
     this._render({});

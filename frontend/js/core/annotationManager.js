@@ -50,9 +50,6 @@ export const AnnotationManager = {
       type: "LOAD_ANNOTATIONS",
       payload: loadedAnnotations,
     });
-    console.log(
-      `AnnotationManager: Dispatched LOAD_ANNOTATIONS with ${loadedAnnotations.length} annotations.`,
-    );
     // AnnotationListRenderer handles the UI update via subscription
   },
 
@@ -73,9 +70,6 @@ export const AnnotationManager = {
       localStorage.setItem(
         CONFIG.localStorageKeys.annotations,
         JSON.stringify(annotationsToSave),
-      );
-      console.log(
-        `AnnotationManager: Saved ${annotationsToSave.length} annotations.`,
       );
     } catch (e) {
       console.error("AnnotationManager: Error saving annotations:", e);
@@ -179,6 +173,5 @@ export const AnnotationManager = {
    */
   init() {
     this.load();
-    console.log("[AnnotationManager Init] Initialized and loaded annotations.");
   },
 };

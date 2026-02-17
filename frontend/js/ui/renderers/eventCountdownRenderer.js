@@ -38,7 +38,6 @@ export const EventCountdownRenderer = {
 
         // Initial render
         this._render();
-        console.log('[EventCountdownRenderer] Initialized.');
     },
 
     _loadEvents() {

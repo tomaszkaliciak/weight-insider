@@ -35,7 +35,6 @@ export const EnergySankeyRenderer = {
             }
         });
 
-        console.log('[EnergySankeyRenderer] Initialized.');
     },
 
     _render() {

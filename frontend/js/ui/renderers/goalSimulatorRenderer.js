@@ -37,7 +37,6 @@ export const GoalSimulatorRenderer = {
             this._render();
         }
 
-        console.log('[GoalSimulatorRenderer] Initialized.');
     },
 
     /**

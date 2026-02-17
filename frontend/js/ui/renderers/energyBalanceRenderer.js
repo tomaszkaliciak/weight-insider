@@ -36,7 +36,6 @@ export const EnergyBalanceRenderer = {
             }
         });
 
-        console.log('[EnergyBalanceRenderer] Initialized.');
     },
 
     _render() {

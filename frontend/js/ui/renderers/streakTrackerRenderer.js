@@ -29,7 +29,6 @@ export const StreakTrackerRenderer = {
     });
 
     setTimeout(() => this._analyze(), 1300);
-    console.log('[StreakTrackerRenderer] Initialized.');
   },
 
   _analyze() {

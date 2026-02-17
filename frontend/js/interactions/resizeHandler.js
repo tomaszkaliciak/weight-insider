@@ -21,7 +21,6 @@ function restoreViewAfterResize(analysisRange) {
     // Standardize restoring view by setting domain first, then syncing interactions
     if (analysisRange?.start && analysisRange?.end) {
         if (scales.x) {
-            console.log("[ResizeHandler] Restoring focus domain from pre-resize range:", analysisRange);
             scales.x.domain([analysisRange.start, analysisRange.end]);
             // Use the central sync function to update Zoom transform and Context Brush positions
             // This recalculates the correct transform for the new chart width
@@ -38,14 +37,12 @@ let lastHeight = window.innerHeight;
 
 // Debounced resize handler
 const handleResizeDebounced = Utils.debounce(() => {
-    console.log("[ResizeHandler] handleResizeDebounced triggered.");
 
     // Check if dimensions actually changed significantly to avoid infinite loops
     // or triggering on minor layout shifts (e.g., scrollbars toggling, or chart updates).
     const currentWidth = window.innerWidth;
     const currentHeight = window.innerHeight;
 
-    console.log(`[ResizeHandler] Dimensions changed. Width: ${lastWidth} -> ${currentWidth}, Height: ${lastHeight} -> ${currentHeight}`);
     lastWidth = currentWidth;
     lastHeight = currentHeight;
 
@@ -120,7 +117,6 @@ export const ResizeHandler = {
     init() {
         window.addEventListener("resize", this.handleResize);
         document.addEventListener("fullscreenchange", () => {
-            console.log("[ResizeHandler] Fullscreen change detected.");
             // Reset last dimensions to force a resize update even if window size is the same
             lastWidth = 0;
             lastHeight = 0;
@@ -128,5 +124,3 @@ export const ResizeHandler = {
         });
     }
 };
-
-console.log("ResizeHandler module loaded.");

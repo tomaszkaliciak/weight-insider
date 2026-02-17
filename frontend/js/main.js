@@ -61,7 +61,6 @@ import { ChartControls } from "./ui/chartControls.js";
  * Initializes the application step-by-step.
  */
 async function initialize() {
-  console.log("[Main Init] Application initialization started.");
   try {
     // 1. Cache UI Elements
     cacheSelectors();
@@ -84,7 +83,6 @@ async function initialize() {
       rollingVolatilityWindow: CONFIG.ROLLING_VOLATILITY_WINDOW,
     };
     StateManager.dispatch({ type: "LOAD_SETTINGS", payload: initialSettings });
-    console.log(`[Main Init] Dispatched initial settings:`, initialSettings);
 
     // 3. Initialize Theme (Reads localStorage, dispatches initial theme)
     ThemeManager.init(); // Sets up subscription and applies initial theme
@@ -170,9 +168,6 @@ async function initialize() {
         weeklyIncrease2: ui.trendWeeklyIncrease2Input?.property("value"),
       },
     });
-    console.log(
-      "[Main Init] Dispatched initial trend config from UI defaults.",
-    );
 
     // 10. Initialize Resize Handler (Binds window resize and fullscreen events)
     ResizeHandler.init();
@@ -212,12 +207,8 @@ async function initialize() {
 
     // 14. Final Signal: Initialization Complete -> Triggers initial calculations/renders
     StateManager.dispatch({ type: "INITIALIZATION_COMPLETE" });
-    console.log("[Main Init] Dispatched INITIALIZATION_COMPLETE.");
     // Initial stats calc (StatsManager) and render (MasterUpdater) are triggered by this event via subscriptions.
 
-    console.log(
-      "[Main Init] Application initialization finished successfully.",
-    );
   } catch (error) {
     console.error(`[Main Init] Initialization failed"`, error);
     StateManager.dispatch({ type: "INITIALIZATION_FAILED" });
@@ -230,6 +221,5 @@ async function initialize() {
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", initialize);
 } else {
-  console.log("[Main Init] DOM already ready, initializing.");
   setTimeout(initialize, 0);
 }

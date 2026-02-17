@@ -30,7 +30,6 @@ export const MonthlyReportRenderer = {
         });
 
         setTimeout(() => this._generate(), 1000);
-        console.log('[MonthlyReportRenderer] Initialized.');
     },
 
     _generate() {

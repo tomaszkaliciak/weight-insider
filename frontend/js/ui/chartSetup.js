@@ -127,7 +127,6 @@ function calculateDimensions() {
  * Creates the main SVG elements and groups for all charts.
  */
 function createSVGElements() {
-  console.log("chartSetup: Creating SVG elements...");
   const fm = CONFIG.margins.focus;
   const cm = CONFIG.margins.context;
   const bm = CONFIG.margins.balance;
@@ -527,7 +526,6 @@ function createSVGElements() {
       .text("Weekly Rate (kg/wk)");
   }
 
-  console.log("chartSetup: SVG element creation finished.");
 }
 
 /**
@@ -766,7 +764,6 @@ function createZoom() {
   // Apply zoom behavior to the capture rectangle
   if (ui.zoomCaptureRect && !ui.zoomCaptureRect.empty()) {
     ui.zoomCaptureRect.call(zoom).on("dblclick.zoom", null); // Disable double-click zoom reset
-    console.log("chartSetup: Zoom behavior initialized.");
   } else {
     console.error(
       "chartSetup: Zoom capture rectangle not found, cannot attach zoom behavior.",
@@ -780,7 +777,6 @@ function createZoom() {
  * @returns {boolean} True if setup completed successfully, false otherwise.
  */
 export function initializeChartSetup() {
-  console.log("chartSetup: Running all setup steps...");
   if (!calculateDimensions()) {
     console.error("chartSetup: Dimension calculation failed.");
     return false;
@@ -798,6 +794,5 @@ export function initializeChartSetup() {
     ChartInteractions.setupGoalDrag();
   }
 
-  console.log("chartSetup: Setup complete.");
   return true;
 }

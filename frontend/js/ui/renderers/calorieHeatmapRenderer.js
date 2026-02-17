@@ -35,7 +35,6 @@ export const CalorieHeatmapRenderer = {
         });
 
         setTimeout(() => this._render(), 1250);
-        console.log('[CalorieHeatmapRenderer] Initialized.');
     },
 
     _render() {

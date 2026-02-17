@@ -11,10 +11,6 @@ export const AnnotationListRenderer = {
    * @param {Array} annotations - The array of annotation objects from the state event payload.
    */
   _render(annotations) {
-    console.log(
-      "[AnnotationListRenderer] _render called with annotations:",
-      annotations,
-    );
     const list = ui.annotationList;
     if (!list || list.empty()) {
       console.warn(
@@ -88,9 +84,6 @@ export const AnnotationListRenderer = {
         // The payload here IS { annotations: [...] }
         this._render(payload.annotations);
       },
-    );
-    console.log(
-      "[AnnotationListRenderer Init] Subscribed to state:annotationsChanged.",
     );
     // Perform initial render based on current state
     const initialState = StateManager.getState();

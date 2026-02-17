@@ -259,7 +259,6 @@ export const DomainManager = {
     }
 
     const contextDomain = [contextDomainStart, contextDomainEnd];
-    console.log("DomainManager: Setting context X domain:", contextDomain);
     scales.xContext.domain(contextDomain);
   },
 
@@ -270,7 +269,6 @@ export const DomainManager = {
    * @param {object} stateSnapshot - A snapshot of the application state containing processedData.
    */
   initializeDomains(stateSnapshot) {
-    console.log("DomainManager: Initializing domains...");
     const processedData = Selectors.selectProcessedData(stateSnapshot);
     if (!processedData || processedData.length === 0) {
       console.warn(
@@ -297,7 +295,6 @@ export const DomainManager = {
     this._setSecondaryYDomains(finalStateSnapshot);
     this._setScatterPlotDomains(finalStateSnapshot);
 
-    console.log("DomainManager: Domain initialization complete.");
   },
 
   /**
@@ -306,9 +303,6 @@ export const DomainManager = {
    * Assumes scales.x domain is already updated by the interaction handler.
    */
   updateDomainsOnInteraction() {
-    console.log(
-      "[DomainManager] Updating domains on interaction/state change.",
-    );
     const stateSnapshot = StateManager.getState(); // Get current state
 
     if (!Selectors.selectIsInitialized(stateSnapshot)) {
@@ -342,12 +336,10 @@ export const DomainManager = {
 
     // Note: Scatter plot domain typically doesn't change on zoom/brush of main chart.
     // It updates when the underlying weekly/correlation data changes (handled via subscription).
-    console.log("[DomainManager] Finished updating domains.");
   },
 
   /** Sets all domains to empty/default values */
   setEmptyDomains() {
-    console.log("[DomainManager] Setting empty/default domains.");
     const defaultDate = new Date();
     const defaultX = [d3.timeMonth.offset(defaultDate, -1), defaultDate];
     const defaultY = [60, 80];

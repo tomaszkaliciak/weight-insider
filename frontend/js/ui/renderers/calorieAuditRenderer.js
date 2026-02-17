@@ -30,7 +30,6 @@ export const CalorieAuditRenderer = {
     });
 
     setTimeout(() => this._audit(), 950);
-    console.log('[CalorieAuditRenderer] Initialized.');
   },
 
   _audit() {

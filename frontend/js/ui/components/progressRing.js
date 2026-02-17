@@ -16,7 +16,6 @@ export const ProgressRing = {
     init(containerId = 'goal-progress-ring') {
         this._container = document.getElementById(containerId);
         if (!this._container) {
-            console.log('[ProgressRing] Container not found, skipping init.');
             return;
         }
 
@@ -27,7 +26,6 @@ export const ProgressRing = {
 
         // Initial render
         this._render({});
-        console.log('[ProgressRing] Initialized.');
     },
 
     _calculateProgress(stats) {

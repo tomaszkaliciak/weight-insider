@@ -326,9 +326,6 @@ export const InsightsGenerator = {
       "state:displayStatsUpdated",
       (payload) => this._renderSummary(payload),
     ); // Payload *is* displayStats
-    console.log(
-      "[InsightsGenerator Init] Subscribed to state:displayStatsUpdated.",
-    );
     // Render initial empty state
     this._renderSummary({});
   },

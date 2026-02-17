@@ -21,7 +21,6 @@ export const ExecutiveHubRenderer = {
             this._render(stats);
         });
 
-        console.log('[ExecutiveHubRenderer] Initialized.');
     },
 
     /**
