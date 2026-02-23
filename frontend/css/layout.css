@@ -1,0 +1,811 @@
+/* --- General Styles & Resets --- */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    scroll-behavior: smooth;
+    font-size: 16px;
+}
+
+body {
+    font-family: var(--font-sans);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    padding: clamp(25px, 4vh, 40px) clamp(25px, 5vw, 60px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    line-height: 1.6;
+    font-size: 16px;
+    letter-spacing: -0.01em;
+    /* Modern font feel */
+    transition:
+        background-color var(--transition-speed) var(--transition-ease),
+        color var(--transition-speed) var(--transition-ease);
+}
+
+/* --- Scrollbar --- */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 5px;
+    border: 2px solid var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--hue-neutral), 15%, 65%);
+}
+
+body.dark-theme ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--hue-neutral), 15%, 50%);
+}
+
+/* --- Dashboard Layout (Simplified - No Sidebar) --- */
+.dashboard-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(15px, 2vw, 25px);
+    width: 100%;
+    max-width: 1400px;
+    flex-grow: 1;
+}
+
+.left-sidebar {
+    display: none;
+    /* Sidebar removed */
+}
+
+.chart-section {
+    grid-area: main;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.right-sidebar {
+    grid-area: sidebarR;
+    max-height: calc(200vh - 120px);
+    overflow-y: auto;
+    padding-right: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(32px, 4vw, 48px);
+    /* Increased vertical gap between cards */
+    min-height: 0;
+}
+
+/* ========================================= */
+/* --- Grid Utilities --- */
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.stat-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.stat-group {
+    background: var(--bg-tertiary);
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.card h2,
+.card h3,
+.card h4 {
+    margin-block-start: 0;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.6em;
+    flex-shrink: 0;
+    transition: color var(--transition-speed) var(--transition-ease);
+}
+
+.card h2 {
+    margin-block-end: 0;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-color-light);
+    padding-bottom: 0.8em;
+    font-size: 1.2rem;
+    transition:
+        color var(--transition-speed) var(--transition-ease),
+        border-color var(--transition-speed) var(--transition-ease);
+}
+
+.card:not(.collapsible):not(.secondary-analysis-section) h2 {
+    margin-block-end: 1.3em;
+}
+
+.card h2 small {
+    font-size: 0.7em;
+    color: var(--text-muted);
+    font-weight: 400;
+    margin-left: 0.5em;
+    transition: color var(--transition-speed) var(--transition-ease);
+}
+
+.card h3 {
+    font-size: 1.05rem;
+    color: var(--text-primary);
+    border-bottom: none;
+    margin-block-end: 1.1em;
+    margin-block-start: 0.5em;
+}
+
+.card h4 {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    border-bottom: none;
+    margin-block-end: 1.2em;
+    margin-block-start: 1.2em;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    opacity: 0.9;
+}
+
+/* Icon Styling */
+.icon svg,
+.info-icon svg {
+    width: 1.1em;
+    height: 1.1em;
+    stroke-width: 2;
+    flex-shrink: 0;
+    vertical-align: middle;
+    transition: color var(--transition-speed) var(--transition-ease);
+}
+
+.card h2 .icon svg {
+    color: var(--primary-color);
+    opacity: 0.9;
+}
+
+.info-icon {
+    font-size: 0.9em;
+    /* Slightly larger base */
+    color: var(--text-muted);
+    cursor: help;
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    width: 1.8em;
+    /* Adjusted */
+    height: 1.8em;
+    /* Adjusted */
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    margin-left: 0.4em;
+    transition: all var(--transition-speed) ease-out;
+}
+
+.info-icon:hover {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
+    /* Slightly stronger border on hover */
+    transform: scale(1.1);
+    box-shadow: 0 1px 3px var(--shadow-hover);
+    /* Add subtle shadow */
+}
+
+.info-icon svg {
+    width: 1em;
+    /* Adjusted */
+    height: 1em;
+    /* Adjusted */
+    stroke-width: 2.5;
+}
+
+/* --- Responsive Adjustments --- */
+@media (max-width: 1100px) {
+    .dashboard-container {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .left-sidebar,
+    .right-sidebar,
+    .chart-section,
+    .secondary-analysis-section {
+        grid-area: auto;
+        max-height: none;
+        overflow-y: visible;
+        padding-right: 0;
+        width: 100%;
+    }
+
+    .left-sidebar {
+        order: 1;
+    }
+
+    .chart-section {
+        order: 2;
+        min-height: 500px;
+    }
+
+    .secondary-analysis-section {
+        order: 3;
+        margin-top: clamp(25px, 3.5vw, 40px);
+    }
+
+    .right-sidebar {
+        order: 4;
+    }
+
+    #correlation-scatter-container {
+        height: 180px;
+    }
+}
+
+@media (max-width: 768px) {
+    body {
+        padding: 20px;
+        font-size: 15px;
+    }
+
+    header h1 {
+        font-size: 1.2rem;
+    }
+
+    .card {
+        padding: 18px;
+        border-radius: 12px;
+    }
+
+    .left-sidebar,
+    .right-sidebar {
+        gap: 18px;
+    }
+
+    .secondary-analysis-section {
+        margin-top: 25px;
+    }
+
+    .stat-item {
+        font-size: 0.9rem;
+    }
+
+    .weekly-summary-section table {
+        font-size: 0.82rem;
+    }
+
+    .weekly-summary-section th,
+    .weekly-summary-section td {
+        padding: 6px 10px;
+    }
+
+    .form-row {
+        grid-template-columns: minmax(80px, auto) 1fr;
+    }
+
+    form label {
+        font-size: 0.85rem;
+    }
+
+    #annotation-form .form-row {
+        grid-template-columns: 1fr;
+        gap: 4px 8px;
+    }
+
+    #annotation-form label {
+        text-align: left;
+        margin-bottom: 3px;
+    }
+
+    #what-if-controls .form-row {
+        grid-template-columns: minmax(70px, auto) 1fr;
+    }
+
+    .trendline-input-group {
+        /* Maintain fixed width for consistency on smaller screens */
+        grid-template-columns: 95px 1fr;
+    }
+
+    form label {
+        text-align: right;
+    }
+
+    #annotation-form label {
+        text-align: left;
+    }
+
+    .button-group {
+        flex-direction: row;
+    }
+
+    #chart-container {
+        min-height: 400px;
+    }
+
+    #balance-chart-container,
+    #rate-of-change-container,
+    #tdee-reconciliation-container {
+        height: 70px;
+        margin-top: 5px;
+        padding-top: 5px;
+    }
+
+    #correlation-scatter-container {
+        height: 160px;
+    }
+
+    /* .axis-label.scatter-axis-label-y override removed - invalid CSS property dy */
+
+    #context-chart-container {
+        height: 55px;
+    }
+
+    .axis text {
+        font-size: 0.7rem;
+    }
+
+    .balance-axis text,
+    .rate-axis text,
+    .tdee-diff-axis text {
+        font-size: 0.6rem;
+    }
+
+    .chart-section {
+        min-height: 450px;
+    }
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: 15px;
+        font-size: 14px;
+    }
+
+    header h1 {
+        font-size: 1.1rem;
+        gap: 0.3em;
+    }
+
+    header h1 .edition {
+        display: none;
+    }
+
+    #controls-section .control-note {
+        margin-left: 0;
+        grid-column: 1 / -1;
+        margin-top: 8px;
+        max-width: 100%;
+    }
+
+    .form-row,
+    .trendline-input-group {
+        grid-template-columns: 1fr;
+        gap: 5px 10px;
+    }
+
+    form label,
+    .trendline-input-group label {
+        text-align: left;
+        margin-bottom: 4px;
+        font-size: 0.9em;
+        white-space: normal;
+    }
+
+    #annotation-form button[type="submit"],
+    #what-if-controls button {
+        grid-column: auto;
+    }
+
+    .stat-item {
+        grid-template-columns: 1fr;
+        gap: 3px;
+        font-size: 0.9rem;
+        padding-bottom: 0.6em;
+    }
+
+    .stat-item span:first-child {
+        font-size: 0.9em;
+        margin-bottom: 2px;
+        text-align: left;
+        padding-right: 0;
+    }
+
+    .stat-item div {
+        justify-self: start;
+        gap: 0.4em;
+    }
+
+    .stat-unit {
+        font-size: 0.75em;
+    }
+
+    .stat-item span.stat-date,
+    .stat-item span.stat-details {
+        margin-left: 0.5em;
+    }
+
+    .stat-item--value-left {
+        /* 1. Define column sizes: Value(auto) | Label(1fr) */
+        grid-template-columns: auto 1fr;
+    }
+
+    .stat-item--value-left>div {
+        /* 2. Target the Value container (div) */
+        grid-column: 1;
+        /* Place it in the first column */
+        justify-self: start;
+        /* Align the div itself to the START of its column */
+        text-align: left;
+        /* Align text inside the div to the left (overrides default) */
+    }
+
+    .stat-item--value-left>span:first-child {
+        /* 3. Target the Label (span:first-child) */
+        grid-column: 2;
+        /* Place it in the second column */
+        justify-self: end;
+        /* Align the span itself to the END of its column */
+        text-align: right;
+        /* Align text inside the span to the right (overrides default) */
+        padding-right: 0;
+        /* Remove any conflicting default padding */
+        /* Optional: Add padding if needed for spacing */
+        /* padding-left: 5px; */
+    }
+
+    #analysis-range-controls .button-group {
+        flex-direction: column;
+    }
+
+    #legend-container {
+        gap: 6px 10px;
+        font-size: 0.75rem;
+    }
+
+    .tooltip {
+        max-width: 200px;
+        font-size: 11px;
+    }
+
+    .annotation-list {
+        max-height: 150px;
+    }
+
+    .weekly-summary-section {
+        margin-top: 10px;
+    }
+
+    #balance-chart-container,
+    #rate-of-change-container,
+    #tdee-reconciliation-container {
+        height: 65px;
+    }
+
+    #correlation-scatter-container {
+        height: 150px;
+    }
+
+    #context-chart-container {
+        height: 50px;
+    }
+
+    #pinned-tooltip-container {
+        bottom: 5px;
+        right: 5px;
+        font-size: 10px;
+        padding: 5px 8px;
+    }
+
+    .axis-label.y-axis-label-small {
+        font-size: 0.6rem;
+    }
+
+    .balance-axis text,
+    .rate-axis text,
+    .tdee-diff-axis text {
+        font-size: 0.55rem;
+    }
+
+    .chart-section {
+        min-height: 400px;
+    }
+}
+
+.line.ema-line {
+    stroke: var(--ema-color);
+    stroke-width: 2px;
+    stroke-dasharray: 5, 3;
+    fill: none;
+    transition:
+        stroke var(--transition-speed) var(--transition-ease),
+        opacity var(--transition-speed) var(--transition-ease);
+}
+
+/* Ensure fill:none for line paths if not already covered */
+.line,
+.trend-line {
+    fill: none;
+}
+
+/* ========================================= */
+/* --- PROJECT BENTO: GRID ENGINE --- */
+
+.dashboard-container.bento-mode {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    background-color: var(--bg-primary);
+    padding: 20px;
+}
+
+
+
+
+.bento-canvas {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-auto-rows: minmax(180px, auto);
+    gap: 20px;
+    padding: 30px;
+    align-content: start;
+    max-width: 1600px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+@media (max-width: 1200px) {
+    .bento-canvas {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* 3-col spans can't fit in 2-col grid */
+    .span-3x1 {
+        grid-column: span 2;
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard-container.bento-mode {
+        grid-template-columns: 1fr;
+        padding: 10px;
+    }
+
+    .bento-canvas {
+        grid-template-columns: 1fr !important;
+        padding: 15px;
+        gap: 15px;
+    }
+
+    /* Collapse ALL multi-span widgets to single column on mobile */
+    /* !important needed because base .span-* rules appear later in this file */
+    .span-2x1,
+    .span-2x2,
+    .span-3x1,
+    .span-1x2 {
+        grid-column: span 1 !important;
+        grid-row: span 1 !important;
+    }
+
+    .bento-widget {
+        padding: 16px;
+    }
+
+    /* Discovery deck also single column */
+    .discovery-deck {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* --- BENTO MODE FIXES (Sidebar Removed) --- */
+.dashboard-container.bento-mode {
+    grid-template-areas: none !important;
+    grid-template-columns: 1fr !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+}
+
+.bento-canvas {
+    width: 100% !important;
+    max-width: 1400px !important;
+}
+
+/* --- BENTO LAYOUT REFINEMENTS --- */
+
+/* 1. Reduce minimum row height to fit headers snugly */
+.bento-canvas {
+    grid-auto-rows: minmax(50px, auto) !important;
+}
+
+/* 2. Fix Discovery Deck gaps */
+.discovery-header {
+    height: auto !important;
+    min-height: unset !important;
+    margin-bottom: 0px !important;
+    padding-bottom: 10px !important;
+    grid-row: span 1 !important;
+    /* Ensure it only takes 1 row */
+}
+
+/* 3. Allow widgets to span appropriately */
+/* Increase row granularity to allow finer control */
+.bento-canvas {
+    grid-auto-rows: minmax(min-content, auto) !important;
+}
+
+/* 6. Refine margins for headers */
+.bento-canvas h3 {
+    margin-top: 10px;
+    margin-bottom: 5px;
+}
+
+/* 7. Compact Trendlines Form */
+.trendlines-form {
+    gap: 8px !important;
+}
+
+.trendlines-form .form-row {
+    gap: 6px !important;
+    margin-bottom: 0 !important;
+}
+
+.trendlines-form label {
+    font-size: 0.7rem !important;
+    gap: 2px !important;
+}
+
+.trendlines-form input {
+    padding: 4px 6px !important;
+}
+
+#view-data-btn {
+    padding: 6px 10px !important;
+    font-size: 0.75rem !important;
+    margin-top: 2px !important;
+    width: 100%;
+}
+
+/* 8. Weekly Review Compact */
+#weekly-review-content {
+    /* Ensure content doesn't force unnecessary scroll/gap */
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+/* 9. Ensure charts fill container */
+#tdee-reconciliation-container,
+#rate-of-change-container,
+#balance-chart-container,
+#correlation-matrix-container,
+#correlation-scatter-container {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 200px;
+}
+
+/* 10. Fix Scatter Plot Sizing if 1x1 */
+#scatter-card {
+    min-height: 250px;
+    /* Force minimum height for visibility */
+}
+
+/* 11. Fullscreen Chart Mode */
+.bento-widget.fullscreen {
+    position: fixed !important;
+    top: 20px !important;
+    left: 20px !important;
+    right: 20px !important;
+    bottom: 20px !important;
+    z-index: 9999 !important;
+    width: auto !important;
+    height: auto !important;
+    grid-column: unset !important;
+    grid-row: unset !important;
+    box-shadow: 0 0 100px rgba(0, 0, 0, 0.5) !important;
+    border-color: var(--primary-color) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    background: var(--bg-secondary) !important;
+}
+
+.bento-widget.fullscreen .widget-header {
+    flex-shrink: 0;
+}
+
+.bento-widget.fullscreen #chart-container {
+    flex: 1 !important;
+    height: 100% !important;
+    max-height: none !important;
+    min-height: 0 !important;
+}
+
+.bento-widget.fullscreen canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.chart-controls {
+    margin-left: auto;
+}
+
+.icon-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2rem;
+    color: var(--text-muted);
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.icon-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+/* 12. Dense Top Row (Hero & Exec Summary) */
+#hero-weight-widget,
+#executive-hub-card {
+    padding: 16px 24px !important;
+    min-height: 140px !important;
+    /* Compact base */
+    height: auto !important;
+    /* Allow expansion */
+    max-height: 200px !important;
+    /* Safety cap */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+#hero-weight-widget .text-subhero {
+    font-size: 0.8rem !important;
+    margin-bottom: 4px !important;
+}
+
+#hero-weight-widget .text-hero {
+    font-size: 2.6rem !important;
+    /* Restored some size */
+    line-height: 1.1 !important;
+}
+
+#executive-hub-content {
+    font-size: 0.9em !important;
+    overflow: hidden !important;
+    /* No scrollbars at all */
+}
+
+#executive-hub-card .widget-header {
+    margin-bottom: 8px !important;
+    font-size: 1rem !important;
+}
+
+/* Reduce standard bento row height slightly to compact overall view */
+.bento-canvas {
+    gap: 16px !important;
+}
+

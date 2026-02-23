@@ -22,10 +22,12 @@ export const AnnotationListRenderer = {
     list.html(""); // Clear previous items
 
     if (!Array.isArray(annotations) || annotations.length === 0) {
-      list
-        .append("li")
-        .attr("class", "empty-msg")
-        .text("No annotations added yet.");
+      list.html(`
+        <div class="empty-state-message" style="margin-top: 20px;">
+          <p>No annotations added yet.</p>
+          <small>Select data points on charts to add notes.</small>
+        </div>
+      `);
       return;
     }
 

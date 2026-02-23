@@ -57,6 +57,17 @@ export const ExecutiveHubRenderer = {
         const trend = stats.regressionSlopeWeekly ?? stats.currentWeeklyRate;
         const status = this._getStrategicStatus(stats);
 
+        // Check if we have the minimum required data
+        if (stats.currentSma == null || trend == null) {
+            this._container.innerHTML = `
+                <div class="empty-state-message">
+                    <p>Insufficient data to generate executive summary.</p>
+                    <small>Need at least 7 days of recent weight entries.</small>
+                </div>
+            `;
+            return;
+        }
+
         const tdee = stats.avgTDEE_Adaptive || stats.avgTDEE_WgtChange || stats.avgExpenditureGFit;
         const goalWeight = stats.targetWeight;
 

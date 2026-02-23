@@ -1,0 +1,218 @@
+/* style.css - Consolidated Improvements, Layout Fix & Discoverability Enhancements */
+
+/* Theme Transition Animation */
+body.theme-transitioning,
+body.theme-transitioning * {
+    transition:
+        background-color 0.35s ease-out,
+        color 0.35s ease-out,
+        border-color 0.35s ease-out,
+        box-shadow 0.35s ease-out !important;
+}
+
+/* Theme toggle button animation */
+#theme-toggle {
+    position: relative;
+    overflow: hidden;
+}
+
+#theme-toggle svg {
+    transition: transform 0.3s ease-out, opacity 0.2s ease-out;
+}
+
+#theme-toggle:hover svg {
+    transform: rotate(-15deg) scale(1.1);
+}
+
+#theme-toggle:active svg {
+    transform: rotate(15deg) scale(0.95);
+}
+
+body.dark-theme #theme-toggle svg {
+    filter: drop-shadow(0 0 6px hsla(45, 80%, 60%, 0.5));
+}
+
+:root {
+    /* Slightly desaturated hues */
+    --hue-primary: 212;
+    /* Cooler Blue */
+    --hue-secondary: 165;
+    /* Cooler Teal/Green */
+    --hue-tertiary: 355;
+    /* Slightly softer Red */
+    --hue-accent: 45;
+    /* Slightly warmer Gold/Orange */
+    --hue-neutral: 220;
+    /* Keep cool neutral */
+    --hue-goal: 270;
+    /* Keep Purple */
+    --hue-optimal: 115;
+    /* Keep Green-ish */
+    --hue-accent-strong: 205;
+    /* A distinct bright blue for accents */
+    --hue-rate-ma: 25;
+    /* Orange for Rate MA */
+    --hue-ema: 30;
+
+    /* --- Color Variables --- */
+    /* Base UI Feedback (Slightly softer) */
+    --info-color: hsl(var(--hue-primary), 55%, 60%);
+    --warning-color: hsl(var(--hue-accent), 70%, 60%);
+    --success-color: hsl(var(--hue-secondary), 50%, 55%);
+    --danger-color: hsl(var(--hue-tertiary), 70%, 60%);
+    --stable-color: hsl(var(--hue-neutral), 15%, 55%);
+
+    /* --- Light Theme --- */
+    --bg-primary: hsl(var(--hue-neutral), 25%, 99%);
+    /* Lighter */
+    --bg-secondary: hsl(var(--hue-neutral), 35%, 100%);
+    --bg-tertiary: hsl(var(--hue-neutral), 25%, 96%);
+    --text-primary: hsl(var(--hue-neutral), 20%, 15%);
+    /* Darker Text */
+    --text-secondary: hsl(var(--hue-neutral), 15%, 38%);
+    --text-muted: hsl(var(--hue-neutral), 15%, 60%);
+    --border-color: hsl(var(--hue-neutral), 25%, 88%);
+    /* Lighter border */
+    --border-color-light: hsl(var(--hue-neutral), 25%, 92%);
+    --shadow-color: hsla(var(--hue-neutral), 25%, 50%, 0.05);
+    --shadow-hover: hsla(var(--hue-neutral), 25%, 50%, 0.07);
+    --primary-color: hsl(var(--hue-primary), 60%, 58%);
+    /* Slightly softer */
+    --primary-color-darker: hsl(var(--hue-primary), 60%, 48%);
+    --secondary-color: hsl(var(--hue-secondary), 45%, 55%);
+    /* Softer */
+    --tertiary-color: hsl(var(--hue-tertiary), 65%, 60%);
+    /* Softer */
+    --accent-color: hsl(var(--hue-accent), 70%, 60%);
+    --accent-strong: hsl(var(--hue-accent-strong),
+            75%,
+            55%);
+    /* Strong accent */
+    --goal-color: hsl(var(--hue-goal), 45%, 65%);
+    /* Softer */
+    --tooltip-bg: hsla(var(--hue-neutral), 25%, 18%, 0.95);
+    /* Darker tooltip */
+    --tooltip-text: hsl(var(--hue-neutral), 20%, 97%);
+    --scrollbar-thumb: hsl(var(--hue-neutral), 15%, 78%);
+    --scrollbar-track: hsl(var(--hue-neutral), 15%, 95%);
+    --outlier-color: var(--tertiary-color);
+    --deficit-color: hsl(var(--hue-secondary), 55%, 50%);
+    --surplus-color: hsl(var(--hue-tertiary), 70%, 60%);
+    --optimal-gain-zone-color: hsla(var(--hue-optimal), 45%, 50%, 0.08);
+
+    /* Chart Specific */
+    --sma-color: var(--primary-color);
+    --band-color: hsla(var(--hue-primary), 60%, 60%, 0.2);
+    /* Adjust alpha */
+    --ema-color: hsl(var(--hue-ema), 80%, 55%);
+
+    --raw-dot-color: hsl(212, 60%, 58%);
+    --dot-color: var(--primary-color);
+    --trend1-color: var(--secondary-color);
+    --trend2-color: hsl(var(--hue-tertiary), 55%, 70%);
+    --regression-color: var(--accent-color);
+    --goal-line-color: var(--goal-color);
+    --rate-line-color: hsl(var(--hue-goal), 45%, 60%);
+    --rate-ma-line-color: hsl(var(--hue-rate-ma), 70%, 60%);
+    --tdee-diff-line-color: hsl(var(--hue-secondary), 50%, 65%);
+    --annotation-marker-color: hsl(var(--hue-accent), 70%, 65%);
+    --annotation-range-color: hsla(var(--hue-accent), 70%, 65%, 0.08);
+    --plateau-color: hsla(var(--hue-neutral), 15%, 55%, 0.1);
+    --trend-change-color: var(--danger-color);
+    --highlight-stroke-color: hsl(var(--hue-accent), 85%, 68%);
+    --table-header-bg: hsl(var(--hue-neutral), 25%, 94%);
+    --table-row-hover: hsl(var(--hue-neutral), 25%, 96%);
+    --crosshair-color: hsl(var(--hue-neutral), 20%, 55%);
+    --scatter-dot-color: hsl(var(--hue-neutral), 30%, 45%);
+
+    /* Transitions & Fonts */
+    --transition-speed-fast: 0.15s;
+    /* Faster for quick feedback */
+    --transition-speed: 0.2s;
+    --transition-ease: cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-ease-out: ease-out;
+    --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        Helvetica, Arial, sans-serif;
+    --font-mono: "Fira Code", SFMono-Regular, Menlo, Monaco, Consolas,
+        "Liberation Mono", "Courier New", monospace;
+}
+
+body.dark-theme {
+    /* --- Enhanced Dark Mode Palette (Deep Slate) --- */
+
+    /* Vibrancy Adjustment */
+    --hue-primary: 212;
+    --hue-neutral: 220;
+
+    /* Semantic Colors (Softer Neon) */
+    --info-color: hsl(212, 90%, 75%);
+    --warning-color: hsl(45, 90%, 70%);
+    --success-color: hsl(150, 60%, 55%);
+    --danger-color: hsl(350, 75%, 65%);
+    --stable-color: hsl(220, 20%, 65%);
+
+    /* Backgrounds */
+    --bg-primary: hsl(222, 47%, 11%);
+    /* #0f172a (Slate 900) */
+    --bg-secondary: hsl(217, 33%, 17%);
+    /* #1e293b (Slate 800) */
+    --bg-tertiary: hsl(215, 28%, 23%);
+    /* #334155 (Slate 700) - Inputs/Cards Alt */
+
+    /* Typography */
+    --text-primary: hsl(210, 40%, 98%);
+    /* #f8fafc (Slate 50) */
+    --text-secondary: hsl(215, 25%, 75%);
+    /* #cbd5e1 (Slate 300) */
+    --text-muted: hsl(215, 20%, 55%);
+    /* #64748b (Slate 500) */
+
+    /* Borders & Depth */
+    --border-color: hsl(217, 33%, 25%);
+    --border-color-light: hsl(217, 33%, 30%);
+    --shadow-color: hsla(222, 47%, 5%, 0.5);
+    /* Stronger shadow for depth */
+    --shadow-hover: hsla(222, 47%, 5%, 0.7);
+
+    /* Brand & Accent Colors */
+    --primary-color: hsl(212, 100%, 70%);
+    --primary-color-darker: hsl(212, 80%, 60%);
+    --secondary-color: hsl(165, 60%, 60%);
+    --tertiary-color: hsl(340, 70%, 65%);
+    --accent-color: hsl(45, 90%, 65%);
+    --accent-strong: hsl(205, 85%, 60%);
+
+    /* Energy Balance Colors */
+    --deficit-color: hsl(165, 70%, 55%);
+    --surplus-color: hsl(350, 80%, 65%);
+    --optimal-gain-zone-color: hsla(115, 50%, 60%, 0.1);
+
+    /* UI Components */
+    --tooltip-bg: hsla(217, 33%, 20%, 0.95);
+    --tooltip-text: var(--text-primary);
+    --scrollbar-thumb: hsl(215, 20%, 45%);
+    --scrollbar-track: hsl(215, 20%, 15%);
+
+    /* Chart Specifics */
+    --goal-color: hsl(270, 60%, 75%);
+    --goal-line-color: hsl(270, 60%, 75%);
+    --raw-dot-color: hsl(217, 20%, 40%);
+    --band-color: hsla(212, 100%, 70%, 0.1);
+    --ema-color: hsl(30, 80%, 60%);
+
+    --rate-line-color: hsl(270, 50%, 75%);
+    --rate-ma-line-color: hsl(25, 80%, 70%);
+    --tdee-diff-line-color: hsl(165, 50%, 70%);
+
+    --annotation-marker-color: hsl(45, 80%, 70%);
+    --annotation-range-color: hsla(45, 80%, 70%, 0.1);
+    --plateau-color: hsla(220, 20%, 60%, 0.15);
+    --trend-change-color: hsl(340, 70%, 70%);
+    --highlight-stroke-color: hsl(45, 90%, 75%);
+    --crosshair-color: hsl(215, 20%, 65%);
+    --scatter-dot-color: hsl(215, 20%, 80%);
+
+    --table-header-bg: hsl(217, 33%, 22%);
+    --table-row-hover: hsl(217, 33%, 25%);
+}
+
