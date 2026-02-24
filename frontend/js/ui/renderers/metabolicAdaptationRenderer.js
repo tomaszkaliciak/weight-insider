@@ -127,13 +127,34 @@ export const MetabolicAdaptationRenderer = {
         const data = state.filteredData;
 
         if (!data || data.length < 28) {
-            this._container.innerHTML = `<p class="empty-state">Need at least 4 weeks of data to detect adaptation. (Current: ${data ? data.length : 0} days)</p>`;
+            this._container.innerHTML = `
+                <div class="empty-state-message">
+                    <p>Need more data</p>
+                    <small>At least 4 weeks of data are needed to detect adaptation. (Current: ${data ? data.length : 0} days)</small>
+                </div>
+            `;
+            return;
+        }
+
+        const validData = data.filter(d => d.calorieIntake != null && d.weight != null);
+        if (validData.length < 28) {
+            this._container.innerHTML = `
+                <div class="empty-state-message">
+                    <p>Insufficient data</p>
+                    <small>Calorie and weight data are required for TDEE calculation.</small>
+                </div>
+            `;
             return;
         }
 
         const metrics = this._calculateAdaptation(data);
         if (!metrics) {
-            this._container.innerHTML = '<p class="empty-state">Insufficient calorie/weight data for TDEE calculation.</p>';
+            this._container.innerHTML = `
+                <div class="empty-state-message">
+                    <p>Insufficient data</p>
+                    <small>Calorie and weight data are required for TDEE calculation.</small>
+                </div>
+            `;
             return;
         }
 

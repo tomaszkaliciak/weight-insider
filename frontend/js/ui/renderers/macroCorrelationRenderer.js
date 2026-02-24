@@ -39,7 +39,12 @@ export const MacroCorrelationRenderer = {
         const corr = stats.carbVolatilityCorrelation;
 
         if (!split) {
-            this._container.innerHTML = `<p class="empty-state">Need at least 7 days of macro data to analyse trends.</p>`;
+            this._container.innerHTML = `
+                <div class="empty-state-message">
+                    <p>Need more data</p>
+                    <small>At least 7 days of macro data are required to analyze trends.</small>
+                </div>
+            `;
             return;
         }
 

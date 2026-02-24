@@ -38,7 +38,12 @@ export const WeeklyReviewRenderer = {
         const goal = Selectors.selectGoal(state);
 
         if (!data || data.length < 2) {
-            this._container.innerHTML = `<p class="empty-state">Not enough data for weekly review.</p>`;
+            this._container.innerHTML = `
+                <div class="empty-state-message">
+                    <p>Not enough data</p>
+                    <small>Need more data for a weekly review.</small>
+                </div>
+            `;
             return;
         }
 

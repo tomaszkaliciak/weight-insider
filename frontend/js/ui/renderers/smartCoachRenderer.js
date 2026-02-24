@@ -257,7 +257,14 @@ export const SmartCoachRenderer = {
         `;
     },
 
-    _renderNoData(msg) {
-        if (this._container) this._container.innerHTML = `<p class="empty-state">${msg}</p>`;
+    _renderNoData(msg = "Need more data") {
+        if (this._container) {
+            this._container.innerHTML = `
+                <div class="empty-state-message">
+                    <p>${msg}</p>
+                    <small>Smart Coach requires sufficient logged data to generate insights.</small>
+                </div>
+            `;
+        }
     }
 };

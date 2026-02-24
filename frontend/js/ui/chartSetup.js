@@ -134,13 +134,13 @@ function createSVGElements() {
   const tdm = CONFIG.margins.tdeeDiff;
   const sm = CONFIG.margins.correlationScatter;
 
-  // Clear existing SVGs first
-  ui.chartContainer?.select("svg").remove();
-  ui.contextContainer?.select("svg").remove();
-  ui.balanceChartContainer?.select("svg").remove();
-  ui.rateChartContainer?.select("svg").remove();
-  ui.tdeeDiffContainer?.select("svg").remove();
-  ui.correlationScatterContainer?.select("svg").remove();
+  // Clear existing SVGs and skeleton loaders first
+  ui.chartContainer?.selectAll("svg, .skeleton-loader").remove();
+  ui.contextContainer?.selectAll("svg, .skeleton-loader").remove();
+  ui.balanceChartContainer?.selectAll("svg, .skeleton-loader").remove();
+  ui.rateChartContainer?.selectAll("svg, .skeleton-loader").remove();
+  ui.tdeeDiffContainer?.selectAll("svg, .skeleton-loader").remove();
+  ui.correlationScatterContainer?.selectAll("svg, .skeleton-loader").remove();
 
   // --- Focus Chart ---
   if (

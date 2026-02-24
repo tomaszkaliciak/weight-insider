@@ -171,6 +171,11 @@ Formula: Daily Intake - Daily TDEE">
 
     _renderNoData() {
         if (!this._container) return;
-        this._container.innerHTML = '<p class="empty-state">Insufficient data to calculate energy balance.</p>';
+        this._container.innerHTML = `
+            <div class="empty-state-message">
+                <p>Insufficient data</p>
+                <small>Need both TDEE and calorie intake data to calculate energy balance.</small>
+            </div>
+        `;
     }
 };

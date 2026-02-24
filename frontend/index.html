@@ -72,7 +72,9 @@
                     </div>
                 </div>
                 <div style="flex: 1; min-height: 0; display: flex; flex-direction: column; width:100%;">
-                    <div id="chart-container" style="flex: 1; min-height: 200px;"></div>
+                    <div id="chart-container" style="flex: 1; min-height: 200px;">
+                        <div class="skeleton-loader" style="min-height: 200px;"></div>
+                    </div>
                     <div id="context-chart-container"></div>
                     <canvas id="weight-chart" style="display:none;"></canvas>
                 </div>
@@ -108,7 +110,9 @@
             <!-- Widget 5: Goal Progress (1x1) -->
             <div id="goal-widget" class="bento-widget span-1x1">
                 <div class="widget-header">Goal Progress</div>
-                <div id="smart-coach-container"></div>
+                <div id="smart-coach-container">
+                    <div class="skeleton-loader"></div>
+                </div>
             </div>
 
             <!-- ROW 4: Controls -->
@@ -135,14 +139,18 @@
             <!-- Rate of Change (2x1) -->
             <div id="rate-change-card" class="bento-widget span-2x1">
                 <div class="widget-header">Rate of Change</div>
-                <div id="rate-of-change-container" style="width:100%; height:100%;"></div>
+                <div id="rate-of-change-container" style="width:100%; height:100%;">
+                    <div class="skeleton-loader"></div>
+                </div>
             </div>
 
             <!-- TDEE Accuracy (1x1) -->
             <div id="tdee-accuracy-card" class="bento-widget span-1x1">
                 <div class="widget-header">TDEE Accuracy</div>
                 <div id="tdee-accuracy-content">
-                    <div id="tdee-accuracy-container"></div>
+                    <div id="tdee-accuracy-container">
+                        <div class="skeleton-loader"></div>
+                    </div>
                 </div>
             </div>
 
@@ -150,7 +158,9 @@
             <!-- Energy Balance History (2x1) -->
             <div id="energy-balance-card" class="bento-widget span-2x1">
                 <div class="widget-header">Energy Balance History</div>
-                <div id="balance-chart-container" style="width:100%; height:100%;"></div>
+                <div id="balance-chart-container" style="width:100%; height:100%;">
+                    <div class="skeleton-loader"></div>
+                </div>
             </div>
 
             <!-- Energy Sankey (1x1) -->
@@ -158,7 +168,9 @@
                 <div class="widget-header">Energy Flow</div>
                 <div id="energy-sankey-content">
                     <div class="energy-sankey-container" id="energy-sankey-diagram">
-                        <div id="energy-sankey-chart"></div>
+                        <div id="energy-sankey-chart">
+                            <div class="skeleton-loader"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -174,7 +186,9 @@
             <div id="calorie-heatmap-card" class="bento-widget span-1x1">
                 <div class="widget-header">Heatmap</div>
                 <div id="calorie-heatmap-content">
-                    <div id="calorie-heatmap-container"></div>
+                    <div id="calorie-heatmap-container">
+                        <div class="skeleton-loader"></div>
+                    </div>
                 </div>
             </div>
 
@@ -183,7 +197,9 @@
             <div id="correlation-matrix-card" class="bento-widget span-2x1">
                 <div class="widget-header">Correlations</div>
                 <div id="correlation-matrix-content">
-                    <div id="correlation-matrix-container"></div>
+                    <div id="correlation-matrix-container">
+                        <div class="skeleton-loader"></div>
+                    </div>
                 </div>
             </div>
 
@@ -211,90 +227,23 @@
 
             <div id="tdee-reconcile-card" class="bento-widget span-2x1">
                 <div class="widget-header">TDEE vs Intake</div>
-                <div id="tdee-reconciliation-container" style="width:100%; height:100%;"></div>
+                <div id="tdee-reconciliation-container" style="width:100%; height:100%;">
+                    <div class="skeleton-loader"></div>
+                </div>
             </div>
 
             <!-- Correlation Scatter (1x1) -->
             <div id="scatter-card" class="bento-widget span-1x1">
                 <div class="widget-header">Scatter Plot</div>
-                <div id="correlation-scatter-container" style="width:100%; height:100%;"></div>
+                <div id="correlation-scatter-container" style="width:100%; height:100%;">
+                    <div class="skeleton-loader"></div>
+                </div>
             </div>
 
         </div>
 
         <!-- Hidden legacy sections to prevent JS errors if they are selected by ID but not visible -->
         <div style="display:none;">
-            <!-- Legacy Chart Containers (MOVED TO WIDGETS ABOVE) -->
-            <div id="weekly-summary-container"></div>
-            <div id="heatmap-container"></div>
-            <div id="legend-container"></div>
-
-            <!-- Stat Holders (uiCache maps these IDs to statElements) -->
-            <div id="all-time-stats-content">
-                <span id="starting-weight"></span>
-                <span id="min-weight"></span>
-                <span id="max-weight"></span>
-                <span id="starting-lbm"></span>
-                <span id="current-lbm-sma"></span>
-                <span id="total-lbm-change"></span>
-                <span id="current-fm-sma"></span>
-                <span id="total-fm-change"></span>
-                <span id="volatility-score"></span>
-                <span id="rolling-volatility"></span>
-                <span id="rate-consistency-stddev"></span>
-                <span id="regression-slope"></span>
-                <span id="netcal-rate-correlation"></span>
-                <span id="target-weight-stat"></span>
-                <span id="target-rate-stat"></span>
-                <span id="weight-to-goal"></span>
-                <span id="estimated-time-to-goal"></span>
-                <span id="required-rate-for-goal"></span>
-                <span id="required-net-calories"></span>
-                <span id="required-calorie-adjustment"></span>
-                <span id="suggested-intake-range"></span>
-                <span id="current-rate-feedback"></span>
-
-                <!-- Quick stats (used by QuickStatsRenderer) -->
-                <span id="qs-current-weight"></span>
-                <span id="qs-weekly-change"></span>
-                <span id="qs-days-tracked"></span>
-                <span id="qs-to-goal"></span>
-            </div>
-
-            <!-- Containers for features not yet placed in Bento (hidden for now) -->
-            <div id="periodization-content"></div>
-            <div id="period-comparison-content"></div>
-            <div id="goal-alerts-content"></div>
-            <div id="goal-suggestions-content">
-                <div id="goal-suggestions-list"></div>
-            </div>
-            <div id="event-countdown-content"></div>
-            <div id="weekend-analysis-content"></div>
-            <div id="prediction-bands-content"></div>
-            <div id="adaptive-rate-content"></div>
-            <div id="calorie-audit-content"></div>
-            <div id="monthly-report-content"></div>
-            <div id="what-worked-content"></div>
-            <div id="plateau-breaker-content"></div>
-            <div id="rolling-averages-content"></div>
-            <div id="streak-tracker-content"></div>
-            <div id="water-weight-content"></div>
-            <div id="reverse-diet-content"></div>
-            <div id="rate-optimizer-content"></div>
-            <div id="metabolic-adaptation-content">
-                <div id="tdee-trend-chart"></div>
-            </div>
-            <div id="goal-simulator-content">
-                <div id="goal-sim-chart"></div>
-            </div>
-            <div id="macro-impact-content"></div>
-
-            <!-- Legacy Energy Balance -->
-            <div id="energy-chart-container"></div>
-            <div id="energy-balance-content">
-                <div id="energy-balance-chart"></div>
-            </div>
-
             <!-- Trendline inputs now in visible widget -->
             <button id="updateAnalysisRangeBtn" style="display:none"></button>
 

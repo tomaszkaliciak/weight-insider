@@ -32,7 +32,12 @@ function render(phases) {
     containerEl.html(""); // Clear existing content
 
     if (!phases || phases.length === 0) {
-        containerEl.html('<p class="empty-state">No periodization phases detected. Need at least 2 weeks of data with consistent trends.</p>');
+        containerEl.html(`
+            <div class="empty-state-message">
+                <p>No phases detected</p>
+                <small>Need at least 2 weeks of data with consistent trends.</small>
+            </div>
+        `);
         return;
     }
 

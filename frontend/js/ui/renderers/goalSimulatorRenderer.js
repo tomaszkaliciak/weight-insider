@@ -74,7 +74,12 @@ export const GoalSimulatorRenderer = {
         const volatility = displayStats.volatility || 0.5;
 
         if (!currentWeight) {
-            this._container.innerHTML = '<p class="empty-state">No weight data available for projection.</p>';
+            this._container.innerHTML = `
+                <div class="empty-state-message">
+                    <p>No weight data</p>
+                    <small>Available for projection</small>
+                </div>
+            `;
             return;
         }
 

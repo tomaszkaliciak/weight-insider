@@ -9,13 +9,14 @@ export const CorrelationMatrixRenderer = {
     containerId: "correlation-matrix-container",
     _isVisible: false,
     _lastMatrix: null,
+    _hasReceivedData: false,
 
     init() {
         const container = document.getElementById(this.containerId);
         if (container) {
             VisibilityManager.observe(container.parentElement, (isVisible) => {
                 this._isVisible = isVisible;
-                if (isVisible && this._lastMatrix) {
+                if (isVisible && this._hasReceivedData) {
                     this.render(this._lastMatrix);
                 }
             });
@@ -23,6 +24,7 @@ export const CorrelationMatrixRenderer = {
 
         StateManager.subscribeToSpecificEvent("state:displayStatsUpdated", (stats) => {
             this._lastMatrix = stats.correlationMatrix;
+            this._hasReceivedData = true;
             if (this._isVisible) {
                 this.render(this._lastMatrix);
             }
@@ -34,7 +36,12 @@ export const CorrelationMatrixRenderer = {
         if (!container) return;
 
         if (!matrix || !matrix.values || matrix.values.length === 0) {
-            container.innerHTML = '<p class="empty-state">Need at least 14 days of complete nutrition data to build the matrix.</p>';
+            container.innerHTML = `
+                <div class="empty-state-message">
+                    <p>Need more data</p>
+                    <small>At least 14 days of complete nutrition data are required to build the matrix.</small>
+                </div>
+            `;
             return;
         }
 
