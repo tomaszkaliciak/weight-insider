@@ -259,9 +259,10 @@ export const CalorieHeatmapRenderer = {
     _renderNoData() {
         if (!this._container) return;
         this._container.innerHTML = `
-      <div class="empty-state-message">
-        <p>Need more data</p>
-        <small>At least 1 week of calorie data required</small>
+      <div class="widget-empty-state">
+        <div class="empty-icon">📊</div>
+        <div class="empty-title">Need more data</div>
+        <div class="empty-desc">At least 7 days of calorie data are required to generate the heatmap.</div>
       </div>
     `;
     }

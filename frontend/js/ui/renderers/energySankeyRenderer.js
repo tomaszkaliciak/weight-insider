@@ -243,6 +243,12 @@ export const EnergySankeyRenderer = {
 
     _renderNoData() {
         if (!this._container) return;
-        this._container.innerHTML = '<p class="empty-state">Insufficient data. Need at least 7 days with calorie intake and TDEE data.</p>';
+        this._container.innerHTML = `
+          <div class="widget-empty-state">
+            <div class="empty-icon">🔀</div>
+            <div class="empty-title">Need more data</div>
+            <div class="empty-desc">At least 7 days with calorie intake and TDEE data are required to visualize the energy flow.</div>
+          </div>
+        `;
     }
 };

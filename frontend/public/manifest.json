@@ -1,0 +1,17 @@
+{
+    "name": "Weight Insider Pro",
+    "short_name": "Weight Insider",
+    "description": "Advanced personal weight tracking and macro analytics dashboard.",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#0f172a",
+    "theme_color": "#2563eb",
+    "icons": [
+        {
+            "src": "/icon.svg",
+            "sizes": "512x512",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        }
+    ]
+}

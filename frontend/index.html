@@ -10,7 +10,12 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400&display=swap"
         rel="stylesheet" />
-    <link rel="stylesheet" href="style.css" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="stylesheet" href="css/variables.css" />
+    <link rel="stylesheet" href="css/layout.css" />
+    <link rel="stylesheet" href="css/components.css" />
+    <link rel="stylesheet" href="css/widgets.css" />
 </head>
 
 <body>
@@ -242,27 +247,15 @@
 
         </div>
 
-        <!-- Hidden legacy sections to prevent JS errors if they are selected by ID but not visible -->
-        <div style="display:none;">
-            <!-- Trendline inputs now in visible widget -->
-            <button id="updateAnalysisRangeBtn" style="display:none"></button>
-
-            <!-- Goal Form Inputs -->
-            <input id="goalWeight" type="hidden">
-            <input id="goalDate" type="hidden">
-            <input id="goalTargetRate" type="hidden">
-
-            <!-- Annotations -->
-            <form id="annotation-form">
-                <input id="annotation-date" type="hidden">
-                <input id="annotation-text" type="hidden">
-            </form>
+        <!-- Hidden legacy inputs retained temporarily to prevent UI Cache null reference crashes -->
+        <div style="display:none;" id="legacy-state-cache">
+            <input id="trendStartDate"><input id="trendInitialWeight"><input id="trendWeeklyIncrease"><input
+                id="trendWeeklyIncrease_2">
+            <button id="view-data-btn"></button><button id="updateAnalysisRangeBtn"></button>
+            <input id="goalWeight"><input id="goalDate"><input id="goalTargetRate">
+            <input id="annotation-date"><input id="annotation-text">
             <ul id="annotation-list"></ul>
-
-            <!-- What-If -->
-            <input id="what-if-intake" type="hidden">
-            <input id="what-if-duration" type="hidden">
-            <button id="what-if-submit" style="display:none"></button>
+            <input id="what-if-intake"><input id="what-if-duration"><button id="what-if-submit"></button>
             <div id="what-if-result"></div>
         </div>
     </main>
@@ -303,6 +296,18 @@
     <div id="modal-overlay" class="modal-overlay" aria-hidden="true"></div>
 
     <script type="module" src="js/main.js"></script>
+
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').then(
+                    registration => console.log('[Service Worker] Registration successful with scope: ', registration.scope),
+                    err => console.log('[Service Worker] Registration failed: ', err)
+                );
+            });
+        }
+    </script>
 </body>
 
 </html>

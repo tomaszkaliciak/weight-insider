@@ -20,9 +20,7 @@ header {
     border-radius: 0 0 16px 16px;
     box-shadow: 0 2px 20px var(--shadow-color);
     border-bottom: 1px solid var(--border-color-light);
-    margin-left: -25px;
-    margin-right: -25px;
-    width: calc(100% + 50px);
+    width: 100%;
     transition:
         background-color var(--transition-speed) var(--transition-ease),
         box-shadow var(--transition-speed) var(--transition-ease);

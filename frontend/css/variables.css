@@ -84,9 +84,7 @@ body.dark-theme #theme-toggle svg {
     --tertiary-color: hsl(var(--hue-tertiary), 65%, 60%);
     /* Softer */
     --accent-color: hsl(var(--hue-accent), 70%, 60%);
-    --accent-strong: hsl(var(--hue-accent-strong),
-            75%,
-            55%);
+    --accent-strong: hsl(var(--hue-accent-strong), 75%, 55%);
     /* Strong accent */
     --goal-color: hsl(var(--hue-goal), 45%, 65%);
     /* Softer */
@@ -131,10 +129,8 @@ body.dark-theme #theme-toggle svg {
     --transition-speed: 0.2s;
     --transition-ease: cubic-bezier(0.4, 0, 0.2, 1);
     --transition-ease-out: ease-out;
-    --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-        Helvetica, Arial, sans-serif;
-    --font-mono: "Fira Code", SFMono-Regular, Menlo, Monaco, Consolas,
-        "Liberation Mono", "Courier New", monospace;
+    --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: "Fira Code", SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
 body.dark-theme {
@@ -215,4 +211,3 @@ body.dark-theme {
     --table-header-bg: hsl(217, 33%, 22%);
     --table-row-hover: hsl(217, 33%, 25%);
 }
-
