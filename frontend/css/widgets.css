@@ -50,6 +50,32 @@
     letter-spacing: 0.05em;
 }
 
+/* Delta badge shown below each stat value in the Vital Stats strip */
+.stat-delta {
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1;
+    margin-top: 4px;
+    min-height: 1em;
+    letter-spacing: 0.01em;
+}
+
+.stat-delta--up {
+    color: var(--danger-color, #ef4444);
+}
+
+.stat-delta--down {
+    color: var(--success-color, #22c55e);
+}
+
+.stat-delta--neutral {
+    color: var(--text-muted);
+}
+
+.stat-delta--special {
+    color: var(--accent-color, #6366f1);
+}
+
 .stat-group .stat-value {
     font-size: 1.1rem;
     font-weight: 600;
@@ -2116,23 +2142,7 @@ body.dark-theme .skeleton-stat .skeleton-value {
     font-style: italic;
 }
 
-.apply-suggestion-btn {
-    width: 100%;
-    padding: 8px 12px;
-    font-size: 0.8rem;
-    font-weight: 500;
-    background: var(--accent-color);
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.apply-suggestion-btn:hover {
-    background: var(--accent-color-hover);
-    transform: scale(1.02);
-}
+/* .apply-suggestion-btn definition is below in the goal suggestion section (canonical version) */
 
 @media (max-width: 500px) {
     .suggestions-grid {
@@ -5841,20 +5851,23 @@ body.dark-theme .glass-box {
 
 .apply-suggestion-btn {
     margin-top: 8px;
-    background: var(--bg-primary);
-    border: 1px solid var(--border-color);
-    padding: 10px;
+    width: 100%;
+    background: transparent;
+    border: 1.5px solid var(--accent-color, #6366f1);
+    color: var(--accent-color, #6366f1);
+    padding: 8px 12px;
     border-radius: 8px;
     cursor: pointer;
     font-weight: 600;
-    font-size: 0.85rem;
-    transition: all 0.2s;
+    font-size: 0.82rem;
+    letter-spacing: 0.02em;
+    transition: background 0.2s, color 0.2s;
 }
 
 .apply-suggestion-btn:hover {
-    background: var(--primary-color);
-    color: white;
-    border-color: var(--primary-color);
+    background: var(--accent-color, #6366f1);
+    color: #fff;
+    border-color: var(--accent-color, #6366f1);
 }
 
 /* ========== WATER WEIGHT DASHBOARD ========== */

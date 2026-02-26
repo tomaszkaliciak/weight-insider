@@ -227,7 +227,7 @@ export const GoalSuggestionRenderer = {
                 ${s.confidence}
               </div>
 
-              <button class="apply-suggestion-btn" data-weight="${s.targetWeight}" data-weeks="${s.duration}" 
+              <button class="apply-suggestion-btn btn-primary" data-weight="${s.targetWeight}" data-weeks="${s.duration}" 
                       title="Set this as your active goal">
                 Apply Plan
               </button>

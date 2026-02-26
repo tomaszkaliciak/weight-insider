@@ -56,6 +56,7 @@ import { GoalSimulatorRenderer } from "./ui/renderers/goalSimulatorRenderer.js";
 import { EnergySankeyRenderer } from "./ui/renderers/energySankeyRenderer.js";
 import { DataTableModal } from "./ui/dataTableModal.js";
 import { ChartControls } from "./ui/chartControls.js";
+import { VitalStatsEnricher } from "./ui/renderers/vitalStatsEnricher.js";
 
 /**
  * Initializes the application step-by-step.
@@ -105,6 +106,7 @@ async function initialize() {
     PeriodizationRenderer.init(); // Listens for periodization phase changes
     PeriodComparisonRenderer.init(); // Multi-period comparison tool
     GoalAlertRenderer.init(); // Goal progress alerts
+    VitalStatsEnricher.init(); // Delta badges on the full-width Vital Stats strip
     GoalSuggestionRenderer.init(); // Adaptive goal suggestions
     EventCountdownRenderer.init(); // Competition/event countdown
     WeekendAnalysisRenderer.init(); // Weekend vs weekday patterns
