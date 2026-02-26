@@ -72,8 +72,9 @@ body.dark-theme ::-webkit-scrollbar-thumb:hover {
 }
 
 .chart-section {
-    grid-area: main;
-    min-height: 0;
+    min-height: 420px;
+    max-height: 560px;
+    width: 100%;
     display: flex;
     flex-direction: column;
     position: relative;
@@ -105,6 +106,26 @@ body.dark-theme ::-webkit-scrollbar-thumb:hover {
     grid-template-columns: repeat(3, 1fr);
     gap: 12px;
 }
+
+.stat-grid-4 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+}
+
+/* Compact horizontal strip for full-width vital stats */
+#key-stats-widget.span-3x1 {
+    min-height: unset !important;
+    height: auto !important;
+    max-height: unset !important;
+    padding: 14px 20px !important;
+}
+
+#key-stats-widget.span-3x1 .stat-group {
+    padding: 10px 14px;
+    border-radius: 10px;
+}
+
 
 .stat-group {
     background: var(--bg-tertiary);
@@ -573,6 +594,31 @@ body.dark-theme ::-webkit-scrollbar-thumb:hover {
     /* Discovery deck also single column */
     .discovery-deck {
         grid-template-columns: 1fr;
+    }
+
+    /* Vital Stats: drop to 2×2 grid on mobile for readability */
+    #key-stats-widget.span-3x1 .stat-grid,
+    .stat-grid.stat-grid-4 {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+
+    /* Chart: smaller height on mobile to reduce scrolling */
+    .chart-section {
+        min-height: 300px !important;
+        max-height: 420px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .bento-canvas {
+        padding: 12px;
+        gap: 12px;
+    }
+
+    /* Very small phones: compact chart */
+    .chart-section {
+        min-height: 260px !important;
+        max-height: 360px !important;
     }
 }
 

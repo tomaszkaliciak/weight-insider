@@ -69,6 +69,7 @@ export const GoalAlertRenderer = {
         this._checkRateAlert(displayStats, goal, isGaining);
         this._checkMilestoneAlert(currentWeight, goal.weight, weightToGoal);
         this._checkGoalAchievedAlert(currentWeight, goal.weight);
+        this._checkTDEEDriftAlert(displayStats);
 
         this._render();
     },
@@ -224,6 +225,12 @@ export const GoalAlertRenderer = {
     _render() {
         if (!this._container) return;
 
+        // Goal Projection panel always renders at top when goal is set
+        const state = StateManager.getState();
+        const goal = Selectors.selectGoal(state);
+        const displayStats = state.displayStats || {};
+        this._renderProjection(goal, displayStats);
+
         if (this._alerts.length === 0) {
             const state = StateManager.getState();
             const goal = Selectors.selectGoal(state);
@@ -258,5 +265,94 @@ export const GoalAlertRenderer = {
         </div>
       </div>
     `).join('');
-    }
+    },
+
+    _renderProjection(goal, displayStats) {
+        // Find or create the projection panel (rendered outside the alerts list, in parent)
+        const parent = this._container?.parentElement;
+        if (!parent) return;
+
+        let panel = parent.querySelector('#goal-projection-panel');
+
+        if (!goal.weight || !goal.date) {
+            if (panel) panel.remove();
+            return;
+        }
+
+        if (!panel) {
+            panel = document.createElement('div');
+            panel.id = 'goal-projection-panel';
+            panel.className = 'goal-projection-panel';
+            parent.insertBefore(panel, this._container);
+        }
+
+        const eta = displayStats.estimatedTimeToGoal || 'N/A';
+        const requiredRate = displayStats.requiredRateForGoal;
+        const currentRate = displayStats.currentWeeklyRate ?? displayStats.regressionSlopeWeekly;
+        const weightToGoal = displayStats.weightToGoal;
+        const goalWeight = parseFloat(goal.weight);
+        const goalDate = goal.date instanceof Date ? goal.date : new Date(goal.date);
+        const daysToGoal = Math.ceil((goalDate - new Date()) / (1000 * 60 * 60 * 24));
+
+        // Determine on-track/off-track status
+        let verdict = '';
+        let verdictClass = '';
+        if (currentRate != null && requiredRate != null) {
+            const isGaining = weightToGoal > 0;
+            const onTrack = isGaining ? currentRate >= requiredRate * 0.85 : currentRate <= requiredRate * 0.85;
+            verdict = onTrack ? '✅ On track' : '⚠️ Off track';
+            verdictClass = onTrack ? 'on-track' : 'off-track';
+        }
+
+        const formatRate = (r) => r != null ? `${r > 0 ? '+' : ''}${r.toFixed(2)} kg/wk` : '—';
+        const formatKg = (v) => v != null ? `${v > 0 ? '+' : ''}${v.toFixed(1)} kg` : '—';
+
+        panel.innerHTML = `
+          <div class="goal-projection-header">
+            <span class="goal-projection-title">🎯 Goal Forecast</span>
+            <span class="goal-projection-verdict ${verdictClass}">${verdict}</span>
+          </div>
+          <div class="goal-projection-stats">
+            <div class="gp-stat">
+              <div class="gp-label">ETA at current rate</div>
+              <div class="gp-value">${eta}</div>
+            </div>
+            <div class="gp-stat">
+              <div class="gp-label">Days to deadline</div>
+              <div class="gp-value">${daysToGoal > 0 ? daysToGoal : 'Passed'}</div>
+            </div>
+            <div class="gp-stat">
+              <div class="gp-label">Remaining</div>
+              <div class="gp-value">${formatKg(weightToGoal)}</div>
+            </div>
+            <div class="gp-stat">
+              <div class="gp-label">Required rate</div>
+              <div class="gp-value">${formatRate(requiredRate)}</div>
+            </div>
+            <div class="gp-stat">
+              <div class="gp-label">Current rate</div>
+              <div class="gp-value">${formatRate(currentRate)}</div>
+            </div>
+          </div>
+        `;
+    },
+
+    _checkTDEEDriftAlert(displayStats) {
+        const drift = displayStats.tdeeDrift14vs30;
+        if (drift == null || Math.abs(drift) < 150) return;
+
+        const direction = drift > 0 ? 'increased' : 'decreased';
+        const emoji = drift > 0 ? '🔥' : '🧊';
+        const implication = drift > 0
+            ? 'Your metabolism may be speeding up — consider increasing your calorie target to stay on pace.'
+            : 'Your metabolism may be adapting (slowing down) — you may need to reduce your intake or take a diet break.';
+
+        this._alerts.push({
+            type: 'info',
+            icon: emoji,
+            title: `TDEE Shifted ${drift > 0 ? '+' : ''}${drift} kcal`,
+            message: `Your estimated TDEE has ${direction} by ${Math.abs(drift)} kcal over the last 2 weeks vs. the past month. ${implication}`,
+            priority: 3
+        });
+    },
 };

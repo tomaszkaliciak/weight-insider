@@ -211,6 +211,7 @@ function createSVGElements() {
     ui.regressionLine = ui.chartArea // Regression line
       .append("path")
       .attr("class", "trend-line regression-line");
+    ui.goalConfidenceBand = ui.chartArea.append("path").attr("class", "goal-confidence-band");
     ui.goalLine = ui.chartArea.append("path").attr("class", "trend-line goal-line");
     // goalLineHit moved to end of focus group
     ui.bfLine = ui.chartArea.append("path").attr("class", "line bf-line"); // Bodyfat line (unused)

@@ -638,6 +638,17 @@ export const StatsManager = {
           analysisRange.start,
           analysisRange.end,
         );
+
+        // TDEE Drift: Compare short (14d) vs long (30d) adaptive TDEE windows to detect metabolic adaptation
+        const drift14DaysEnd = analysisRange.end;
+        const drift14DaysStart = new Date(drift14DaysEnd);
+        drift14DaysStart.setDate(drift14DaysStart.getDate() - 14);
+        const drift30DaysStart = new Date(drift14DaysEnd);
+        drift30DaysStart.setDate(drift30DaysStart.getDate() - 30);
+
+        const tdee14 = this._calculateAverageInRange(processedData, 'adaptiveTDEE', drift14DaysStart, drift14DaysEnd);
+        const tdee30 = this._calculateAverageInRange(processedData, 'adaptiveTDEE', drift30DaysStart, drift14DaysEnd);
+        displayStats.tdeeDrift14vs30 = (tdee14 != null && tdee30 != null) ? Math.round(tdee14 - tdee30) : null;
         displayStats.weightDataConsistency = this._calculateCountInRange(
           processedData,
           "value",
@@ -910,6 +921,9 @@ export const StatsManager = {
         type: "SET_DISPLAY_STATS",
         payload: derivedData.displayStats,
       });
+
+      // Expose volatility globally for the confidence band renderer in chartUpdaters.js
+      window.__weightInsiderVolatility = derivedData.displayStats.rollingVolatility || 0;
 
       // --- Dispatch actions for newly calculated line data ---
       // Calculate line points using the *latest* state snapshot

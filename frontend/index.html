@@ -64,9 +64,8 @@
                 <div id="executive-hub-content"></div>
             </div>
 
-            <!-- ROW 2 & 3: Deep Analysis (Chart + Side Stack) -->
-            <!-- Widget 3: Master Chart (2x2) -->
-            <div id="chart-section" class="bento-widget span-2x2 chart-section" aria-labelledby="chart-section-heading">
+            <!-- ROW 2: Hero Master Chart (full width) -->
+            <div id="chart-section" class="bento-widget span-3x1 chart-section" aria-labelledby="chart-section-heading">
                 <div class="widget-header">
                     <span id="chart-section-heading">Master Trend Analysis</span>
                     <div class="chart-controls">
@@ -77,8 +76,8 @@
                     </div>
                 </div>
                 <div style="flex: 1; min-height: 0; display: flex; flex-direction: column; width:100%;">
-                    <div id="chart-container" style="flex: 1; min-height: 200px;">
-                        <div class="skeleton-loader" style="min-height: 200px;"></div>
+                    <div id="chart-container" style="flex: 1; min-height: 300px;">
+                        <div class="skeleton-loader" style="min-height: 300px;"></div>
                     </div>
                     <div id="context-chart-container"></div>
                     <canvas id="weight-chart" style="display:none;"></canvas>
@@ -88,11 +87,10 @@
                 </div>
             </div>
 
-            <!-- Right Column Stack -->
-            <!-- Widget 4: Vital Stats (1x1) -->
-            <div id="key-stats-widget" class="bento-widget span-1x1">
+            <!-- ROW 3: Vital Stats Horizontal Strip (full-width) -->
+            <div id="key-stats-widget" class="bento-widget span-3x1">
                 <div class="widget-header">Vital Stats</div>
-                <div class="stat-grid">
+                <div class="stat-grid stat-grid-4">
                     <div class="stat-group">
                         <div class="stat-label">SMA</div>
                         <span id="current-sma" class="stat-value">--</span>
@@ -112,11 +110,24 @@
                 </div>
             </div>
 
-            <!-- Widget 5: Goal Progress (1x1) -->
-            <div id="goal-widget" class="bento-widget span-1x1">
+            <!-- ROW 4: Goal Progress (2/3) + TDEE Accuracy (1/3) -->
+            <!-- Widget 5: Goal Progress (2x1) -->
+            <div id="goal-widget" class="bento-widget span-2x1">
                 <div class="widget-header">Goal Progress</div>
                 <div id="smart-coach-container">
                     <div class="skeleton-loader"></div>
+                </div>
+                <div id="goal-alerts-list"></div>
+                <div id="goal-suggestions-list"></div>
+            </div>
+
+            <!-- TDEE Accuracy (1x1) -->
+            <div id="tdee-accuracy-card" class="bento-widget span-1x1">
+                <div class="widget-header">TDEE Accuracy</div>
+                <div id="tdee-accuracy-content">
+                    <div id="tdee-accuracy-container">
+                        <div class="skeleton-loader"></div>
+                    </div>
                 </div>
             </div>
 
@@ -146,16 +157,6 @@
                 <div class="widget-header">Rate of Change</div>
                 <div id="rate-of-change-container" style="width:100%; height:100%;">
                     <div class="skeleton-loader"></div>
-                </div>
-            </div>
-
-            <!-- TDEE Accuracy (1x1) -->
-            <div id="tdee-accuracy-card" class="bento-widget span-1x1">
-                <div class="widget-header">TDEE Accuracy</div>
-                <div id="tdee-accuracy-content">
-                    <div id="tdee-accuracy-container">
-                        <div class="skeleton-loader"></div>
-                    </div>
                 </div>
             </div>
 
@@ -227,9 +228,6 @@
             </div>
 
             <!-- ROW 9: TDEE Reconciliation & Scatter -->
-            <!-- TDEE Reconciliation (2x1) - Widened as requested, fills row nicely with Scatter -->
-            <!-- wait, row is 3 cols. 2x1 TDEE + 1x1 Scatter = 3 cols. Perfect. -->
-
             <div id="tdee-reconcile-card" class="bento-widget span-2x1">
                 <div class="widget-header">TDEE vs Intake</div>
                 <div id="tdee-reconciliation-container" style="width:100%; height:100%;">

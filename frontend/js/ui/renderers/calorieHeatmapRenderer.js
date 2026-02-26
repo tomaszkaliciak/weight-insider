@@ -3,6 +3,7 @@
 
 import { StateManager } from '../../core/stateManager.js';
 import * as Selectors from '../../core/selectors.js';
+import { explainOutlier } from '../../core/outlierExplainer.js';
 
 /**
  * Calorie Heatmap Calendar:
@@ -246,7 +247,10 @@ export const CalorieHeatmapRenderer = {
           </div>` : ''}
         </div>
         <div class="day-health-status">
-            ${isOutlier ? '<div class="health-alert outlier">⚠️ This weight entry was flagged as an outlier.</div>' : ''}
+            ${isOutlier ? (() => {
+                    const exp = explainOutlier(dayData, this._getAvgCalories());
+                    return `<div class="health-alert outlier-explanation"><strong>⭐ Outlier</strong> &mdash; ${exp.narrative}</div>`;
+                })() : ''}
             ${!hasWeight ? '<div class="health-alert missing">⚠️ No weight recorded for this day.</div>' : ''}
             ${!hasCals ? '<div class="health-alert missing">⚠️ No calorie log for this day.</div>' : ''}
             ${hasWeight && hasCals && !isOutlier ? '<div class="health-alert good">✅ All data present and consistent.</div>' : ''}
@@ -265,5 +269,13 @@ export const CalorieHeatmapRenderer = {
         <div class="empty-desc">At least 7 days of calorie data are required to generate the heatmap.</div>
       </div>
     `;
+    },
+
+    _getAvgCalories() {
+        const state = StateManager.getState();
+        const data = Selectors.selectProcessedData(state) || [];
+        const recent = data.slice(-30).filter(d => d.calorieIntake != null && d.calorieIntake > 0);
+        if (recent.length === 0) return null;
+        return recent.reduce((s, d) => s + d.calorieIntake, 0) / recent.length;
     }
 };

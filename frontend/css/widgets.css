@@ -19,6 +19,21 @@
     gap: 12px;
 }
 
+/* 4-column horizontal strip when Vital Stats spans full width */
+#key-stats-widget.span-3x1 .stat-grid,
+.stat-grid.stat-grid-4 {
+    grid-template-columns: repeat(4, 1fr) !important;
+}
+
+/* On mobile (≤768px): revert to 2×2 for readability */
+@media (max-width: 768px) {
+
+    #key-stats-widget.span-3x1 .stat-grid,
+    .stat-grid.stat-grid-4 {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+}
+
 .stat-group {
     background: var(--bg-tertiary);
     padding: 10px;
@@ -6248,4 +6263,104 @@ body.dark-theme .glass-box {
     font-size: 0.85rem;
     max-width: 250px;
     line-height: 1.4;
+}
+
+/* =========================================
+   Phase 4: Goal Projection Panel
+   ========================================= */
+.goal-projection-panel {
+    background: hsla(var(--hue-p, 220), 30%, 40%, 0.12);
+    border: 1px solid hsla(var(--hue-p, 220), 60%, 60%, 0.2);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+}
+
+.goal-projection-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.goal-projection-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+}
+
+.goal-projection-verdict {
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.goal-projection-verdict.on-track {
+    background: hsla(140, 60%, 50%, 0.15);
+    color: var(--success-color, #2ecc71);
+}
+
+.goal-projection-verdict.off-track {
+    background: hsla(35, 80%, 50%, 0.15);
+    color: var(--warning-color, #f39c12);
+}
+
+.goal-projection-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+    gap: 8px;
+}
+
+.gp-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.gp-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.gp-value {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* =========================================
+   Phase 4: Confidence Band (Chart SVG)
+   ========================================= */
+.goal-confidence-band {
+    fill: var(--goal-color, #9b59b6);
+    fill-opacity: 0.08;
+    stroke: none;
+    pointer-events: none;
+}
+
+/* =========================================
+   Phase 4: Outlier Explanation (Heatmap)
+   ========================================= */
+.health-alert.outlier-explanation {
+    background: hsla(45, 90%, 50%, 0.1);
+    border: 1px solid hsla(45, 80%, 55%, 0.25);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    color: var(--text-secondary);
+}
+
+.health-alert.outlier-explanation strong {
+    color: var(--warning-color, #f39c12);
+    display: block;
+    margin-bottom: 3px;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
 }

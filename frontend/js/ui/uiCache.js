@@ -61,6 +61,7 @@ export const ui = {
   trendLine1: null,
   trendLine2: null,
   goalLine: null,
+  goalConfidenceBand: null, // Expanding CI band behind the goal line
   goalLineHit: null, // Interactive hit area
   goalPrognosisLine: null,
   rateLine: null,

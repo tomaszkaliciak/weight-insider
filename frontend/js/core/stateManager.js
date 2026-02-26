@@ -13,6 +13,7 @@ export const ActionTypes = {
   SET_CORRELATION_DATA: "SET_CORRELATION_DATA",
   SET_REGRESSION_RESULT: "SET_REGRESSION_RESULT",
   LOAD_GOAL: "LOAD_GOAL",
+  SET_GOAL: "SET_GOAL",
   LOAD_ANNOTATIONS: "LOAD_ANNOTATIONS",
   ADD_ANNOTATION: "ADD_ANNOTATION",
   DELETE_ANNOTATION: "DELETE_ANNOTATION",
@@ -33,6 +34,7 @@ export const ActionTypes = {
   LOAD_SETTINGS: "LOAD_SETTINGS",
   UPDATE_TREND_CONFIG: "UPDATE_TREND_CONFIG",
   SET_DISPLAY_STATS: "SET_DISPLAY_STATS",
+  INITIAL_LOAD: "INITIAL_LOAD",
   INITIALIZATION_COMPLETE: "INITIALIZATION_COMPLETE",
   INITIALIZATION_FAILED: "INITIALIZATION_FAILED",
   SET_TREND_LINE_DATA: "SET_TREND_LINE_DATA",
@@ -160,6 +162,7 @@ function reducer(currentState, action) {
       };
       break;
     case ActionTypes.LOAD_GOAL:
+    case ActionTypes.SET_GOAL:
       nextState.goal = { ...nextState.goal, ...(action.payload || {}) };
       if (nextState.goal.date && !(nextState.goal.date instanceof Date)) {
         const parsedDate = new Date(nextState.goal.date);
@@ -418,6 +421,7 @@ export const StateManager = {
       DELETE_ANNOTATION: "state:annotationsChanged",
       TOGGLE_SERIES_VISIBILITY: "state:visibilityChanged",
       LOAD_GOAL: "state:goalChanged",
+      SET_GOAL: "state:goalChanged",
       SET_GOAL_ACHIEVED_DATE: "state:goalAchievementUpdated",
       SET_THEME: "state:themeUpdated",
       SET_ANALYSIS_RANGE: "state:analysisRangeChanged",
@@ -455,6 +459,7 @@ export const StateManager = {
           eventPayload = { visibility: newStateForEvent.seriesVisibility };
           break;
         case "LOAD_GOAL":
+        case "SET_GOAL":
         case "SET_GOAL_ACHIEVED_DATE":
           eventPayload = {
             goal: newStateForEvent.goal,

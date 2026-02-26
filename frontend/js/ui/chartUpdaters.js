@@ -189,6 +189,51 @@ export const FocusChartUpdater = {
     );
     updateSelection(ui.goalLine, goalLineData, goalLineGen);
     updateSelection(ui.goalLineHit, goalLineData, goalLineGen); // Update hit area
+
+    // --- Confidence Band on Goal Projection ---
+    // Build expanding uncertainty band: half-width = volatility * 1.645 * sqrt(daysAhead/7)
+    if (ui.goalConfidenceBand && !ui.goalConfidenceBand.empty() && goalLineData.length === 2) {
+      const [startPt, endPt] = goalLineData;
+      const startMs = startPt.date.getTime();
+      const endMs = endPt.date.getTime();
+      const totalMs = endMs - startMs;
+
+      if (totalMs > 0) {
+        // Get volatility from the current filtered data (passed through goalLineData reference via closure)
+        // We'll sample it from the UI state cache
+        const volatility = window.__weightInsiderVolatility || 0;
+        const k = 1.645; // 90% CI z-score
+
+        // Generate 20 intermediate band points for smooth area
+        const bandPoints = Array.from({ length: 21 }, (_, i) => {
+          const frac = i / 20;
+          const date = new Date(startMs + frac * totalMs);
+          const weight = startPt.weight + frac * (endPt.weight - startPt.weight);
+          const daysAhead = (frac * totalMs) / 86400000;
+          const halfWidth = volatility > 0 ? k * volatility * Math.sqrt(Math.max(0, daysAhead / 7)) : 0;
+          return { date, weight, upper: weight + halfWidth, lower: weight - halfWidth };
+        });
+
+        const bandAreaGen = d3.area()
+          .x(d => currentXScale(d.date))
+          .y0(d => currentYScale(d.lower))
+          .y1(d => currentYScale(d.upper))
+          .curve(d3.curveMonotoneX)
+          .defined(d => isFinite(currentXScale(d.date)) && isFinite(currentYScale(d.upper)));
+
+        const bandPath = bandAreaGen(bandPoints);
+        if (dur > 0 && !options.isInteractive) {
+          ui.goalConfidenceBand.transition().duration(dur).attr('d', bandPath);
+        } else {
+          ui.goalConfidenceBand.attr('d', bandPath);
+        }
+      } else {
+        ui.goalConfidenceBand.attr('d', '');
+      }
+    } else if (ui.goalConfidenceBand && !ui.goalConfidenceBand.empty()) {
+      ui.goalConfidenceBand.attr('d', '');
+    }
+
     updateSelection(ui.trendLine1, trendLine1Data, trendLineGen); // Use pre-calculated data
     updateSelection(ui.trendLine2, trendLine2Data, trendLineGen); // Use pre-calculated data
   },
