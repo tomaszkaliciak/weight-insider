@@ -110,7 +110,10 @@ const specificSubscribers = {}; // { eventName: Set<callback> }
 
 // --- Reducer Logic ---
 function reducer(currentState, action) {
-  const nextState = Utils.deepClone(currentState); // Clone before modifying
+  // Shallow clone: large arrays (processedData, rawData, filteredData, etc.) are
+  // reference-shared and only replaced — never mutated in-place — so a shallow
+  // clone is both safe and dramatically faster than a full deep clone.
+  const nextState = { ...currentState };
 
   switch (action.type) {
     // Use ActionTypes constants now
@@ -240,9 +243,12 @@ function reducer(currentState, action) {
       nextState.currentTheme = action.payload;
       break;
     case ActionTypes.TOGGLE_SERIES_VISIBILITY:
-      if (nextState.seriesVisibility.hasOwnProperty(action.payload.seriesId)) {
-        nextState.seriesVisibility[action.payload.seriesId] =
-          !!action.payload.isVisible;
+      if (Object.prototype.hasOwnProperty.call(currentState.seriesVisibility, action.payload.seriesId)) {
+        // Create a new seriesVisibility object rather than mutating the shared reference.
+        nextState.seriesVisibility = {
+          ...currentState.seriesVisibility,
+          [action.payload.seriesId]: !!action.payload.isVisible,
+        };
       }
       break;
     case ActionTypes.SET_HIGHLIGHTED_DATE:
@@ -407,12 +413,16 @@ export const StateManager = {
       console.error("[StateManager] Invalid action dispatched:", action);
       return;
     }
-    const previousState = Utils.deepClone(state); // Clone for comparison
+    // reducer() always returns a new shallow-cloned object, so previousState
+    // and state (after reducer) are always distinct objects — no defensive clone needed.
+    const previousState = state;
     state = reducer(state, action); // Update internal state
-    const newStateForEvent = Utils.deepClone(state); // Clone *new* state for events
 
     // --- Notify Subscribers Directly ---
-    _notifyGeneralSubscribers(newStateForEvent, previousState, action);
+    // General subscribers receive live references. They only read action.type as a
+    // trigger and call StateManager.getState() if they need data — they never store
+    // or mutate these references.
+    _notifyGeneralSubscribers(state, previousState, action);
 
     // Map actions to specific event names
     const specificEventsMap = {
@@ -435,7 +445,8 @@ export const StateManager = {
       SET_REGRESSION_RESULT: "state:regressionResultChanged",
       UPDATE_TREND_CONFIG: "state:trendConfigChanged",
       SET_SORT_OPTIONS: "state:sortOptionsChanged",
-      SET_DISPLAY_STATS: "state:displayStatsUpdated", // Now signals stats update
+      SET_DISPLAY_STATS: "state:displayStatsUpdated",
+      SET_PERIODIZATION_PHASES: "state:periodizationPhasesChanged",
       INITIALIZATION_COMPLETE: "state:initializationComplete",
       SET_HIGHLIGHTED_DATE: "state:highlightedDateChanged",
       SET_PINNED_TOOLTIP: "state:pinnedTooltipDataChanged",
@@ -447,85 +458,87 @@ export const StateManager = {
 
     const eventName = specificEventsMap[action.type];
     if (eventName) {
-      // Determine the payload based on the event
+      // Determine the payload based on the event.
+      // `state` here is the already-updated state (post-reducer).
       let eventPayload;
       switch (action.type) {
         case "LOAD_ANNOTATIONS":
         case "ADD_ANNOTATION":
         case "DELETE_ANNOTATION":
-          eventPayload = { annotations: newStateForEvent.annotations };
+          eventPayload = { annotations: state.annotations };
           break;
         case "TOGGLE_SERIES_VISIBILITY":
-          eventPayload = { visibility: newStateForEvent.seriesVisibility };
+          eventPayload = { visibility: state.seriesVisibility };
           break;
         case "LOAD_GOAL":
         case "SET_GOAL":
         case "SET_GOAL_ACHIEVED_DATE":
           eventPayload = {
-            goal: newStateForEvent.goal,
-            achievedDate: newStateForEvent.goalAchievedDate,
+            goal: state.goal,
+            achievedDate: state.goalAchievedDate,
           };
           break;
         case "SET_THEME":
-          eventPayload = { theme: newStateForEvent.currentTheme };
+          eventPayload = { theme: state.currentTheme };
           break;
         case "SET_ANALYSIS_RANGE":
-          eventPayload = { range: newStateForEvent.analysisRange };
+          eventPayload = { range: state.analysisRange };
           break;
         case "SET_INTERACTIVE_REGRESSION_RANGE":
-          eventPayload = { range: newStateForEvent.interactiveRegressionRange };
+          eventPayload = { range: state.interactiveRegressionRange };
           break;
         case "SET_FILTERED_DATA":
-          eventPayload = { data: newStateForEvent.filteredData };
+          eventPayload = { data: state.filteredData };
           break;
         case "SET_WEEKLY_SUMMARY":
-          eventPayload = { data: newStateForEvent.weeklySummaryData };
+          eventPayload = { data: state.weeklySummaryData };
           break;
         case "SET_CORRELATION_DATA":
-          eventPayload = { data: newStateForEvent.correlationScatterData };
+          eventPayload = { data: state.correlationScatterData };
           break;
         case "SET_PLATEAUS":
-          eventPayload = { plateaus: newStateForEvent.plateaus };
+          eventPayload = { plateaus: state.plateaus };
           break;
         case "SET_TREND_CHANGES":
           eventPayload = {
-            trendChangePoints: newStateForEvent.trendChangePoints,
+            trendChangePoints: state.trendChangePoints,
           };
           break;
         case "SET_REGRESSION_RESULT":
-          eventPayload = { result: newStateForEvent.regressionResult };
+          eventPayload = { result: state.regressionResult };
           break;
         case "UPDATE_TREND_CONFIG":
-          eventPayload = { config: newStateForEvent.trendConfig };
+          eventPayload = { config: state.trendConfig };
           break;
         case "SET_SORT_OPTIONS":
           eventPayload = {
-            columnKey: newStateForEvent.sortColumnKey,
-            direction: newStateForEvent.sortDirection,
+            columnKey: state.sortColumnKey,
+            direction: state.sortDirection,
           };
           break;
         case "SET_DISPLAY_STATS":
-          eventPayload = newStateForEvent.displayStats;
-          break; // Pass the stats object
+          eventPayload = state.displayStats;
+          break;
+        case "SET_PERIODIZATION_PHASES":
+          eventPayload = { phases: state.periodizationPhases };
+          break;
         case "INITIALIZATION_COMPLETE":
           eventPayload = {};
-          break; // No specific payload needed
+          break;
         case "SET_HIGHLIGHTED_DATE":
-          eventPayload = { date: newStateForEvent.highlightedDate };
+          eventPayload = { date: state.highlightedDate };
           break;
         case "SET_PINNED_TOOLTIP":
-          eventPayload = { data: newStateForEvent.pinnedTooltipData };
+          eventPayload = { data: state.pinnedTooltipData };
           break;
         case "SET_ACTIVE_HOVER_DATA":
-          eventPayload = { data: newStateForEvent.activeHoverData };
+          eventPayload = { data: state.activeHoverData };
           break;
-        // Removed cases for SET_TREND_LINE_DATA and SET_GOAL_LINE_DATA
         default:
-          // Fallback for events not explicitly listed above
           console.warn(
             `[StateManager] Missing specific event payload definition for ${action.type} in dispatch.`,
           );
-          eventPayload = { newState: newStateForEvent }; // Default to sending new state
+          eventPayload = { newState: state };
       }
       _notifySpecificSubscribers(eventName, eventPayload);
     }

@@ -21,12 +21,9 @@ export const WhatWorkedRenderer = {
             return;
         }
 
-        StateManager.subscribe((stateChanges) => {
-            if (stateChanges.action.type.includes('PROCESSED_DATA') ||
-                stateChanges.action.type.includes('PERIODIZATION')) {
-                this._analyze();
-            }
-        });
+        StateManager.subscribeToSpecificEvent('state:filteredDataChanged', () => this._analyze());
+        StateManager.subscribeToSpecificEvent('state:initializationComplete', () => this._analyze());
+        StateManager.subscribeToSpecificEvent('state:periodizationPhasesChanged', () => this._analyze());
 
         setTimeout(() => this._analyze(), 1050);
     },

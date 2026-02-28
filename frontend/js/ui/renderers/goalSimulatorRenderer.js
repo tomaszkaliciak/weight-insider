@@ -25,12 +25,9 @@ export const GoalSimulatorRenderer = {
             }
         });
 
-        StateManager.subscribe((stateChanges) => {
-            if (stateChanges.action.type.includes('DISPLAY_STATS') ||
-                stateChanges.action.type.includes('GOAL')) {
-                if (this._isVisible) this._render();
-            }
-        });
+        const renderIfVisible = () => { if (this._isVisible) this._render(); };
+        StateManager.subscribeToSpecificEvent('state:displayStatsUpdated', renderIfVisible);
+        StateManager.subscribeToSpecificEvent('state:goalChanged', renderIfVisible);
 
         // Trigger initial render check
         if (this._isVisible) {
@@ -64,6 +61,76 @@ export const GoalSimulatorRenderer = {
         return points;
     },
 
+    _normalCdf(z) {
+        // Abramowitz-Stegun approximation; precise enough for UI confidence display.
+        const sign = z < 0 ? -1 : 1;
+        const x = Math.abs(z) / Math.sqrt(2);
+        const t = 1 / (1 + 0.3275911 * x);
+        const a1 = 0.254829592;
+        const a2 = -0.284496736;
+        const a3 = 1.421413741;
+        const a4 = -1.453152027;
+        const a5 = 1.061405429;
+        const erf =
+            1 -
+            (((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t) *
+            Math.exp(-x * x);
+        const erfSigned = sign * erf;
+        return 0.5 * (1 + erfSigned);
+    },
+
+    _calculateGoalConfidence(state, displayStats) {
+        const goal = Selectors.selectGoal(state);
+        const goalAchievedDate = state.goalAchievedDate;
+
+        const referenceWeight = displayStats.currentSma ?? displayStats.currentWeight;
+        const currentRate = displayStats.currentWeeklyRate;
+        const requiredRate = displayStats.requiredRateForGoal;
+        const volatility = displayStats.rollingVolatility ?? displayStats.volatility ?? 0.25;
+
+        if (goalAchievedDate instanceof Date) {
+            return {
+                scorePct: 100,
+                label: 'Achieved',
+                currentRate,
+                requiredRate: null,
+                uncertaintyKgWeek: null,
+            };
+        }
+
+        if (
+            !goal ||
+            goal.weight == null ||
+            !(goal.date instanceof Date) ||
+            referenceWeight == null ||
+            currentRate == null ||
+            requiredRate == null
+        ) {
+            return null;
+        }
+
+        // Convert day-level volatility in kg into uncertainty of weekly rate estimate.
+        const uncertaintyKgWeek = Math.max(0.05, volatility * Math.sqrt(7) * 0.6);
+
+        // Probability that the "realized rate" is sufficient to hit the goal date.
+        const goalIsLoss = goal.weight < referenceWeight;
+        const z = (requiredRate - currentRate) / uncertaintyKgWeek;
+        const pHit = goalIsLoss
+            ? this._normalCdf(z) // P(rate <= requiredRate)
+            : 1 - this._normalCdf(z); // P(rate >= requiredRate)
+
+        const scorePct = Math.max(0, Math.min(100, Math.round(pHit * 100)));
+        const label = scorePct >= 80 ? 'High' : scorePct >= 55 ? 'Moderate' : 'Low';
+
+        return {
+            scorePct,
+            label,
+            currentRate,
+            requiredRate,
+            uncertaintyKgWeek,
+        };
+    },
+
     _render() {
         if (!this._container) return;
 
@@ -72,6 +139,7 @@ export const GoalSimulatorRenderer = {
         const currentRate = displayStats.currentWeeklyRate || 0;
         const currentWeight = displayStats.currentWeight;
         const volatility = displayStats.volatility || 0.5;
+        const confidence = this._calculateGoalConfidence(state, displayStats);
 
         if (!currentWeight) {
             this._container.innerHTML = `
@@ -110,6 +178,21 @@ export const GoalSimulatorRenderer = {
 
         // Layout
         this._container.innerHTML = `
+            ${confidence ? `
+                <div class="goal-confidence-meter">
+                    <div class="gcm-header">
+                        <span class="gcm-title">Goal Confidence</span>
+                        <span class="gcm-badge gcm-${confidence.label.toLowerCase()}">${confidence.scorePct}% ${confidence.label}</span>
+                    </div>
+                    <div class="gcm-bar">
+                        <div class="gcm-fill gcm-${confidence.label.toLowerCase()}" style="width:${confidence.scorePct}%"></div>
+                    </div>
+                    <div class="gcm-details">
+                        <span>Current: ${confidence.currentRate != null ? `${confidence.currentRate > 0 ? '+' : ''}${confidence.currentRate.toFixed(2)} kg/wk` : 'N/A'}</span>
+                        <span>Required: ${confidence.requiredRate != null ? `${confidence.requiredRate > 0 ? '+' : ''}${confidence.requiredRate.toFixed(2)} kg/wk` : 'N/A'}</span>
+                    </div>
+                </div>
+            ` : ''}
             <div class="sim-legend">
                 ${scenarios.map(s => `
                     <div class="sim-legend-item">

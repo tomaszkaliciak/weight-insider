@@ -8,10 +8,16 @@ This document provides technical details about all features in Weight Insider.
 
 1. [Core Chart Features](#core-chart-features)
 2. [Data Processing](#data-processing)
-3. [Analysis Features](#analysis-features)
-4. [Goal Management](#goal-management)
-5. [Event Tracking](#event-tracking)
-6. [State Management](#state-management)
+3. [State Management](#state-management)
+4. [Analysis Features](#analysis-features)
+5. [Nutrition & Macros](#nutrition--macros)
+6. [Goal Management](#goal-management)
+7. [Energy Analytics](#energy-analytics)
+8. [Smart Coaching](#smart-coaching)
+9. [Tracking & Consistency](#tracking--consistency)
+10. [Infrastructure](#infrastructure)
+11. [Configuration](#configuration)
+12. [File Structure](#file-structure)
 
 ---
 
@@ -23,9 +29,11 @@ This document provides technical details about all features in Weight Insider.
 |---------|------|-------------|
 | Raw Data Points | `chartUpdaters.js` | Scatter plot of daily weights |
 | SMA Line | `dataService.js` | 7-day Simple Moving Average |
-| EMA Line | `dataService.js` | Exponential Moving Average (α=0.3) |
-| Confidence Band | `chartUpdaters.js` | ±1 std dev around SMA |
+| EMA Line | `dataService.js` | Exponential Moving Average (alpha=0.3) |
+| Confidence Band | `chartUpdaters.js` | +/-1 std dev around SMA |
 | Regression Line | `statsManager.js` | Linear regression with 95% CI |
+| Manual Trendlines | `chartUpdaters.js` | Two user-configurable rate overlays |
+| Goal Line | `chartUpdaters.js` | Target weight projection |
 
 ### Interaction Components
 
@@ -33,8 +41,9 @@ This document provides technical details about all features in Weight Insider.
 |-----------|------|---------|
 | Context Brush | `chartSetup.js` | Quick date range selection |
 | Regression Brush | `chartSetup.js` | Custom regression range |
-| Zoom Behavior | `chartSetup.js` | D3 zoom/pan |
+| Zoom Behaviour | `chartSetup.js` | D3 zoom/pan |
 | Tooltip System | `tooltipManager.js` | Hover/pin data display |
+| Chart Controls | `chartControls.js` | Fullscreen toggle, chart options |
 
 ---
 
@@ -44,27 +53,41 @@ This document provides technical details about all features in Weight Insider.
 
 ```
 Raw Data (data.json)
-    ↓
-mergeRawData() - Combine all data sources
-    ↓
+    |
+    v
+ManualEntryService.mergeInto() - Overlay localStorage entries
+    |
+    v
+mergeRawData() - Combine all data sources (incl. macros)
+    |
+    v
 calculateBodyComposition() - LBM/FM from body fat %
-    ↓
+    |
+    v
 calculateSMAAndStdDev() - 7-day moving average + bounds
-    ↓
+    |
+    v
 calculateEMA() - Exponential moving average
-    ↓
+    |
+    v
 identifyOutliers() - Flag statistical outliers
-    ↓
+    |
+    v
 calculateRollingVolatility() - Fluctuation measure
-    ↓
+    |
+    v
 calculateDailyRatesAndTDEETrend() - Rate of change
-    ↓
+    |
+    v
 calculateAdaptiveTDEE() - Dynamic TDEE estimation
-    ↓
+    |
+    v
 smoothRatesAndTDEEDifference() - Noise reduction
-    ↓
+    |
+    v
 calculateRateMovingAverage() - Weekly rate smoothing
-    ↓
+    |
+    v
 Processed Data
 ```
 
@@ -72,25 +95,108 @@ Processed Data
 
 | Key in data.json | Type | Description |
 |------------------|------|-------------|
-| `weights` | `{date: kg}` | Body weight measurements |
+| `weights` / `bodyWeight` | `{date: kg}` | Body weight measurements |
 | `calorieIntake` | `{date: kcal}` | Daily calorie intake |
-| `googleFitExpenditure` | `{date: kcal}` | Google Fit TDEE |
+| `googleFitExpenditure` | `{date: kcal}` | Google Fit / Health Connect TDEE |
 | `bodyFat` | `{date: %}` | Body fat percentage |
-| `protein` | `{date: g}` | Protein intake |
-| `carbs` | `{date: g}` | Carbohydrate intake |
-| `fat` | `{date: g}` | Fat intake |
+| `macroProtein` / `protein` | `{date: g}` | Protein intake |
+| `macroCarbs` / `carbs` | `{date: g}` | Carbohydrate intake |
+| `macroFat` / `fat` | `{date: g}` | Fat intake |
+| `macroFiber` / `fiber` | `{date: g}` | Dietary fiber intake |
 | `workouts` | `{date: object}` | Training data |
 
-### Workout Data Structure
+### Merged Data Point Structure
+
+Each processed data point contains:
 
 ```javascript
 {
-  "2024-01-15": {
-    "workoutCount": 1,      // Number of sessions
-    "totalSets": 25,        // Total sets performed
-    "totalVolume": 15000,   // Sets × Weight × Reps (kg)
-    "isRestDay": false      // Rest day flag
-  }
+  date: Date,
+  value: number,           // raw weight (kg)
+  calorieIntake: number,
+  googleFitTDEE: number,
+  bodyFatPercent: number,
+  protein: number,         // grams
+  carbs: number,           // grams
+  fat: number,             // grams
+  fiber: number,           // grams
+  sma: number,             // 7-day SMA
+  ema: number,             // EMA
+  upperBound: number,      // SMA + 1 std dev
+  lowerBound: number,      // SMA - 1 std dev
+  isOutlier: boolean,
+  rollingVolatility: number,
+  dailyRate: number,       // kg/day
+  smoothedWeeklyRate: number,
+  adaptiveTDEE: number,
+  trendTDEE: number,
+  // ... additional computed fields
+}
+```
+
+---
+
+## State Management
+
+### Architecture
+
+`stateManager.js` implements a Redux-style state bus:
+
+- **Shallow-clone reducer** for performance (no deep cloning)
+- **Typed event subscriptions** via `subscribeToSpecificEvent(eventName, callback)` -- all renderers use this instead of generic `subscribe()`
+- **Action-to-event mapping** converts dispatched action types to semantic events (e.g. `SET_FILTERED_DATA` -> `state:filteredDataChanged`)
+
+### Action Types
+
+| Action | Payload | Purpose |
+|--------|---------|---------|
+| `INITIALIZE_START` | -- | Mark init started |
+| `SET_INITIAL_DATA` | `{rawData, processedData}` | Store fetched + processed data |
+| `SET_PROCESSED_DATA` | `DataPoint[]` | Update processed data |
+| `SET_FILTERED_DATA` | `DataPoint[]` | Update range-filtered data |
+| `SET_WEEKLY_SUMMARY` | `WeekSummary[]` | Weekly aggregated data |
+| `SET_CORRELATION_DATA` | `CorrelationPoint[]` | Scatter plot pairs |
+| `SET_REGRESSION_RESULT` | `{slope, intercept, points}` | Regression output |
+| `LOAD_GOAL` / `SET_GOAL` | `{weight, date, targetRate}` | Goal state |
+| `LOAD_ANNOTATIONS` / `ADD_ANNOTATION` / `DELETE_ANNOTATION` | Annotation data | Annotation CRUD |
+| `SET_ANALYSIS_RANGE` | `{start, end}` | Date range filter |
+| `SET_INTERACTIVE_REGRESSION_RANGE` | `{start, end}` | Regression brush range |
+| `SET_THEME` | `string` | Current theme name |
+| `TOGGLE_SERIES_VISIBILITY` | `{seriesId, isVisible}` | Legend toggle |
+| `UPDATE_TREND_CONFIG` | `{startDate, initialWeight, weeklyIncrease1, weeklyIncrease2}` | Manual trendlines |
+| `SET_DISPLAY_STATS` | `object` | All derived statistics |
+| `SET_PERIODIZATION_PHASES` | `Phase[]` | Detected phases |
+| `SET_WORKOUT_CORRELATION` | `CorrelationResult` | Workout correlation |
+| `INITIALIZATION_COMPLETE` | -- | Triggers initial renders |
+
+### Key Events
+
+| Event | Triggered By |
+|-------|-------------|
+| `state:filteredDataChanged` | `SET_FILTERED_DATA` |
+| `state:initializationComplete` | `INITIALIZATION_COMPLETE` |
+| `state:goalChanged` | `LOAD_GOAL`, `SET_GOAL` |
+| `state:displayStatsUpdated` | `SET_DISPLAY_STATS` |
+| `state:periodizationPhasesChanged` | `SET_PERIODIZATION_PHASES` |
+
+### Initial State Shape
+
+```javascript
+{
+  isInitialized: false,
+  rawData: [],
+  processedData: [],
+  filteredData: [],
+  goal: { weight: null, date: null, targetRate: null },
+  annotations: [],
+  analysisRange: { start: null, end: null },
+  currentTheme: "light",
+  seriesVisibility: { raw, smaLine, emaLine, smaBand, regression, trend1, trend2, goal, annotations, plateaus, trendChanges, rateMA },
+  trendConfig: { startDate, initialWeight, weeklyIncrease1, weeklyIncrease2, isValid },
+  displayStats: {},
+  periodizationPhases: [],
+  workoutCorrelation: { coefficient, weeklyData, interpretation, totalWeeks },
+  // ... UI transient state (hover, tooltip, zoom, etc.)
 }
 ```
 
@@ -100,71 +206,116 @@ Processed Data
 
 ### Periodization Analysis
 
-**File:** `periodizationRenderer.js`  
+**File:** `periodizationRenderer.js`
 **Algorithm:** `dataService.detectPeriodizationPhases()`
 
-**Classification Thresholds (from `config.js`):**
 | Phase | Rate Threshold |
 |-------|-----------------|
 | Bulk | > +0.15 kg/week |
 | Cut | < -0.15 kg/week |
 | Maintenance | -0.15 to +0.15 |
 
-**Minimum Phase Duration:** 2 weeks
-
-**Output Structure:**
-```javascript
-{
-  type: 'bulk' | 'cut' | 'maintenance',
-  startDate: Date,
-  endDate: Date,
-  durationWeeks: number,
-  avgRate: number,        // kg/week
-  avgCalories: number,    // kcal/day
-  weightChange: number    // total kg
-}
-```
-
----
+Minimum phase duration: 2 weeks.
 
 ### Workout Correlation
 
-**File:** `workoutCorrelationRenderer.js`  
-**Algorithm:** `dataService.calculateWorkoutCorrelation()`
+**File:** `workoutCorrelationRenderer.js`
 
-**Method:**
-1. Group data by week (Monday-based)
-2. Sum weekly training volume
-3. Calculate average weekly rate (smoothed)
-4. Compute Pearson correlation coefficient
+Groups data by week, sums training volume, computes Pearson correlation coefficient against weekly rate.
 
-**Interpretation Bands:**
 | |r| Range | Interpretation |
 |-----------|----------------|
-| ≥ 0.7 | Strong correlation |
-| 0.4 - 0.69 | Moderate correlation |
-| 0.2 - 0.39 | Weak correlation |
+| >= 0.7 | Strong correlation |
+| 0.4-0.69 | Moderate correlation |
+| 0.2-0.39 | Weak correlation |
 | < 0.2 | No significant correlation |
-
----
 
 ### Period Comparison
 
 **File:** `periodComparisonRenderer.js`
 
-**Quick Compare Modes:**
-| Mode | Period 1 | Period 2 |
-|------|----------|----------|
-| Last 2 Weeks | Week before last | Last week |
-| Last 2 Months | Month before last | Last month |
-| Last 2 Phases | Second-to-last phase | Last phase |
+Quick-compare modes: Last 2 Weeks, Last 2 Months, Last 2 Phases. Entirely local computation from existing processed data.
 
-**Comparison Metrics:**
-- Duration (days)
-- Weight change (kg)
-- Average rate (kg/week)
-- Average calorie intake
-- Average training volume
+### Rolling Averages
+
+**File:** `rollingAveragesRenderer.js`
+
+Windows: 7-day, 14-day, 30-day. Includes momentum indicator (7d vs 30d), reversal detection, and **macro rolling averages** (7-day and 14-day for protein, carbs, fat, fiber with delta indicators).
+
+### Weekend vs Weekday Analysis
+
+**File:** `weekendAnalysisRenderer.js`
+
+Metrics: avg calories, avg daily change, volatility, workout rate. Calculates weekend impact as `(calorieDiff * 2) / 7700 * 7` kg/week.
+
+### Prediction Bands
+
+**File:** `predictionBandsRenderer.js`
+
+```
+expectedChange = currentRate * weeks
+uncertainty = rateStdDev * sqrt(weeks) * 1.5
+confidence = max(50, 95 - weeks * 3)
+```
+
+### Adaptive Rate Benchmarks
+
+**File:** `adaptiveRateRenderer.js`
+
+Percentile ranking against personal history. Classification: gaining (> 0.05), losing (< -0.05), maintenance.
+
+### Calorie Accuracy Audit
+
+**File:** `calorieAuditRenderer.js`
+
+```
+expectedChange = -totalDeficit / KCALS_PER_KG
+accuracy = max(0, 100 - |discrepancy / expectedChange| * 100)
+```
+
+### Monthly / Quarterly Reports
+
+**File:** `monthlyReportRenderer.js`
+
+Monthly stats: days logged, consistency %, start/end weight, avg calories, avg rate. Quarterly aggregation. Best-month highlighting.
+
+### Correlation Matrix
+
+**File:** `correlationMatrixRenderer.js`
+
+Uses `simple-statistics.sampleCorrelation()` for every pair of: Calories, Protein %, Carbs %, Fat %, Volatility, Weight Change, TDEE, Rate. Green/red/grey colour coding.
+
+---
+
+## Nutrition & Macros
+
+### Macro Summary
+
+**File:** `macroSummaryRenderer.js`
+
+Displays latest-day macro breakdown (P/C/F/Fiber) as progress bars with gram counts and calorie percentages. Below the bars: 7-day average calorie split.
+
+**Lazy loaded** via `IntersectionObserver` with catch-up render on late init.
+
+### Protein Adequacy
+
+**File:** `proteinAdequacyRenderer.js`
+
+Prominent g/kg readout colour-coded against thresholds:
+- >= 1.6 g/kg: Optimal (green)
+- >= 1.2 g/kg: Sufficient (amber)
+- < 1.2 g/kg: Low (red)
+
+Includes threshold-marker progress bar and 14-day sparkline.
+
+**Lazy loaded** via `IntersectionObserver` with catch-up render on late init.
+
+### Stats Integration
+
+`statsManager.js` computes macro-derived metrics during its calculation cycle:
+- `avgDailyProtein`, `latestProtein`, `avgProteinPerKg`
+- `avgDailyCarbs`, `avgDailyFat`, `avgDailyFiber`
+- `latestCarbs`, `latestFat`, `latestFiber`
 
 ---
 
@@ -176,321 +327,222 @@ Processed Data
 
 ```javascript
 {
-  weight: number | null,    // Target weight in kg
-  date: Date | null,        // Target date
-  targetRate: number | null // Optional desired rate
+  weight: number | null,
+  date: Date | null,
+  targetRate: number | null
 }
 ```
+
+### Goal Setting Form
+
+**Location:** Inline `<form>` inside the Goal Progress widget in `index.html`.
+**Handler:** `EventHandlers.handleGoalSubmit()` dispatches `LOAD_GOAL` and saves via `GoalManager`.
+
+### Goal Simulator
+
+**File:** `goalSimulatorRenderer.js`
+
+Projects weight path to goal with confidence bands. Shows estimated arrival date and required calorie adjustment.
 
 ### Goal Alerts
 
 **File:** `goalAlertRenderer.js`
 
-**Alert Types:**
-
-| Type | Priority | Condition |
-|------|----------|-----------|
-| `error` | 1 | Rate moving opposite to goal |
-| `warning` | 2 | Off track / Deadline passed |
-| `success` | 3-5 | Milestone / On track |
-| `info` | 2-4 | Deadline approaching |
-
-**Milestone Thresholds:** 25%, 50%, 75%, 90%
-
----
+Alert types: error (wrong direction), warning (off track / deadline passed), success (milestone / on track), info (deadline approaching). Milestone thresholds: 25%, 50%, 75%, 90%.
 
 ### Goal Suggestions
 
 **File:** `goalSuggestionRenderer.js`
 
-**Historical Analysis:**
-- Calculates average positive rates (bulk phases)
-- Calculates average negative rates (cut phases)
-- Determines sustainable rates from median performance
-- Measures rate consistency (standard deviation)
-
-**Suggestions Generated:**
-
-| Type | Duration | Rate Basis |
-|------|----------|------------|
-| Moderate Cut | 12 weeks | Sustainable loss rate |
-| Aggressive Cut | 8 weeks | 1.5× sustainable rate |
-| Lean Bulk | 16 weeks | Sustainable gain rate |
-| Maintenance | 4 weeks | 0 kg/week |
-| Continue Trend | 8 weeks | Current rate |
+Generates cut/bulk/maintenance/continue-trend suggestions from historical rate analysis. "Apply Goal" button dispatches directly to state.
 
 ---
 
-## Event Tracking
+## Energy Analytics
 
-### Event Countdown
+### Energy Balance
 
-**File:** `eventCountdownRenderer.js`  
-**Storage:** `localStorage` (key: `weight-insider-events`)
+**File:** `energyBalanceRenderer.js`
 
-**Event Structure:**
-```javascript
-{
-  id: number,           // Timestamp-based ID
-  name: string,         // Event name
-  date: Date,           // Event date
-  targetWeight: number, // Optional target weight
-  category: string      // competition|photoshoot|vacation|wedding|other
-}
-```
+Goal-aware bar chart: dynamically assigns green/red colours based on whether the user is cutting or bulking. Uses `_getGoalAwareColors(goal)`.
 
-**Category Icons:**
-| Category | Icon |
-|----------|------|
-| competition | 🏆 |
-| photoshoot | 📸 |
-| vacation | 🏖️ |
-| wedding | 💍 |
-| other | 📅 |
+**Lazy loaded** via `IntersectionObserver`.
 
-**Urgency Classes:**
-| Days Remaining | CSS Class | Visual |
-|----------------|-----------|--------|
-| ≤ 7 | `.urgent` | Red highlight |
-| ≤ 14 | `.soon` | Yellow highlight |
-| ≤ 30 | `.upcoming` | Blue highlight |
+### Energy Flow (Sankey)
 
-**Milestones (automatic):**
-| Days | Milestone |
-|------|-----------|
-| ≤ 1 | Event day! |
-| ≤ 7 | Peak week |
-| ≤ 14 | Final prep phase |
-| ≤ 30 | Training intensification |
+**File:** `energySankeyRenderer.js`
+
+D3-sankey diagram: Intake -> TDEE -> Deficit/Surplus -> Weight Change.
+
+**Lazy loaded** via `IntersectionObserver`.
+
+### TDEE Accuracy Dashboard
+
+**File:** `tdeeAccuracyRenderer.js`
+
+Compares Trend TDEE, Adaptive TDEE, and Google Fit TDEE. Accuracy = `100 - |Expected - Actual| / Actual * 100`.
+
+### Metabolic Adaptation
+
+**File:** `metabolicAdaptationRenderer.js`
+
+Tracks how TDEE adapts over time relative to intake changes.
 
 ---
 
-## State Management
+## Smart Coaching
 
-### Action Types (`stateManager.js`)
+### Smart Coach
 
-**New Actions for Features:**
+**File:** `smartCoachRenderer.js`
 
-| Action | Payload | Purpose |
-|--------|---------|---------|
-| `SET_PERIODIZATION_PHASES` | `Phase[]` | Store detected phases |
-| `SET_WORKOUT_CORRELATION` | `CorrelationResult` | Store correlation data |
-
-### Selectors (`selectors.js`)
-
-| Selector | Returns |
-|----------|---------|
-| `selectPeriodizationPhases` | `Phase[]` |
-| `selectWorkoutCorrelation` | `CorrelationResult` |
-
-### State Shape Extensions
-
-```javascript
-{
-  // ... existing state ...
-  periodizationPhases: [],
-  workoutCorrelation: {
-    coefficient: number | null,
-    weeklyData: [],
-    interpretation: string,
-    totalWeeks: number
-  }
-}
-```
-
----
-
-## Advanced Analytics Features
-
-### Weekend vs Weekday Analysis
-
-**File:** `weekendAnalysisRenderer.js`
-
-**Analysis Method:**
-1. Classify each day by `date.getDay()` (0=Sun, 6=Sat)
-2. Separate weekday (Mon-Fri) vs weekend (Sat-Sun) buckets
-3. Calculate mean and standard deviation for each
-
-**Metrics Calculated:**
-| Metric | Formula |
-|--------|---------|
-| Avg Calories | Sum(calories) / count |
-| Avg Daily Change | Mean of day-to-day weight differences |
-| Volatility | Standard deviation of daily changes |
-| Workout Rate | Days with volume > 0 / total days × 100 |
-
-**Weekend Impact Calculation:**
-```javascript
-weekendDamage = (calorieDiff * 2) / 7700 * 7  // kg/week impact
-```
-
----
-
-### Prediction Bands
-
-**File:** `predictionBandsRenderer.js`
-
-**Prediction Algorithm:**
-```javascript
-expectedChange = currentRate × weeks
-uncertainty = rateStdDev × sqrt(weeks) × 1.5
-expected = currentWeight + expectedChange
-optimistic = expected ± uncertainty (depending on rate direction)
-```
-
-**Confidence Calculation:**
-```javascript
-confidence = max(50, 95 - weeks × 3)  // Decreases over time
-```
-
----
-
-### Adaptive Rate Benchmarks
-
-**File:** `adaptiveRateRenderer.js`
-
-**Percentile Calculation:**
-```javascript
-percentile = (belowCount / totalCount) × 100
-```
-
-**Classification Thresholds:**
-- Gaining: rate > 0.05 kg/week
-- Losing: rate < -0.05 kg/week
-- Maintenance: |rate| ≤ 0.05 kg/week
-
-**Benchmark Data:**
-- `bulkRates`: All weeks with rate > 0.1
-- `cutRates`: All weeks with rate < -0.1
-- Average, median, and max for each category
-
----
-
-### Calorie Accuracy Audit
-
-**File:** `calorieAuditRenderer.js`
-
-**Accuracy Calculation:**
-```javascript
-expectedChange = -totalDeficit / KCALS_PER_KG
-totalDeficit = (TDEE × days) - totalCaloriesLogged
-discrepancy = actualChange - expectedChange
-dailyDiscrepancy = (discrepancy × KCALS_PER_KG) / days
-accuracy = max(0, 100 - |discrepancy / expectedChange| × 100)
-```
-
-**Accuracy Thresholds:**
-| Score | Classification |
-|-------|----------------|
-| ≥ 80% | Excellent |
-| 60-79% | Good |
-| 40-59% | Moderate |
-| < 40% | Poor |
-
----
-
-### Monthly/Quarterly Reports
-
-**File:** `monthlyReportRenderer.js`
-
-**Monthly Stats Structure:**
-```javascript
-{
-  key: "2024-01",
-  monthName: "Jan",
-  daysLogged: number,
-  consistency: (logged / daysInMonth) × 100,
-  startWeight: first weight in month,
-  endWeight: last weight in month,
-  avgCalories: mean(calories),
-  avgRate: mean(smoothedWeeklyRate)
-}
-```
-
-**Quarterly Aggregation:**
-- Groups months by quarter (Q1=Jan-Mar, etc.)
-- Calculates combined weight change
-- Averages consistency across months
-
----
-
-### What Worked Analysis
-
-**File:** `whatWorkedRenderer.js`
-
-**Pattern Detection:**
-1. **Find cut periods**: consecutive days with rate < -0.2
-2. **Find bulk periods**: consecutive days with rate > 0.1
-3. **Minimum period length**: 14 days
-
-**Insights Generated:**
-| Insight | Algorithm |
-|---------|-----------|
-| Best Cut Calories | Avg calories for period with most negative rate |
-| Best Bulk Calories | Avg calories for period with rate 0.1-0.4 |
-| Volume Impact | Compare high vs low volume quartile rates |
-| Longest Phase | Max duration across detected phases |
-| Consistency Impact | Compare 6+ logged days vs <5 logged days |
-
----
+Phase-aware recommendations. Tip categories: consistency, progress, obstacles, goals.
 
 ### Plateau Breaker
 
 **File:** `plateauBreakerRenderer.js`
 
-**Plateau Detection:**
-```javascript
-isInPlateau = avgAbsoluteRate < 0.15 (last 14 days)
-```
+Detection: `avgAbsoluteRate < 0.15` for 14+ days. Historical plateau analysis and prioritised suggestions.
 
-**Historical Plateau Analysis:**
-- Detects periods where |rate| < 0.12 for 14+ days
-- Records how plateau ended (calorie change)
-- Stores break pattern for suggestions
+### What Worked
 
-**Suggestion Priority:**
-| Priority | Suggestion Type |
-|----------|-----------------|
-| High | Based on user history |
-| High | Diet break (if > 21 days) |
-| Medium | Increase activity |
-| Medium | Water retention check |
-| Low | Tracking audit |
+**File:** `whatWorkedRenderer.js`
+
+Pattern detection: best cut/bulk calories, volume impact, longest phases, consistency impact.
+
+### Rate Optimizer
+
+**File:** `rateOptimizerRenderer.js`
+
+Best performing rate ranges, rate vs adherence correlation, sustainability scoring.
 
 ---
 
-### Rolling Averages
+## Tracking & Consistency
 
-**File:** `rollingAveragesRenderer.js`
+### Streak Tracker
 
-**Moving Average Windows:**
-| Window | Data Points |
-|--------|-------------|
-| 7-day | Last 7 weight entries |
-| 14-day | Last 14 weight entries |
-| 30-day | Last 30 weight entries |
+**File:** `streakTrackerRenderer.js`
 
-**Trend Calculation:**
+Streak types: logging, goal, combined. Persists visually (not to state).
+
+### Calorie Heatmap
+
+**File:** `calorieHeatmapRenderer.js`
+
+Calendar-style D3 heatmap. **Lazy loaded** via `IntersectionObserver`.
+
+### Water Weight Predictor
+
+**File:** `waterWeightRenderer.js`
+
+`waterWeight = (carbIntake - avgCarbIntake) * 3 / 1000`
+
+### Reverse Dieting Calculator
+
+**File:** `reverseDietRenderer.js`
+
+Three phases: aggressive (4wk/+200), moderate (8wk/+100), conservative (12wk/+50).
+
+### Event Countdown
+
+**File:** `eventCountdownRenderer.js`
+**Storage:** `localStorage` (key: `weight-insider-events`)
+
+Categories: competition, photoshoot, vacation, wedding, other. Urgency indicators at 7, 14, 30 days. Milestone alerts (peak week, final prep).
+
+### Executive Hub
+
+**File:** `executiveHubRenderer.js`
+
+KPIs: current weight/SMA, weekly rate, estimated TDEE, days to goal, consistency %.
+
+### Vital Stats Enricher
+
+**File:** `vitalStatsEnricher.js`
+
+Augments the stats display with additional contextual data (e.g. BMI, weekly calorie average).
+
+---
+
+## Infrastructure
+
+### Widget Collapser
+
+**File:** `widgetCollapser.js`
+
+Injects collapse/expand buttons into all `.bento-widget` headers. Collapsed state keyed by widget ID in `localStorage`.
+
+### Mobile Navigation
+
+**File:** `mobileNav.js`
+
+Floating action button (bottom-right) with jump-to panel listing all widgets. Hidden on desktop viewports.
+
+### Manual Entry Service
+
+**File:** `manualEntryService.js`
+
+CRUD for manual entries in `localStorage`. `mergeInto(rawData)` overlays entries onto fetched data before processing.
+
+### Manual Entry Widget
+
+**File:** `manualEntryWidget.js`
+
+UI form for date, weight, and calorie input. Calls `ManualEntryService` on submit.
+
+### Data Table Modal
+
+**File:** `dataTableModal.js`
+
+Modal with sortable 200-row table and CSV export button. Corrected field references: `d.value` (weight), `d.calorieIntake`, `d.adaptiveTDEE` / `d.googleFitTDEE`.
+
+### Lazy Initialization
+
+**File:** `main.js` (`lazyInit()`)
+
+Uses `IntersectionObserver` with 300px root margin. Deferred renderers include a catch-up render block that checks `StateManager.getState().isInitialized` and renders immediately if the app already finished initializing.
+
+### PWA / Service Worker
+
+**File:** `public/sw.js`
+
+Cache-first for static assets (HTML, JS, CSS, fonts). Network-first for `data.json`. Posts `DATA_UPDATED` and `SERVING_CACHED_DATA` messages to clients.
+
+### Theme Manager
+
+**File:** `themeManager.js`
+
+Three-way cycle: light -> dark -> gruvbox -> light. Applies CSS classes `dark-theme` / `gruvbox-theme` to `<body>`. Icon updates to show the *next* theme. Persisted in `localStorage`.
+
+---
+
+## Configuration
+
+### Thresholds (`config.js`)
+
 ```javascript
-trend = secondHalfAvg - firstHalfAvg  // For each window
-```
+BULK_RATE_THRESHOLD_KG_WEEK: 0.15,
+CUT_RATE_THRESHOLD_KG_WEEK: -0.15,
+MIN_PHASE_DURATION_WEEKS: 2,
 
-**Momentum:**
-```javascript
-momentum = avg7day - avg30day
-```
+plateauRateThresholdKgWeek: 0.07,
+plateauMinDurationWeeks: 3,
 
-**Reversal Detection:**
-```javascript
-bullishReversal = shortTrend > 0.1 && longTrend < -0.1
-bearishReversal = shortTrend < -0.1 && longTrend > 0.1
+KCALS_PER_KG: 7700,
+adaptiveTDEEWindow: 28,
+
+MIN_WEEKS_FOR_CORRELATION: 4,
+
+MIN_RECOMMENDED_GAIN_RATE_KG_WEEK: 0.1,
+MAX_RECOMMENDED_GAIN_RATE_KG_WEEK: 0.35,
 ```
 
 ---
 
 ## File Structure
 
-### All Renderer Components (29 files)
+### All Renderer Components (35 files)
 
 ```
 js/ui/renderers/
@@ -500,6 +552,7 @@ js/ui/renderers/
 ├── periodComparisonRenderer.js      # Period comparison
 ├── goalAlertRenderer.js             # Progress alerts
 ├── goalSuggestionRenderer.js        # Goal suggestions
+├── goalSimulatorRenderer.js         # Goal projection chart
 ├── eventCountdownRenderer.js        # Event countdown
 ├── weekendAnalysisRenderer.js       # Weekend vs weekday
 ├── predictionBandsRenderer.js       # Weight predictions
@@ -508,268 +561,54 @@ js/ui/renderers/
 ├── monthlyReportRenderer.js         # Monthly reports
 ├── whatWorkedRenderer.js            # Pattern analysis
 ├── plateauBreakerRenderer.js        # Plateau detection
-├── rollingAveragesRenderer.js       # Rolling averages
+├── rollingAveragesRenderer.js       # Rolling averages + macro averages
 ├── tdeeAccuracyRenderer.js          # TDEE accuracy dashboard
 ├── calorieHeatmapRenderer.js        # Calendar heatmap
 ├── streakTrackerRenderer.js         # Streak tracking
 ├── waterWeightRenderer.js           # Water weight prediction
 ├── reverseDietRenderer.js           # Reverse diet calculator
 ├── rateOptimizerRenderer.js         # Rate optimization
-├── smartCoachRenderer.js            # AI coaching tips
+├── smartCoachRenderer.js            # Coaching tips
 ├── weeklyReviewRenderer.js          # Weekly summaries
 ├── executiveHubRenderer.js          # KPI dashboard
 ├── macroCorrelationRenderer.js      # Macro analysis
 ├── correlationMatrixRenderer.js     # Multi-variable heatmap
 ├── energyBalanceRenderer.js         # Deficit/surplus visual
+├── energySankeyRenderer.js          # Energy flow Sankey diagram
+├── macroSummaryRenderer.js          # Macro breakdown widget
+├── proteinAdequacyRenderer.js       # Protein g/kg tracker
+├── metabolicAdaptationRenderer.js   # Metabolic adaptation
+├── vitalStatsEnricher.js            # Stats enrichment
 ├── quickStatsRenderer.js            # Quick stats widget
 └── sparklineRenderer.js             # Mini charts
 ```
 
 ### Initialization Order (`main.js`)
 
-```javascript
-// UI Modules initialization
-MasterUpdater.init();
-ExecutiveHubRenderer.init();           // Premium
-MacroCorrelationRenderer.init();       // Premium
-CorrelationMatrixRenderer.init();      // Premium
-AnnotationListRenderer.init();
-StatsDisplayRenderer.init();
-PeriodizationRenderer.init();
-PeriodComparisonRenderer.init();
-GoalAlertRenderer.init();
-GoalSuggestionRenderer.init();
-EventCountdownRenderer.init();
-WeekendAnalysisRenderer.init();
-PredictionBandsRenderer.init();
-AdaptiveRateRenderer.init();
-CalorieAuditRenderer.init();
-MonthlyReportRenderer.init();
-WhatWorkedRenderer.init();
-PlateauBreakerRenderer.init();
-RollingAveragesRenderer.init();
-TdeeAccuracyRenderer.init();           // Premium
-CalorieHeatmapRenderer.init();         // Premium
-StreakTrackerRenderer.init();          // Premium
-WaterWeightRenderer.init();            // Premium
-ReverseDietRenderer.init();            // Premium
-RateOptimizerRenderer.init();          // Premium
-SmartCoachRenderer.init();             // Premium
-WeeklyReviewRenderer.init();           // Premium
-QuickStatsRenderer.init();             // Premium
-SparklineRenderer.init();              // Premium
-EnergyBalanceRenderer.init();          // Premium
-WeeklySummaryUpdater.init();
-LegendManager.init();
-InsightsGenerator.init();
+```
+Immediate (critical / above-fold / non-bento):
+  MasterUpdater, ExecutiveHubRenderer, AnnotationListRenderer,
+  StatsDisplayRenderer, GoalAlertRenderer, VitalStatsEnricher,
+  GoalSuggestionRenderer, SmartCoachRenderer, TdeeAccuracyRenderer,
+  WeeklySummaryUpdater, LegendManager, InsightsGenerator,
+  ProgressRing, QuickStatsRenderer, KeyboardNav, SparklineRenderer,
+  DataTableModal
+
+Immediate (sidebar / always-init):
+  MacroCorrelationRenderer, PeriodizationRenderer, PeriodComparisonRenderer,
+  EventCountdownRenderer, WeekendAnalysisRenderer, PredictionBandsRenderer,
+  AdaptiveRateRenderer, CalorieAuditRenderer, MonthlyReportRenderer,
+  WhatWorkedRenderer, PlateauBreakerRenderer, RollingAveragesRenderer,
+  StreakTrackerRenderer, WaterWeightRenderer, ReverseDietRenderer,
+  RateOptimizerRenderer, MetabolicAdaptationRenderer, GoalSimulatorRenderer
+
+Lazy (IntersectionObserver):
+  EnergyBalanceRenderer, EnergySankeyRenderer, MacroSummaryRenderer,
+  ProteinAdequacyRenderer, WeeklyReviewRenderer, CalorieHeatmapRenderer,
+  CorrelationMatrixRenderer
 ```
 
 ---
 
-## Premium Analytics Features
-
-### TDEE Accuracy Dashboard
-
-**File:** `tdeeAccuracyRenderer.js`
-
-**Purpose:** Compare estimated TDEE methods (Trend-based, Adaptive, Google Fit) against actual expenditure.
-
-**Metrics:**
-| Metric | Calculation |
-|--------|-------------|
-| Trend TDEE | Intake - (Weekly Rate / 7 × 7700) |
-| Adaptive TDEE | 28-day rolling window calculation |
-| Accuracy % | 100 - |Expected - Actual| / Actual × 100 |
-
----
-
-### Calorie Heatmap
-
-**File:** `calorieHeatmapRenderer.js`
-
-**Purpose:** Calendar-style heatmap showing daily calorie intake patterns.
-
-**Color Scale:**
-| Range | Color |
-|-------|-------|
-| 0-1500 kcal | Light (deficit) |
-| 1500-2500 kcal | Medium (maintenance) |
-| 2500+ kcal | Dark (surplus) |
-
----
-
-### Streak Tracker
-
-**File:** `streakTrackerRenderer.js`
-
-**Purpose:** Track consecutive days of logging weight and meeting calorie goals.
-
-**Streak Types:**
-- **Logging Streak** - Days with weight data
-- **Goal Streak** - Days within calorie target
-- **Combined Streak** - Both criteria met
-
----
-
-### Water Weight Predictor
-
-**File:** `waterWeightRenderer.js`
-
-**Purpose:** Estimate water retention based on carb intake and sodium patterns.
-
-**Algorithm:**
-```javascript
-waterWeight = (carbIntake - avgCarbIntake) × 3 / 1000  // 3g water per g carb
-```
-
----
-
-### Reverse Dieting Calculator
-
-**File:** `reverseDietRenderer.js`
-
-**Purpose:** Plan gradual calorie increases after a cut phase.
-
-**Phases:**
-| Phase | Duration | Weekly Increase |
-|-------|----------|-----------------|
-| Aggressive | 4 weeks | 200 kcal/week |
-| Moderate | 8 weeks | 100 kcal/week |
-| Conservative | 12 weeks | 50 kcal/week |
-
----
-
-### Rate Optimizer
-
-**File:** `rateOptimizerRenderer.js`
-
-**Purpose:** Analyze historical data to find optimal gain/loss rates.
-
-**Metrics:**
-- Best performing rate ranges
-- Rate vs adherence correlation
-- Sustainability scoring
-
----
-
-### Smart Coach
-
-**File:** `smartCoachRenderer.js`
-
-**Purpose:** Generate personalized coaching tips based on current data.
-
-**Tip Categories:**
-- Consistency feedback
-- Rate adjustments
-- Plateau strategies
-- Goal pacing
-
----
-
-### Weekly Review
-
-**File:** `weeklyReviewRenderer.js`
-
-**Purpose:** Generate comprehensive weekly progress summaries.
-
-**Sections:**
-- Weight change summary
-- Calorie adherence
-- Training consistency
-- Key insights
-
----
-
-### Executive Hub
-
-**File:** `executiveHubRenderer.js`
-
-**Purpose:** High-level KPI dashboard for quick status checks.
-
-**KPIs Displayed:**
-- Current weight / SMA
-- Weekly rate
-- Days to goal
-- Consistency %
-
----
-
-### Macro-Weight Correlation
-
-**File:** `macroCorrelationRenderer.js`
-
-**Purpose:** Analyze how macro ratios correlate with weight volatility.
-
-**Correlations:**
-- Carb % vs Weight Volatility
-- Protein % vs Rate
-- Fat % vs Consistency
-
----
-
-### Advanced Insight Matrix
-
-**File:** `correlationMatrixRenderer.js`
-
-**Purpose:** Multi-variable correlation heatmap for deep analysis.
-
-**Variables:**
-| Inputs | Outcomes |
-|--------|----------|
-| Calories | Weight Δ |
-| Protein % | TDEE |
-| Carbs % | Rate |
-| Fat % | - |
-| Volatility | - |
-
-**Color Coding:**
-- Green: Positive correlation
-- Red: Negative correlation
-- Gray: No correlation
-
----
-
-### Energy Balance
-
-**File:** `energyBalanceRenderer.js`
-
-**Purpose:** Visual representation of daily deficit/surplus.
-
-**Display:**
-- Bar chart of daily balance
-- Cumulative weekly balance
-- Color-coded (green deficit, red surplus for cuts)
-
----
-
-## Configuration
-
-### Thresholds (`config.js`)
-
-```javascript
-// Periodization
-BULK_RATE_THRESHOLD_KG_WEEK: 0.15,
-CUT_RATE_THRESHOLD_KG_WEEK: -0.15,
-MIN_PHASE_DURATION_WEEKS: 2,
-
-// Plateau Detection
-plateauRateThresholdKgWeek: 0.07,
-plateauMinDurationWeeks: 3,
-
-// TDEE Calculation
-KCALS_PER_KG: 7700,
-adaptiveTDEEWindow: 28,
-
-// Correlation
-MIN_WEEKS_FOR_CORRELATION: 4,
-
-// Goal Guidance
-MIN_RECOMMENDED_GAIN_RATE_KG_WEEK: 0.1,
-MAX_RECOMMENDED_GAIN_RATE_KG_WEEK: 0.35,
-```
-
----
-
-*For user-facing documentation, see [user_guide.md](user_guide.md).*  
+*For user-facing documentation, see [user_guide.md](user_guide.md).*
 *For program flow diagrams, see [program_flow.md](program_flow.md).*
-

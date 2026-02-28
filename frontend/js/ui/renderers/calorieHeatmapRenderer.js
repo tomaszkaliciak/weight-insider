@@ -4,6 +4,7 @@
 import { StateManager } from '../../core/stateManager.js';
 import * as Selectors from '../../core/selectors.js';
 import { explainOutlier } from '../../core/outlierExplainer.js';
+import { setAnalysisRangeAndSyncChart } from '../../interactions/chartRangeHelper.js';
 
 /**
  * Calorie Heatmap Calendar:
@@ -28,14 +29,12 @@ export const CalorieHeatmapRenderer = {
         this._currentMonth = now.getMonth();
         this._currentYear = now.getFullYear();
 
-        StateManager.subscribe((stateChanges) => {
-            if (stateChanges.action.type.includes('PROCESSED_DATA') ||
-                stateChanges.action.type.includes('DISPLAY_STATS')) {
-                this._render();
-            }
-        });
+        StateManager.subscribeToSpecificEvent('state:displayStatsUpdated', () => this._render());
+        StateManager.subscribeToSpecificEvent('state:filteredDataChanged', () => this._render());
+        StateManager.subscribeToSpecificEvent('state:initializationComplete', () => this._render());
 
-        setTimeout(() => this._render(), 1250);
+        const s = StateManager.getState();
+        if (s.isInitialized) this._render();
     },
 
     _render() {
@@ -227,7 +226,9 @@ export const CalorieHeatmapRenderer = {
             const hasWeight = dayData.value != null;
 
             detailEl.innerHTML = `
-        <div class="detail-header">${dateStr}</div>
+        <div class="detail-header">${dateStr}
+          <button class="btn-focus-week" data-datekey="${dateKey}" title="Focus main chart on this week">Focus week</button>
+        </div>
         <div class="detail-stats">
           <div class="detail-stat">
             <span class="label">Weight</span>
@@ -258,6 +259,19 @@ export const CalorieHeatmapRenderer = {
       `;
         }
         detailEl.classList.remove('hidden');
+
+        // Bind the "Focus week" button
+        detailEl.querySelector('.btn-focus-week')?.addEventListener('click', (e) => {
+            const key = e.currentTarget.dataset.datekey;
+            if (!key) return;
+            const [y, m, d] = key.split('-').map(Number);
+            const dayDate = new Date(y, m, d);
+            const start = new Date(dayDate); start.setDate(start.getDate() - 3);
+            const end   = new Date(dayDate); end.setDate(end.getDate() + 3);
+            setAnalysisRangeAndSyncChart(start, end);
+            // Scroll to chart
+            document.getElementById('chart-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
     },
 
     _renderNoData() {

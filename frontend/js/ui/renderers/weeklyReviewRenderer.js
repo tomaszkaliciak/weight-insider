@@ -13,21 +13,11 @@ export const WeeklyReviewRenderer = {
             return;
         }
 
-        // Subscribe to data changes
-        StateManager.subscribeToSpecificEvent("state:processedDataChanged", () => this._render()); // Use correct event name
-        // Actually, processedDataChanged isn't a mapped event in StateManager exactly like this?
-        // Check StateManager mappings: SET_PROCESSED_DATA -> state:processedDataChanged?
-        // Mappings: SET_FILTERED_DATA -> state:filteredDataChanged.
-        // I should listen to state:filteredDataChanged (visible data) or general state change?
-        // SET_PROCESSED_DATA -> not explicitly mapped in snippet I saw.
-        // BUT SET_FILTERED_DATA is usually triggered after processing.
-        // I'll listen to "state:filteredDataChanged".
-
         StateManager.subscribeToSpecificEvent("state:filteredDataChanged", () => this._render());
-
-        // Also listen to initial load
         StateManager.subscribeToSpecificEvent("state:initializationComplete", () => this._render());
 
+        const s = StateManager.getState();
+        if (s.isInitialized) this._render();
     },
 
     _render() {
@@ -38,12 +28,11 @@ export const WeeklyReviewRenderer = {
         const goal = Selectors.selectGoal(state);
 
         if (!data || data.length < 2) {
-            this._container.innerHTML = `
-                <div class="empty-state-message">
-                    <p>Not enough data</p>
-                    <small>Need more data for a weekly review.</small>
-                </div>
-            `;
+            Utils.renderEmptyState(this._container, {
+                title: "Not enough data",
+                detail: "Need at least 2 days of weight entries for a weekly review.",
+                icon: "📅",
+            });
             return;
         }
 

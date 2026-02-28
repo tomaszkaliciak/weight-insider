@@ -1,18 +1,24 @@
 # Weight Insider User Guide
 
-Welcome to **Weight Insider** - an advanced weight tracking and analysis application that helps you understand your body's response to diet and exercise.
+Welcome to **Weight Insider** -- an advanced weight-tracking and body-composition analysis application that helps you understand your body's response to diet and exercise.
 
 ---
 
 ## Table of Contents
 
 1. [Getting Started](#getting-started)
-2. [Core Features](#core-features)
-3. [Analysis Features](#analysis-features)
-4. [Goal Management](#goal-management)
-5. [Event & Competition Tracking](#event--competition-tracking)
-6. [Advanced Analytics](#advanced-analytics)
-7. [Tips for Best Results](#tips-for-best-results)
+2. [Dashboard Layout](#dashboard-layout)
+3. [Core Features](#core-features)
+4. [Nutrition & Macros](#nutrition--macros)
+5. [Goal Management](#goal-management)
+6. [Analysis Features](#analysis-features)
+7. [Energy Analytics](#energy-analytics)
+8. [Smart Coaching](#smart-coaching)
+9. [Tracking & Consistency](#tracking--consistency)
+10. [Data Management](#data-management)
+11. [Themes](#themes)
+12. [Tips for Best Results](#tips-for-best-results)
+13. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -20,525 +26,351 @@ Welcome to **Weight Insider** - an advanced weight tracking and analysis applica
 
 ### Running the Application
 
-1. Navigate to the `frontend` folder
-2. Start a local server:
-   ```bash
-   npx live-server --port=8080
-   ```
-3. Open `http://localhost:8080` in your browser
+```bash
+cd frontend
+npm install
+npm run dev          # Vite dev server on http://localhost:5173
+```
 
-### Understanding the Interface
+For a production build:
 
-The application is divided into three main areas:
+```bash
+npm run build        # outputs to dist/
+npm run preview      # preview the build locally
+```
 
-| Area | Description |
-|------|-------------|
-| **Left Sidebar** | Analysis panels, settings, and results |
-| **Main Chart** | Interactive weight visualization with trends |
-| **Right Panel** | Weekly summary and annotations |
+### Offline / PWA Support
+
+Weight Insider installs as a Progressive Web App. Once loaded, static assets are cached so the app loads instantly on repeat visits -- even offline. If you go offline, a toast appears and the last-cached `data.json` is used.
+
+---
+
+## Dashboard Layout
+
+The interface uses a **bento-grid** dashboard. Every feature lives inside its own collapsible widget card. The layout is designed to put the most critical information at the top and group related analytics together.
+
+### Widget Collapse / Expand
+
+Click the **collapse button** (top-right of any widget header) to shrink it to a single row. The collapsed state is saved to `localStorage` so it persists across sessions.
+
+### Mobile Navigation
+
+On small screens, a **floating action button** (FAB) appears in the bottom-right corner. Tap it to open a jump-to panel listing all widgets for quick navigation.
 
 ---
 
 ## Core Features
 
-### 📊 Weight Chart
+### Weight Chart
 
 The main chart displays your weight data over time with multiple overlays:
 
 | Element | Description |
 |---------|-------------|
 | **Raw Data Points** | Individual weight measurements (dots) |
-| **SMA Line** | Simple Moving Average - smooths daily fluctuations |
-| **EMA Line** | Exponential Moving Average - more responsive to recent changes |
+| **SMA Line** | Simple Moving Average -- smooths daily fluctuations |
+| **EMA Line** | Exponential Moving Average -- more responsive to recent changes |
 | **SMA Band** | Standard deviation range around the SMA |
 | **Regression Line** | Linear trend with confidence interval |
+| **Manual Trendlines** | Two user-defined rate overlays |
 
 **Interacting with the chart:**
 - **Hover** over dots to see detailed information
 - **Click** a dot to pin its tooltip
 - **Drag** to zoom into a specific date range
 - **Use mouse wheel** to zoom in/out
-- Click **background** to reset selections
+- Click the **background** to reset selections
 
-### 📈 Analysis Range
+### Analysis Range
 
 Set custom date ranges to focus your analysis:
 
-1. Enter **Start Date** and **End Date** (DD-MM-YYYY format)
-2. Click **Apply Range**
-3. All statistics will recalculate for this period
+- **Quick presets:** 7D, 30D, 90D, All
+- **Custom:** Enter Start Date and End Date, then click Apply Range
+- All statistics recalculate for the selected period
 
-**Quick Actions:**
-- Use the context brush below the main chart for quick selection
-- The chart automatically syncs with your range
+The context brush below the main chart provides a quick visual selection method.
 
-### 📝 Annotations
+### Trendlines
+
+Configure up to two manual trendlines by setting a start date, initial weight, and weekly rate. These overlay the chart so you can visualise "what if" scenarios or compare against your actual trajectory.
+
+### Annotations
 
 Add notes to mark important events:
 
-1. Enter a **date** and **note text**
+1. Enter a date and note text
 2. Click **Add Annotation**
 3. Annotations appear as markers on the chart
 4. Click annotations in the list to jump to that date
 
 ---
 
-## Analysis Features
+## Nutrition & Macros
 
-### 🔄 Periodization Analysis
+### Macro Breakdown
 
-**What it does:** Automatically detects and classifies your training phases.
+The **Macro Summary** widget shows your latest-day macronutrient intake:
 
-**How it works:**
-- Analyzes your smoothed weekly weight change rate
-- Classifies periods into three categories:
+| Metric | Display |
+|--------|---------|
+| Protein | grams + % of calories, progress bar |
+| Carbs | grams + % of calories, progress bar |
+| Fat | grams + % of calories, progress bar |
+| Fiber | grams, progress bar |
 
-| Phase | Rate | Meaning |
-|-------|------|---------|
-| 🟢 **Bulk** | > +0.15 kg/week | Weight gaining phase |
-| 🔴 **Cut** | < -0.15 kg/week | Weight loss phase |
-| ⚪ **Maintenance** | -0.15 to +0.15 kg/week | Weight stable |
+Below the bars, a **7-day average calorie split** (P/C/F percentages) is shown.
 
-**How to use:**
-- Open the **Periodization Analysis** panel in the sidebar
-- Review detected phases with duration, weight change, and average calories
-- Use this to verify your phase timing and effectiveness
+### Protein Adequacy
 
----
+The dedicated **Protein Adequacy** widget tracks protein relative to bodyweight:
 
-### ⚖️ Period Comparison
+- Large **g/kg** readout colour-coded as Optimal (green), Sufficient (amber), or Low (red)
+- Threshold-marker progress bar (target: 1.6 g/kg)
+- 14-day sparkline showing g/kg trends over time
 
-**What it does:** Compare any two time periods side-by-side.
+### Macro Rolling Averages
 
-**Quick Compare Options:**
-| Button | Comparison |
-|--------|------------|
-| **Last 2 Weeks** | This week vs previous week |
-| **Last 2 Months** | This month vs previous month |
-| **Last 2 Phases** | Compare your last two detected phases |
-
-**Custom Comparison:**
-1. Enter dates for **Period 1** (start and end)
-2. Enter dates for **Period 2** (start and end)
-3. Click **Compare Periods**
-
-**Metrics Compared:**
-- Duration
-- Total weight change
-- Average rate (kg/week)
-- Average calories
-- Average training volume
+The **Rolling Averages** widget includes a macro section showing 7-day and 14-day averages for protein, carbs, fat, and fiber with delta indicators.
 
 ---
 
 ## Goal Management
 
-### 🎯 Setting Goals
+### Setting Goals
 
-1. Go to the **Goal Settings** section
-2. Enter:
-   - **Target Weight** (kg)
-   - **Target Date** (DD-MM-YYYY)
-   - **Target Rate** (optional, kg/week)
-3. Submit to see the goal line on your chart
+The **Goal Progress** widget contains an inline form:
 
-### 🔔 Goal Alerts
+1. Enter **Target Weight** (kg)
+2. Enter **Target Date**
+3. Optionally set **Target Rate** (kg/week)
+4. Click **Set Goal**
 
-The **Goal Alerts** panel monitors your progress and shows contextual notifications:
+A goal line appears on the main chart and all goal-related widgets activate.
+
+### Goal Simulator
+
+The **Goal Simulator** widget projects your path to the goal using current trends, displayed as a chart with confidence bands. It shows estimated arrival date and required calorie adjustments.
+
+### Goal Alerts
+
+The Goal Alerts panel monitors progress and shows contextual notifications:
 
 | Alert Type | When it Appears |
 |------------|-----------------|
-| 🎯 **Goal Achieved** | Within 0.3 kg of target |
-| ✅ **On Track** | Current trajectory will reach goal |
-| 📉 **Off Track** | Current rate won't reach goal in time |
-| ⚠️ **Wrong Direction** | Gaining when you need to lose (or vice versa) |
-| ⏰ **Deadline Approaching** | Less than 2 weeks remaining |
-| 🏆 **Milestone** | 25%, 50%, 75%, or 90% progress reached |
+| Goal Achieved | Within 0.3 kg of target |
+| On Track | Current trajectory will reach goal |
+| Off Track | Current rate won't reach goal in time |
+| Wrong Direction | Gaining when you need to lose (or vice versa) |
+| Deadline Approaching | Less than 2 weeks remaining |
+| Milestone | 25%, 50%, 75%, or 90% progress reached |
 
-### 💡 Goal Suggestions
+### Goal Suggestions
 
-The **Goal Suggestions** panel analyzes your historical data and recommends realistic goals:
+Analyzes your historical data and recommends realistic goals:
 
 | Suggestion Type | Description |
 |-----------------|-------------|
-| 🎯 **Moderate Cut** | Sustainable 12-week weight loss based on your history |
-| 🔥 **Aggressive Cut** | Faster 8-week cut requiring more discipline |
-| 💪 **Lean Bulk** | Slow 16-week muscle building phase |
-| ⚖️ **Maintenance** | 4-week weight stable phase |
-| 📈 **Continue Trend** | Follow your current trajectory |
+| Moderate Cut | Sustainable 12-week weight loss based on your history |
+| Aggressive Cut | Faster 8-week cut requiring more discipline |
+| Lean Bulk | Slow 16-week muscle building phase |
+| Maintenance | 4-week weight stable phase |
+| Continue Trend | Follow your current trajectory |
 
-**Applying a Suggestion:**
-- Click **Apply Goal** on any suggestion card
-- Your goal will be automatically set
+Click **Apply Goal** on any suggestion card to set it immediately.
 
 ---
 
-## Event & Competition Tracking
+## Analysis Features
 
-### 📅 Event Countdown
+### Periodization Analysis
 
-Track upcoming events like competitions, photoshoots, or special occasions.
+Automatically detects and classifies your training phases:
 
-**Adding an Event:**
-1. Click **+ Add Event**
-2. Enter:
-   - **Event Name**
-   - **Date** (DD-MM-YYYY)
-   - **Target Weight** (optional)
-   - **Category** (Competition, Photoshoot, Vacation, Wedding, Other)
-3. Click **Save Event**
+| Phase | Rate | Meaning |
+|-------|------|---------|
+| Bulk | > +0.15 kg/week | Weight gaining phase |
+| Cut | < -0.15 kg/week | Weight loss phase |
+| Maintenance | -0.15 to +0.15 kg/week | Weight stable |
 
-**Event Card Features:**
-- **Large countdown** showing days remaining
-- **Progress bar** toward your target weight
-- **Weight difference** showing how much you need to gain/lose
-- **Milestones** like "Peak Week" or "Final Prep"
+### Period Comparison
 
-**Urgency Indicators:**
-| Days Remaining | Visual |
-|----------------|--------|
-| ≤ 7 days | 🔴 Red border - urgent |
-| ≤ 14 days | 🟡 Yellow border - soon |
-| ≤ 30 days | 🔵 Blue border - upcoming |
+Compare any two time periods side-by-side.
 
-**Managing Events:**
-- Events are saved in your browser's local storage
-- Click **×** to remove an event
-- Past events are automatically hidden
+**Quick Compare Options:**
 
----
+| Button | Comparison |
+|--------|------------|
+| Last 2 Weeks | This week vs previous week |
+| Last 2 Months | This month vs previous month |
+| Last 2 Phases | Compare your last two detected phases |
 
-## Advanced Analytics
+**Metrics Compared:** Duration, total weight change, average rate, average calories, average training volume.
 
-### 📅 Weekend vs Weekday Analysis
+### Rolling Averages
 
-**What it does:** Compares your eating and training patterns between weekdays and weekends.
+Displays 7-day, 14-day, and 30-day rolling averages for trend comparison:
 
-**Metrics Shown:**
-| Metric | Weekdays | Weekends |
-|--------|----------|----------|
-| Average Calories | Mon-Fri average | Sat-Sun average |
-| Daily Weight Change | Typical fluctuation | Weekend impact |
-| Volatility | Stability measure | Stability measure |
-
-**Key Insight:** Shows "Weekend Calorie Difference" - if positive, you're eating more on weekends which may slow progress. The panel suggests a weekday calorie buffer if needed.
-
----
-
-### 🔮 Weight Predictions
-
-**What it does:** Projects your future weight based on current trends with confidence intervals.
-
-**Time Frames:**
-| Period | Use Case |
-|--------|----------|
-| 4 weeks | Short-term planning |
-| 8 weeks | Medium-term goals |
-| 12 weeks | Competition prep, phases |
-
-**Reading the Predictions:**
-- **Expected** - Most likely weight based on current rate
-- **Range** - Best/worst case based on your rate variability
-- **Confidence %** - Higher = more reliable prediction
-
----
-
-### 📊 Adaptive Benchmarks
-
-**What it does:** Compares your current rate to your personal history, not generic standards.
-
-**Features:**
-- **Percentile Ranking** - "You're in the 75th percentile of your bulk phases"
-- **Rate Comparison** - Current rate vs your historical average
-- **Personal Records** - Your best bulk and cut rates
-
-**Why it matters:** Generic advice says "lose 0.5-1kg/week" but YOUR sustainable rate might be different. This shows what actually works for you.
-
----
-
-### 🔍 Calorie Accuracy Audit
-
-**What it does:** Compares expected weight change (from logged calories) vs actual change to identify logging accuracy issues.
-
-**Accuracy Score:**
-| Score | Meaning |
-|-------|---------|
-| 80-100% | Excellent - logging is accurate |
-| 60-79% | Good - minor discrepancies |
-| 40-59% | Moderate - check portion sizes |
-| <40% | Poor - significant underreporting likely |
-
-**Possible Reasons for Discrepancy:**
-- Underreporting (snacks, cooking oils, drinks)
-- TDEE estimate too high/low
-- Water retention fluctuations
-
-**Weekly Breakdown:** Shows expected vs actual change for each week.
-
----
-
-### 📈 Monthly/Quarterly Reports
-
-**What it does:** Generates periodic summaries of your progress.
-
-**Monthly View:**
-- Start/end weight for each month
-- Average calories and rate
-- Consistency score (% of days logged)
-- Weight range (min-max)
-
-**Quarterly View:**
-- Aggregated progress across 3 months
-- Phase breakdown
-- Average consistency
-
-**Highlights:**
-- 🏆 Best Month - highest consistency
-- 📊 Total Progress - overall weight change
-
----
-
-### 💡 What Worked
-
-**What it does:** Analyzes your most successful periods to identify winning patterns.
-
-**Insights Generated:**
-| Insight | Example |
-|---------|---------|
-| Best Cut Calories | "Around 1800 kcal/day achieved -0.7 kg/week" |
-| Best Bulk Calories | "Around 2600 kcal/day achieved +0.2 kg/week" |
-| Volume Impact | "Higher volume correlates with more weight loss" |
-| Longest Phase | "You can sustain cuts for 10+ weeks" |
-| Consistency Impact | "Consistent weeks average better results" |
-
-**Why it matters:** Instead of following generic advice, use YOUR proven strategies.
-
----
-
-### 🚀 Plateau Breaker
-
-**What it does:** Detects if you're in a plateau and suggests strategies based on your history.
-
-**Plateau Detection:**
-- Triggers when absolute weekly rate < 0.15 kg for 14+ days
-- Shows duration and stable weight
-
-**Suggestions (Prioritized):**
-1. **Based on Your History** - What broke past plateaus
-2. **Diet Break** - If plateau > 21 days
-3. **Increase Activity** - Add steps or sessions
-4. **Water Retention Check** - Sodium, stress, sleep
-5. **Tracking Audit** - Re-weigh portions
-
-**Historical Plateaus:** Shows when past plateaus occurred and how they were broken.
-
----
-
-### 〰️ Rolling Averages
-
-**What it does:** Displays 7-day, 14-day, and 30-day rolling averages for trend comparison.
-
-**Reading the Averages:**
 | Average | Purpose |
 |---------|---------|
 | 7-Day | Short-term trend, responsive |
 | 14-Day | Medium-term, balances noise |
 | 30-Day | Long-term trend, stable |
 
-**Momentum Indicator:**
-- Compares 7-day to 30-day average
-- **Gaining** = short-term trending higher
-- **Losing** = short-term trending lower
-- **Stable** = aligned trends
+Also shows momentum indicators and reversal detection when the short-term trend crosses the long-term.
 
-**Reversal Detection:** Alerts when short-term trend opposes long-term (potential turning point).
+### Weekend vs Weekday Analysis
 
-**Tip:** When 7-day average crosses above 30-day, it often signals a trend reversal.
+Compares your eating and training patterns between weekdays and weekends, showing average calories, daily weight change, volatility, and a weekend calorie buffer suggestion.
+
+### Weight Predictions
+
+Projects your future weight based on current trends with confidence intervals for 4, 8, and 12 week horizons.
+
+### Adaptive Benchmarks
+
+Compares your current rate to your **personal** history -- not generic standards. Shows percentile ranking and personal records.
+
+### Calorie Accuracy Audit
+
+Compares expected weight change (from logged calories) vs actual change to identify logging accuracy issues. Score ranges from Excellent (80-100%) to Poor (<40%).
+
+### Monthly / Quarterly Reports
+
+Periodic summaries showing start/end weight, average calories, consistency score, and weight range per month. Quarterly view aggregates three months. Best month is highlighted.
+
+### Correlation Matrix
+
+Multi-variable correlation heatmap showing relationships between calories, macros, volatility, and weight outcomes. Green = positive correlation, red = negative, grey = none.
+
+### Scatter Plot
+
+Paired with the correlation matrix, provides a visual two-variable scatter plot for deeper investigation of any relationship.
 
 ---
 
-## Premium Analytics
+## Energy Analytics
 
-### 🔥 TDEE Accuracy Dashboard
+### Energy Balance
 
-**What it does:** Compares different TDEE estimation methods to find which is most accurate for you.
+Daily bar chart showing calorie deficit or surplus with goal-aware colouring:
 
-**Methods Compared:**
+- **Cutting:** green = deficit (on-track), red = surplus (off-track)
+- **Bulking:** green = surplus (on-track), red = deficit (off-track)
+
+### Energy Flow (Sankey)
+
+A Sankey diagram visualising the flow from calorie intake through TDEE to deficit/surplus and ultimately to weight change.
+
+### TDEE Accuracy Dashboard
+
+Compares different TDEE estimation methods:
+
 | Method | Source |
 |--------|--------|
-| Trend-Based | Calculated from your intake vs weight change |
+| Trend-Based | Calculated from intake vs weight change |
 | Adaptive | 28-day rolling calculation |
 | Google Fit | Device-based estimation |
 
-**Reading the Results:**
-- Higher accuracy % = that method works best for you
-- Large variance = your TDEE fluctuates significantly
+### TDEE vs Intake
+
+Reconciliation chart showing daily TDEE and calorie intake overlaid to visualise gaps.
 
 ---
 
-### 📆 Calorie Heatmap
+## Smart Coaching
 
-**What it does:** Shows a calendar-style heatmap of your daily calorie intake.
+### Smart Coach
 
-**Color Coding:**
-- 🟢 **Light** - Lower intake days (deficit)
-- 🟡 **Medium** - Maintenance range
-- 🔴 **Dark** - Higher intake days (surplus)
+Provides personalised coaching tips based on your current phase (cut, bulk, or maintenance). Tip categories include consistency, progress, obstacles, and goal pacing.
 
-**Patterns to Look For:**
-- Weekend clusters of high intake
-- Holiday spikes
-- Monthly patterns
+### Plateau Breaker
 
----
+Detects weight plateaus (stagnant rate for 14+ days) and suggests strategies prioritised by your own history:
 
-### 🏆 Streak Tracker
+1. What broke past plateaus for you
+2. Diet break (if > 21 days)
+3. Increase activity
+4. Water retention check
+5. Tracking audit
 
-**What it does:** Gamifies consistency by tracking your logging streaks.
+### What Worked
 
-**Streak Types:**
-| Streak | What It Tracks |
-|--------|---------------|
-| 📊 **Logging** | Consecutive days with weight data |
-| 🎯 **Goal** | Days within your calorie target |
-| ⭐ **Perfect** | Both criteria met |
+Analyses your most successful periods to identify winning patterns -- best cut/bulk calories, volume impact, longest sustainable phases, and consistency impact.
 
-**Benefits:**
-- Motivation through visible progress
-- Pattern recognition (when do streaks break?)
+### Rate Optimizer
+
+Finds your personal optimal gain/loss rates based on historical adherence and sustainability data.
 
 ---
 
-### 💧 Water Weight Predictor
+## Tracking & Consistency
 
-**What it does:** Estimates water retention based on carb and sodium intake.
+### Streak Tracker
 
-**How It Works:**
-- Each gram of carbs stores ~3g of water
-- High sodium increases water retention
-- Shows predicted vs actual weight fluctuation
+Gamifies consistency by tracking logging, deficit/surplus, and combined streaks.
 
-**Use Cases:**
-- Explains sudden weight jumps after high-carb meals
-- Helps distinguish fat gain from water retention
+### Calorie Heatmap
 
----
+Calendar-style heatmap showing daily calorie intake patterns. Light = deficit, medium = maintenance, dark = surplus.
 
-### 🔄 Reverse Dieting Calculator
+### Water Weight Predictor
 
-**What it does:** Plans gradual calorie increases after a cut to minimize fat regain.
+Estimates water retention based on carb and sodium intake, explaining sudden scale jumps.
 
-**Phases Available:**
+### Reverse Dieting Calculator
+
+Plans gradual calorie increases after a cut:
+
 | Phase | Duration | Weekly Increase |
 |-------|----------|-----------------|
-| Quick | 4 weeks | +200 kcal/week |
-| Standard | 8 weeks | +100 kcal/week |
+| Aggressive | 4 weeks | +200 kcal/week |
+| Moderate | 8 weeks | +100 kcal/week |
 | Conservative | 12 weeks | +50 kcal/week |
 
-**When to Use:**
-- After completing a cut
-- Transitioning to maintenance
-- Preparing for a bulk
+### Event Countdown
+
+Track upcoming competitions, photoshoots, or special occasions with countdown timers, progress bars, and milestone alerts (Peak Week, Final Prep).
+
+### Executive Hub
+
+Top-of-page KPI dashboard showing current weight (raw and SMA), weekly rate, estimated TDEE, and time-to-goal for quick morning check-ins.
 
 ---
 
-### ⚡ Rate Optimizer
+## Data Management
 
-**What it does:** Analyzes your history to find your optimal gain/loss rate.
+### Quick Entry
 
-**Insights Provided:**
-- Your most sustainable rate ranges
-- Rate vs adherence correlation
-- Sweet spot recommendations
+Log weight and calorie data directly from the dashboard without editing `data.json`:
 
-**Why It Matters:** Aggressive rates may be counterproductive if they lead to poor adherence.
+1. Open the **Quick Entry** widget
+2. Enter date, weight, and/or calories
+3. Click **Save**
 
----
+Entries are stored in `localStorage` and automatically merged with `data.json` at runtime.
 
-### 🧠 Smart Coach
+### CSV Export
 
-**What it does:** Provides personalized coaching tips based on your current data.
+Open the **Data Table** (via the table icon) and click **Export CSV** to download the full processed dataset.
 
-**Tip Categories:**
-- 📊 **Consistency** - Logging and weighing habits
-- 📈 **Progress** - Rate and trajectory feedback
-- 🚧 **Obstacles** - Plateau and stall strategies
-- 🎯 **Goals** - Pacing and timeline advice
+### Data Table
+
+The data table modal shows up to 200 rows of your processed data with all computed fields (SMA, EMA, rate, TDEE, macros). Columns are sortable.
 
 ---
 
-### 📋 Weekly Review
+## Themes
 
-**What it does:** Generates comprehensive weekly progress summaries.
+Weight Insider ships three themes, cycled via the toggle button in the header:
 
-**Report Sections:**
-| Section | Content |
-|---------|---------|
-| Summary | Weight change, rate, trajectory |
-| Nutrition | Avg calories, macro split |
-| Training | Volume, consistency |
-| Insights | Key observations and recommendations |
+| Theme | Description |
+|-------|-------------|
+| **Light** | Clean white background, blue accents |
+| **Dark** | Deep slate background, teal accents |
+| **Gruvbox** | Warm charcoal background, orange and amber accents |
 
----
-
-### 🎯 Executive Hub
-
-**What it does:** Provides a high-level KPI dashboard for quick status checks.
-
-**KPIs Displayed:**
-- Current weight (raw and SMA)
-- Weekly rate of change
-- Days to goal (if set)
-- Logging consistency %
-- Trend direction indicator
-
-**Best For:** Quick morning check-ins without diving into details.
-
----
-
-### 🥗 Macro-Weight Correlation
-
-**What it does:** Analyzes how your macro ratios correlate with weight changes.
-
-**Correlations Analyzed:**
-- Carb % vs Weight Volatility (water retention)
-- Protein % vs Rate (muscle retention)
-- Fat % vs Consistency
-
-**Key Insight:** Higher carb days often correlate with water weight spikes.
-
----
-
-### 🔳 Advanced Insight Matrix
-
-**What it does:** Creates a multi-variable correlation heatmap for deep analysis.
-
-**Variables Included:**
-| Inputs | Outcomes |
-|--------|----------|
-| Calories | Weight Change |
-| Protein % | TDEE |
-| Carbs % | Weekly Rate |
-| Fat % | - |
-| Volatility | - |
-
-**Reading the Matrix:**
-- 🟩 **Green** - Positive correlation (both increase together)
-- 🟥 **Red** - Negative correlation (inverse relationship)
-- ⬜ **Gray** - No significant correlation
-
-**Hover** over cells for detailed interpretation.
-
----
-
-### ⚖️ Energy Balance
-
-**What it does:** Visualizes your daily calorie deficit or surplus.
-
-**Display Features:**
-- Daily bar chart (green = deficit, red = surplus)
-- Cumulative weekly balance
-- Running total vs goal
+Your preference is saved in `localStorage`.
 
 ---
 
@@ -553,14 +385,7 @@ For accurate trend analysis:
 
 ### Understanding Data Noise
 
-Daily weight fluctuates due to:
-- Water retention
-- Sodium intake
-- Carbohydrate intake
-- Bowel movements
-- Hormonal cycles
-
-**Don't panic over single-day changes.** Focus on the SMA line for true trends.
+Daily weight fluctuates due to water retention, sodium intake, carbohydrate intake, bowel movements, and hormonal cycles. **Don't panic over single-day changes.** Focus on the SMA line for true trends.
 
 ### Setting Realistic Goals
 
@@ -571,53 +396,35 @@ Daily weight fluctuates due to:
 | Aggressive Cut | -0.75 to -1.0 kg/week |
 | Competition Prep | Consult a coach |
 
-### Using Phases Effectively
+### Macro Targets
 
-A typical yearly structure:
-1. **Bulk Phase** (12-16 weeks): Build muscle with moderate surplus
-2. **Maintenance** (4 weeks): Stabilize and recover
-3. **Cut Phase** (8-12 weeks): Reduce body fat
-4. **Maintenance** (4+ weeks): Settle at new weight
-
----
-
-## Keyboard Shortcuts
-
-| Key | Action |
-|-----|--------|
-| **Escape** | Clear selection/tooltip |
-| **R** | Reset zoom to full view |
-| **1-4** | Switch sidebar tabs |
+| Macro | Guideline |
+|-------|-----------|
+| Protein | 1.6-2.2 g/kg bodyweight for muscle retention |
+| Fat | Minimum ~0.7 g/kg for hormonal health |
+| Carbs | Fill remaining calories after protein and fat targets |
+| Fiber | 25-35 g/day for satiety and gut health |
 
 ---
 
 ## Data Format
 
-Your weight data is stored in `data.json` with the following structure:
+Your data is stored in `data.json` with the following structure:
 
-```json
+```jsonc
 {
-  "weights": {
-    "2024-01-15": 72.5,
-    "2024-01-16": 72.3
-  },
-  "calorieIntake": {
-    "2024-01-15": 2500
-  },
-  "protein": {
-    "2024-01-15": 150
-  },
-  "carbs": {
-    "2024-01-15": 250
-  },
-  "fat": {
-    "2024-01-15": 80
-  },
-  "bodyFat": {
-    "2024-01-15": 15.5
-  }
+  "weights":              { "2024-01-15": 72.5 },
+  "calorieIntake":        { "2024-01-15": 2500 },
+  "googleFitExpenditure": { "2024-01-15": 2800 },
+  "bodyFat":              { "2024-01-15": 15.5 },
+  "macroProtein":         { "2024-01-15": 150.0 },
+  "macroCarbs":           { "2024-01-15": 250.0 },
+  "macroFat":             { "2024-01-15": 80.0 },
+  "macroFiber":           { "2024-01-15": 30.0 }
 }
 ```
+
+Legacy keys (`protein`, `carbs`, `fat`, `fiber`) are also accepted for backward compatibility.
 
 ---
 
@@ -625,15 +432,17 @@ Your weight data is stored in `data.json` with the following structure:
 
 | Issue | Solution |
 |-------|----------|
-| Chart not loading | Check browser console for errors, ensure data.json is valid |
-| CORS error | Use a local server (`live-server`), don't open file directly |
+| Chart not loading | Check browser console for errors; ensure `data.json` is valid JSON |
+| CORS error | Use `npm run dev` (Vite dev server); don't open the HTML file directly |
 | Stats showing N/A | Ensure enough data points exist in the selected range (min 7-14 days) |
-| Goal line missing | Verify goal date is within visible range |
-| Premium features empty | Need sufficient data: 14+ days for correlations, 7+ for macros |
-| Matrix cells gray | Insufficient data pairs for that correlation |
-| Slow performance | Large data files may need pagination or date range filtering |
+| Goal line missing | Verify goal date is within the visible chart range |
+| Macro widgets empty | Need macro fields in `data.json` (macroProtein, macroCarbs, etc.) |
+| Correlation matrix cells grey | Insufficient data pairs for that correlation (need 14+ overlapping days) |
+| Widgets stuck "loading" | Scroll down to trigger lazy initialization, or refresh the page |
+| Offline toast appears | Your network is unavailable; cached data is being shown |
+| Theme not saving | Check that localStorage is not disabled in your browser |
 
 ---
 
 *For technical documentation on program flow and architecture, see [program_flow.md](program_flow.md).*
-
+*For developer feature reference, see [features_reference.md](features_reference.md).*

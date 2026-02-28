@@ -3,6 +3,7 @@
 
 import { StateManager } from '../../core/stateManager.js';
 import * as Selectors from '../../core/selectors.js';
+import { MacroTargetService } from '../../core/macroTargetService.js';
 
 /**
  * Streak Tracker:
@@ -21,12 +22,8 @@ export const StreakTrackerRenderer = {
       return;
     }
 
-    StateManager.subscribe((stateChanges) => {
-      if (stateChanges.action.type.includes('PROCESSED_DATA') ||
-        stateChanges.action.type.includes('FILTERED_DATA')) {
-        this._analyze();
-      }
-    });
+    StateManager.subscribeToSpecificEvent('state:filteredDataChanged', () => this._analyze());
+    StateManager.subscribeToSpecificEvent('state:initializationComplete', () => this._analyze());
 
     setTimeout(() => this._analyze(), 1300);
   },
@@ -41,6 +38,13 @@ export const StreakTrackerRenderer = {
     }
 
     const streaks = this._calculateStreaks(processedData);
+
+    // Macro target streak
+    const targets = MacroTargetService.load();
+    const adherence = MacroTargetService.computeAdherence(processedData, targets);
+    streaks.macroStreak = adherence.streak;
+    streaks.macroTargetsSet = adherence.hasTargets;
+
     this._render(streaks);
   },
 
@@ -199,6 +203,19 @@ export const StreakTrackerRenderer = {
                 <div class="streak-label">${streaks.current.directionType === 'deficit' ? 'Days in Deficit' : 'Days in Surplus'}</div>
               </div>
             ` : ''}
+            ${streaks.macroTargetsSet ? `
+              <div class="streak-card ${streaks.macroStreak >= 3 ? 'hot' : ''}">
+                <div class="streak-value">${streaks.macroStreak}</div>
+                <div class="streak-label">Macro Target</div>
+                <div class="streak-fire">${'🥗'.repeat(Math.min(Math.floor(streaks.macroStreak / 3), 3))}</div>
+              </div>
+            ` : `
+              <div class="streak-card streak-card-muted">
+                <div class="streak-value" style="font-size:1.1rem">🥗</div>
+                <div class="streak-label">Macro Target</div>
+                <div class="streak-fire" style="font-size:0.65rem;color:var(--text-muted)">Set targets in<br>Macro Breakdown</div>
+              </div>
+            `}
           </div>
         </div>
 

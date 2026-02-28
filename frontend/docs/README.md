@@ -4,7 +4,7 @@ Welcome to the Weight Insider documentation. This folder contains comprehensive 
 
 ---
 
-## 📚 Documentation Index
+## Documentation Index
 
 | Document | Audience | Description |
 |----------|----------|-------------|
@@ -14,166 +14,161 @@ Welcome to the Weight Insider documentation. This folder contains comprehensive 
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
-1. **Run the application:**
-   ```bash
-   cd frontend
-   npx live-server --port=8080
-   ```
+```bash
+cd frontend
+npm install
+npm run dev          # Vite dev server on http://localhost:5173
+```
 
-2. **Open:** `http://localhost:8080`
+For production:
 
-3. **Add your data** to `data.json` - see [Data Format](user_guide.md#data-format)
+```bash
+npm run build        # outputs to dist/
+npm run preview      # preview the build locally
+```
 
 ---
 
-## ✨ Features Overview
+## Features Overview
 
-### Core Features
-- 📊 **Interactive Weight Chart** - Zoom, pan, tooltips
-- 📈 **Trend Analysis** - SMA, EMA, regression lines
-- 📝 **Annotations** - Mark important events
-- 🎨 **Light/Dark Theme** - Toggle display mode
+### Dashboard & Navigation
+- Bento-grid layout with collapsible widgets (state persisted in localStorage)
+- Three themes: Light, Dark (slate), Gruvbox (warm charcoal) -- cycle via the toggle button
+- Mobile navigation FAB for jumping between widgets on small screens
+- PWA with offline support (cache-first static assets, network-first data)
 
-### Analysis Features
-- 🔄 **Periodization Analysis** - Auto-detect bulk/cut/maintenance phases
-- ⚖️ **Period Comparison** - Compare any two time periods
-- 💪 **Workout Correlation** - Training volume vs weight change
+### Core Charting
+- Interactive weight chart with SMA, EMA, regression lines, confidence band
+- Zoom, pan, tooltips (hover/pin), context brush
+- Manual trendline overlays (two independent rates)
+- Analysis range control with quick presets (7D / 30D / 90D / All)
 
 ### Goal Management
-- 🎯 **Goal Setting** - Target weight and date
-- 🔔 **Goal Alerts** - Progress notifications and warnings
-- 💡 **Adaptive Suggestions** - AI-powered goal recommendations
+- Inline goal form (target weight, date, rate) in the Goal Progress widget
+- Goal Simulator with projection chart and confidence bands
+- Goal Alerts (on-track, off-track, milestones, deadline warnings)
+- Adaptive Goal Suggestions from historical performance
 
-### Event Tracking
-- 📅 **Competition Countdown** - Track upcoming events
-- 🏆 **Milestone Tracking** - Peak week, final prep alerts
-- 📊 **Progress Visualization** - Weight target progress bars
+### Nutrition & Macros
+- Macro Breakdown widget (P/C/F/Fiber progress bars, 7-day avg split)
+- Protein Adequacy tracker (g/kg, threshold progress bar, 14-day sparkline)
+- Macro rolling averages (7-day vs 14-day with delta indicators)
+- Macro-weight correlation analysis
 
-### Advanced Analytics
-- 📅 **Weekend vs Weekday** - Compare eating patterns
-- 🔮 **Weight Predictions** - 4/8/12 week projections with confidence bands
-- 📊 **Adaptive Benchmarks** - Personal rate comparisons
-- 🔍 **Calorie Accuracy** - Audit your logging accuracy
-- 📈 **Monthly Reports** - Periodic progress summaries
-- 💡 **What Worked** - Identify successful patterns
-- 🚀 **Plateau Breaker** - Detection and suggestions
-- 〰️ **Rolling Averages** - 7/14/30 day trend comparison
+### Energy Analytics
+- Energy Balance History (goal-aware bar chart: green = on-track, red = off-track)
+- Energy Flow Sankey diagram (intake -> TDEE -> deficit/surplus -> weight change)
+- TDEE Accuracy dashboard (trend-based vs adaptive vs Google Fit)
+- TDEE vs Intake reconciliation chart
 
-### Premium Analytics (New!)
-- 🔥 **TDEE Accuracy Dashboard** - Compare estimated vs actual TDEE
-- 📆 **Calorie Heatmap** - Calendar view of daily intake patterns
-- 🏆 **Streak Tracker** - Track logging and goal consistency
-- 💧 **Water Weight Predictor** - Estimate water retention patterns
-- 🔄 **Reverse Dieting Calculator** - Plan post-diet calorie increases
-- ⚡ **Rate Optimizer** - Find your optimal gain/loss rate
-- 🧠 **Smart Coach** - AI-powered personalized advice
-- 📋 **Weekly Review** - Comprehensive weekly summaries
-- 🎯 **Executive Hub** - High-level KPI dashboard
-- 🥗 **Macro-Weight Correlation** - Macros vs weight analysis
-- 🔳 **Advanced Insight Matrix** - Multi-variable correlation heatmap
-- ⚖️ **Energy Balance** - Visual deficit/surplus tracking
+### Smart Coaching
+- Smart Coach with phase-aware recommendations
+- Plateau Breaker (detection + history-based suggestions)
+- What Worked analysis (successful patterns from your history)
+- Rate Optimizer (sustainable rate benchmarks)
+
+### Tracking & Review
+- Weekly Review summaries
+- Monthly/Quarterly Reports with best-month highlighting
+- Calorie Heatmap (calendar view)
+- Streak Tracker (logging, deficit, consistency)
+- Water Weight Predictor
+- Reverse Dieting Calculator
+- Event Countdown with milestones
+
+### Data Management
+- Quick Entry widget (manual weight + calorie logging via localStorage)
+- CSV export from the data table modal
+- Full data table with 200-row display
+
+### Developer Tools
+- ESLint + Prettier (`npm run lint`, `npm run format`)
+- Lazy renderer initialization via IntersectionObserver
+- Event-driven state management with typed subscriptions
 
 ---
 
-## 🗂️ Project Structure
+## Project Structure
 
 ```
 frontend/
-├── index.html              # Main HTML
-├── style.css               # All styles (~6500 lines)
-├── data.json               # Your data
-├── docs/                   # 📍 You are here
-│   ├── README.md
-│   ├── user_guide.md
-│   ├── features_reference.md
-│   └── program_flow.md
-└── js/
-    ├── main.js             # Entry point
-    ├── config.js           # Configuration
-    ├── core/               # Core modules
-    │   ├── dataService.js
-    │   ├── stateManager.js
-    │   ├── statsManager.js
-    │   ├── domainManager.js
-    │   ├── themeManager.js
-    │   ├── goalManager.js
-    │   ├── annotationManager.js
-    │   ├── selectors.js
-    │   └── utils.js
-    ├── ui/                 # UI modules
-    │   ├── chartSetup.js
-    │   ├── chartUpdaters.js
-    │   ├── masterUpdater.js
-    │   ├── legendManager.js
-    │   ├── insightsGenerator.js
-    │   ├── sidebarTabs.js
-    │   ├── tooltipManager.js
-    │   ├── weeklySummaryUpdater.js
-    │   ├── components/     # Reusable components
-    │   │   └── progressRing.js
-    │   └── renderers/      # Feature panels (29 files)
-    │       ├── statsDisplayRenderer.js
-    │       ├── annotationListRenderer.js
-    │       ├── periodizationRenderer.js
-    │       ├── periodComparisonRenderer.js
-    │       ├── goalAlertRenderer.js
-    │       ├── goalSuggestionRenderer.js
-    │       ├── eventCountdownRenderer.js
-    │       ├── weekendAnalysisRenderer.js
-    │       ├── predictionBandsRenderer.js
-    │       ├── adaptiveRateRenderer.js
-    │       ├── calorieAuditRenderer.js
-    │       ├── monthlyReportRenderer.js
-    │       ├── whatWorkedRenderer.js
-    │       ├── plateauBreakerRenderer.js
-    │       ├── rollingAveragesRenderer.js
-    │       ├── tdeeAccuracyRenderer.js      # Premium
-    │       ├── calorieHeatmapRenderer.js    # Premium
-    │       ├── streakTrackerRenderer.js     # Premium
-    │       ├── waterWeightRenderer.js       # Premium
-    │       ├── reverseDietRenderer.js       # Premium
-    │       ├── rateOptimizerRenderer.js     # Premium
-    │       ├── smartCoachRenderer.js        # Premium
-    │       ├── weeklyReviewRenderer.js      # Premium
-    │       ├── executiveHubRenderer.js      # Premium
-    │       ├── macroCorrelationRenderer.js  # Premium
-    │       ├── correlationMatrixRenderer.js # Premium
-    │       ├── energyBalanceRenderer.js     # Premium
-    │       ├── quickStatsRenderer.js        # Premium
-    │       └── sparklineRenderer.js         # Premium
-    └── interactions/       # Event handlers
-        ├── eventHandlers.js
-        ├── chartInteractions.js
-        ├── resizeHandler.js
-        └── keyboardNav.js
+├── index.html
+├── vite.config.js
+├── eslint.config.js
+├── .prettierrc.json
+├── data.json                      # Primary data source
+├── public/
+│   ├── sw.js                      # Service Worker (PWA)
+│   └── manifest.json
+├── css/
+│   ├── variables.css              # Design tokens, 3 theme palettes
+│   ├── layout.css
+│   ├── components.css
+│   └── widgets/                   # Per-feature widget styles
+│       ├── base.css
+│       ├── components.css
+│       ├── dashboards.css
+│       ├── periodization-analytics.css
+│       └── advanced-features.css
+├── js/
+│   ├── main.js                    # Entry point, lazy init
+│   ├── config.js
+│   ├── core/
+│   │   ├── stateManager.js        # Redux-style state bus
+│   │   ├── dataService.js         # Fetch, merge, process pipeline
+│   │   ├── statsManager.js        # Derived statistics (incl. macros)
+│   │   ├── manualEntryService.js  # localStorage manual entries
+│   │   ├── goalManager.js
+│   │   ├── annotationManager.js
+│   │   ├── domainManager.js
+│   │   ├── themeManager.js        # 3-way theme cycle
+│   │   ├── selectors.js
+│   │   └── utils.js
+│   ├── ui/
+│   │   ├── renderers/             # 35 bento-widget renderers
+│   │   ├── widgetCollapser.js
+│   │   ├── mobileNav.js
+│   │   ├── manualEntryWidget.js
+│   │   ├── dataTableModal.js      # Data table + CSV export
+│   │   ├── chartSetup.js
+│   │   ├── chartUpdaters.js
+│   │   ├── masterUpdater.js
+│   │   └── ...
+│   └── interactions/
+│       ├── eventHandlers.js
+│       ├── chartInteractions.js
+│       ├── formHandlers.js
+│       ├── resizeHandler.js
+│       └── keyboardNav.js
+├── docs/                          # You are here
+└── tests/
 ```
 
 ---
 
-## 📝 Contributing
+## Contributing
 
 When adding new features:
 
-1. **Create renderer** in `js/ui/renderers/`
-2. **Add state management** in `stateManager.js` if needed
-3. **Add HTML section** in `index.html`
-4. **Add CSS styles** in `style.css`
-5. **Import and initialize** in `main.js`
-6. **Update documentation** in this folder
+1. Create renderer in `js/ui/renderers/`
+2. Add state management in `stateManager.js` if needed
+3. Add HTML widget container in `index.html`
+4. Add CSS styles in the appropriate `css/widgets/*.css` file
+5. Import and initialize in `main.js` (use `lazyInit()` for below-fold widgets)
+6. Use `StateManager.subscribeToSpecificEvent()` for subscriptions
+7. Add catch-up render in `init()` for lazy-loaded renderers
+8. Update documentation in this folder
 
 ---
 
-## 📜 Version History
+## Version History
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 3.0 | Dec 2025 | Added 12 premium analytics features, correlation matrix |
-| 2.1 | Dec 2025 | Added 8 advanced analytics features |
-| 2.0 | Dec 2025 | Added 6 core analysis features |
+| 4.0 | Feb 2026 | Macro nutrition widgets, quick entry, CSV export, Gruvbox theme, widget collapse, mobile nav, PWA caching, lazy loading, goal form/simulator restoration, layout reorganization |
+| 3.0 | Dec 2025 | 12 premium analytics features, correlation matrix |
+| 2.1 | Dec 2025 | 8 advanced analytics features |
+| 2.0 | Dec 2025 | 6 core analysis features |
 | 1.0 | - | Initial release with core charting |
-
----
-
-*For support or questions, please open an issue in the repository.*

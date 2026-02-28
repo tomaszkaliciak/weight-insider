@@ -20,12 +20,8 @@ export const WaterWeightRenderer = {
       return;
     }
 
-    StateManager.subscribe((stateChanges) => {
-      if (stateChanges.action.type.includes('FILTERED_DATA') ||
-        stateChanges.action.type.includes('DISPLAY_STATS')) {
-        this._analyze();
-      }
-    });
+    StateManager.subscribeToSpecificEvent('state:filteredDataChanged', () => this._analyze());
+    StateManager.subscribeToSpecificEvent('state:displayStatsUpdated', () => this._analyze());
 
     setTimeout(() => this._analyze(), 1350);
   },

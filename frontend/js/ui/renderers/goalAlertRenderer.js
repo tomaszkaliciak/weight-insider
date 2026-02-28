@@ -24,13 +24,9 @@ export const GoalAlertRenderer = {
             return;
         }
 
-        // Subscribe to relevant state changes
-        StateManager.subscribe((stateChanges) => {
-            const relevantTypes = ['LOAD_GOAL', 'SET_GOAL', 'SET_DISPLAY_STATS', 'SET_FILTERED_DATA'];
-            if (relevantTypes.some(t => stateChanges.action.type.includes(t))) {
-                this._checkAlerts();
-            }
-        });
+        StateManager.subscribeToSpecificEvent('state:goalChanged', () => this._checkAlerts());
+        StateManager.subscribeToSpecificEvent('state:displayStatsUpdated', () => this._checkAlerts());
+        StateManager.subscribeToSpecificEvent('state:filteredDataChanged', () => this._checkAlerts());
 
         // Initial check
         setTimeout(() => this._checkAlerts(), 500);

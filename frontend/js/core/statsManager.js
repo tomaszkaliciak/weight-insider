@@ -717,11 +717,13 @@ export const StatsManager = {
 
           if (macroData.length >= 7) {
             let totalCals = 0, totalP = 0, totalC = 0, totalF = 0;
+            let totalFiber = 0, fiberCount = 0;
             macroData.forEach(d => {
               totalCals += d.calorieIntake;
               totalP += d.protein;
               totalC += d.carbs;
               totalF += d.fat;
+              if (d.fiber != null) { totalFiber += d.fiber; fiberCount++; }
             });
 
             displayStats.macroSplit = {
@@ -729,6 +731,27 @@ export const StatsManager = {
               carbs: Math.round((totalC * 4 / totalCals) * 100),
               fat: Math.round((totalF * 9 / totalCals) * 100)
             };
+
+            // Average daily grams (over analysis window)
+            const n = macroData.length;
+            displayStats.avgDailyProtein = Math.round(totalP / n);
+            displayStats.avgDailyCarbs   = Math.round(totalC / n);
+            displayStats.avgDailyFat     = Math.round(totalF / n);
+            displayStats.avgDailyFiber   = fiberCount > 0 ? Math.round(totalFiber / fiberCount) : null;
+
+            // Most-recent logged day's macros
+            const latestMacro = [...macroData].sort((a, b) => b.date - a.date)[0];
+            displayStats.latestProtein = latestMacro.protein;
+            displayStats.latestCarbs   = latestMacro.carbs;
+            displayStats.latestFat     = latestMacro.fat;
+            displayStats.latestFiber   = latestMacro.fiber ?? null;
+            displayStats.latestMacroDate = latestMacro.dateString;
+
+            // Protein per kg bodyweight (uses current SMA if available, else latest weight)
+            const refWeight = displayStats.currentSma ?? displayStats.currentWeight;
+            displayStats.avgProteinPerKg = refWeight > 0
+              ? Math.round((totalP / n / refWeight) * 10) / 10
+              : null;
 
             const correlationPairs = macroData
               .filter(d => d.rollingVolatility !== null)
@@ -752,6 +775,11 @@ export const StatsManager = {
             displayStats.correlationMatrix = this._calculateCorrelationMatrix(results.filteredData);
           } else {
             displayStats.macroSplit = null;
+            displayStats.avgDailyProtein = null; displayStats.avgDailyCarbs = null;
+            displayStats.avgDailyFat = null;     displayStats.avgDailyFiber = null;
+            displayStats.latestProtein = null;   displayStats.latestCarbs = null;
+            displayStats.latestFat = null;       displayStats.latestFiber = null;
+            displayStats.latestMacroDate = null; displayStats.avgProteinPerKg = null;
             displayStats.carbVolatilityCorrelation = null;
             displayStats.correlationMatrix = null;
           }
@@ -760,6 +788,11 @@ export const StatsManager = {
           displayStats.regressionSlopeWeekly = null;
           displayStats.regressionStartDate = null;
           displayStats.macroSplit = null;
+          displayStats.avgDailyProtein = null; displayStats.avgDailyCarbs = null;
+          displayStats.avgDailyFat = null;     displayStats.avgDailyFiber = null;
+          displayStats.latestProtein = null;   displayStats.latestCarbs = null;
+          displayStats.latestFat = null;       displayStats.latestFiber = null;
+          displayStats.latestMacroDate = null; displayStats.avgProteinPerKg = null;
           displayStats.carbVolatilityCorrelation = null;
           displayStats.correlationMatrix = null;
         }

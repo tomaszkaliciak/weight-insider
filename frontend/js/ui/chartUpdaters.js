@@ -10,6 +10,7 @@ import { ui } from "./uiCache.js";
 import { scales, axes, brushes } from "./chartSetup.js";
 import { colors } from "../core/themeManager.js";
 import { ChartInteractions } from "../interactions/chartInteractions.js";
+import { EventHandlers } from "../interactions/eventHandlers.js";
 import { TooltipManager } from "../interactions/tooltipManager.js";
 import { Utils } from "../core/utils.js";
 

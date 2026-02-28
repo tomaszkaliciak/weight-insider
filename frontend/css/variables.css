@@ -32,6 +32,10 @@ body.dark-theme #theme-toggle svg {
     filter: drop-shadow(0 0 6px hsla(45, 80%, 60%, 0.5));
 }
 
+body.gruvbox-theme #theme-toggle svg {
+    filter: drop-shadow(0 0 6px rgba(254, 128, 25, 0.65));   /* gruvbox orange */
+}
+
 :root {
     /* Slightly desaturated hues */
     --hue-primary: 212;
@@ -210,4 +214,87 @@ body.dark-theme {
 
     --table-header-bg: hsl(217, 33%, 22%);
     --table-row-hover: hsl(217, 33%, 25%);
+}
+
+/* ─── Gruvbox Dark Theme ──────────────────────────────────────────────────────
+   Palette: Gruvbox Dark (Hard contrast variant)
+   Cream text on warm charcoal backgrounds. Amber/orange accent maps naturally
+   to calories & energy; earthy greens map to health/success indicators.
+   ─────────────────────────────────────────────────────────────────────────── */
+body.gruvbox-theme {
+    /* Hue overrides (for any hsl() refs that inherit from :root) */
+    --hue-primary:   200;   /* Gruvbox blue/aqua-ish */
+    --hue-secondary:  88;   /* Gruvbox green */
+    --hue-tertiary:    6;   /* Gruvbox red */
+    --hue-accent:     42;   /* Gruvbox yellow/amber */
+    --hue-neutral:   30;    /* Warm grey */
+    --hue-goal:      315;   /* Gruvbox purple */
+    --hue-optimal:    88;
+
+    /* Semantic */
+    --info-color:     #83a598;   /* gruvbox blue-bright */
+    --warning-color:  #fabd2f;   /* gruvbox yellow-bright */
+    --success-color:  #b8bb26;   /* gruvbox green-bright */
+    --danger-color:   #fb4934;   /* gruvbox red-bright */
+    --stable-color:   #a89984;   /* fg4 */
+
+    /* Backgrounds — Gruvbox hard */
+    --bg-primary:     #1d2021;   /* bg0_h */
+    --bg-secondary:   #282828;   /* bg0 */
+    --bg-tertiary:    #3c3836;   /* bg1 – cards, inputs */
+
+    /* Typography — warm cream */
+    --text-primary:   #ebdbb2;   /* fg0 */
+    --text-secondary: #d5c4a1;   /* fg1 */
+    --text-muted:     #a89984;   /* fg4 */
+
+    /* Borders & depth */
+    --border-color:        #504945;   /* bg2 */
+    --border-color-light:  #3c3836;   /* bg1 */
+    --shadow-color:        rgba(29, 32, 33, 0.55);
+    --shadow-hover:        rgba(29, 32, 33, 0.75);
+
+    /* Brand & accents */
+    --primary-color:         #83a598;   /* gruvbox blue-bright */
+    --primary-color-darker:  #689d6a;   /* gruvbox aqua */
+    --secondary-color:       #8ec07c;   /* gruvbox aqua-bright */
+    --tertiary-color:        #fb4934;   /* gruvbox red-bright */
+    --accent-color:          #fabd2f;   /* gruvbox yellow-bright */
+    --accent-strong:         #fe8019;   /* gruvbox orange-bright — calories! */
+    --goal-color:            #d3869b;   /* gruvbox purple-bright */
+
+    /* Energy balance — semantically warm */
+    --deficit-color:              #8ec07c;   /* aqua-bright = burning */
+    --surplus-color:              #fb4934;   /* red-bright = excess */
+    --optimal-gain-zone-color:    rgba(184, 187, 38, 0.08);
+
+    /* UI chrome */
+    --tooltip-bg:        rgba(60, 56, 54, 0.97);   /* bg1 */
+    --tooltip-text:      #ebdbb2;
+    --scrollbar-thumb:   #665c54;   /* bg3 */
+    --scrollbar-track:   #282828;   /* bg0 */
+    --table-header-bg:   #3c3836;   /* bg1 */
+    --table-row-hover:   #504945;   /* bg2 */
+
+    /* Charts */
+    --sma-color:               #83a598;
+    --band-color:              rgba(131, 165, 152, 0.12);
+    --ema-color:               #fe8019;   /* orange — very readable on dark charcoal */
+    --raw-dot-color:           #504945;
+    --dot-color:               #83a598;
+    --trend1-color:            #8ec07c;
+    --trend2-color:            #fb4934;
+    --regression-color:        #fabd2f;
+    --goal-line-color:         #d3869b;
+    --rate-line-color:         #d3869b;
+    --rate-ma-line-color:      #fe8019;
+    --tdee-diff-line-color:    #8ec07c;
+    --annotation-marker-color: #fabd2f;
+    --annotation-range-color:  rgba(250, 189, 47, 0.08);
+    --plateau-color:           rgba(168, 153, 132, 0.12);
+    --trend-change-color:      #fb4934;
+    --highlight-stroke-color:  #fe8019;
+    --crosshair-color:         #a89984;
+    --scatter-dot-color:       #d5c4a1;
+    --outlier-color:           #fb4934;
 }

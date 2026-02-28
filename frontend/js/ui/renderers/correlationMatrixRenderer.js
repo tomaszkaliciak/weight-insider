@@ -29,6 +29,13 @@ export const CorrelationMatrixRenderer = {
                 this.render(this._lastMatrix);
             }
         });
+
+        const s = StateManager.getState();
+        if (s.isInitialized && s.displayStats?.correlationMatrix) {
+            this._lastMatrix = s.displayStats.correlationMatrix;
+            this._hasReceivedData = true;
+            this.render(this._lastMatrix);
+        }
     },
 
     render(matrix) {

@@ -22,12 +22,8 @@ export const CalorieAuditRenderer = {
       return;
     }
 
-    StateManager.subscribe((stateChanges) => {
-      if (stateChanges.action.type.includes('DISPLAY_STATS') ||
-        stateChanges.action.type.includes('FILTERED_DATA')) {
-        this._audit();
-      }
-    });
+    StateManager.subscribeToSpecificEvent('state:displayStatsUpdated', () => this._audit());
+    StateManager.subscribeToSpecificEvent('state:filteredDataChanged', () => this._audit());
 
     setTimeout(() => this._audit(), 950);
   },

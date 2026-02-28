@@ -266,6 +266,27 @@ export const Utils = {
   },
 
   /**
+   * Renders a standardized empty-state message into a container element.
+   * Replaces whatever HTML is currently in the container.
+   *
+   * @param {HTMLElement|null} container - The DOM element to render into.
+   * @param {object} [options={}]
+   * @param {string} [options.title="No data available"] - Primary message.
+   * @param {string} [options.detail=""] - Secondary hint text.
+   * @param {string} [options.icon="📊"] - Optional emoji/icon shown above the title.
+   */
+  renderEmptyState(container, { title = "No data available", detail = "", icon = "📊" } = {}) {
+    if (!container) return;
+    container.innerHTML = `
+      <div class="empty-state">
+        <span class="empty-state-icon" aria-hidden="true">${icon}</span>
+        <p class="empty-state-title">${title}</p>
+        ${detail ? `<small class="empty-state-detail">${detail}</small>` : ""}
+      </div>
+    `;
+  },
+
+  /**
    * Calculates a rolling average for an array of numbers. Null/NaN values are ignored.
    * @param {Array<number|null>} data - Array of numbers or nulls.
    * @param {number} windowSize - The size of the rolling window.

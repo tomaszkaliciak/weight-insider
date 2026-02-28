@@ -1,0 +1,254 @@
+// js/ui/renderers/macroSummaryRenderer.js
+// Shows a daily macro breakdown: latest-day grams + % split bars + 7-day averages.
+// Also provides a compact target-setting form and adherence tracking.
+
+import { StateManager } from '../../core/stateManager.js';
+import { Utils } from '../../core/utils.js';
+import { MacroTargetService } from '../../core/macroTargetService.js';
+import * as Selectors from '../../core/selectors.js';
+
+/** Recommended daily fiber intake (g) */
+const FIBER_RDA = 30;
+
+export const MacroSummaryRenderer = {
+    _container: null,
+    _targets: null,
+    _showTargetForm: false,
+
+    init() {
+        this._container = document.getElementById('macro-summary-content');
+        if (!this._container) {
+            console.warn('[MacroSummaryRenderer] Container not found.');
+            return;
+        }
+        this._targets = MacroTargetService.load();
+
+        StateManager.subscribeToSpecificEvent('state:displayStatsUpdated', () => this._renderFull());
+        StateManager.subscribeToSpecificEvent('state:initializationComplete', () => this._renderFull());
+        StateManager.subscribeToSpecificEvent('state:filteredDataChanged',    () => this._renderFull());
+
+        // Catch-up
+        const s = StateManager.getState();
+        if (s.isInitialized) this._renderFull();
+    },
+
+    _renderFull() {
+        const state = StateManager.getState();
+        const stats = state.displayStats || {};
+        const processedData = Selectors.selectProcessedData(state) || [];
+        this._render(stats, processedData);
+    },
+
+    _render(stats, processedData) {
+        if (!this._container) return;
+
+        const { latestProtein, latestCarbs, latestFat, latestFiber,
+                avgDailyProtein, avgDailyCarbs, avgDailyFat, avgDailyFiber,
+                macroSplit, latestMacroDate } = stats;
+
+        if (latestProtein == null || latestCarbs == null || latestFat == null) {
+            Utils.renderEmptyState(this._container, {
+                title: 'No macro data yet',
+                detail: 'Sync macros from Fitatu to unlock nutrition analytics.',
+                icon: '🥗',
+            });
+            return;
+        }
+
+        const totalKcal = latestProtein * 4 + latestCarbs * 4 + latestFat * 9;
+        const pPct = totalKcal > 0 ? Math.round(latestProtein * 4 / totalKcal * 100) : 0;
+        const cPct = totalKcal > 0 ? Math.round(latestCarbs   * 4 / totalKcal * 100) : 0;
+        const fPct = totalKcal > 0 ? Math.round(latestFat     * 9 / totalKcal * 100) : 0;
+        const fiberPct = latestFiber != null ? Math.min(Math.round(latestFiber / FIBER_RDA * 100), 100) : null;
+
+        const dateLabel = latestMacroDate
+            ? Utils.formatDateShort(new Date(latestMacroDate + 'T00:00:00'))
+            : 'Latest';
+
+        const adherence = MacroTargetService.computeAdherence(processedData, this._targets);
+
+        this._container.innerHTML = `
+            <div class="macro-summary-header-row">
+                <div class="macro-summary-date">${dateLabel}</div>
+                <button class="btn-macro-targets-toggle" title="Set daily macro targets" aria-expanded="${this._showTargetForm}">
+                    ${this._showTargetForm ? '▲ Targets' : '⚙ Targets'}
+                </button>
+            </div>
+
+            ${this._showTargetForm ? this._targetFormHTML() : ''}
+
+            ${adherence.hasTargets ? this._adherenceHTML(adherence) : ''}
+
+            <div class="macro-bars">
+                ${this._bar('Protein', latestProtein, pPct, avgDailyProtein, 'macro-protein', 'g', this._targets.protein)}
+                ${this._bar('Carbs',   latestCarbs,   cPct, avgDailyCarbs,   'macro-carbs',   'g', this._targets.carbs)}
+                ${this._bar('Fat',     latestFat,     fPct, avgDailyFat,     'macro-fat',     'g', this._targets.fat)}
+                ${latestFiber != null ? this._fiberBar(latestFiber, fiberPct, avgDailyFiber, this._targets.fiber) : ''}
+            </div>
+
+            ${macroSplit ? `
+            <div class="macro-split-row" title="7-day average calorie split">
+                <div class="macro-split-segment macro-protein" style="flex:${macroSplit.protein}"
+                     title="Protein ${macroSplit.protein}%">${macroSplit.protein}%</div>
+                <div class="macro-split-segment macro-carbs"   style="flex:${macroSplit.carbs}"
+                     title="Carbs ${macroSplit.carbs}%">${macroSplit.carbs}%</div>
+                <div class="macro-split-segment macro-fat"     style="flex:${macroSplit.fat}"
+                     title="Fat ${macroSplit.fat}%">${macroSplit.fat}%</div>
+            </div>
+            <div class="macro-split-legend">
+                <span>P ${macroSplit.protein}%</span>
+                <span>C ${macroSplit.carbs}%</span>
+                <span>F ${macroSplit.fat}%</span>
+                <span class="macro-split-legend-sub">7-day avg split</span>
+            </div>
+            ` : ''}
+        `;
+
+        this._bindEvents();
+    },
+
+    _targetFormHTML() {
+        const t = this._targets;
+        const v = (n) => (n != null ? n : '');
+        return `
+            <form class="macro-targets-form" id="macro-targets-form">
+                <div class="macro-targets-fields">
+                    <label class="mf-label">
+                        <span class="mf-name macro-protein-text">Protein (g)</span>
+                        <input type="number" name="protein" min="0" max="1000" step="1" value="${v(t.protein)}" placeholder="–">
+                    </label>
+                    <label class="mf-label">
+                        <span class="mf-name macro-carbs-text">Carbs (g)</span>
+                        <input type="number" name="carbs" min="0" max="1500" step="1" value="${v(t.carbs)}" placeholder="–">
+                    </label>
+                    <label class="mf-label">
+                        <span class="mf-name macro-fat-text">Fat (g)</span>
+                        <input type="number" name="fat" min="0" max="500" step="1" value="${v(t.fat)}" placeholder="–">
+                    </label>
+                    <label class="mf-label">
+                        <span class="mf-name macro-fiber-text">Fiber (g)</span>
+                        <input type="number" name="fiber" min="0" max="200" step="1" value="${v(t.fiber)}" placeholder="–">
+                    </label>
+                </div>
+                <div class="macro-targets-actions">
+                    <button type="submit" class="btn-primary btn-sm">Save</button>
+                    <button type="button" class="btn-secondary btn-sm" id="macro-targets-clear">Clear</button>
+                </div>
+            </form>
+        `;
+    },
+
+    _adherenceHTML(adherence) {
+        const todayLabel = adherence.todayHit == null ? 'N/A'
+            : adherence.todayHit ? '<span class="adh-hit">✔ Hit</span>'
+                                 : '<span class="adh-miss">✘ Miss</span>';
+        const weekLabel = adherence.weekAdherence == null ? 'N/A'
+            : `${adherence.weekAdherence}%`;
+        const streakLabel = adherence.streak > 0
+            ? `${adherence.streak} day${adherence.streak !== 1 ? 's' : ''} 🔥`
+            : '0 days';
+
+        return `
+            <div class="macro-adherence-row">
+                <div class="adh-item" title="Did latest day meet all targets?">
+                    <span class="adh-label">Today</span>
+                    <span class="adh-value">${todayLabel}</span>
+                </div>
+                <div class="adh-item" title="% of last 7 days meeting targets">
+                    <span class="adh-label">7-day</span>
+                    <span class="adh-value">${weekLabel}</span>
+                </div>
+                <div class="adh-item" title="Consecutive days on target (streak)">
+                    <span class="adh-label">Streak</span>
+                    <span class="adh-value">${streakLabel}</span>
+                </div>
+            </div>
+        `;
+    },
+
+    _bar(label, grams, pct, avgGrams, cls, unit, target) {
+        const avgLabel = avgGrams != null ? `avg ${avgGrams}${unit}` : '';
+        const targetLabel = target != null ? `target ${target}${unit}` : '';
+        const targetPct = target != null ? Math.min(Math.round(grams / target * 100), 150) : null;
+        const hitClass = target != null
+            ? (Math.abs(grams - target) / target <= 0.10 ? 'target-hit' : grams < target * 0.9 ? 'target-low' : 'target-high')
+            : '';
+        return `
+            <div class="macro-bar-row ${hitClass}">
+                <div class="macro-bar-label ${cls}-text">${label}</div>
+                <div class="macro-bar-track">
+                    <div class="macro-bar-fill ${cls}" style="width:${pct}%"></div>
+                    ${target != null ? `<div class="macro-target-tick" style="left:${Math.min(Math.round(target / (grams || 1) * pct), 100)}%" title="Target: ${target}g"></div>` : ''}
+                </div>
+                <div class="macro-bar-values">
+                    <span class="macro-bar-grams">${grams}<span class="macro-unit">${unit}</span></span>
+                    <span class="macro-bar-pct">${pct}%</span>
+                    ${avgLabel ? `<span class="macro-bar-avg">${avgLabel}</span>` : ''}
+                    ${targetLabel ? `<span class="macro-bar-target ${hitClass}">${targetPct}% of ${targetLabel}</span>` : ''}
+                </div>
+            </div>
+        `;
+    },
+
+    _fiberBar(grams, pct, avgGrams, target) {
+        const avgLabel = avgGrams != null ? `avg ${avgGrams}g` : '';
+        const cls = pct >= 80 ? 'adequate' : pct >= 50 ? 'moderate' : 'low';
+        const targetLabel = target != null ? `target ${target}g` : '';
+        const hitClass = target != null
+            ? (Math.abs(grams - target) / target <= 0.10 ? 'target-hit' : grams < target * 0.9 ? 'target-low' : 'target-high')
+            : '';
+        return `
+            <div class="macro-bar-row ${hitClass}">
+                <div class="macro-bar-label macro-fiber-text">Fiber</div>
+                <div class="macro-bar-track">
+                    <div class="macro-bar-fill macro-fiber macro-fiber-${cls}" style="width:${pct}%"></div>
+                </div>
+                <div class="macro-bar-values">
+                    <span class="macro-bar-grams">${grams}<span class="macro-unit">g</span></span>
+                    <span class="macro-bar-pct">${pct}%<span class="macro-unit"> RDA</span></span>
+                    ${avgLabel ? `<span class="macro-bar-avg">${avgLabel}</span>` : ''}
+                    ${targetLabel ? `<span class="macro-bar-target ${hitClass}">${targetLabel}</span>` : ''}
+                </div>
+            </div>
+        `;
+    },
+
+    _bindEvents() {
+        // Toggle target form
+        this._container.querySelector('.btn-macro-targets-toggle')?.addEventListener('click', () => {
+            this._showTargetForm = !this._showTargetForm;
+            this._renderFull();
+        });
+
+        // Save targets form
+        const form = this._container.querySelector('#macro-targets-form');
+        if (form) {
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const data = new FormData(form);
+                const parse = (key) => {
+                    const v = data.get(key);
+                    if (v === '' || v == null) return null;
+                    const n = parseFloat(v);
+                    return isNaN(n) ? null : n;
+                };
+                this._targets = {
+                    protein: parse('protein'),
+                    carbs:   parse('carbs'),
+                    fat:     parse('fat'),
+                    fiber:   parse('fiber'),
+                };
+                MacroTargetService.save(this._targets);
+                this._showTargetForm = false;
+                this._renderFull();
+            });
+
+            this._container.querySelector('#macro-targets-clear')?.addEventListener('click', () => {
+                this._targets = { protein: null, carbs: null, fat: null, fiber: null };
+                MacroTargetService.save(this._targets);
+                this._showTargetForm = false;
+                this._renderFull();
+            });
+        }
+    },
+};

@@ -20,12 +20,8 @@ export const PredictionBandsRenderer = {
       return;
     }
 
-    StateManager.subscribe((stateChanges) => {
-      if (stateChanges.action.type.includes('DISPLAY_STATS') ||
-        stateChanges.action.type.includes('FILTERED_DATA')) {
-        this._predict();
-      }
-    });
+    StateManager.subscribeToSpecificEvent('state:displayStatsUpdated', () => this._predict());
+    StateManager.subscribeToSpecificEvent('state:filteredDataChanged', () => this._predict());
 
     setTimeout(() => this._predict(), 900);
   },

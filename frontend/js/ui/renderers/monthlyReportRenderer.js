@@ -4,6 +4,7 @@
 import { StateManager } from '../../core/stateManager.js';
 import * as Selectors from '../../core/selectors.js';
 import { Utils } from '../../core/utils.js';
+import { setAnalysisRangeAndSyncChart } from '../../interactions/chartRangeHelper.js';
 
 /**
  * Generates periodic reports summarizing:
@@ -23,11 +24,8 @@ export const MonthlyReportRenderer = {
             return;
         }
 
-        StateManager.subscribe((stateChanges) => {
-            if (stateChanges.action.type.includes('PROCESSED_DATA')) {
-                this._generate();
-            }
-        });
+        StateManager.subscribeToSpecificEvent('state:filteredDataChanged', () => this._generate());
+        StateManager.subscribeToSpecificEvent('state:initializationComplete', () => this._generate());
 
         setTimeout(() => this._generate(), 1000);
     },
@@ -201,7 +199,7 @@ export const MonthlyReportRenderer = {
         ${this._currentView === 'monthly' ? `
           <div class="monthly-reports">
             ${report.recentMonths.map(m => `
-              <div class="month-card">
+              <div class="month-card report-clickable" data-year="${m.year}" data-month="${m.month}" title="Click to focus chart on ${m.monthName} ${m.year}">
                 <div class="month-header">
                   <span class="month-name">${m.monthName} ${m.year}</span>
                   <span class="month-change ${m.weightChange > 0 ? 'gain' : 'loss'}">${formatChange(m.weightChange)}</span>
@@ -233,7 +231,7 @@ export const MonthlyReportRenderer = {
         ` : `
           <div class="quarterly-reports">
             ${report.quarters.map(q => `
-              <div class="quarter-card">
+              <div class="quarter-card report-clickable" data-qyear="${q.year}" data-quarter="${q.quarter}" title="Click to focus chart on Q${q.quarter} ${q.year}">
                 <div class="quarter-header">
                   <span class="quarter-name">Q${q.quarter} ${q.year}</span>
                   <span class="quarter-change ${q.weightChange > 0 ? 'gain' : 'loss'}">${formatChange(q.weightChange)}</span>
@@ -279,6 +277,34 @@ export const MonthlyReportRenderer = {
             tab.addEventListener('click', (e) => {
                 this._currentView = e.target.dataset.view;
                 this._render(report);
+            });
+        });
+
+        // Click-to-focus: month cards
+        this._container.querySelectorAll('.month-card.report-clickable').forEach(card => {
+            card.addEventListener('click', (e) => {
+                // Don't fire if a tab button was clicked
+                if (e.target.closest('.report-tab')) return;
+                const year  = parseInt(card.dataset.year,  10);
+                const month = parseInt(card.dataset.month, 10);
+                const start = new Date(year, month, 1);
+                const end   = new Date(year, month + 1, 0);
+                setAnalysisRangeAndSyncChart(start, end);
+                document.getElementById('chart-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        });
+
+        // Click-to-focus: quarter cards
+        this._container.querySelectorAll('.quarter-card.report-clickable').forEach(card => {
+            card.addEventListener('click', (e) => {
+                if (e.target.closest('.report-tab')) return;
+                const year    = parseInt(card.dataset.qyear,   10);
+                const quarter = parseInt(card.dataset.quarter, 10);
+                const startMonth = (quarter - 1) * 3;
+                const start = new Date(year, startMonth, 1);
+                const end   = new Date(year, startMonth + 3, 0);
+                setAnalysisRangeAndSyncChart(start, end);
+                document.getElementById('chart-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
             });
         });
     },

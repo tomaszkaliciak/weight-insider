@@ -22,13 +22,9 @@ export const GoalSuggestionRenderer = {
             return;
         }
 
-        // Subscribe to relevant state changes
-        StateManager.subscribe((stateChanges) => {
-            const relevantTypes = ['SET_DISPLAY_STATS', 'SET_PROCESSED_DATA', 'SET_FILTERED_DATA'];
-            if (relevantTypes.some(t => stateChanges.action.type.includes(t))) {
-                this._generateSuggestions();
-            }
-        });
+        StateManager.subscribeToSpecificEvent('state:displayStatsUpdated', () => this._generateSuggestions());
+        StateManager.subscribeToSpecificEvent('state:filteredDataChanged', () => this._generateSuggestions());
+        StateManager.subscribeToSpecificEvent('state:initializationComplete', () => this._generateSuggestions());
 
         // Initial generation after a delay
         setTimeout(() => this._generateSuggestions(), 1000);

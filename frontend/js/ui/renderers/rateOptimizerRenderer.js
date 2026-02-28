@@ -20,12 +20,8 @@ export const RateOptimizerRenderer = {
       return;
     }
 
-    StateManager.subscribe((stateChanges) => {
-      if (stateChanges.action.type.includes('DISPLAY_STATS') ||
-        stateChanges.action.type.includes('PERIODIZATION')) {
-        this._analyze();
-      }
-    });
+    StateManager.subscribeToSpecificEvent('state:displayStatsUpdated', () => this._analyze());
+    StateManager.subscribeToSpecificEvent('state:periodizationPhasesChanged', () => this._analyze());
 
     setTimeout(() => this._analyze(), 1450);
   },

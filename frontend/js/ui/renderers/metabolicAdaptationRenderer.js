@@ -24,14 +24,9 @@ export const MetabolicAdaptationRenderer = {
             }
         });
 
-        StateManager.subscribe((stateChanges) => {
-            if (stateChanges.action.type.includes('DISPLAY_STATS') ||
-                stateChanges.action.type.includes('FILTERED_DATA')) {
-                if (this._isVisible) {
-                    this._render();
-                }
-            }
-        });
+        const renderIfVisible = () => { if (this._isVisible) this._render(); };
+        StateManager.subscribeToSpecificEvent('state:displayStatsUpdated', renderIfVisible);
+        StateManager.subscribeToSpecificEvent('state:filteredDataChanged', renderIfVisible);
 
         // Initial render check
         if (this._isVisible) {

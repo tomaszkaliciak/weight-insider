@@ -28,13 +28,8 @@ export const EventCountdownRenderer = {
         // Load saved events
         this._loadEvents();
 
-        // Subscribe to state changes
-        StateManager.subscribe((stateChanges) => {
-            if (stateChanges.action.type.includes('FILTERED_DATA') ||
-                stateChanges.action.type.includes('DISPLAY_STATS')) {
-                this._render();
-            }
-        });
+        StateManager.subscribeToSpecificEvent('state:filteredDataChanged', () => this._render());
+        StateManager.subscribeToSpecificEvent('state:displayStatsUpdated', () => this._render());
 
         // Initial render
         this._render();

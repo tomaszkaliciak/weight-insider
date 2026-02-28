@@ -25,13 +25,10 @@ export const SmartCoachRenderer = {
             }
         });
 
-        StateManager.subscribe((stateChanges) => {
-            if (stateChanges.action.type.includes('DISPLAY_STATS') ||
-                stateChanges.action.type.includes('GOAL') ||
-                stateChanges.action.type.includes('FILTERED_DATA')) {
-                if (this._isVisible) this._render();
-            }
-        });
+        const renderIfVisible = () => { if (this._isVisible) this._render(); };
+        StateManager.subscribeToSpecificEvent('state:displayStatsUpdated', renderIfVisible);
+        StateManager.subscribeToSpecificEvent('state:goalChanged', renderIfVisible);
+        StateManager.subscribeToSpecificEvent('state:filteredDataChanged', renderIfVisible);
 
         // Initial render check
         if (this._isVisible) {
@@ -258,13 +255,10 @@ export const SmartCoachRenderer = {
     },
 
     _renderNoData(msg = "Need more data") {
-        if (this._container) {
-            this._container.innerHTML = `
-                <div class="empty-state-message">
-                    <p>${msg}</p>
-                    <small>Smart Coach requires sufficient logged data to generate insights.</small>
-                </div>
-            `;
-        }
+        Utils.renderEmptyState(this._container, {
+            title: msg,
+            detail: "Smart Coach requires sufficient logged data to generate insights.",
+            icon: "🤖",
+        });
     }
 };

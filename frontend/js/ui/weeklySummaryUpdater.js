@@ -185,21 +185,14 @@ export const WeeklySummaryUpdater = {
   },
 
   init() {
-    // Subscribe to events carrying the necessary data and sort options
-    StateManager.subscribe((stateChanges) => {
-      // Check if relevant state parts changed
-      if (
-        stateChanges.action.type.includes("WEEKLY_SUMMARY") ||
-        stateChanges.action.type.includes("SORT_OPTIONS")
-      ) {
-        // Extract needed data from the new state using selectors
-        const newState = stateChanges.newState;
-        const weeklyData = Selectors.selectWeeklySummaryData(newState);
-        const { columnKey: sortKey, direction: sortDir } =
-          Selectors.selectSortOptions(newState);
-        this._renderTable({ weeklyData, sortKey, sortDir });
-      }
-    });
+    const renderFromState = () => {
+      const s = StateManager.getState();
+      const weeklyData = Selectors.selectWeeklySummaryData(s);
+      const { columnKey: sortKey, direction: sortDir } = Selectors.selectSortOptions(s);
+      this._renderTable({ weeklyData, sortKey, sortDir });
+    };
+    StateManager.subscribeToSpecificEvent('state:weeklySummaryUpdated', renderFromState);
+    StateManager.subscribeToSpecificEvent('state:sortOptionsChanged', renderFromState);
     // Perform initial render based on current state
     const initialState = StateManager.getState();
     const initialWeeklyData = Selectors.selectWeeklySummaryData(initialState);

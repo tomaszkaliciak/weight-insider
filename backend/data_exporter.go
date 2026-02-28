@@ -32,6 +32,10 @@ type WeightInsiderData struct {
 	CalorieIntake        map[string]int     `json:"calorieIntake"`
 	GoogleFitExpenditure map[string]int     `json:"googleFitExpenditure"`
 	Weights              map[string]float64 `json:"weights"`
+	MacroProtein         map[string]float64 `json:"macroProtein"`
+	MacroFat             map[string]float64 `json:"macroFat"`
+	MacroCarbs           map[string]float64 `json:"macroCarbs"`
+	MacroFiber           map[string]float64 `json:"macroFiber"`
 }
 
 type WeightData struct {
@@ -74,6 +78,16 @@ type TotalCaloriesBurnedRecord struct {
 	Energy                 sql.NullFloat64
 	LocalDateTimeStartTime sql.NullInt64
 	LocalDateTimeEndTime   sql.NullInt64
+}
+
+type NutritionRecord struct {
+	RowID                  int64
+	AppInfoID              sql.NullInt64
+	Protein                sql.NullFloat64
+	TotalFat               sql.NullFloat64
+	TotalCarbohydrate      sql.NullFloat64
+	DietaryFiber           sql.NullFloat64
+	LocalDateTimeStartTime sql.NullInt64
 }
 
 func decodeBase64(s string) ([]byte, error) {
@@ -297,12 +311,79 @@ func getCaloriesBurnedRecords(records []TotalCaloriesBurnedRecord) map[string]fl
 	return data
 }
 
+func fetchNutritionRecords(db *sql.DB) ([]NutritionRecord, error) {
+	query := `SELECT row_id, app_info_id, protein, total_fat, total_carbohydrate, dietary_fiber, local_date_time_start_time
+	          FROM nutrition_record_table`
+
+	rows, err := db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var records []NutritionRecord
+	for rows.Next() {
+		var r NutritionRecord
+		if err := rows.Scan(&r.RowID, &r.AppInfoID, &r.Protein, &r.TotalFat, &r.TotalCarbohydrate, &r.DietaryFiber, &r.LocalDateTimeStartTime); err != nil {
+			return nil, err
+		}
+		records = append(records, r)
+	}
+	return records, rows.Err()
+}
+
+// aggregateNutritionByDay sums protein/fat/carbs/fiber per calendar day.
+// Health Connect stores mass values in grams.
+func aggregateNutritionByDay(records []NutritionRecord) (protein, fat, carbs, fiber map[string]float64) {
+	protein = make(map[string]float64)
+	fat = make(map[string]float64)
+	carbs = make(map[string]float64)
+	fiber = make(map[string]float64)
+
+	for _, r := range records {
+		if !r.LocalDateTimeStartTime.Valid {
+			continue
+		}
+		date := time.Unix(r.LocalDateTimeStartTime.Int64/1000, 0).Format("2006-01-02")
+
+		if r.Protein.Valid {
+			protein[date] += r.Protein.Float64
+		}
+		if r.TotalFat.Valid {
+			fat[date] += r.TotalFat.Float64
+		}
+		if r.TotalCarbohydrate.Valid {
+			carbs[date] += r.TotalCarbohydrate.Float64
+		}
+		if r.DietaryFiber.Valid {
+			fiber[date] += r.DietaryFiber.Float64
+		}
+	}
+
+	// Round to 1 decimal place
+	roundMap := func(m map[string]float64) {
+		for k, v := range m {
+			m[k] = float64(int(v*10+0.5)) / 10
+		}
+	}
+	roundMap(protein)
+	roundMap(fat)
+	roundMap(carbs)
+	roundMap(fiber)
+
+	return protein, fat, carbs, fiber
+}
+
 func loadOrInitData(filename string) (*WeightInsiderData, error) {
 	data := &WeightInsiderData{
 		BodyFat:              make(map[string]float64),
 		CalorieIntake:        make(map[string]int),
 		GoogleFitExpenditure: make(map[string]int),
 		Weights:              make(map[string]float64),
+		MacroProtein:         make(map[string]float64),
+		MacroFat:             make(map[string]float64),
+		MacroCarbs:           make(map[string]float64),
+		MacroFiber:           make(map[string]float64),
 	}
 
 	file, err := os.ReadFile(filename)
@@ -330,6 +411,18 @@ func loadOrInitData(filename string) (*WeightInsiderData, error) {
 	}
 	if data.Weights == nil {
 		data.Weights = make(map[string]float64)
+	}
+	if data.MacroProtein == nil {
+		data.MacroProtein = make(map[string]float64)
+	}
+	if data.MacroFat == nil {
+		data.MacroFat = make(map[string]float64)
+	}
+	if data.MacroCarbs == nil {
+		data.MacroCarbs = make(map[string]float64)
+	}
+	if data.MacroFiber == nil {
+		data.MacroFiber = make(map[string]float64)
 	}
 
 	return data, nil
@@ -427,7 +520,7 @@ func main() {
 	}
 	fmt.Printf("Updated %d intake records.\n", countIntake)
 
-	fmt.Println("Fetching expenditure from DB...")
+	fmt.Println("Fetching expenditure and nutrition from Health Connect DB...")
 	db, err := sql.Open("sqlite3", "./health_connect_export.db")
 	if err != nil {
 		log.Printf("Failed to open database: %v", err)
@@ -442,6 +535,28 @@ func main() {
 			}
 			fmt.Printf("Updated %d expenditure records.\n", len(expenditureRecords))
 		}
+
+		nutritionRecords, err := fetchNutritionRecords(db)
+		if err != nil {
+			log.Printf("Could not fetch nutrition records: %v", err)
+		} else {
+			protein, fat, carbs, fiber := aggregateNutritionByDay(nutritionRecords)
+			for date, v := range protein {
+				insiderData.MacroProtein[date] = v
+			}
+			for date, v := range fat {
+				insiderData.MacroFat[date] = v
+			}
+			for date, v := range carbs {
+				insiderData.MacroCarbs[date] = v
+			}
+			for date, v := range fiber {
+				insiderData.MacroFiber[date] = v
+			}
+			fmt.Printf("Updated nutrition: %d protein, %d fat, %d carbs, %d fiber day-records.\n",
+				len(protein), len(fat), len(carbs), len(fiber))
+		}
+
 		db.Close()
 	}
 

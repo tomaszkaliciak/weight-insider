@@ -28,13 +28,11 @@ export const EnergySankeyRenderer = {
         });
         resizeObserver.observe(this._container);
 
-        StateManager.subscribe((stateChanges) => {
-            if (stateChanges.action.type.includes('DISPLAY_STATS') ||
-                stateChanges.action.type.includes('FILTERED_DATA')) {
-                this._render();
-            }
-        });
+        StateManager.subscribeToSpecificEvent('state:displayStatsUpdated', () => this._render());
+        StateManager.subscribeToSpecificEvent('state:filteredDataChanged', () => this._render());
 
+        const s = StateManager.getState();
+        if (s.isInitialized) this._render();
     },
 
     _render() {

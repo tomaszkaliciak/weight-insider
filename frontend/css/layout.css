@@ -758,16 +758,13 @@ body.dark-theme ::-webkit-scrollbar-thumb:hover {
     color: var(--text-primary);
 }
 
-/* 12. Dense Top Row (Hero & Exec Summary) */
+/* 12. Top Row — Hero & Executive Summary */
 #hero-weight-widget,
 #executive-hub-card {
     padding: 16px 24px !important;
     min-height: 140px !important;
-    /* Compact base */
     height: auto !important;
-    /* Allow expansion */
-    max-height: 200px !important;
-    /* Safety cap */
+    /* Never cap the height — let content determine it */
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -780,14 +777,20 @@ body.dark-theme ::-webkit-scrollbar-thumb:hover {
 
 #hero-weight-widget .text-hero {
     font-size: 2.6rem !important;
-    /* Restored some size */
     line-height: 1.1 !important;
 }
 
+/* Content container: flex row for side-by-side metrics, no clipping */
 #executive-hub-content {
-    font-size: 0.9em !important;
-    overflow: hidden !important;
-    /* No scrollbars at all */
+    flex: 1;
+    display: flex !important;
+    justify-content: space-around;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    font-size: 0.9em;
+    overflow: visible !important;
+    padding: 4px 0;
 }
 
 #executive-hub-card .widget-header {

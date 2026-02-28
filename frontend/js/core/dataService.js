@@ -30,6 +30,10 @@ export const DataService = {
         calorieIntake: {},
         googleFitExpenditure: {},
         bodyFat: {},
+        macroProtein: {},
+        macroFat: {},
+        macroCarbs: {},
+        macroFiber: {},
       }; // Return empty structure on error
     }
   },
@@ -39,9 +43,11 @@ export const DataService = {
     const calorieIntake = rawDataObjects.calorieIntake || {};
     const googleFitExpenditure = rawDataObjects.googleFitExpenditure || {};
     const bodyFat = rawDataObjects.bodyFat || {};
-    const protein = rawDataObjects.protein || {};
-    const carbs = rawDataObjects.carbs || {};
-    const fat = rawDataObjects.fat || {};
+    // Macros: accept both "macroProtein" (backend) and plain "protein" (legacy)
+    const protein = rawDataObjects.macroProtein || rawDataObjects.protein || {};
+    const carbs   = rawDataObjects.macroCarbs   || rawDataObjects.carbs   || {};
+    const fat      = rawDataObjects.macroFat     || rawDataObjects.fat     || {};
+    const fiber    = rawDataObjects.macroFiber   || rawDataObjects.fiber   || {};
     const workouts = rawDataObjects.workouts || {};
     const allDates = new Set([
       ...Object.keys(weights),
@@ -51,6 +57,7 @@ export const DataService = {
       ...Object.keys(protein),
       ...Object.keys(carbs),
       ...Object.keys(fat),
+      ...Object.keys(fiber),
       ...Object.keys(workouts),
     ]);
     let mergedData = [];
@@ -111,10 +118,11 @@ export const DataService = {
         calorieIntake: intake,
         googleFitTDEE: expenditure,
         netBalance: netBalance,
-        // Macro data
+        // Macro data (grams)
         protein: findValue(protein),
         carbs: findValue(carbs),
         fat: findValue(fat),
+        fiber: findValue(fiber),
         // Workout data
         workoutCount: workoutData?.workoutCount ?? null,
         totalSets: workoutData?.totalSets ?? null,
@@ -234,21 +242,53 @@ export const DataService = {
   },
 
   identifyOutliers(data) {
-    const threshold = CONFIG.OUTLIER_STD_DEV_THRESHOLD;
-    return data.map((d) => {
+    const sigmaMultiplier = CONFIG.OUTLIER_STD_DEV_THRESHOLD;
+    const windowDays = CONFIG.ADAPTIVE_OUTLIER_WINDOW_DAYS;
+    const minPoints = CONFIG.ADAPTIVE_OUTLIER_MIN_POINTS;
+    const minAbsKg = CONFIG.ADAPTIVE_OUTLIER_MIN_ABS_KG;
+
+    return data.map((d, i, arr) => {
       let isOutlier = false;
+      let anomalyScore = null;
+      let outlierThresholdKg = null;
+
       if (
         d.value != null &&
         d.sma != null &&
-        d.stdDev != null &&
-        d.stdDev > 0.01
+        !isNaN(d.value) &&
+        !isNaN(d.sma)
       ) {
-        // Check stdDev > 0 to avoid division issues
-        if (Math.abs(d.value - d.sma) > threshold * d.stdDev) {
-          isOutlier = true;
+        const residual = d.value - d.sma;
+        const startIdx = Math.max(0, i - windowDays + 1);
+        const windowResiduals = arr
+          .slice(startIdx, i + 1)
+          .filter((p) => p.value != null && p.sma != null && !isNaN(p.value) && !isNaN(p.sma))
+          .map((p) => p.value - p.sma);
+
+        const classicSigma =
+          d.stdDev != null && !isNaN(d.stdDev) && d.stdDev > 0.01 ? d.stdDev : null;
+
+        let robustSigma = null;
+        if (windowResiduals.length >= minPoints) {
+          const medianResidual = d3.median(windowResiduals);
+          const absDeviations = windowResiduals.map((r) => Math.abs(r - medianResidual));
+          const mad = d3.median(absDeviations);
+          // 1.4826 scales MAD to be comparable to standard deviation for normal data.
+          robustSigma = mad != null && !isNaN(mad) ? mad * 1.4826 : null;
         }
+
+        // Adaptive sigma uses whichever model sees the local noise better.
+        const effectiveSigma = Math.max(
+          0.01,
+          classicSigma ?? 0,
+          robustSigma ?? 0,
+        );
+        outlierThresholdKg = Math.max(minAbsKg, sigmaMultiplier * effectiveSigma);
+        anomalyScore = Math.abs(residual) / outlierThresholdKg;
+        isOutlier = Math.abs(residual) > outlierThresholdKg;
       }
-      return { ...d, isOutlier };
+
+      return { ...d, isOutlier, anomalyScore, outlierThresholdKg };
     });
   },
 

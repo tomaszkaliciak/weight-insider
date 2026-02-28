@@ -21,12 +21,8 @@ export const TdeeAccuracyRenderer = {
       return;
     }
 
-    StateManager.subscribe((stateChanges) => {
-      if (stateChanges.action.type.includes('DISPLAY_STATS') ||
-        stateChanges.action.type.includes('FILTERED_DATA')) {
-        this._analyze();
-      }
-    });
+    StateManager.subscribeToSpecificEvent('state:displayStatsUpdated', () => this._analyze());
+    StateManager.subscribeToSpecificEvent('state:filteredDataChanged', () => this._analyze());
 
     setTimeout(() => this._analyze(), 1200);
   },

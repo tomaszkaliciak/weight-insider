@@ -94,22 +94,13 @@ function render(phases) {
 
 export const PeriodizationRenderer = {
     init() {
-        // Subscribe to state changes for periodization phases
-        StateManager.subscribe(({ newState, previousState }) => {
-            const newPhases = Selectors.selectPeriodizationPhases(newState);
-            const prevPhases = Selectors.selectPeriodizationPhases(previousState);
-
-            // Only re-render if phases actually changed
-            if (JSON.stringify(newPhases) !== JSON.stringify(prevPhases)) {
-                render(newPhases);
-            }
+        StateManager.subscribeToSpecificEvent("state:periodizationPhasesChanged", ({ phases }) => {
+            render(phases);
         });
 
-        // Initial render when initialized
         StateManager.subscribeToSpecificEvent("state:initializationComplete", () => {
             const state = StateManager.getState();
             render(Selectors.selectPeriodizationPhases(state));
         });
-
     },
 };

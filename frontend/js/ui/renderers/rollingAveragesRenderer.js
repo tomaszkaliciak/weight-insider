@@ -20,12 +20,8 @@ export const RollingAveragesRenderer = {
             return;
         }
 
-        StateManager.subscribe((stateChanges) => {
-            if (stateChanges.action.type.includes('FILTERED_DATA') ||
-                stateChanges.action.type.includes('DISPLAY_STATS')) {
-                this._calculate();
-            }
-        });
+        StateManager.subscribeToSpecificEvent('state:filteredDataChanged', () => this._calculate());
+        StateManager.subscribeToSpecificEvent('state:displayStatsUpdated', () => this._calculate());
 
         setTimeout(() => this._calculate(), 1150);
     },
@@ -40,7 +36,8 @@ export const RollingAveragesRenderer = {
         }
 
         const averages = this._calculateRollingAverages(filteredData);
-        this._render(averages);
+        const macroAvgs = this._calculateMacroAverages(filteredData);
+        this._render(averages, macroAvgs);
     },
 
     _calculateRollingAverages(data) {
@@ -106,6 +103,24 @@ export const RollingAveragesRenderer = {
         };
     },
 
+    _calculateMacroAverages(data) {
+        const windows = [7, 14];
+        const result = {};
+        windows.forEach(w => {
+            const slice = data.slice(-w).filter(d => d.protein != null);
+            if (slice.length === 0) { result[w] = null; return; }
+            result[w] = {
+                protein: Math.round(slice.reduce((s, d) => s + d.protein, 0) / slice.length),
+                carbs:   Math.round(slice.reduce((s, d) => s + (d.carbs   ?? 0), 0) / slice.length),
+                fat:     Math.round(slice.reduce((s, d) => s + (d.fat     ?? 0), 0) / slice.length),
+                fiber:   slice.some(d => d.fiber != null)
+                    ? Math.round(slice.filter(d => d.fiber != null).reduce((s, d) => s + d.fiber, 0) / slice.filter(d => d.fiber != null).length)
+                    : null,
+            };
+        });
+        return result;
+    },
+
     _detectReversal(trends) {
         // Reversal: short-term trend opposite to long-term
         if (trends[7] == null || trends[30] == null) return null;
@@ -129,7 +144,7 @@ export const RollingAveragesRenderer = {
         return null;
     },
 
-    _render(averages) {
+    _render(averages, macroAvgs) {
         if (!this._container) return;
 
         const formatWeight = (w) => w != null ? `${w.toFixed(1)} kg` : 'N/A';
@@ -191,17 +206,47 @@ export const RollingAveragesRenderer = {
             it often signals a trend reversal. Watch the momentum indicator.
           </small>
         </div>
+
+        ${(macroAvgs[7] || macroAvgs[14]) ? `
+        <div class="macro-rolling-section">
+          <div class="macro-rolling-title">Macro Averages</div>
+          <table class="macro-rolling-table">
+            <thead>
+              <tr>
+                <th>Macro</th>
+                <th>7-day avg</th>
+                <th>14-day avg</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${['protein','carbs','fat','fiber'].map(key => {
+                const v7  = macroAvgs[7]?.[key];
+                const v14 = macroAvgs[14]?.[key];
+                if (v7 == null && v14 == null) return '';
+                const label = key.charAt(0).toUpperCase() + key.slice(1);
+                const delta = (v7 != null && v14 != null) ? v7 - v14 : null;
+                const deltaHtml = delta != null
+                  ? `<span class="macro-rolling-delta ${delta > 2 ? 'up' : delta < -2 ? 'down' : ''}">${delta > 0 ? '↑' : delta < 0 ? '↓' : '→'}</span>`
+                  : '';
+                return `<tr class="macro-rolling-row macro-rolling-${key}">
+                  <td>${label}</td>
+                  <td>${v7 != null ? v7+'g' : '--'} ${deltaHtml}</td>
+                  <td>${v14 != null ? v14+'g' : '--'}</td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+        ` : ''}
       </div>
     `;
     },
 
     _renderNoData() {
-        if (!this._container) return;
-        this._container.innerHTML = `
-      <div class="empty-state-message">
-        <p>Need more data</p>
-        <small>At least 2 weeks of data required for rolling averages</small>
-      </div>
-    `;
+        Utils.renderEmptyState(this._container, {
+            title: 'Need more data',
+            detail: 'At least 2 weeks of data required for rolling averages.',
+            icon: '📊',
+        });
     }
 };

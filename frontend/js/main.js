@@ -57,6 +57,39 @@ import { EnergySankeyRenderer } from "./ui/renderers/energySankeyRenderer.js";
 import { DataTableModal } from "./ui/dataTableModal.js";
 import { ChartControls } from "./ui/chartControls.js";
 import { VitalStatsEnricher } from "./ui/renderers/vitalStatsEnricher.js";
+import { WidgetCollapser } from "./ui/widgetCollapser.js";
+import { MobileNav } from "./ui/mobileNav.js";
+import { ManualEntryWidget } from "./ui/manualEntryWidget.js";
+import { ManualEntryService } from "./core/manualEntryService.js";
+import { MacroSummaryRenderer } from "./ui/renderers/macroSummaryRenderer.js";
+import { ProteinAdequacyRenderer } from "./ui/renderers/proteinAdequacyRenderer.js";
+import { WidgetOrderManager } from "./ui/widgetOrderManager.js";
+import { DashboardPresets } from "./ui/dashboardPresets.js";
+
+/**
+ * Defers renderer.init() until the element with anchorId enters the viewport.
+ * Falls back to eager init if the element does not exist or IntersectionObserver
+ * is unavailable.
+ * @param {{ init: Function }} renderer
+ * @param {string} anchorId - ID of the bento widget to observe.
+ */
+function lazyInit(renderer, anchorId) {
+  const el = document.getElementById(anchorId);
+  if (!el || typeof IntersectionObserver === 'undefined') {
+    renderer.init();
+    return;
+  }
+  const observer = new IntersectionObserver(
+    (entries) => {
+      if (entries[0].isIntersecting) {
+        observer.disconnect();
+        renderer.init();
+      }
+    },
+    { rootMargin: '300px' }, // start loading 300 px before widget is visible
+  );
+  observer.observe(el);
+}
 
 /**
  * Initializes the application step-by-step.
@@ -71,11 +104,26 @@ async function initialize() {
       );
     }
 
+    // 1a. Apply saved widget order BEFORE collapse/renderers so DOM order is stable.
+    WidgetOrderManager.applyOrder();
+
     // 1b. Initialize Sidebar Tabs
     SidebarTabs.init();
 
     // 1c. Initialize Chart Controls (Fullscreen, etc.)
     ChartControls.init();
+
+    // 1d. Initialize Widget Collapse/Expand
+    WidgetCollapser.init();
+
+    // 1d-ii. Dashboard presets (must run after WidgetCollapser.init so it can override)
+    DashboardPresets.init();
+
+    // 1e. Mobile navigation FAB
+    MobileNav.init();
+
+    // 1f. Manual entry widget
+    ManualEntryWidget.init();
 
 
     // 2. Load Settings (Read from CONFIG, dispatch to state)
@@ -96,50 +144,64 @@ async function initialize() {
     EventHandlers.setupAll();
 
     // 6. Initialize UI Modules that Subscribe to State
-    // These need to be ready *before* data/stats updates start flowing
-    MasterUpdater.init(); // Listens for state changes to trigger renders
-    ExecutiveHubRenderer.init(); // Premium High-Impact Summary
-    MacroCorrelationRenderer.init(); // Premium Macro Analysis
-    CorrelationMatrixRenderer.init(); // Premium Insight Matrix
-    AnnotationListRenderer.init(); // Listens for annotation changes
-    StatsDisplayRenderer.init(); // Listens for display stats updates
-    PeriodizationRenderer.init(); // Listens for periodization phase changes
-    PeriodComparisonRenderer.init(); // Multi-period comparison tool
-    GoalAlertRenderer.init(); // Goal progress alerts
-    VitalStatsEnricher.init(); // Delta badges on the full-width Vital Stats strip
-    GoalSuggestionRenderer.init(); // Adaptive goal suggestions
-    EventCountdownRenderer.init(); // Competition/event countdown
-    WeekendAnalysisRenderer.init(); // Weekend vs weekday patterns
-    PredictionBandsRenderer.init(); // Weight predictions with confidence
-    AdaptiveRateRenderer.init(); // Personal rate benchmarks
-    CalorieAuditRenderer.init(); // Calorie accuracy analysis
-    MonthlyReportRenderer.init(); // Monthly/quarterly reports
-    WhatWorkedRenderer.init(); // Pattern analysis from successful periods
-    WeeklyReviewRenderer.init(); // Smart 7-day review
-    PlateauBreakerRenderer.init(); // Plateau detection and suggestions
-    RollingAveragesRenderer.init(); // 7/14/30 day rolling averages
-    TdeeAccuracyRenderer.init(); // TDEE accuracy dashboard
-    EnergyBalanceRenderer.init(); // Energy balance dashboard (Intake vs TDEE)
-    EnergySankeyRenderer.init(); // Energy flow Sankey diagram
-    SmartCoachRenderer.init(); // Dynamic daily calorie targets
-    CalorieHeatmapRenderer.init(); // Calorie calendar heatmap
-    StreakTrackerRenderer.init(); // Streak tracking and achievements
-    WaterWeightRenderer.init(); // Water weight predictor
-    ReverseDietRenderer.init(); // Reverse diet calculator
-    RateOptimizerRenderer.init(); // Optimal rate suggestions
-    MetabolicAdaptationRenderer.init(); // Metabolic adaptation tracker
-    GoalSimulatorRenderer.init(); // Goal simulator projections
-    WeeklySummaryUpdater.init(); // Listens for weekly data/sort changes
-    LegendManager.init(); // Listens for visibility/goal/etc changes
-    InsightsGenerator.init(); // Listens for display stats updates
-    ProgressRing.init(); // Goal progress ring visualization
-    QuickStatsRenderer.init(); // Quick stats bar above chart
-    KeyboardNav.init(); // Keyboard shortcuts for navigation
-    SparklineRenderer.init(); // Inline trend charts
-    DataTableModal.init(); // Handles Data Table modal
+    // Critical renderers (above-the-fold or non-visual) are initialized immediately.
+    // Below-the-fold bento widgets are deferred via lazyInit (IntersectionObserver)
+    // so they only subscribe to state and build DOM once they are about to scroll
+    // into view — reducing startup CPU and memory cost.
+
+    // --- Critical: always initialize immediately ---
+    MasterUpdater.init();
+    ExecutiveHubRenderer.init();
+    AnnotationListRenderer.init();
+    StatsDisplayRenderer.init();
+    GoalAlertRenderer.init();
+    VitalStatsEnricher.init();
+    GoalSuggestionRenderer.init();
+    SmartCoachRenderer.init();
+    TdeeAccuracyRenderer.init();
+    WeeklySummaryUpdater.init();
+    LegendManager.init();
+    InsightsGenerator.init();
+    ProgressRing.init();
+    QuickStatsRenderer.init();
+    KeyboardNav.init();
+    SparklineRenderer.init();
+    DataTableModal.init();
+
+    // Sidebar/non-bento renderers: init immediately (they target hidden panels,
+    // IntersectionObserver would never fire for collapsed sidebar content).
+    MacroCorrelationRenderer.init();
+    PeriodizationRenderer.init();
+    PeriodComparisonRenderer.init();
+    EventCountdownRenderer.init();
+    WeekendAnalysisRenderer.init();
+    PredictionBandsRenderer.init();
+    AdaptiveRateRenderer.init();
+    CalorieAuditRenderer.init();
+    MonthlyReportRenderer.init();
+    WhatWorkedRenderer.init();
+    PlateauBreakerRenderer.init();
+    RollingAveragesRenderer.init();
+    StreakTrackerRenderer.init();
+    WaterWeightRenderer.init();
+    ReverseDietRenderer.init();
+    RateOptimizerRenderer.init();
+    MetabolicAdaptationRenderer.init();
+    GoalSimulatorRenderer.init();
+
+    // --- Deferred: bento widgets below the fold ---
+    lazyInit(EnergyBalanceRenderer,    'energy-balance-card');
+    lazyInit(EnergySankeyRenderer,     'energy-sankey-card');
+    lazyInit(MacroSummaryRenderer,     'macro-summary-card');
+    lazyInit(ProteinAdequacyRenderer,  'protein-adequacy-card');
+    lazyInit(WeeklyReviewRenderer,     'weekly-review-card');
+    lazyInit(CalorieHeatmapRenderer,   'calorie-heatmap-card');
+    lazyInit(CorrelationMatrixRenderer,'correlation-matrix-card');
 
     // 7. Fetch and Process Data
-    const rawDataObjects = await DataService.fetchData();
+    const fetchedRaw = await DataService.fetchData();
+    // Overlay any manually-entered records (localStorage) onto the fetched data.
+    const rawDataObjects = ManualEntryService.mergeInto(fetchedRaw);
     const mergedData = DataService.mergeRawData(rawDataObjects);
     // Apply processing steps sequentially using the new DataService methods
     let processedData = DataService.calculateBodyComposition(mergedData);
@@ -211,6 +273,9 @@ async function initialize() {
     StateManager.dispatch({ type: "INITIALIZATION_COMPLETE" });
     // Initial stats calc (StatsManager) and render (MasterUpdater) are triggered by this event via subscriptions.
 
+    // 15. Enable drag-and-drop reordering now that all renderers and content are in place.
+    WidgetOrderManager.initSortable();
+
   } catch (error) {
     console.error(`[Main Init] Initialization failed"`, error);
     StateManager.dispatch({ type: "INITIALIZATION_FAILED" });
@@ -224,4 +289,28 @@ if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", initialize);
 } else {
   setTimeout(initialize, 0);
+}
+
+// Register service worker and listen for data-update messages from the SW.
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker
+    .register("/sw.js")
+    .catch((err) => console.warn("[SW] Registration failed:", err));
+
+  navigator.serviceWorker.addEventListener("message", (event) => {
+    const { type } = event.data || {};
+    if (type === "DATA_UPDATED") {
+      Utils.showStatusMessage(
+        "New data available — reload the page to apply.",
+        "info",
+        8000,
+      );
+    } else if (type === "SERVING_CACHED_DATA") {
+      Utils.showStatusMessage(
+        "You appear to be offline. Showing cached data.",
+        "warn",
+        5000,
+      );
+    }
+  });
 }

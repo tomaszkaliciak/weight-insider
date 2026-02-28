@@ -21,12 +21,9 @@ export const AdaptiveRateRenderer = {
             return;
         }
 
-        StateManager.subscribe((stateChanges) => {
-            if (stateChanges.action.type.includes('DISPLAY_STATS') ||
-                stateChanges.action.type.includes('PROCESSED_DATA')) {
-                this._analyze();
-            }
-        });
+        StateManager.subscribeToSpecificEvent('state:displayStatsUpdated', () => this._analyze());
+        StateManager.subscribeToSpecificEvent('state:filteredDataChanged', () => this._analyze());
+        StateManager.subscribeToSpecificEvent('state:initializationComplete', () => this._analyze());
 
         setTimeout(() => this._analyze(), 850);
     },

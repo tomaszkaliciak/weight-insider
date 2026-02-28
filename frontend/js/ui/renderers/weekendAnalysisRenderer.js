@@ -21,12 +21,8 @@ export const WeekendAnalysisRenderer = {
       return;
     }
 
-    StateManager.subscribe((stateChanges) => {
-      if (stateChanges.action.type.includes('FILTERED_DATA') ||
-        stateChanges.action.type.includes('PROCESSED_DATA')) {
-        this._analyze();
-      }
-    });
+        StateManager.subscribeToSpecificEvent('state:filteredDataChanged', () => this._analyze());
+        StateManager.subscribeToSpecificEvent('state:initializationComplete', () => this._analyze());
 
     setTimeout(() => this._analyze(), 800);
   },

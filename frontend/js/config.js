@@ -11,6 +11,7 @@ export const CONFIG = Object.freeze({
     goal: "weightInsightsGoalV3",
     theme: "weightInsightsThemeV3",
     annotations: "weightInsightsAnnotationsV3",
+    macroTargets: "weightInsiderMacroTargetsV1",
   },
 
   // --- Data Processing & Analysis ---
@@ -23,6 +24,9 @@ export const CONFIG = Object.freeze({
   stdDevMultiplier: 1.0, // Multiplier for SMA band width (1.0 = +/- 1 Std Dev)
   KCALS_PER_KG: 7700, // Approximate calories per kilogram of body weight change
   OUTLIER_STD_DEV_THRESHOLD: 2.5, // Std Devs from SMA to be marked as an outlier
+  ADAPTIVE_OUTLIER_WINDOW_DAYS: 21, // Lookback window for adaptive anomaly detection
+  ADAPTIVE_OUTLIER_MIN_POINTS: 7, // Minimum points to estimate robust local variability
+  ADAPTIVE_OUTLIER_MIN_ABS_KG: 0.35, // Absolute floor so tiny oscillations are never flagged
   ROLLING_VOLATILITY_WINDOW: 14, // Days for calculating rolling volatility stat
   MIN_POINTS_FOR_REGRESSION: 7, // Minimum non-outlier points needed within range for regression line
   MIN_WEEKS_FOR_CORRELATION: 4, // Minimum weeks of data needed in analysis range for correlation calculation

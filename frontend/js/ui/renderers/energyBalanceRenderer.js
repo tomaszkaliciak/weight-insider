@@ -10,6 +10,8 @@ import { CONFIG } from '../../config.js';
 
 export const EnergyBalanceRenderer = {
     _container: null,
+    _lastData: null,
+    _colors: null,
 
     init() {
         this._container = document.getElementById('energy-balance-content');
@@ -23,19 +25,50 @@ export const EnergyBalanceRenderer = {
             for (let entry of entries) {
                 if (entry.contentRect.width > 0 && this._lastData) {
                     // Debounce slightly to ensure transition is done
-                    requestAnimationFrame(() => this._renderChart(this._lastData));
+                    requestAnimationFrame(() => this._renderChart(this._lastData, this._colors));
                 }
             }
         });
         resizeObserver.observe(this._container);
 
-        StateManager.subscribe((stateChanges) => {
-            if (stateChanges.action.type.includes('DISPLAY_STATS') ||
-                stateChanges.action.type.includes('FILTERED_DATA')) {
-                this._render();
-            }
-        });
+        StateManager.subscribeToSpecificEvent('state:displayStatsUpdated', () => this._render());
+        StateManager.subscribeToSpecificEvent('state:filteredDataChanged', () => this._render());
 
+        const s = StateManager.getState();
+        if (s.isInitialized) this._render();
+    },
+
+    /**
+     * Returns goal-aware bar colors: "on-track" bars are accented green,
+     * "off-track" bars are red. Falls back to neutral orange/blue when no goal is set.
+     * @param {object} goal - The goal object from state.
+     * @returns {{ surplusColor: string, deficitColor: string }}
+     */
+    _getGoalAwareColors(goal) {
+        const isCutting = goal?.targetRate != null
+            ? goal.targetRate < 0
+            : goal?.weight != null && goal?.startWeight != null
+                ? goal.weight < goal.startWeight
+                : null;
+
+        if (isCutting === true) {
+            // Cutting: deficit is good, surplus is bad
+            return {
+                surplusColor: 'var(--danger-color)',
+                deficitColor: 'var(--success-color)',
+            };
+        } else if (isCutting === false) {
+            // Bulking: surplus is good, deficit is bad
+            return {
+                surplusColor: 'var(--success-color)',
+                deficitColor: 'var(--danger-color)',
+            };
+        }
+        // No clear goal direction: use neutral orange/blue
+        return {
+            surplusColor: 'var(--warning-color, #f59e0b)',
+            deficitColor: 'var(--primary-color)',
+        };
     },
 
     _render() {
@@ -70,6 +103,8 @@ export const EnergyBalanceRenderer = {
         }
 
         this._lastData = balanceData; // Store for resize re-rendering
+        const goal = Selectors.selectGoal(state);
+        this._colors = this._getGoalAwareColors(goal);
 
         // Calculate Stats
         const validBalances = balanceData.map(d => d.balance);
@@ -102,10 +137,14 @@ Formula: Daily Intake - Daily TDEE">
             <div id="energy-balance-chart" class="energy-balance-chart"></div>
         `;
 
-        this._renderChart(balanceData);
+        this._renderChart(balanceData, this._colors);
     },
 
-    _renderChart(data) {
+    _renderChart(data, colors) {
+        const { surplusColor, deficitColor } = colors || {
+            surplusColor: 'var(--warning-color, #f59e0b)',
+            deficitColor: 'var(--primary-color)',
+        };
         const container = document.getElementById('energy-balance-chart');
         if (!container) return;
 
@@ -152,7 +191,7 @@ Formula: Daily Intake - Daily TDEE">
             .attr("y", d => d.balance > 0 ? y(d.balance) : y(0))
             .attr("width", x.bandwidth())
             .attr("height", d => Math.abs(y(d.balance) - y(0)))
-            .attr("fill", d => d.balance > 0 ? "var(--success-color)" : "var(--danger-color)")
+            .attr("fill", d => d.balance > 0 ? surplusColor : deficitColor)
             .attr("opacity", 0.7)
             .append("title") // Tooltip
             .text(d => `${d.date.toLocaleDateString()}\nBalance: ${d.balance > 0 ? '+' : ''}${Math.round(d.balance)} kcal\n(In: ${Math.round(d.intake)} - Out: ${Math.round(d.tdee)})`);
@@ -170,12 +209,10 @@ Formula: Daily Intake - Daily TDEE">
     },
 
     _renderNoData() {
-        if (!this._container) return;
-        this._container.innerHTML = `
-            <div class="empty-state-message">
-                <p>Insufficient data</p>
-                <small>Need both TDEE and calorie intake data to calculate energy balance.</small>
-            </div>
-        `;
+        Utils.renderEmptyState(this._container, {
+            title: "Insufficient data",
+            detail: "Need both TDEE and calorie intake data to calculate energy balance.",
+            icon: "⚡",
+        });
     }
 };

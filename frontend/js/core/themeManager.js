@@ -65,48 +65,66 @@ export const ThemeManager = {
     // No need to dispatch event here, components needing colors can just import `colors`
   },
 
-  /**
-   * Updates the theme toggle button icon based on the current theme.
-   * @param {string} currentTheme - The current theme ('light' or 'dark').
-   */
-  _updateToggleButtonIcon(currentTheme) {
-    ui.themeToggle?.html(
-      currentTheme === "dark"
-        ? `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>` // Sun
-        : `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>`, // Moon
-    );
+  // Cycle order: light → dark → gruvbox → light …
+  _THEME_CYCLE: ["light", "dark", "gruvbox"],
+
+  // SVG icons: each icon hints at the *next* theme in the cycle.
+  _THEME_ICONS: {
+    // Currently light → next is dark → show moon
+    light: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`,
+    // Currently dark → next is gruvbox → show flame
+    dark: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>`,
+    // Currently gruvbox → next is light → show sun
+    gruvbox: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`,
   },
 
   /**
-   * Applies the theme class to the body and updates dependent visuals.
-   * Called by the state change listener.
-   * @param {string} newTheme - The theme to apply ('light' or 'dark').
+   * Updates the theme toggle button icon to hint at the *next* theme in the cycle.
+   * @param {string} currentTheme - The active theme ('light' | 'dark' | 'gruvbox').
+   */
+  _updateToggleButtonIcon(currentTheme) {
+    const icon = this._THEME_ICONS[currentTheme] ?? this._THEME_ICONS.light;
+    ui.themeToggle?.html(icon);
+
+    // Tooltip label showing the next theme name
+    const idx = this._THEME_CYCLE.indexOf(currentTheme);
+    const nextTheme = this._THEME_CYCLE[(idx + 1) % this._THEME_CYCLE.length];
+    const labels = { light: "Light", dark: "Dark", gruvbox: "Gruvbox" };
+    ui.themeToggle?.attr("title", `Switch to ${labels[nextTheme]} theme`);
+    ui.themeToggle?.attr("aria-label", `Switch to ${labels[nextTheme]} theme`);
+  },
+
+  /**
+   * Applies the correct body class and persists the choice.
+   * @param {string} newTheme - The theme to apply ('light' | 'dark' | 'gruvbox').
    */
   _applyTheme(newTheme) {
-    const theme = newTheme === "dark" ? "dark" : "light";
+    const valid = this._THEME_CYCLE.includes(newTheme) ? newTheme : "light";
 
-    // Add transitioning class for smooth animation
     ui.body?.classed("theme-transitioning", true);
 
-    ui.body?.classed("dark-theme", theme === "dark");
-    localStorage.setItem(CONFIG.localStorageKeys.theme, theme);
-    this._updateColorsObject(); // Recalculate colors based on new theme
-    this._updateToggleButtonIcon(theme); // Update button icon
+    // Remove all theme classes then apply the correct one
+    ui.body
+      ?.classed("dark-theme",    valid === "dark")
+      .classed("gruvbox-theme",  valid === "gruvbox");
 
-    // Remove transitioning class after animation completes
+    localStorage.setItem(CONFIG.localStorageKeys.theme, valid);
+    this._updateColorsObject();
+    this._updateToggleButtonIcon(valid);
+
     setTimeout(() => {
       ui.body?.classed("theme-transitioning", false);
     }, 400);
   },
 
   /**
-   * Dispatches an action to toggle the current theme.
+   * Advances to the next theme in the cycle (light → dark → gruvbox → light).
    */
   toggleTheme() {
-    const currentTheme = Selectors.selectCurrentTheme(StateManager.getState()); // Read state
-    const newTheme = currentTheme === "light" ? "dark" : "light";
-    StateManager.dispatch({ type: "SET_THEME", payload: newTheme });
-    // The _applyTheme method will be called via the state subscription.
+    const currentTheme = Selectors.selectCurrentTheme(StateManager.getState());
+    const idx = this._THEME_CYCLE.indexOf(currentTheme);
+    const nextTheme = this._THEME_CYCLE[(idx + 1) % this._THEME_CYCLE.length];
+    StateManager.dispatch({ type: "SET_THEME", payload: nextTheme });
   },
 
   /**
@@ -115,7 +133,7 @@ export const ThemeManager = {
    */
   init() {
     const savedTheme = localStorage.getItem(CONFIG.localStorageKeys.theme);
-    const initialTheme = savedTheme === "dark" ? "dark" : "light";
+    const initialTheme = this._THEME_CYCLE.includes(savedTheme) ? savedTheme : "light";
 
     // IMPORTANT: Dispatch the initial theme *before* applying it or subscribing
     // This ensures the state is correct before any reactions happen.

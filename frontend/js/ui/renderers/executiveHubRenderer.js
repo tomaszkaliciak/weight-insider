@@ -59,12 +59,11 @@ export const ExecutiveHubRenderer = {
 
         // Check if we have the minimum required data
         if (stats.currentSma == null || trend == null) {
-            this._container.innerHTML = `
-                <div class="empty-state-message">
-                    <p>Insufficient data to generate executive summary.</p>
-                    <small>Need at least 7 days of recent weight entries.</small>
-                </div>
-            `;
+            Utils.renderEmptyState(this._container, {
+                title: "Insufficient data",
+                detail: "Need at least 7 days of recent weight entries.",
+                icon: "📊",
+            });
             return;
         }
 
