@@ -245,67 +245,54 @@
 
         </div>
 
-        <!-- Hidden legacy inputs retained temporarily to prevent UI Cache null reference crashes -->
-        <div style="display:none;" id="legacy-state-cache">
-            <input id="trendStartDate"><input id="trendInitialWeight"><input id="trendWeeklyIncrease"><input
-                id="trendWeeklyIncrease_2">
-            <button id="view-data-btn"></button><button id="updateAnalysisRangeBtn"></button>
-            <input id="goalWeight"><input id="goalDate"><input id="goalTargetRate">
-            <input id="annotation-date"><input id="annotation-text">
-            <ul id="annotation-list"></ul>
-            <input id="what-if-intake"><input id="what-if-duration"><button id="what-if-submit"></button>
-            <div id="what-if-result"></div>
-        </div>
-    </main>
+        <!-- Essential Absolute Elements -->
+        <div id="tooltip" class="tooltip" style="opacity: 0;"></div>
+        <div id="pinned-tooltip-container"></div>
+        <div id="chart-tooltip" class="context-menu" style="display: none;"></div>
 
-    <!-- Essential Absolute Elements -->
-    <div id="tooltip" class="tooltip" style="opacity: 0;"></div>
-    <div id="pinned-tooltip-container"></div>
-    <div id="chart-tooltip" class="context-menu" style="display: none;"></div>
-
-    <!-- Modal for Data Table -->
-    <div id="data-modal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="modal-title">
-        <div class="modal-content card">
-            <div class="modal-header">
-                <h2 id="modal-title">Weight & Calorie Data</h2>
-                <button class="close-modal" aria-label="Close Modal">×</button>
-            </div>
-            <div class="modal-body">
-                <div class="table-container">
-                    <table id="data-table">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Weight (kg)</th>
-                                <th>Trend (kg)</th>
-                                <th>Calories</th>
-                                <th>TDEE (kcal)</th>
-                                <th>Balance</th>
-                            </tr>
-                        </thead>
-                        <tbody id="data-table-body">
-                            <!-- Populated by JS -->
-                        </tbody>
-                    </table>
+        <!-- Modal for Data Table -->
+        <div id="data-modal" class="modal" aria-hidden="true" role="dialog" aria-labelledby="modal-title">
+            <div class="modal-content card">
+                <div class="modal-header">
+                    <h2 id="modal-title">Weight & Calorie Data</h2>
+                    <button class="close-modal" aria-label="Close Modal">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="table-container">
+                        <table id="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Weight (kg)</th>
+                                    <th>Trend (kg)</th>
+                                    <th>Calories</th>
+                                    <th>TDEE (kcal)</th>
+                                    <th>Balance</th>
+                                </tr>
+                            </thead>
+                            <tbody id="data-table-body">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-    <div id="modal-overlay" class="modal-overlay" aria-hidden="true"></div>
+        <div id="modal-overlay" class="modal-overlay" aria-hidden="true"></div>
 
-    <script type="module" src="js/main.js"></script>
+        <script type="module" src="js/main.js"></script>
 
-    <!-- PWA Service Worker Registration -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js').then(
-                    registration => console.log('[Service Worker] Registration successful with scope: ', registration.scope),
-                    err => console.log('[Service Worker] Registration failed: ', err)
-                );
-            });
-        }
-    </script>
+        <!-- PWA Service Worker Registration -->
+        <script>
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/sw.js').then(
+                        registration => console.log('[Service Worker] Registration successful with scope: ', registration.scope),
+                        err => console.log('[Service Worker] Registration failed: ', err)
+                    );
+                });
+            }
+        </script>
 </body>
 
 </html>

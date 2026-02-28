@@ -4,6 +4,9 @@
 export const CONFIG = Object.freeze({
   // Make CONFIG immutable
 
+  // Set to true to enable verbose console.log output during development
+  debug: false,
+
   localStorageKeys: {
     goal: "weightInsightsGoalV3",
     theme: "weightInsightsThemeV3",
