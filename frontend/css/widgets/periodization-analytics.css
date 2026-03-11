@@ -1498,6 +1498,13 @@ font-size: 0.75rem;
     border-color: var(--primary-color);
 }
 
+.month-card.report-clickable:focus-visible,
+.quarter-card.report-clickable:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+    border-color: var(--primary-color);
+}
+
 .month-header,
 .quarter-header {
     display: flex;

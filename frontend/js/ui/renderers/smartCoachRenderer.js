@@ -57,10 +57,65 @@ export const SmartCoachRenderer = {
         return { phase: 'maintenance', label: 'Maintenance', icon: '⚖️', color: 'var(--primary)' };
     },
 
+    _determineGoalDirection(displayStats, goal) {
+        const currentWeight = displayStats.currentSma ?? displayStats.currentWeight;
+        if (goal?.weight != null && currentWeight != null) {
+            if (goal.weight < currentWeight - 0.2) return 'cut';
+            if (goal.weight > currentWeight + 0.2) return 'bulk';
+        }
+        const rate = displayStats.currentWeeklyRate || 0;
+        if (rate < -0.15) return 'cut';
+        if (rate > 0.15) return 'bulk';
+        return 'maintenance';
+    },
+
+    _analyzeSuccessfulBehavior(weeklySummaryData, displayStats, goal) {
+        if (!Array.isArray(weeklySummaryData) || weeklySummaryData.length < 4) return null;
+        const direction = this._determineGoalDirection(displayStats, goal);
+        const candidates = weeklySummaryData
+            .filter((week) => {
+                if (week.avgIntake == null || week.loggingRate == null || week.calorieCoverage == null) return false;
+                if (direction === 'cut') return week.weeklyRate != null && week.weeklyRate <= -0.2 && week.weeklyRate >= -0.9;
+                if (direction === 'bulk') return week.weeklyRate != null && week.weeklyRate >= 0.1 && week.weeklyRate <= 0.45;
+                return week.weeklyRate != null && Math.abs(week.weeklyRate) <= 0.15;
+            })
+            .map((week) => {
+                const adherence = (week.loggingRate * 100) + (week.calorieCoverage * 100);
+                const weekendPenalty = Math.min(Math.abs(week.weekendSpike ?? 0) / 8, 45);
+                const volatilityPenalty = Math.min((week.avgVolatility ?? 0) * 18, 25);
+                const directionBonus = direction === 'maintenance'
+                    ? 18 - Math.min(Math.abs(week.weeklyRate || 0) * 60, 18)
+                    : Math.min(Math.abs(week.weeklyRate || 0) * 35, 28);
+                return {
+                    ...week,
+                    score: adherence + directionBonus - weekendPenalty - volatilityPenalty,
+                };
+            })
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 3);
+
+        if (!candidates.length) return null;
+
+        const avg = (field) => {
+            const values = candidates.map((week) => week[field]).filter((value) => value != null && !isNaN(value));
+            return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
+        };
+
+        return {
+            direction,
+            weeks: candidates.length,
+            avgIntake: avg('avgIntake'),
+            avgProtein: avg('avgProtein'),
+            avgWeekendSpike: avg('weekendSpike'),
+            avgVolatility: avg('avgVolatility'),
+            avgRate: avg('weeklyRate'),
+        };
+    },
+
     /**
      * Generate personalized recommendations based on current metrics
      */
-    _generateRecommendations(displayStats, goal) {
+    _generateRecommendations(displayStats, goal, weeklySummaryData) {
         const recommendations = [];
         const rate = displayStats.currentWeeklyRate || 0;
         const avgRate = displayStats.avgWeeklyRate || rate;
@@ -181,6 +236,28 @@ export const SmartCoachRenderer = {
             }
         }
 
+        const behaviorModel = this._analyzeSuccessfulBehavior(weeklySummaryData, displayStats, goal);
+        if (behaviorModel && behaviorModel.avgIntake != null) {
+            const directionLabel = behaviorModel.direction === 'cut'
+                ? 'best cut'
+                : behaviorModel.direction === 'bulk'
+                    ? 'best gain'
+                    : 'best maintenance';
+            const proteinText = behaviorModel.avgProtein != null
+                ? `, ${Math.round(behaviorModel.avgProtein)}g protein`
+                : '';
+            const weekendText = behaviorModel.avgWeekendSpike != null
+                ? `, weekend drift ${behaviorModel.avgWeekendSpike >= 0 ? '+' : ''}${Math.round(behaviorModel.avgWeekendSpike)} kcal`
+                : '';
+            recommendations.push({
+                priority: 2,
+                type: 'success',
+                icon: '🧠',
+                title: 'Pattern From Your Best Weeks',
+                detail: `Your ${directionLabel} weeks averaged ${Math.round(behaviorModel.avgIntake)} kcal${proteinText}${weekendText}. That pattern is a stronger template than generic advice.`,
+            });
+        }
+
         // Sort by priority and limit to top 4
         return recommendations.sort((a, b) => a.priority - b.priority).slice(0, 4);
     },
@@ -191,6 +268,7 @@ export const SmartCoachRenderer = {
         const state = StateManager.getState();
         const displayStats = state.displayStats || {};
         const goal = Selectors.selectGoal(state);
+        const weeklySummaryData = Selectors.selectWeeklySummaryData(state);
 
         const tdee = displayStats.avgTDEE_Adaptive ||
             displayStats.avgTDEE_WgtChange ||
@@ -202,7 +280,8 @@ export const SmartCoachRenderer = {
         }
 
         const phase = this._detectPhase(displayStats);
-        const recommendations = this._generateRecommendations(displayStats, goal);
+        const recommendations = this._generateRecommendations(displayStats, goal, weeklySummaryData);
+        const behaviorModel = this._analyzeSuccessfulBehavior(weeklySummaryData, displayStats, goal);
         const currentRate = displayStats.currentWeeklyRate || 0;
 
         // Calculate Calories for different targets
@@ -231,6 +310,18 @@ export const SmartCoachRenderer = {
                 <span class="phase-label">Current Phase: <strong>${phase.label}</strong></span>
                 <span class="phase-rate">(${currentRate >= 0 ? '+' : ''}${currentRate.toFixed(2)} kg/wk)</span>
             </div>
+
+            ${behaviorModel ? `
+                <div class="coach-pattern-card">
+                    <div class="coach-pattern-title">Based On Your Best ${behaviorModel.direction === 'cut' ? 'Cut' : behaviorModel.direction === 'bulk' ? 'Gain' : 'Maintenance'} Weeks</div>
+                    <div class="coach-pattern-stats">
+                        <span>${Math.round(behaviorModel.avgIntake ?? 0)} kcal</span>
+                        ${behaviorModel.avgProtein != null ? `<span>${Math.round(behaviorModel.avgProtein)}g protein</span>` : ''}
+                        ${behaviorModel.avgWeekendSpike != null ? `<span>${behaviorModel.avgWeekendSpike >= 0 ? '+' : ''}${Math.round(behaviorModel.avgWeekendSpike)} weekend kcal</span>` : ''}
+                        ${behaviorModel.avgRate != null ? `<span>${behaviorModel.avgRate > 0 ? '+' : ''}${behaviorModel.avgRate.toFixed(2)} kg/wk</span>` : ''}
+                    </div>
+                </div>
+            ` : ''}
 
             <div class="coach-grid">
                 <div class="coach-card ${phase.phase === 'maintenance' ? 'active' : ''}">

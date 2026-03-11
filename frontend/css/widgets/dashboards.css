@@ -216,6 +216,13 @@
     z-index: 10;
 }
 
+.day-cell:not(.empty):focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+    transform: scale(1.06);
+    z-index: 10;
+}
+
 .day-cell.empty {
     background: transparent;
     cursor: default;

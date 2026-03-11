@@ -1320,12 +1320,12 @@ export const ScatterPlotUpdater = {
       Array.isArray(scatterData) ? scatterData : []
     ).filter(
       (d) =>
-        d.avgNetCal != null &&
-        !isNaN(d.avgNetCal) &&
-        d.weeklyRate != null &&
-        !isNaN(d.weeklyRate) &&
-        isFinite(scales.xScatter(d.avgNetCal)) &&
-        isFinite(scales.yScatter(d.weeklyRate)),
+        (d.xValue ?? d.avgNetCal) != null &&
+        !isNaN(d.xValue ?? d.avgNetCal) &&
+        (d.yValue ?? d.weeklyRate) != null &&
+        !isNaN(d.yValue ?? d.weeklyRate) &&
+        isFinite(scales.xScatter(d.xValue ?? d.avgNetCal)) &&
+        isFinite(scales.yScatter(d.yValue ?? d.weeklyRate)),
     );
     const dots = ui.scatterDotsGroup
       .selectAll(".scatter-dot")
@@ -1335,8 +1335,8 @@ export const ScatterPlotUpdater = {
         enter
           .append("circle")
           .attr("class", "scatter-dot")
-          .attr("cx", (d) => scales.xScatter(d.avgNetCal))
-          .attr("cy", (d) => scales.yScatter(d.weeklyRate))
+          .attr("cx", (d) => scales.xScatter(d.xValue ?? d.avgNetCal))
+          .attr("cy", (d) => scales.yScatter(d.yValue ?? d.weeklyRate))
           .attr("r", 4)
           .style(
             "fill",
@@ -1355,8 +1355,8 @@ export const ScatterPlotUpdater = {
           .on("mouseout", ChartInteractions.scatterMouseOut)  // Use ChartInteractions
           .transition()
           .duration(dur)
-          .attr("cx", (d) => scales.xScatter(d.avgNetCal))
-          .attr("cy", (d) => scales.yScatter(d.weeklyRate))
+          .attr("cx", (d) => scales.xScatter(d.xValue ?? d.avgNetCal))
+          .attr("cy", (d) => scales.yScatter(d.yValue ?? d.weeklyRate))
           .style("opacity", 0.7),
       (exit) =>
         exit

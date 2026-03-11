@@ -9,6 +9,7 @@ export const CONFIG = Object.freeze({
 
   localStorageKeys: {
     goal: "weightInsightsGoalV3",
+    goalHistory: "weightInsightsGoalHistoryV1",
     theme: "weightInsightsThemeV3",
     annotations: "weightInsightsAnnotationsV3",
     macroTargets: "weightInsiderMacroTargetsV1",

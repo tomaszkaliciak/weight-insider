@@ -1,2 +1,7 @@
 backend/credentials.json
 frontend/node_modules/
+backend/service-account.json
+backend/.sync-cache/
+backend/data_exporter
+backend/health_connect_sync.env
+backend/health_connect_export.db

@@ -5,6 +5,7 @@ import { StateManager } from '../../core/stateManager.js';
 import * as Selectors from '../../core/selectors.js';
 import { Utils } from '../../core/utils.js';
 import { CONFIG } from '../../config.js';
+import { DateInputUX } from '../../interactions/dateInputUX.js';
 
 /**
  * Displays countdown to upcoming events/competitions with:
@@ -151,6 +152,7 @@ export const EventCountdownRenderer = {
     `;
 
         this._setupEventListeners();
+        DateInputUX.init();
     },
 
     _renderEvent(event, currentWeight) {
@@ -270,14 +272,11 @@ export const EventCountdownRenderer = {
                     return;
                 }
 
-                // Parse date (DD-MM-YYYY)
-                const parts = dateStr.split('-');
-                if (parts.length !== 3) {
+                const date = Utils.parseDateInput(dateStr);
+                if (!date) {
                     Utils.showStatusMessage('Date format: DD-MM-YYYY', 'error');
                     return;
                 }
-                const [day, month, year] = parts.map(Number);
-                const date = new Date(year, month - 1, day);
 
                 if (isNaN(date.getTime()) || date <= new Date()) {
                     Utils.showStatusMessage('Please enter a valid future date', 'error');

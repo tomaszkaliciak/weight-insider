@@ -1,0 +1,17 @@
+[Unit]
+Description=Weight Insider Health Connect sync
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=/opt/weight-insider/backend/run_health_connect_sync.sh
+
+[Service]
+Type=oneshot
+User=weightinsider
+Group=weightinsider
+WorkingDirectory=/opt/weight-insider/backend
+Environment=WI_SYNC_ENV_FILE=/etc/weight-insider/health-connect-sync.env
+ExecStart=/usr/bin/bash /opt/weight-insider/backend/run_health_connect_sync.sh
+Nice=10
+
+[Install]
+WantedBy=multi-user.target

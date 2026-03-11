@@ -693,7 +693,8 @@ body.dark-theme ::-webkit-scrollbar-thumb:hover {
 #correlation-matrix-container,
 #correlation-scatter-container {
     width: 100% !important;
-    height: 100% !important;
+    height: auto !important;
+    flex: 1 1 auto;
     min-height: 200px;
 }
 

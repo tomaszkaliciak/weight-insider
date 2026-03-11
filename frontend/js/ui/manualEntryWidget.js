@@ -17,16 +17,15 @@ export const ManualEntryWidget = {
   },
 
   _render() {
-    // Default date to today
-    const today = Utils.formatDate(new Date());
+    const today = Utils.formatDateDMY(new Date());
 
     this._container.innerHTML = `
       <div class="widget-header">Quick Entry</div>
       <form id="manual-entry-form" class="manual-entry-form" novalidate>
         <div class="manual-entry-row">
           <label class="manual-entry-label" for="me-date">Date</label>
-          <input type="date" id="me-date" name="date" class="manual-entry-input"
-                 value="${today}" max="${today}" required />
+          <input type="text" id="me-date" name="date" class="manual-entry-input date-input-dmy"
+                 placeholder="DD-MM-YYYY" value="${today}" required />
         </div>
         <div class="manual-entry-row">
           <label class="manual-entry-label" for="me-weight">Weight (kg)</label>
@@ -67,7 +66,13 @@ export const ManualEntryWidget = {
     const calVal   = parseFloat(document.getElementById('me-calories')?.value);
 
     if (!dateVal) {
-      Utils.showStatusMessage('Please select a date.', 'warn');
+      Utils.showStatusMessage('Please enter a date (DD-MM-YYYY).', 'warn');
+      return;
+    }
+
+    const parsedDate = Utils.parseDateInput(dateVal);
+    if (!parsedDate) {
+      Utils.showStatusMessage('Invalid date. Use DD-MM-YYYY.', 'warn');
       return;
     }
 
@@ -79,7 +84,8 @@ export const ManualEntryWidget = {
       return;
     }
 
-    ManualEntryService.upsert(dateVal, {
+    const storageKey = Utils.formatDate(parsedDate);
+    ManualEntryService.upsert(storageKey, {
       weight: hasWeight ? weightVal : null,
       calories: hasCalories ? calVal : null,
     });
@@ -89,7 +95,7 @@ export const ManualEntryWidget = {
     if (document.getElementById('me-calories')) document.getElementById('me-calories').value = '';
 
     Utils.showStatusMessage(
-      `Saved entry for ${dateVal}. Reload the page to apply.`,
+      `Saved entry for ${Utils.formatDateDMY(parsedDate)}. Reload the page to apply.`,
       'success',
     );
 

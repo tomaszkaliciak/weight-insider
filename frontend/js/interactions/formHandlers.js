@@ -13,8 +13,8 @@ import { ChartInteractions } from "./chartInteractions.js";
 const debouncedRangeInputChange = Utils.debounce(() => {
   const startVal = ui.analysisStartDateInput?.property("value");
   const endVal = ui.analysisEndDateInput?.property("value");
-  const startDate = Utils.parseDateDMY(startVal);
-  const endDate = Utils.parseDateDMY(endVal);
+  const startDate = Utils.parseDateInput(startVal);
+  const endDate = Utils.parseDateInput(endVal);
 
   if (
     startDate instanceof Date &&
@@ -43,7 +43,7 @@ const debouncedRangeInputChange = Utils.debounce(() => {
     } else {
     }
   } else if (startVal || endVal) {
-    Utils.showStatusMessage("Invalid date range entered in inputs.", "error");
+    Utils.showStatusMessage("Invalid date range. Use DD-MM-YYYY.", "error");
   }
 }, 400); // Debounce for 400ms
 
@@ -55,10 +55,11 @@ export const FormHandlers = {
     const weeklyIncrease1Val = ui.trendWeeklyIncrease1Input?.property("value");
     const weeklyIncrease2Val = ui.trendWeeklyIncrease2Input?.property("value");
 
+    const parsedStartDate = startDateVal ? Utils.parseDateInput(startDateVal) : null;
     StateManager.dispatch({
       type: ActionTypes.UPDATE_TREND_CONFIG, // Use ActionTypes
       payload: {
-        startDate: startDateVal ? new Date(startDateVal) : null,
+        startDate: parsedStartDate,
         initialWeight: initialWeightVal,
         weeklyIncrease1: weeklyIncrease1Val,
         weeklyIncrease2: weeklyIncrease2Val,
@@ -75,8 +76,7 @@ export const FormHandlers = {
     // Parse values to proper types (weight and rate as numbers, date as Date object)
     const parsedWeight = weightVal ? parseFloat(weightVal) : null;
     const parsedRate = rateVal ? parseFloat(rateVal) : null;
-    // Parse date as local midnight
-    const parsedDate = dateVal ? new Date(dateVal + "T00:00:00") : null;
+    const parsedDate = dateVal ? Utils.parseDateInput(dateVal) : null;
 
     StateManager.dispatch({
       type: ActionTypes.LOAD_GOAL, // Use ActionTypes

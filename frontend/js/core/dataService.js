@@ -770,6 +770,36 @@ export const DataService = {
           avgWeight: avgMetric(weekData, "sma") ?? avgMetric(weekData, "value"), // Fallback to raw if SMA missing
           avgExpenditure: avgMetric(weekData, "googleFitTDEE"),
           avgIntake: avgMetric(weekData, "calorieIntake"),
+          avgAdaptiveTdee: avgMetric(weekData, "adaptiveTDEE"),
+          avgProtein: avgMetric(weekData, "protein"),
+          avgCarbs: avgMetric(weekData, "carbs"),
+          avgFat: avgMetric(weekData, "fat"),
+          avgFiber: avgMetric(weekData, "fiber"),
+          avgVolatility: avgMetric(weekData, "rollingVolatility"),
+          loggingRate:
+            weekData.length > 0
+              ? weekData.filter((d) => d.value != null).length / weekData.length
+              : null,
+          calorieCoverage:
+            weekData.length > 0
+              ? weekData.filter((d) => d.calorieIntake != null).length /
+                weekData.length
+              : null,
+          weekendSpike: (() => {
+            const weekend = weekData.filter((d) => {
+              const day = d.date.getDay();
+              return day === 0 || day === 6;
+            });
+            const weekdays = weekData.filter((d) => {
+              const day = d.date.getDay();
+              return day >= 1 && day <= 5;
+            });
+            const weekendAvg = avgMetric(weekend, "calorieIntake");
+            const weekdayAvg = avgMetric(weekdays, "calorieIntake");
+            return weekendAvg != null && weekdayAvg != null
+              ? weekendAvg - weekdayAvg
+              : null;
+          })(),
         });
       }
     });

@@ -530,6 +530,7 @@ body.dark-theme .text-hero {
 /* --- Interactive Elements (Inputs & Buttons) --- */
 input[type="date"],
 input[type="number"],
+input.date-input-dmy,
 select {
     background: var(--bg-tertiary);
     border: 1px solid var(--border-color);
@@ -542,8 +543,19 @@ select {
     transition: all var(--transition-speed) var(--transition-ease);
 }
 
+input.date-input-dmy {
+    min-width: 10ch;
+    width: 10ch;
+}
+
+input.date-input-invalid {
+    border-color: var(--danger-color) !important;
+    box-shadow: 0 0 0 3px hsla(0, 70%, 50%, 0.16) !important;
+}
+
 input[type="date"]:hover,
 input[type="number"]:hover,
+input.date-input-dmy:hover,
 select:hover {
     border-color: var(--text-secondary);
     background: var(--bg-secondary);
@@ -551,6 +563,7 @@ select:hover {
 
 input[type="date"]:focus,
 input[type="number"]:focus,
+input.date-input-dmy:focus,
 select:focus {
     border-color: var(--primary-color);
     box-shadow: 0 0 0 3px hsla(var(--hue-primary), 60%, 50%, 0.15);

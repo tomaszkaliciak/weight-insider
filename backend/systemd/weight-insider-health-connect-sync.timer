@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Weight Insider Health Connect sync on schedule
+
+[Timer]
+OnCalendar=*-*-* 05:10:00
+Persistent=true
+Unit=weight-insider-health-connect-sync.service
+
+[Install]
+WantedBy=timers.target

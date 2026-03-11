@@ -20,6 +20,7 @@ import { PeriodizationRenderer } from "./ui/renderers/periodizationRenderer.js";
 import { PeriodComparisonRenderer } from "./ui/renderers/periodComparisonRenderer.js";
 import { GoalAlertRenderer } from "./ui/renderers/goalAlertRenderer.js";
 import { GoalSuggestionRenderer } from "./ui/renderers/goalSuggestionRenderer.js";
+import { GoalHistoryRenderer } from "./ui/renderers/goalHistoryRenderer.js";
 import { EventCountdownRenderer } from "./ui/renderers/eventCountdownRenderer.js";
 import { WeekendAnalysisRenderer } from "./ui/renderers/weekendAnalysisRenderer.js";
 import { PredictionBandsRenderer } from "./ui/renderers/predictionBandsRenderer.js";
@@ -65,6 +66,7 @@ import { MacroSummaryRenderer } from "./ui/renderers/macroSummaryRenderer.js";
 import { ProteinAdequacyRenderer } from "./ui/renderers/proteinAdequacyRenderer.js";
 import { WidgetOrderManager } from "./ui/widgetOrderManager.js";
 import { DashboardPresets } from "./ui/dashboardPresets.js";
+import { DateInputUX } from "./interactions/dateInputUX.js";
 
 /**
  * Defers renderer.init() until the element with anchorId enters the viewport.
@@ -124,6 +126,7 @@ async function initialize() {
 
     // 1f. Manual entry widget
     ManualEntryWidget.init();
+    DateInputUX.init();
 
 
     // 2. Load Settings (Read from CONFIG, dispatch to state)
@@ -157,6 +160,7 @@ async function initialize() {
     GoalAlertRenderer.init();
     VitalStatsEnricher.init();
     GoalSuggestionRenderer.init();
+    GoalHistoryRenderer.init();
     SmartCoachRenderer.init();
     TdeeAccuracyRenderer.init();
     WeeklySummaryUpdater.init();
@@ -226,7 +230,7 @@ async function initialize() {
     StateManager.dispatch({
       type: "UPDATE_TREND_CONFIG",
       payload: {
-        startDate: initialStartDateVal ? new Date(initialStartDateVal) : null,
+        startDate: initialStartDateVal ? Utils.parseDateInput(initialStartDateVal) : null,
         initialWeight: ui.trendInitialWeightInput?.property("value"),
         weeklyIncrease1: ui.trendWeeklyIncrease1Input?.property("value"),
         weeklyIncrease2: ui.trendWeeklyIncrease2Input?.property("value"),

@@ -5,6 +5,7 @@ import { StateManager } from '../../core/stateManager.js';
 import * as Selectors from '../../core/selectors.js';
 import { Utils } from '../../core/utils.js';
 import { setAnalysisRangeAndSyncChart } from '../../interactions/chartRangeHelper.js';
+import { bindCrossWidgetHoverDate } from '../../interactions/crossWidgetHoverLink.js';
 
 /**
  * Generates periodic reports summarizing:
@@ -85,10 +86,11 @@ export const MonthlyReportRenderer = {
 
     _calculateMonthStats(monthData) {
         const { data, key, year, month } = monthData;
+        const sortedData = [...data].sort((a, b) => a.date - b.date);
 
-        const weights = data.filter(d => d.value != null).map(d => d.value);
-        const calories = data.filter(d => d.calorieIntake != null).map(d => d.calorieIntake);
-        const rates = data.filter(d => d.smoothedWeeklyRate != null).map(d => d.smoothedWeeklyRate);
+        const weights = sortedData.filter(d => d.value != null).map(d => d.value);
+        const calories = sortedData.filter(d => d.calorieIntake != null).map(d => d.calorieIntake);
+        const rates = sortedData.filter(d => d.smoothedWeeklyRate != null).map(d => d.smoothedWeeklyRate);
 
         const mean = arr => arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
 
@@ -115,7 +117,9 @@ export const MonthlyReportRenderer = {
             avgCalories: mean(calories),
             avgRate: mean(rates),
             minWeight: weights.length > 0 ? Math.min(...weights) : null,
-            maxWeight: weights.length > 0 ? Math.max(...weights) : null
+            maxWeight: weights.length > 0 ? Math.max(...weights) : null,
+            firstDate: sortedData[0]?.date ?? null,
+            lastDate: sortedData[sortedData.length - 1]?.date ?? null,
         };
     },
 
@@ -147,7 +151,9 @@ export const MonthlyReportRenderer = {
                 startWeight,
                 endWeight,
                 weightChange: startWeight && endWeight ? endWeight - startWeight : null,
-                avgConsistency: allMonths.reduce((s, m) => s + m.consistency, 0) / allMonths.length
+                avgConsistency: allMonths.reduce((s, m) => s + m.consistency, 0) / allMonths.length,
+                firstDate: allMonths[0]?.firstDate ?? null,
+                lastDate: allMonths[allMonths.length - 1]?.lastDate ?? null,
             };
         }).slice(-2); // Last 2 quarters
     },
@@ -199,7 +205,7 @@ export const MonthlyReportRenderer = {
         ${this._currentView === 'monthly' ? `
           <div class="monthly-reports">
             ${report.recentMonths.map(m => `
-              <div class="month-card report-clickable" data-year="${m.year}" data-month="${m.month}" title="Click to focus chart on ${m.monthName} ${m.year}">
+              <div class="month-card report-clickable" data-year="${m.year}" data-month="${m.month}" data-lastdate="${m.lastDate instanceof Date ? m.lastDate.toISOString().slice(0, 10) : ''}" title="Click to focus chart on ${m.monthName} ${m.year}">
                 <div class="month-header">
                   <span class="month-name">${m.monthName} ${m.year}</span>
                   <span class="month-change ${m.weightChange > 0 ? 'gain' : 'loss'}">${formatChange(m.weightChange)}</span>
@@ -231,7 +237,7 @@ export const MonthlyReportRenderer = {
         ` : `
           <div class="quarterly-reports">
             ${report.quarters.map(q => `
-              <div class="quarter-card report-clickable" data-qyear="${q.year}" data-quarter="${q.quarter}" title="Click to focus chart on Q${q.quarter} ${q.year}">
+              <div class="quarter-card report-clickable" data-qyear="${q.year}" data-quarter="${q.quarter}" data-lastdate="${q.lastDate instanceof Date ? q.lastDate.toISOString().slice(0, 10) : ''}" title="Click to focus chart on Q${q.quarter} ${q.year}">
                 <div class="quarter-header">
                   <span class="quarter-name">Q${q.quarter} ${q.year}</span>
                   <span class="quarter-change ${q.weightChange > 0 ? 'gain' : 'loss'}">${formatChange(q.weightChange)}</span>
@@ -282,6 +288,11 @@ export const MonthlyReportRenderer = {
 
         // Click-to-focus: month cards
         this._container.querySelectorAll('.month-card.report-clickable').forEach(card => {
+            card.tabIndex = 0;
+            bindCrossWidgetHoverDate(card, () => {
+                const iso = card.dataset.lastdate;
+                return iso ? new Date(iso + 'T00:00:00') : null;
+            });
             card.addEventListener('click', (e) => {
                 // Don't fire if a tab button was clicked
                 if (e.target.closest('.report-tab')) return;
@@ -296,6 +307,11 @@ export const MonthlyReportRenderer = {
 
         // Click-to-focus: quarter cards
         this._container.querySelectorAll('.quarter-card.report-clickable').forEach(card => {
+            card.tabIndex = 0;
+            bindCrossWidgetHoverDate(card, () => {
+                const iso = card.dataset.lastdate;
+                return iso ? new Date(iso + 'T00:00:00') : null;
+            });
             card.addEventListener('click', (e) => {
                 if (e.target.closest('.report-tab')) return;
                 const year    = parseInt(card.dataset.qyear,   10);

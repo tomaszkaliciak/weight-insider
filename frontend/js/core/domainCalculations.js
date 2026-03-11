@@ -358,15 +358,21 @@ export function calculateTdeeDiffYDomain(filteredData) {
 
 /**
  * Calculates the X and Y domains for the scatter plot.
- * @param {Array<object>} scatterData - Array of weekly stats {avgNetCal, weeklyRate}.
+ * @param {Array<object>} scatterData - Array of scatter points {xValue, yValue}.
  * @returns {object} The X and Y domains {xDomain, yDomain}.
  */
 export function calculateScatterPlotDomains(scatterData) {
   if (!Array.isArray(scatterData) || scatterData.length === 0) {
     return { xDomain: [-500, 500], yDomain: [-0.5, 0.5] }; // Default
   }
-  const [xMinRaw, xMaxRaw] = d3.extent(scatterData, (d) => d.avgNetCal);
-  const [yMinRaw, yMaxRaw] = d3.extent(scatterData, (d) => d.weeklyRate);
+  const [xMinRaw, xMaxRaw] = d3.extent(
+    scatterData,
+    (d) => d.xValue ?? d.avgNetCal,
+  );
+  const [yMinRaw, yMaxRaw] = d3.extent(
+    scatterData,
+    (d) => d.yValue ?? d.weeklyRate,
+  );
 
   const xMin = xMinRaw == null || isNaN(xMinRaw) ? 0 : xMinRaw;
   const xMax = xMaxRaw == null || isNaN(xMaxRaw) ? 0 : xMaxRaw;

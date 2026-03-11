@@ -7,6 +7,188 @@ import { Utils } from "./utils.js";
 import * as Selectors from "./selectors.js";
 
 export const GoalManager = {
+  _historyLoaded: false,
+  _historyListenerBound: false,
+  _normalizeGoal(rawGoal) {
+    if (!rawGoal) return { weight: null, date: null, targetRate: null };
+    const weight =
+      rawGoal.weight != null && !isNaN(parseFloat(rawGoal.weight))
+        ? parseFloat(rawGoal.weight)
+        : null;
+    const targetRate =
+      rawGoal.targetRate != null && !isNaN(parseFloat(rawGoal.targetRate))
+        ? parseFloat(rawGoal.targetRate)
+        : null;
+    let date = null;
+    if (rawGoal.date instanceof Date && !isNaN(rawGoal.date.getTime())) {
+      date = rawGoal.date;
+    } else if (typeof rawGoal.date === "string" && rawGoal.date) {
+      const parsed = new Date(rawGoal.date + "T00:00:00");
+      date = !isNaN(parsed.getTime()) ? parsed : null;
+    }
+    return { weight, date, targetRate };
+  },
+  _isValidGoal(goal) {
+    return goal.weight != null && goal.date instanceof Date && !isNaN(goal.date.getTime());
+  },
+  _goalFingerprint(goal) {
+    if (!this._isValidGoal(goal)) return null;
+    const dateStr = goal.date.toISOString().slice(0, 10);
+    const rateStr = goal.targetRate != null && !isNaN(goal.targetRate)
+      ? goal.targetRate.toFixed(2)
+      : "na";
+    return `${goal.weight.toFixed(1)}|${dateStr}|${rateStr}`;
+  },
+  _syncFormInputs(goal) {
+    const normalized = this._normalizeGoal(goal);
+    const goalWeightInput = document.getElementById("goalWeight");
+    const goalDateInput = document.getElementById("goalDate");
+    const goalTargetRateInput = document.getElementById("goalTargetRate");
+
+    if (goalWeightInput) {
+      goalWeightInput.value =
+        normalized.weight != null ? normalized.weight.toFixed(1) : "";
+    }
+    if (goalDateInput) {
+      goalDateInput.value =
+        normalized.date instanceof Date ? Utils.formatDateDMY(normalized.date) : "";
+    }
+    if (goalTargetRateInput) {
+      goalTargetRateInput.value =
+        normalized.targetRate != null ? normalized.targetRate.toFixed(2) : "";
+    }
+  },
+  _computeConfidencePct(state, goal) {
+    const displayStats = Selectors.selectDisplayStats(state) || {};
+    const referenceWeight = displayStats.currentSma ?? displayStats.currentWeight;
+    const currentRate = displayStats.currentWeeklyRate;
+    const requiredRate = displayStats.requiredRateForGoal;
+    const volatility = displayStats.rollingVolatility ?? displayStats.volatility ?? 0.25;
+    if (
+      !this._isValidGoal(goal) ||
+      referenceWeight == null ||
+      currentRate == null ||
+      requiredRate == null
+    ) {
+      return null;
+    }
+
+    const uncertaintyKgWeek = Math.max(0.05, volatility * Math.sqrt(7) * 0.6);
+    const goalIsLoss = goal.weight < referenceWeight;
+    const z = (requiredRate - currentRate) / uncertaintyKgWeek;
+    const cdf = (value) => {
+      const sign = value < 0 ? -1 : 1;
+      const x = Math.abs(value) / Math.sqrt(2);
+      const t = 1 / (1 + 0.3275911 * x);
+      const a1 = 0.254829592;
+      const a2 = -0.284496736;
+      const a3 = 1.421413741;
+      const a4 = -1.453152027;
+      const a5 = 1.061405429;
+      const erf =
+        1 -
+        (((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t) *
+        Math.exp(-x * x);
+      return 0.5 * (1 + sign * erf);
+    };
+    const pHit = goalIsLoss ? cdf(z) : 1 - cdf(z);
+    return Math.max(0, Math.min(100, Math.round(pHit * 100)));
+  },
+  getHistory() {
+    try {
+      const raw = JSON.parse(
+        localStorage.getItem(CONFIG.localStorageKeys.goalHistory) || "[]",
+      );
+      return Array.isArray(raw) ? raw : [];
+    } catch {
+      return [];
+    }
+  },
+  _saveHistory(history) {
+    try {
+      localStorage.setItem(
+        CONFIG.localStorageKeys.goalHistory,
+        JSON.stringify(history.slice(-12)),
+      );
+    } catch (e) {
+      console.error("GoalManager: Error saving goal history", e);
+    }
+  },
+  syncHistory(goalOverride = null) {
+    const state = StateManager.getState();
+    const currentGoal = this._normalizeGoal(
+      goalOverride ?? Selectors.selectGoal(state),
+    );
+    const history = this.getHistory();
+    const fingerprint = this._goalFingerprint(currentGoal);
+    const nowIso = new Date().toISOString();
+
+    if (!fingerprint) {
+      this._saveHistory(history);
+      return history;
+    }
+
+    history.forEach((entry) => {
+      if (entry.status === "active" && entry.fingerprint !== fingerprint) {
+        entry.status = entry.achievedDate
+          ? "achieved"
+          : entry.targetDate && entry.targetDate < nowIso.slice(0, 10)
+            ? "missed"
+            : "replaced";
+        entry.closedAt = entry.closedAt || nowIso;
+        entry.lastSeenAt = nowIso;
+      }
+    });
+
+    const goalAchievedDate = Selectors.selectGoalAchievedDate(state);
+    const displayStats = Selectors.selectDisplayStats(state) || {};
+    const confidencePct = this._computeConfidencePct(state, currentGoal);
+    const currentWeight = displayStats.currentSma ?? displayStats.currentWeight ?? null;
+    const currentRate = displayStats.currentWeeklyRate ?? null;
+    const requiredRate = displayStats.requiredRateForGoal ?? null;
+
+    const derivedStatus =
+      goalAchievedDate instanceof Date && !isNaN(goalAchievedDate.getTime())
+        ? "achieved"
+        : currentGoal.date < new Date(new Date().setHours(0, 0, 0, 0))
+          ? "missed"
+          : "active";
+
+    const existing = history.find((entry) => entry.fingerprint === fingerprint);
+    const basePayload = {
+      fingerprint,
+      targetWeight: currentGoal.weight,
+      targetDate: currentGoal.date.toISOString().slice(0, 10),
+      targetRate: currentGoal.targetRate,
+      lastSeenAt: nowIso,
+      status: derivedStatus,
+      achievedDate:
+        goalAchievedDate instanceof Date && !isNaN(goalAchievedDate.getTime())
+          ? goalAchievedDate.toISOString().slice(0, 10)
+          : null,
+      lastConfidencePct: confidencePct,
+      lastKnownWeight: currentWeight,
+      lastKnownRate: currentRate,
+      requiredRate,
+    };
+
+    if (existing) {
+      Object.assign(existing, basePayload);
+      existing.closedAt =
+        existing.status !== "active" ? existing.closedAt || nowIso : null;
+    } else {
+      history.push({
+        id: `goal_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        createdAt: nowIso,
+        confidenceAtSet: confidencePct,
+        ...basePayload,
+      });
+    }
+
+    history.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    this._saveHistory(history);
+    return history;
+  },
   /**
    * Loads the goal from localStorage and dispatches an action to update the state.
    */
@@ -42,6 +224,8 @@ export const GoalManager = {
     }
     // Dispatch action to update state with the loaded or default goal
     StateManager.dispatch({ type: "LOAD_GOAL", payload: loadedGoalData });
+    this._syncFormInputs(loadedGoalData);
+    this.syncHistory(loadedGoalData);
     // UI updates are handled by components subscribing to state:goalChanged or state:displayStatsUpdated
   },
 
@@ -69,6 +253,8 @@ export const GoalManager = {
         CONFIG.localStorageKeys.goal,
         JSON.stringify(goalToStore),
       );
+      this._syncFormInputs(currentGoal);
+      this.syncHistory(currentGoal);
     } catch (e) {
       console.error("GoalManager: Error saving goal to localStorage", e);
       Utils.showStatusMessage(
@@ -83,6 +269,15 @@ export const GoalManager = {
    * Typically called during application startup.
    */
   init() {
+    if (!this._historyListenerBound) {
+      this._historyListenerBound = true;
+      StateManager.subscribeToSpecificEvent("state:goalAchievementUpdated", () => {
+        this.syncHistory();
+      });
+      StateManager.subscribeToSpecificEvent("state:goalChanged", () => {
+        this._syncFormInputs(Selectors.selectGoal(StateManager.getState()));
+      });
+    }
     this.load();
   },
 };

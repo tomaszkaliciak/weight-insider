@@ -10,6 +10,7 @@ import { Utils } from "../core/utils.js";
 import { MasterUpdater } from "../ui/masterUpdater.js";
 import * as Selectors from "../core/selectors.js";
 import { TooltipManager } from "./tooltipManager.js";
+import { explainOutlier } from "../core/outlierExplainer.js";
 
 
 // Internal flags (not exported)
@@ -91,8 +92,28 @@ export const ChartInteractions = {
       const dev = d.value - d.sma;
       tt += `<div>Deviation: <span class="${dev >= 0 ? "positive" : "negative"}">${dev >= 0 ? "+" : ""}${Utils.formatValue(dev, 1)} KG</span></div>`;
     }
-    if (d.isOutlier)
-      tt += `<div class="note outlier-note" style="margin-top: 4px;">Potential Outlier</div>`;
+    if (d.isOutlier) {
+      const processedData = Selectors.selectProcessedData(StateManager.getState()) || [];
+      const recentCalories = processedData
+        .slice(-30)
+        .filter((p) => p.calorieIntake != null && p.calorieIntake > 0)
+        .map((p) => p.calorieIntake);
+      const avgCalories = recentCalories.length
+        ? recentCalories.reduce((sum, value) => sum + value, 0) / recentCalories.length
+        : null;
+      const explanation = explainOutlier(d, avgCalories);
+      tt += `<div class="note outlier-note" style="margin-top: 4px;"><strong>Potential Outlier</strong><br>${explanation.narrative}</div>`;
+      if (d.outlierThresholdKg != null || d.anomalyScore != null) {
+        tt += `<div style="margin-top:4px;">`;
+        if (d.outlierThresholdKg != null) {
+          tt += `Threshold: ${Utils.formatValue(d.outlierThresholdKg, 2)} kg<br>`;
+        }
+        if (d.anomalyScore != null) {
+          tt += `Anomaly score: ${Utils.formatValue(d.anomalyScore, 2)}x`;
+        }
+        tt += `</div>`;
+      }
+    }
 
     const secondaryDataLines = [];
     if (d.netBalance != null) secondaryDataLines.push(`Balance: ${Utils.formatValue(d.netBalance, 0)} kcal`);
@@ -149,7 +170,13 @@ export const ChartInteractions = {
 
   scatterMouseOver(event, d) {
     if (!d || !d.weekStartDate) return;
-    const tt = `<strong>Week: ${Utils.formatDateShort(d.weekStartDate)}</strong><br>Avg Net: ${Utils.formatValue(d.avgNetCal, 0)} kcal/d<br>Rate: ${Utils.formatValue(d.weeklyRate, 2)} kg/wk`;
+    const xLabel = d.xLabel || "Avg Net";
+    const yLabel = d.yLabel || "Rate";
+    const xUnit = d.xUnit || "";
+    const yUnit = d.yUnit || "";
+    const xValue = d.xValue ?? d.avgNetCal;
+    const yValue = d.yValue ?? d.weeklyRate;
+    const tt = `<strong>Week: ${Utils.formatDateShort(d.weekStartDate)}</strong><br>${xLabel}: <b>${Utils.formatValue(xValue, xUnit === "%" ? 0 : 2)}</b> ${xUnit}<br>${yLabel}: <b>${Utils.formatValue(yValue, yUnit === "kg/wk" ? 2 : yUnit === "%" ? 0 : 2)}</b> ${yUnit}`;
     TooltipManager.show(tt, event);
   },
   scatterMouseOut(event, d) {

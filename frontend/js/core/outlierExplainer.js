@@ -15,12 +15,17 @@ export function explainOutlier(dataPoint, avgCalories = null) {
         return { severity: 'none', narrative: '' };
     }
 
-    const { value, sma, stdDev, calorieIntake } = dataPoint;
-    if (value == null || sma == null || stdDev == null) {
+    const { value, sma, stdDev, calorieIntake, anomalyScore, outlierThresholdKg } = dataPoint;
+    if (value == null || sma == null) {
         return { severity: 'low', narrative: 'Statistical anomaly detected.' };
     }
 
-    const deviationSigma = stdDev > 0 ? (value - sma) / stdDev : 0;
+    const effectiveSigma = stdDev != null && stdDev > 0
+        ? stdDev
+        : outlierThresholdKg != null && anomalyScore != null && anomalyScore > 0
+            ? outlierThresholdKg / anomalyScore
+            : 0;
+    const deviationSigma = effectiveSigma > 0 ? (value - sma) / effectiveSigma : 0;
     const absDeviation = Math.abs(value - sma).toFixed(2);
     const sigmaLabel = Math.abs(deviationSigma).toFixed(1);
     const isAbove = deviationSigma > 0;

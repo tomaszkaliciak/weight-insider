@@ -5,6 +5,7 @@ import { StateManager } from '../../core/stateManager.js';
 import * as Selectors from '../../core/selectors.js';
 import { Utils } from '../../core/utils.js';
 import { CONFIG } from '../../config.js';
+import { GoalManager } from '../../core/goalManager.js';
 
 /**
  * Analyzes historical data and suggests realistic goals based on:
@@ -255,6 +256,7 @@ export const GoalSuggestionRenderer = {
                 targetRate: null
             }
         });
+        GoalManager.save();
 
         Utils.showStatusMessage(`Goal set: ${targetWeight} kg by ${Utils.formatDateShort(goalDate)}`, 'success');
     },

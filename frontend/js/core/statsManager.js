@@ -581,9 +581,17 @@ export const StatsManager = {
           analysisRange.start,
           analysisRange.end,
         );
-        results.correlationScatterData = results.weeklySummaryData.filter(
-          (w) => w.avgNetCal != null && w.weeklyRate != null,
-        );
+        results.correlationScatterData = results.weeklySummaryData
+          .filter((w) => w.avgNetCal != null && w.weeklyRate != null)
+          .map((w) => ({
+            ...w,
+            xValue: w.avgNetCal,
+            yValue: w.weeklyRate,
+            xLabel: "Avg Weekly Net Calories",
+            yLabel: "Weekly Rate",
+            xUnit: "kcal/d",
+            yUnit: "kg/wk",
+          }));
         displayStats.netCalRateCorrelation =
           this._calculateNetCalRateCorrelation(results.weeklySummaryData);
         displayStats.currentWeeklyRate = this._calculateCurrentRate(

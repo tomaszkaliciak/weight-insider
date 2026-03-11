@@ -68,6 +68,24 @@ export const Utils = {
   },
 
   /**
+   * Parses a date string from an input field. Accepts DD-MM-YYYY or YYYY-MM-DD.
+   * @param {string} dateStr - The date string (DD-MM-YYYY or YYYY-MM-DD).
+   * @returns {Date|null} The parsed Date object or null if invalid.
+   */
+  parseDateInput(dateStr) {
+    if (!dateStr || typeof dateStr !== "string") return null;
+    const trimmed = dateStr.trim();
+    if (!trimmed) return null;
+    const dmy = this.parseDateDMY(trimmed);
+    if (dmy) return dmy;
+    if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(trimmed)) {
+      const d = new Date(trimmed + "T00:00:00");
+      return d instanceof Date && !isNaN(d.getTime()) ? d : null;
+    }
+    return null;
+  },
+
+  /**
    * Parses a date string in 'DD-MM-YYYY' format into a Date object.
    * @param {string} dateStr - The date string in DD-MM-YYYY format.
    * @returns {Date|null} The parsed Date object or null if invalid.

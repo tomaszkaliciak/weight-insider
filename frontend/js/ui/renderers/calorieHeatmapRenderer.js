@@ -5,6 +5,7 @@ import { StateManager } from '../../core/stateManager.js';
 import * as Selectors from '../../core/selectors.js';
 import { explainOutlier } from '../../core/outlierExplainer.js';
 import { setAnalysisRangeAndSyncChart } from '../../interactions/chartRangeHelper.js';
+import { bindCrossWidgetHoverDate } from '../../interactions/crossWidgetHoverLink.js';
 
 /**
  * Calorie Heatmap Calendar:
@@ -163,7 +164,7 @@ export const CalorieHeatmapRenderer = {
             const hasCals = calories != null && calories > 0;
 
             calendarHtml += `
-        <div class="day-cell ${dayClass}" data-date="${key}" 
+        <div class="day-cell ${dayClass}" data-date="${key}" tabindex="0"
              title="${calories ? calories + ' kcal' : 'No calorie data'}${weight ? ' | ' + weight.toFixed(1) + ' kg' : ' | No weight data'}">
           <span class="day-num">${day}</span>
           ${calories ? `<span class="day-cal">${Math.round(calories)}</span>` : ''}
@@ -209,6 +210,10 @@ export const CalorieHeatmapRenderer = {
                 const dayData = dataMap[dateKey];
                 this._showDayDetail(dayData, dateKey);
             });
+            bindCrossWidgetHoverDate(cell, () => {
+                const [hoverYear, hoverMonth, hoverDay] = cell.dataset.date.split('-').map(Number);
+                return new Date(hoverYear, hoverMonth, hoverDay);
+            }, { snapToLogged: false });
         });
     },
 
@@ -224,6 +229,10 @@ export const CalorieHeatmapRenderer = {
             const isOutlier = dayData.isOutlier;
             const hasCals = dayData.calorieIntake > 0;
             const hasWeight = dayData.value != null;
+            const outlierExplanation = isOutlier ? explainOutlier(dayData, this._getAvgCalories()) : null;
+            const deviationKg = dayData.value != null && dayData.sma != null
+                ? Math.abs(dayData.value - dayData.sma).toFixed(2)
+                : null;
 
             detailEl.innerHTML = `
         <div class="detail-header">${dateStr}
@@ -248,10 +257,18 @@ export const CalorieHeatmapRenderer = {
           </div>` : ''}
         </div>
         <div class="day-health-status">
-            ${isOutlier ? (() => {
-                    const exp = explainOutlier(dayData, this._getAvgCalories());
-                    return `<div class="health-alert outlier-explanation"><strong>⭐ Outlier</strong> &mdash; ${exp.narrative}</div>`;
-                })() : ''}
+            ${isOutlier ? `
+                <div class="health-alert outlier-explanation">
+                    <strong>⭐ Outlier</strong>
+                    <div>${outlierExplanation?.narrative || 'Statistical anomaly detected.'}</div>
+                    <div class="outlier-diagnostics">
+                        ${deviationKg ? `<span class="outlier-chip">Deviation ${deviationKg} kg</span>` : ''}
+                        ${dayData.outlierThresholdKg != null ? `<span class="outlier-chip">Threshold ${dayData.outlierThresholdKg.toFixed(2)} kg</span>` : ''}
+                        ${dayData.anomalyScore != null ? `<span class="outlier-chip">Score ${dayData.anomalyScore.toFixed(2)}x</span>` : ''}
+                        ${outlierExplanation?.severity ? `<span class="outlier-chip severity-${outlierExplanation.severity}">${outlierExplanation.severity}</span>` : ''}
+                    </div>
+                </div>
+            ` : ''}
             ${!hasWeight ? '<div class="health-alert missing">⚠️ No weight recorded for this day.</div>' : ''}
             ${!hasCals ? '<div class="health-alert missing">⚠️ No calorie log for this day.</div>' : ''}
             ${hasWeight && hasCals && !isOutlier ? '<div class="health-alert good">✅ All data present and consistent.</div>' : ''}

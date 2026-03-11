@@ -5,6 +5,7 @@ import { StateManager, ActionTypes } from '../../core/stateManager.js';
 import * as Selectors from '../../core/selectors.js';
 import { Utils } from '../../core/utils.js';
 import { DataService } from '../../core/dataService.js';
+import { DateInputUX } from '../../interactions/dateInputUX.js';
 
 /**
  * Renders the multi-period comparison panel allowing users to compare 
@@ -105,21 +106,13 @@ export const PeriodComparisonRenderer = {
 
     if (!p1Start || !p1End || !p2Start || !p2End) return;
 
-    // Parse dates (DD-MM-YYYY format)
-    const parseDate = (str) => {
-      const parts = str.split('-');
-      if (parts.length !== 3) return null;
-      const [day, month, year] = parts.map(Number);
-      return new Date(year, month - 1, day);
-    };
-
     this._period1 = {
-      start: parseDate(p1Start.value),
-      end: parseDate(p1End.value)
+      start: Utils.parseDateInput(p1Start.value),
+      end: Utils.parseDateInput(p1End.value)
     };
     this._period2 = {
-      start: parseDate(p2Start.value),
-      end: parseDate(p2End.value)
+      start: Utils.parseDateInput(p2Start.value),
+      end: Utils.parseDateInput(p2End.value)
     };
 
     if (!this._period1.start || !this._period1.end ||
@@ -307,5 +300,6 @@ export const PeriodComparisonRenderer = {
 
     // Re-attach event listeners after rendering
     this._setupEventListeners();
+    DateInputUX.init();
   }
 };

@@ -4,6 +4,7 @@
 import { StateManager } from '../../core/stateManager.js';
 import * as Selectors from '../../core/selectors.js';
 import { MacroTargetService } from '../../core/macroTargetService.js';
+import { bindCrossWidgetHoverDate } from '../../interactions/crossWidgetHoverLink.js';
 
 /**
  * Streak Tracker:
@@ -44,8 +45,78 @@ export const StreakTrackerRenderer = {
     const adherence = MacroTargetService.computeAdherence(processedData, targets);
     streaks.macroStreak = adherence.streak;
     streaks.macroTargetsSet = adherence.hasTargets;
+    streaks.anchors.current.macro = this._findLatestMacroHitDate(processedData, targets);
+    streaks.habit = this._calculateHabitScore(processedData, adherence);
 
     this._render(streaks);
+  },
+
+  _findLatestMacroHitDate(data, targets) {
+    if (!MacroTargetService.hasAnyTarget(targets)) return null;
+    const sorted = [...data].sort((a, b) => a.date - b.date);
+    for (let i = sorted.length - 1; i >= 0; i--) {
+      if (MacroTargetService.dayMeetsTargets(sorted[i], targets)) {
+        return sorted[i].date;
+      }
+    }
+    return null;
+  },
+
+  _calculateHabitScore(data, adherence) {
+    const sorted = [...data].sort((a, b) => a.date - b.date);
+    const totalDays = sorted.length || 1;
+    const daysLogged = sorted.filter((d) => d.value != null).length;
+    const calorieDays = sorted.filter((d) => d.calorieIntake != null).length;
+    const macroDays = sorted.filter(
+      (d) => d.protein != null && d.carbs != null && d.fat != null,
+    ).length;
+
+    const lastLoggedDate = [...sorted].reverse().find((d) => d.value != null)?.date ?? null;
+    const daysSinceLogged = lastLoggedDate
+      ? Math.round((new Date() - lastLoggedDate) / 86400000)
+      : null;
+    const recencyScore =
+      daysSinceLogged == null ? 0
+        : daysSinceLogged <= 1 ? 100
+          : daysSinceLogged <= 3 ? 78
+            : daysSinceLogged <= 7 ? 52
+              : 25;
+
+    let maxWeightGap = 0;
+    let prevWeightDate = null;
+    sorted.forEach((d) => {
+      if (d.value == null) return;
+      if (prevWeightDate) {
+        const gap = Math.round((d.date - prevWeightDate) / 86400000);
+        maxWeightGap = Math.max(maxWeightGap, gap);
+      }
+      prevWeightDate = d.date;
+    });
+    const cadenceScore =
+      maxWeightGap <= 1 ? 100
+        : maxWeightGap <= 2 ? 86
+          : maxWeightGap <= 4 ? 64
+            : 38;
+
+    const metrics = [
+      { label: 'Weight', score: (daysLogged / totalDays) * 100, weight: 0.34 },
+      { label: 'Calories', score: (calorieDays / totalDays) * 100, weight: 0.28 },
+      { label: 'Recency', score: recencyScore, weight: 0.18 },
+      { label: 'Cadence', score: cadenceScore, weight: 0.20 },
+    ];
+    if (macroDays > 0) {
+      metrics.push({ label: 'Macros', score: (macroDays / totalDays) * 100, weight: 0.14 });
+    }
+    if (adherence?.hasTargets && adherence?.weekAdherence != null) {
+      metrics.push({ label: 'Targets', score: adherence.weekAdherence, weight: 0.16 });
+    }
+
+    const totalWeight = metrics.reduce((sum, metric) => sum + metric.weight, 0) || 1;
+    const score = Math.round(
+      metrics.reduce((sum, metric) => sum + metric.score * metric.weight, 0) / totalWeight,
+    );
+    const label = score >= 85 ? 'Excellent' : score >= 70 ? 'Strong' : score >= 55 ? 'Building' : 'Fragile';
+    return { score, label, metrics };
   },
 
   _calculateStreaks(data) {
@@ -69,6 +140,13 @@ export const StreakTrackerRenderer = {
     let targetStreak = 0;
     let deficitStreak = 0;
     let surplusStreak = 0;
+    let currentLoggingEndDate = null;
+    let currentTargetEndDate = null;
+    let currentDirectionEndDate = null;
+    let bestLoggingEndDate = null;
+    let bestTargetEndDate = null;
+    let bestDeficitEndDate = null;
+    let bestSurplusEndDate = null;
 
     // Calculate average calories as target
     const withCalories = sorted.filter(d => d.calorieIntake != null);
@@ -89,7 +167,11 @@ export const StreakTrackerRenderer = {
         } else {
           loggingStreak = 1;
         }
-        bestLoggingStreak = Math.max(bestLoggingStreak, loggingStreak);
+        currentLoggingEndDate = d.date;
+        if (loggingStreak >= bestLoggingStreak) {
+          bestLoggingStreak = loggingStreak;
+          bestLoggingEndDate = d.date;
+        }
       } else {
         loggingStreak = 0;
       }
@@ -101,7 +183,11 @@ export const StreakTrackerRenderer = {
         } else {
           targetStreak = 1;
         }
-        bestTargetStreak = Math.max(bestTargetStreak, targetStreak);
+        currentTargetEndDate = d.date;
+        if (targetStreak >= bestTargetStreak) {
+          bestTargetStreak = targetStreak;
+          bestTargetEndDate = d.date;
+        }
       } else {
         targetStreak = 0;
       }
@@ -116,7 +202,11 @@ export const StreakTrackerRenderer = {
             deficitStreak = 1;
           }
           surplusStreak = 0;
-          bestDeficitStreak = Math.max(bestDeficitStreak, deficitStreak);
+          currentDirectionEndDate = d.date;
+          if (deficitStreak >= bestDeficitStreak) {
+            bestDeficitStreak = deficitStreak;
+            bestDeficitEndDate = d.date;
+          }
         } else if (balance > 100) { // In surplus
           if (isConsecutive || lastDate === null) {
             surplusStreak++;
@@ -124,7 +214,11 @@ export const StreakTrackerRenderer = {
             surplusStreak = 1;
           }
           deficitStreak = 0;
-          bestSurplusStreak = Math.max(bestSurplusStreak, surplusStreak);
+          currentDirectionEndDate = d.date;
+          if (surplusStreak >= bestSurplusStreak) {
+            bestSurplusStreak = surplusStreak;
+            bestSurplusEndDate = d.date;
+          }
         } else {
           deficitStreak = 0;
           surplusStreak = 0;
@@ -176,6 +270,20 @@ export const StreakTrackerRenderer = {
         daysLogged,
         consistency
       },
+      anchors: {
+        current: {
+          logging: currentLoggingStreak > 0 ? currentLoggingEndDate : null,
+          target: currentTargetStreak > 0 ? currentTargetEndDate : null,
+          direction: currentDirectionStreak > 0 ? currentDirectionEndDate : null,
+          macro: null,
+        },
+        best: {
+          logging: bestLoggingEndDate,
+          target: bestTargetEndDate,
+          deficit: bestDeficitEndDate,
+          surplus: bestSurplusEndDate,
+        },
+      },
       achievements
     };
   },
@@ -188,23 +296,23 @@ export const StreakTrackerRenderer = {
         <div class="current-streaks">
           <h4>🔥 Active Streaks</h4>
           <div class="streak-grid">
-            <div class="streak-card ${streaks.current.logging >= 7 ? 'hot' : ''}">
+            <div class="streak-card streak-linkable ${streaks.current.logging >= 7 ? 'hot' : ''}" data-highlight-date="${streaks.anchors.current.logging?.toISOString?.().slice(0, 10) || ''}" tabindex="0">
               <div class="streak-value">${streaks.current.logging}</div>
               <div class="streak-label">Days Logged</div>
               <div class="streak-fire">${'🔥'.repeat(Math.min(Math.floor(streaks.current.logging / 7), 5))}</div>
             </div>
-            <div class="streak-card">
+            <div class="streak-card streak-linkable" data-highlight-date="${streaks.anchors.current.target?.toISOString?.().slice(0, 10) || ''}" tabindex="0">
               <div class="streak-value">${streaks.current.target}</div>
               <div class="streak-label">On Target</div>
             </div>
             ${streaks.current.directionType ? `
-              <div class="streak-card ${streaks.current.directionType}">
+              <div class="streak-card streak-linkable ${streaks.current.directionType}" data-highlight-date="${streaks.anchors.current.direction?.toISOString?.().slice(0, 10) || ''}" tabindex="0">
                 <div class="streak-value">${streaks.current.direction}</div>
                 <div class="streak-label">${streaks.current.directionType === 'deficit' ? 'Days in Deficit' : 'Days in Surplus'}</div>
               </div>
             ` : ''}
             ${streaks.macroTargetsSet ? `
-              <div class="streak-card ${streaks.macroStreak >= 3 ? 'hot' : ''}">
+              <div class="streak-card streak-linkable ${streaks.macroStreak >= 3 ? 'hot' : ''}" data-highlight-date="${streaks.anchors.current.macro?.toISOString?.().slice(0, 10) || ''}" tabindex="0">
                 <div class="streak-value">${streaks.macroStreak}</div>
                 <div class="streak-label">Macro Target</div>
                 <div class="streak-fire">${'🥗'.repeat(Math.min(Math.floor(streaks.macroStreak / 3), 3))}</div>
@@ -222,22 +330,22 @@ export const StreakTrackerRenderer = {
         <div class="best-streaks">
           <h4>🏆 Personal Hall of Fame</h4>
           <div class="best-grid">
-            <div class="best-item">
+            <div class="best-item streak-linkable" data-highlight-date="${streaks.anchors.best.logging?.toISOString?.().slice(0, 10) || ''}" tabindex="0">
               <span class="best-icon">📊</span>
               <span class="best-value">${streaks.best.logging} days</span>
               <span class="best-label">LOGGING</span>
             </div>
-            <div class="best-item">
+            <div class="best-item streak-linkable" data-highlight-date="${streaks.anchors.best.target?.toISOString?.().slice(0, 10) || ''}" tabindex="0">
               <span class="best-icon">🎯</span>
               <span class="best-value">${streaks.best.target} days</span>
               <span class="best-label">TARGET</span>
             </div>
-            <div class="best-item">
+            <div class="best-item streak-linkable" data-highlight-date="${streaks.anchors.best.deficit?.toISOString?.().slice(0, 10) || ''}" tabindex="0">
               <span class="best-icon">📉</span>
               <span class="best-value">${streaks.best.deficit} days</span>
               <span class="best-label">DEFICIT</span>
             </div>
-            <div class="best-item">
+            <div class="best-item streak-linkable" data-highlight-date="${streaks.anchors.best.surplus?.toISOString?.().slice(0, 10) || ''}" tabindex="0">
               <span class="best-icon">💪</span>
               <span class="best-value">${streaks.best.surplus} days</span>
               <span class="best-label">BULK</span>
@@ -246,7 +354,19 @@ export const StreakTrackerRenderer = {
         </div>
 
         <div class="consistency-card">
-           <h4>📈 Overall Consistency</h4>
+           <h4>📈 Habit Consistency</h4>
+           <div class="habit-score-row">
+             <div class="habit-score-value">${streaks.habit.score}</div>
+             <div class="habit-score-copy">
+               <div class="habit-score-label">${streaks.habit.label}</div>
+               <div class="habit-score-sub">Weighted from logging, calories, cadence, recency${streaks.habit.metrics.some(m => m.label === 'Macros') ? ', and macros' : ''}.</div>
+             </div>
+           </div>
+           <div class="habit-metrics">
+             ${streaks.habit.metrics.map(metric => `
+               <span class="habit-chip">${metric.label} ${Math.round(metric.score)}%</span>
+             `).join('')}
+           </div>
            <div class="consistency-bar">
              <div class="consistency-label">Logging Rate: ${streaks.stats.consistency.toFixed(0)}%</div>
              <div class="progress-bar">
@@ -271,6 +391,16 @@ export const StreakTrackerRenderer = {
         ` : ''}
       </div>
     `;
+    this._bindHoverLinks();
+  },
+
+  _bindHoverLinks() {
+    this._container.querySelectorAll('.streak-linkable').forEach((el) => {
+      bindCrossWidgetHoverDate(el, () => {
+        const iso = el.dataset.highlightDate;
+        return iso ? new Date(iso + 'T00:00:00') : null;
+      });
+    });
   },
 
   _renderNoData() {

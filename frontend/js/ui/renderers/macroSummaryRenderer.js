@@ -66,6 +66,7 @@ export const MacroSummaryRenderer = {
             : 'Latest';
 
         const adherence = MacroTargetService.computeAdherence(processedData, this._targets);
+        const periodInsights = this._computePeriodInsights(processedData);
 
         this._container.innerHTML = `
             <div class="macro-summary-header-row">
@@ -78,6 +79,7 @@ export const MacroSummaryRenderer = {
             ${this._showTargetForm ? this._targetFormHTML() : ''}
 
             ${adherence.hasTargets ? this._adherenceHTML(adherence) : ''}
+            ${periodInsights ? this._periodInsightsHTML(periodInsights) : ''}
 
             <div class="macro-bars">
                 ${this._bar('Protein', latestProtein, pPct, avgDailyProtein, 'macro-protein', 'g', this._targets.protein)}
@@ -162,6 +164,86 @@ export const MacroSummaryRenderer = {
                     <span class="adh-label">Streak</span>
                     <span class="adh-value">${streakLabel}</span>
                 </div>
+            </div>
+        `;
+    },
+
+    _computePeriodInsights(processedData) {
+        if (!Array.isArray(processedData) || processedData.length < 7) return null;
+        const valid = processedData
+            .filter((d) =>
+                d?.date instanceof Date &&
+                d.protein != null && !isNaN(d.protein) &&
+                d.carbs != null && !isNaN(d.carbs) &&
+                d.fat != null && !isNaN(d.fat),
+            )
+            .sort((a, b) => a.date - b.date);
+        if (valid.length < 7) return null;
+
+        const latest7 = valid.slice(-7);
+        const prev7 = valid.slice(-14, -7);
+        const avg = (arr, field) => arr.length ? arr.reduce((s, d) => s + (d[field] ?? 0), 0) / arr.length : null;
+        const kcal = (d) => (d.protein * 4) + (d.carbs * 4) + (d.fat * 9);
+        const kcalAvg7 = avg(latest7.map((d) => ({ v: kcal(d) })), 'v');
+        const kcalAvgPrev7 = avg(prev7.map((d) => ({ v: kcal(d) })), 'v');
+
+        const protein7 = avg(latest7, 'protein');
+        const carbs7 = avg(latest7, 'carbs');
+        const fat7 = avg(latest7, 'fat');
+        const proteinPrev = avg(prev7, 'protein');
+        const carbsPrev = avg(prev7, 'carbs');
+        const fatPrev = avg(prev7, 'fat');
+
+        const dailyKcals = latest7.map(kcal);
+        const meanKcal = dailyKcals.reduce((s, x) => s + x, 0) / dailyKcals.length;
+        const stdKcal = Math.sqrt(
+            dailyKcals.reduce((s, x) => s + (x - meanKcal) ** 2, 0) / dailyKcals.length,
+        );
+        const consistencyPct = meanKcal > 0 ? Math.max(0, Math.round(100 - (stdKcal / meanKcal) * 100)) : null;
+
+        const deltas = [
+            { key: 'Protein', value: proteinPrev != null ? (protein7 - proteinPrev) : null, unit: 'g' },
+            { key: 'Carbs', value: carbsPrev != null ? (carbs7 - carbsPrev) : null, unit: 'g' },
+            { key: 'Fat', value: fatPrev != null ? (fat7 - fatPrev) : null, unit: 'g' },
+        ].filter((d) => d.value != null && !isNaN(d.value));
+
+        const strongest = deltas.length
+            ? [...deltas].sort((a, b) => Math.abs(b.value) - Math.abs(a.value))[0]
+            : null;
+
+        return {
+            kcalDelta: kcalAvgPrev7 != null ? Math.round(kcalAvg7 - kcalAvgPrev7) : null,
+            protein7: protein7 != null ? Math.round(protein7) : null,
+            carbs7: carbs7 != null ? Math.round(carbs7) : null,
+            fat7: fat7 != null ? Math.round(fat7) : null,
+            consistencyPct,
+            strongest,
+        };
+    },
+
+    _periodInsightsHTML(insights) {
+        const kcalTrend = insights.kcalDelta == null
+            ? 'N/A'
+            : `${insights.kcalDelta > 0 ? '+' : ''}${insights.kcalDelta} kcal/d vs prev 7d`;
+        const macroMix = (insights.protein7 == null || insights.carbs7 == null || insights.fat7 == null)
+            ? 'N/A'
+            : `P ${insights.protein7}g • C ${insights.carbs7}g • F ${insights.fat7}g`;
+        const consistency = insights.consistencyPct == null
+            ? 'N/A'
+            : `${insights.consistencyPct}% stable intake`;
+        const strongest = insights.strongest
+            ? `${insights.strongest.key} shift: ${insights.strongest.value > 0 ? '+' : ''}${Math.round(insights.strongest.value)}${insights.strongest.unit}`
+            : 'No strong macro shift detected';
+
+        return `
+            <div class="macro-period-insights">
+                <div class="mpi-title">Period Insights</div>
+                <div class="mpi-grid">
+                    <div class="mpi-item"><span class="mpi-label">Energy</span><span class="mpi-value">${kcalTrend}</span></div>
+                    <div class="mpi-item"><span class="mpi-label">7-day Mix</span><span class="mpi-value">${macroMix}</span></div>
+                    <div class="mpi-item"><span class="mpi-label">Consistency</span><span class="mpi-value">${consistency}</span></div>
+                </div>
+                <div class="mpi-note">${strongest}</div>
             </div>
         `;
     },

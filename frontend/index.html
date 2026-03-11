@@ -123,9 +123,9 @@
                 <div class="widget-header">Analysis Range</div>
                 <div id="analysis-settings-content" class="analysis-range-form">
                     <div class="range-controls-inline">
-                        <label><span>Start:</span><input type="date" id="analysisStartDate"
-                                name="analysisStartDate"></label>
-                        <label><span>End:</span><input type="date" id="analysisEndDate" name="analysisEndDate"></label>
+                        <label><span>Start:</span><input type="text" id="analysisStartDate"
+                                name="analysisStartDate" placeholder="DD-MM-YYYY" class="date-input-dmy"></label>
+                        <label><span>End:</span><input type="text" id="analysisEndDate" name="analysisEndDate" placeholder="DD-MM-YYYY" class="date-input-dmy"></label>
                         <button type="button" id="updateAnalysisRange" class="btn-primary">Apply</button>
                     </div>
                     <div class="range-presets">
@@ -141,7 +141,7 @@
                 <div class="widget-header">Trendlines</div>
                 <div id="manual-trendlines-container" class="trendlines-form">
                     <div class="form-row">
-                        <label>Start<input type="date" id="trendStartDate"></label>
+                        <label>Start<input type="text" id="trendStartDate" placeholder="DD-MM-YYYY" class="date-input-dmy"></label>
                         <label>Initial<input type="number" id="trendInitialWeight" step="0.1" placeholder="kg"></label>
                     </div>
                     <div class="form-row">
@@ -172,7 +172,7 @@
                 <div class="widget-header">Goal Progress</div>
                 <form id="goal-setting-form" class="goal-form-inline">
                     <label><span>Target</span><input type="number" id="goalWeight" step="0.1" min="30" max="300" placeholder="kg"></label>
-                    <label><span>By</span><input type="date" id="goalDate"></label>
+                    <label><span>By</span><input type="text" id="goalDate" placeholder="DD-MM-YYYY" class="date-input-dmy"></label>
                     <label><span>Rate</span><input type="number" id="goalTargetRate" step="0.05" placeholder="kg/wk"></label>
                     <button type="submit" class="btn-primary">Set Goal</button>
                 </form>
@@ -181,6 +181,7 @@
                 </div>
                 <div id="goal-alerts-list"></div>
                 <div id="goal-suggestions-list"></div>
+                <div id="goal-history-list"></div>
             </div>
 
             <div id="goal-simulator-card" class="bento-widget span-1x1">

@@ -7,6 +7,7 @@ import { StateManager, ActionTypes } from '../core/stateManager.js';
 import { scales } from '../ui/chartSetup.js';
 import { ChartInteractions } from './chartInteractions.js';
 import { ui } from '../ui/uiCache.js';
+import { Utils } from '../core/utils.js';
 
 /**
  * Navigate the main chart to the given date range.
@@ -32,13 +33,9 @@ export function setAnalysisRangeAndSyncChart(rawStart, rawEnd) {
   if (scales.x) scales.x.domain([start, end]);
   ChartInteractions.syncBrushAndZoomToFocus();
 
-  // Reflect in the Analysis Range input fields (YYYY-MM-DD format for <input type="date">)
-  const fmt = (d) => {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-  };
-  if (ui.analysisStartDateInput) ui.analysisStartDateInput.property('value', fmt(start));
-  if (ui.analysisEndDateInput)   ui.analysisEndDateInput.property('value', fmt(end));
+  // Reflect in the Analysis Range input fields (DD-MM-YYYY format)
+  const startStr = Utils.formatDateDMY(start);
+  const endStr = Utils.formatDateDMY(end);
+  if (ui.analysisStartDateInput) ui.analysisStartDateInput.property('value', startStr);
+  if (ui.analysisEndDateInput) ui.analysisEndDateInput.property('value', endStr);
 }

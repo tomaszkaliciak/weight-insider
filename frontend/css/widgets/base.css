@@ -1,6 +1,17 @@
 /* --- Drag-and-drop reordering (SortableJS) --- */
 .bento-widget .widget-header {
     cursor: grab;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 32px;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color-light);
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
 }
 .bento-widget .widget-header:active {
     cursor: grabbing;
@@ -1475,6 +1486,14 @@ body.dark-theme .goal-achieved-badge.good {
     background: var(--bg-tertiary, rgba(0,0,0,0.06));
 }
 
+/* Body wrapper injected by WidgetCollapser; must stretch so chart widgets can size reliably. */
+.bento-widget .widget-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
 /* When collapsed, keep the header visible but hide the body */
 .bento-widget.widget-collapsed {
     /* Shrink to just the header row */
@@ -1515,6 +1534,54 @@ body.dark-theme .goal-achieved-badge.good {
     background: var(--bg-tertiary);
     color: var(--text-primary);
     font-size: 0.85rem;
+}
+
+/* --- Macro period insights --- */
+.macro-period-insights {
+    margin-top: 10px;
+    margin-bottom: 8px;
+    padding: 10px;
+    border: 1px solid var(--border-color-light);
+    border-radius: 10px;
+    background: var(--bg-secondary);
+}
+
+.mpi-title {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.mpi-grid {
+    display: grid;
+    gap: 6px;
+}
+
+.mpi-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.mpi-label {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.mpi-value {
+    color: var(--text-primary);
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-align: right;
+}
+
+.mpi-note {
+    margin-top: 8px;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
 }
 
 .manual-entry-input:focus {
