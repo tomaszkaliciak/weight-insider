@@ -7,12 +7,12 @@ import { CONFIG } from '../config.js';
 /** Tolerance: actual must be within ±TOLERANCE of target to count as a hit. */
 export const MACRO_TOLERANCE = 0.10;
 
-const DEFAULT_TARGETS = { protein: null, carbs: null, fat: null, fiber: null };
+const DEFAULT_TARGETS = { protein: null, carbs: null, fat: null };
 
 export const MacroTargetService = {
   /**
    * Load saved targets from localStorage.
-   * @returns {{ protein: number|null, carbs: number|null, fat: number|null, fiber: number|null }}
+   * @returns {{ protein: number|null, carbs: number|null, fat: number|null }}
    */
   load() {
     try {
@@ -22,8 +22,7 @@ export const MacroTargetService = {
       return {
         protein: parsed.protein != null ? parseFloat(parsed.protein) : null,
         carbs:   parsed.carbs   != null ? parseFloat(parsed.carbs)   : null,
-        fat:     parsed.fat     != null ? parseFloat(parsed.fat)     : null,
-        fiber:   parsed.fiber   != null ? parseFloat(parsed.fiber)   : null,
+        fat:     parsed.fat     != null ? parseFloat(parsed.fat)     : null
       };
     } catch {
       return { ...DEFAULT_TARGETS };
@@ -32,7 +31,7 @@ export const MacroTargetService = {
 
   /**
    * Save targets to localStorage.
-   * @param {{ protein?: number|null, carbs?: number|null, fat?: number|null, fiber?: number|null }} targets
+   * @param {{ protein?: number|null, carbs?: number|null, fat?: number|null }} targets
    */
   save(targets) {
     try {
@@ -47,12 +46,12 @@ export const MacroTargetService = {
 
   /**
    * Check whether a single data point meets all set macro targets.
-   * @param {{ protein?: number, carbs?: number, fat?: number, fiber?: number }} dayData
-   * @param {{ protein?: number|null, carbs?: number|null, fat?: number|null, fiber?: number|null }} targets
+   * @param {{ protein?: number, carbs?: number, fat?: number }} dayData
+   * @param {{ protein?: number|null, carbs?: number|null, fat?: number|null }} targets
    * @returns {boolean}
    */
   dayMeetsTargets(dayData, targets) {
-    const macros = ['protein', 'carbs', 'fat', 'fiber'];
+    const macros = ['protein', 'carbs', 'fat'];
     for (const macro of macros) {
       const target = targets[macro];
       if (target == null || target <= 0) continue; // target not set — ignore
@@ -67,7 +66,7 @@ export const MacroTargetService = {
 
   /**
    * Returns true only if at least one macro target is set.
-   * @param {{ protein?: number|null, carbs?: number|null, fat?: number|null, fiber?: number|null }} targets
+   * @param {{ protein?: number|null, carbs?: number|null, fat?: number|null }} targets
    * @returns {boolean}
    */
   hasAnyTarget(targets) {

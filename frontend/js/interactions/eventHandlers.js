@@ -2,7 +2,7 @@
 // Handles user interactions, focusing on dispatching actions to StateManager.
 
 import * as d3 from 'd3';
-import { StateManager } from "../core/stateManager.js";
+import { StateManager, ActionTypes } from "../core/stateManager.js";
 import { ui } from "../ui/uiCache.js";
 import {
   scales,
@@ -66,6 +66,45 @@ export const EventHandlers = {
       "change.range",
       FormHandlers.handleAnalysisRangeInputChange,
     );
+    // Analysis range preset buttons (7D, 30D, 90D, All)
+    d3.selectAll('.preset-btn[data-range]').on('click', function () {
+      const range = this.getAttribute('data-range');
+      const stateSnapshot = StateManager.getState();
+      const processedData = Selectors.selectProcessedData(stateSnapshot);
+      if (!processedData || processedData.length === 0) return;
+
+      const lastDate = processedData[processedData.length - 1]?.date;
+      const firstDate = processedData[0]?.date;
+      if (!(lastDate instanceof Date) || !(firstDate instanceof Date)) return;
+
+      let newStart, newEnd;
+      newEnd = new Date(new Date(lastDate).setHours(23, 59, 59, 999));
+
+      if (range === 'all') {
+        newStart = new Date(new Date(firstDate).setHours(0, 0, 0, 0));
+      } else {
+        const days = parseInt(range, 10);
+        if (isNaN(days) || days <= 0) return;
+        newStart = new Date(lastDate);
+        newStart.setDate(newStart.getDate() - days);
+        newStart.setHours(0, 0, 0, 0);
+      }
+
+      // Update date inputs
+      ui.analysisStartDateInput?.property("value", Utils.formatDateDMY(newStart));
+      ui.analysisEndDateInput?.property("value", Utils.formatDateDMY(newEnd));
+
+      // Dispatch and redraw
+      StateManager.dispatch({ type: ActionTypes.SET_ANALYSIS_RANGE, payload: { start: newStart, end: newEnd } });
+      StateManager.dispatch({ type: ActionTypes.SET_PINNED_TOOLTIP, payload: null });
+      StateManager.dispatch({ type: ActionTypes.SET_HIGHLIGHTED_DATE, payload: null });
+      StateManager.dispatch({ type: ActionTypes.SET_INTERACTIVE_REGRESSION_RANGE, payload: { start: null, end: null } });
+
+      if (scales.x) scales.x.domain([newStart, newEnd]);
+      ChartInteractions.syncBrushAndZoomToFocus();
+      MasterUpdater.updateAllCharts({ isInteractive: false });
+      Utils.showStatusMessage(`Range set to ${range === 'all' ? 'All data' : range + ' days'}.`, "info", 1500);
+    });
     ui.whatIfSubmitBtn?.on("click", FormHandlers.handleWhatIfSubmit);
     ui.whatIfIntakeInput?.on("keydown", (event) => {
       if (event.key === "Enter") FormHandlers.handleWhatIfSubmit(event);

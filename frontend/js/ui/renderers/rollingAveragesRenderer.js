@@ -112,10 +112,6 @@ export const RollingAveragesRenderer = {
             result[w] = {
                 protein: Math.round(slice.reduce((s, d) => s + d.protein, 0) / slice.length),
                 carbs:   Math.round(slice.reduce((s, d) => s + (d.carbs   ?? 0), 0) / slice.length),
-                fat:     Math.round(slice.reduce((s, d) => s + (d.fat     ?? 0), 0) / slice.length),
-                fiber:   slice.some(d => d.fiber != null)
-                    ? Math.round(slice.filter(d => d.fiber != null).reduce((s, d) => s + d.fiber, 0) / slice.filter(d => d.fiber != null).length)
-                    : null,
             };
         });
         return result;
@@ -219,7 +215,7 @@ export const RollingAveragesRenderer = {
               </tr>
             </thead>
             <tbody>
-              ${['protein','carbs','fat','fiber'].map(key => {
+              ${['protein','carbs','fat'].map(key => {
                 const v7  = macroAvgs[7]?.[key];
                 const v14 = macroAvgs[14]?.[key];
                 if (v7 == null && v14 == null) return '';

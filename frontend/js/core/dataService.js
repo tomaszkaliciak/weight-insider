@@ -33,7 +33,6 @@ export const DataService = {
         macroProtein: {},
         macroFat: {},
         macroCarbs: {},
-        macroFiber: {},
       }; // Return empty structure on error
     }
   },
@@ -47,7 +46,7 @@ export const DataService = {
     const protein = rawDataObjects.macroProtein || rawDataObjects.protein || {};
     const carbs   = rawDataObjects.macroCarbs   || rawDataObjects.carbs   || {};
     const fat      = rawDataObjects.macroFat     || rawDataObjects.fat     || {};
-    const fiber    = rawDataObjects.macroFiber   || rawDataObjects.fiber   || {};
+
     const workouts = rawDataObjects.workouts || {};
     const allDates = new Set([
       ...Object.keys(weights),
@@ -57,7 +56,7 @@ export const DataService = {
       ...Object.keys(protein),
       ...Object.keys(carbs),
       ...Object.keys(fat),
-      ...Object.keys(fiber),
+
       ...Object.keys(workouts),
     ]);
     let mergedData = [];
@@ -122,7 +121,7 @@ export const DataService = {
         protein: findValue(protein),
         carbs: findValue(carbs),
         fat: findValue(fat),
-        fiber: findValue(fiber),
+
         // Workout data
         workoutCount: workoutData?.workoutCount ?? null,
         totalSets: workoutData?.totalSets ?? null,
@@ -774,7 +773,7 @@ export const DataService = {
           avgProtein: avgMetric(weekData, "protein"),
           avgCarbs: avgMetric(weekData, "carbs"),
           avgFat: avgMetric(weekData, "fat"),
-          avgFiber: avgMetric(weekData, "fiber"),
+
           avgVolatility: avgMetric(weekData, "rollingVolatility"),
           loggingRate:
             weekData.length > 0

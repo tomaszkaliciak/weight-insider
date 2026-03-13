@@ -1738,14 +1738,10 @@ body.dark-theme .goal-achieved-badge.good {
 .macro-protein      { background: hsl(220, 80%, 60%); }
 .macro-carbs        { background: hsl(38, 90%, 55%); }
 .macro-fat          { background: hsl(350, 70%, 60%); }
-.macro-fiber.macro-fiber-adequate { background: hsl(150, 60%, 45%); }
-.macro-fiber.macro-fiber-moderate { background: hsl(38, 90%, 55%); }
-.macro-fiber.macro-fiber-low      { background: hsl(0, 65%, 55%); }
 
 .macro-protein-text { color: hsl(220, 80%, 60%); }
 .macro-carbs-text   { color: hsl(38, 90%, 45%); }
 .macro-fat-text     { color: hsl(350, 70%, 55%); }
-.macro-fiber-text   { color: hsl(150, 60%, 40%); }
 
 /* Calorie split strip */
 .macro-split-row {
@@ -2095,7 +2091,6 @@ body.dark-theme .goal-achieved-badge.good {
 .macro-rolling-row.macro-rolling-protein td:first-child { color: hsl(220, 80%, 60%); font-weight: 600; }
 .macro-rolling-row.macro-rolling-carbs  td:first-child { color: hsl(38, 90%, 45%);  font-weight: 600; }
 .macro-rolling-row.macro-rolling-fat    td:first-child { color: hsl(350, 70%, 55%); font-weight: 600; }
-.macro-rolling-row.macro-rolling-fiber  td:first-child { color: hsl(150, 60%, 40%); font-weight: 600; }
 
 .macro-rolling-delta { font-size: 0.7rem; margin-left: 3px; }
 .macro-rolling-delta.up   { color: var(--success-color); }

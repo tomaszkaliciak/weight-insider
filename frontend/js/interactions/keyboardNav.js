@@ -37,7 +37,11 @@ export const KeyboardNav = {
                 break;
 
             case 'Escape':
-                this._collapseAllCards();
+                if (document.fullscreenElement) {
+                    document.exitFullscreen();
+                } else {
+                    this._collapseAllCards();
+                }
                 e.preventDefault();
                 break;
 

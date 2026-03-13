@@ -544,8 +544,8 @@ select {
 }
 
 input.date-input-dmy {
-    min-width: 10ch;
-    width: 10ch;
+    min-width: 12ch;
+    width: 12ch;
 }
 
 input.date-input-invalid {
@@ -1093,6 +1093,7 @@ input:checked+.slider:before {
 /* --- Goal Setting Form (inline) --- */
 .goal-form-inline {
     display: flex;
+    flex-direction: row;
     flex-wrap: wrap;
     gap: 8px;
     align-items: flex-end;
@@ -1101,7 +1102,17 @@ input:checked+.slider:before {
     border-bottom: 1px solid var(--border-color-light);
 }
 
-.goal-form-inline label {
+.range-controls-inline {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: flex-end;
+    margin-bottom: 10px;
+}
+
+.goal-form-inline label,
+.range-controls-inline label {
     display: flex;
     flex-direction: column;
     gap: 3px;
@@ -1111,7 +1122,8 @@ input:checked+.slider:before {
     min-width: 80px;
 }
 
-.goal-form-inline input {
+.goal-form-inline input,
+.range-controls-inline input {
     padding: 6px 8px;
     font-size: 0.92em;
     border: 1px solid var(--border-color);
@@ -1122,7 +1134,8 @@ input:checked+.slider:before {
     box-sizing: border-box;
 }
 
-.goal-form-inline input:focus {
+.goal-form-inline input:focus,
+.range-controls-inline input:focus {
     outline: none;
     border-color: var(--primary-color);
     box-shadow: 0 0 0 2px hsla(var(--hue-primary, 212), 60%, 58%, 0.15);

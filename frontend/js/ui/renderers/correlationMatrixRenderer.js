@@ -15,7 +15,6 @@ const EXPLORER_OPTIONS = [
   { key: "avgProtein", label: "Protein", unit: "g/d" },
   { key: "avgCarbs", label: "Carbs", unit: "g/d" },
   { key: "avgFat", label: "Fat", unit: "g/d" },
-  { key: "avgFiber", label: "Fiber", unit: "g/d" },
   { key: "avgVolatility", label: "Volatility", unit: "kg" },
   { key: "loggingRate", label: "Logging Rate", unit: "%" },
   { key: "calorieCoverage", label: "Calorie Coverage", unit: "%" },

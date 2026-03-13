@@ -8,6 +8,7 @@ import { CONFIG } from "../config.js";
 import { Utils } from "../core/utils.js";
 import * as Selectors from "../core/selectors.js";
 import { ChartInteractions } from "./chartInteractions.js";
+import { MasterUpdater } from "../ui/masterUpdater.js";
 
 // Debounced handler for analysis range date inputs
 const debouncedRangeInputChange = Utils.debounce(() => {
@@ -38,6 +39,7 @@ const debouncedRangeInputChange = Utils.debounce(() => {
 
       if (scales.x) scales.x.domain([newStart, newEnd]);
       ChartInteractions.syncBrushAndZoomToFocus(); // Sync chart view
+      MasterUpdater.updateAllCharts({ isInteractive: false }); // Redraw charts
 
       Utils.showStatusMessage("Analysis range updated from input.", "info", 1500);
     } else {
