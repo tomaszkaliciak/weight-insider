@@ -207,6 +207,8 @@ const elementIdMap = {
   "avg-tdee-wgt-change": { key: "avgTdeeWgtChange", type: "stat" },
   "avg-tdee-difference": { key: "avgTdeeDifference", type: "stat" },
   "avg-tdee-adaptive": { key: "avgTdeeAdaptive", type: "stat" },
+  // Vital Stats strip: wires #current-tdee to the adaptive TDEE estimate
+  "current-tdee": { key: "currentTdee", type: "stat" },
   "target-weight-stat": { key: "targetWeightStat", type: "stat" },
   "target-rate-stat": { key: "targetRateStat", type: "stat" },
   "weight-to-goal": { key: "weightToGoal", type: "stat" },

@@ -512,18 +512,23 @@ export const StatsManager = {
       results.filteredData = [];
     }
 
-    // All-Time Stats
+    // Weight Stats — scoped to the current analysis range so Vital Stats
+    // reflect the same period as all other widgets.
+    // Falls back to all-time raw data only when no range filter is active.
+    const validWeightInRange = results.filteredData.filter(
+      (d) => d.value != null && !isNaN(d.value),
+    );
     const validWeightDataAll = rawData.filter(
       (d) => d.value != null && !isNaN(d.value),
     );
-    if (validWeightDataAll.length > 0) {
-      displayStats.startingWeight = validWeightDataAll[0].value;
-      displayStats.currentWeight =
-        validWeightDataAll[validWeightDataAll.length - 1].value;
-      const maxEntryObject = d3.greatest(validWeightDataAll, (d) => d.value);
+    const weightSource = validWeightInRange.length > 0 ? validWeightInRange : validWeightDataAll;
+    if (weightSource.length > 0) {
+      displayStats.startingWeight = weightSource[0].value;
+      displayStats.currentWeight = weightSource[weightSource.length - 1].value;
+      const maxEntryObject = d3.greatest(weightSource, (d) => d.value);
       displayStats.maxWeight = maxEntryObject?.value ?? null;
       displayStats.maxWeightDate = maxEntryObject?.date ?? null;
-      const minEntryObject = d3.least(validWeightDataAll, (d) => d.value);
+      const minEntryObject = d3.least(weightSource, (d) => d.value);
       displayStats.minWeight = minEntryObject?.value ?? null;
       displayStats.minWeightDate = minEntryObject?.date ?? null;
       displayStats.totalChange =
@@ -542,17 +547,19 @@ export const StatsManager = {
         totalChange: null,
       });
     }
-    const lastSmaEntry = [...processedData]
-      .reverse()
-      .find((d) => d.sma != null);
+    // currentSma: last SMA value within the analysis range (falls back to all-time)
+    const lastSmaEntry =
+      [...results.filteredData].reverse().find((d) => d.sma != null) ??
+      [...processedData].reverse().find((d) => d.sma != null);
     displayStats.currentSma =
       lastSmaEntry?.sma ?? displayStats.currentWeight ?? null;
 
-    // Body Comp Stats
-    const validLbmSmaData = processedData.filter(
+    // Body Comp Stats — also scoped to analysis range
+    const bodyCompSource = results.filteredData.length > 0 ? results.filteredData : processedData;
+    const validLbmSmaData = bodyCompSource.filter(
       (d) => d.lbmSma != null && !isNaN(d.lbmSma),
     );
-    const validFmSmaData = processedData.filter(
+    const validFmSmaData = bodyCompSource.filter(
       (d) => d.fmSma != null && !isNaN(d.fmSma),
     );
     displayStats.startingLbm =

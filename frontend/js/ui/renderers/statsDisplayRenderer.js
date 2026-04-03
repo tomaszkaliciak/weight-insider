@@ -154,6 +154,8 @@ export const StatsDisplayRenderer = {
     updateElement("avgTdeeWgtChange", displayStats.avgTDEE_WgtChange, fv, 0);
     updateElement("avgTdeeDifference", displayStats.avgTDEE_Difference, fv, 0);
     updateElement("avgTdeeAdaptive", displayStats.avgTDEE_Adaptive, fv, 0);
+    // Vital Stats strip TDEE cell — shows the adaptive (range-scoped) TDEE estimate
+    updateElement("currentTdee", displayStats.avgTDEE_Adaptive, fv, 0);
     updateElement("targetWeightStat", displayStats.targetWeight, fv, 1);
     updateElement("targetRateStat", displayStats.targetRate, fv, 2);
     updateElement("weightToGoal", displayStats.weightToGoal, fv, 1);
