@@ -55,7 +55,13 @@ const _dimensions = {};
  * @returns {boolean} True if essential dimensions are valid, false otherwise.
  */
 function calculateDimensions() {
-  const getDim = (containerSelection, margins) => {
+  /**
+   * Returns drawable { width, height, valid } for a D3-selected container.
+   * @param {*} containerSelection
+   * @param {{ top, right, bottom, left }} margins
+   * @param {number} fallbackHeight  px to use when container is hidden (e.g. collapsed widget)
+   */
+  const getDim = (containerSelection, margins, fallbackHeight = 400) => {
     if (!containerSelection || containerSelection.empty())
       return { width: 0, height: 0, valid: false };
     const node = containerSelection.node();
@@ -72,18 +78,41 @@ function calculateDimensions() {
     const clientHeight = node.clientHeight || 0;
 
     // Use clientWidth/Height if available and seems reliable
-    // Check if clientWidth is close to rect.width minus padding (accounts for border/scrollbar)
     const useClientDims =
       clientWidth > 0 &&
       clientHeight > 0 &&
-      clientWidth >= rect.width - paddingLeft - paddingRight - 2; // Tolerance of 2px
+      clientWidth >= rect.width - paddingLeft - paddingRight - 2;
 
-    const effectiveWidth = useClientDims
+    let effectiveWidth = useClientDims
       ? clientWidth - paddingLeft - paddingRight
       : rect.width - paddingLeft - paddingRight;
-    const effectiveHeight = useClientDims
+    let effectiveHeight = useClientDims
       ? clientHeight - paddingTop - paddingBottom
       : rect.height - paddingTop - paddingBottom;
+
+    // --- Collapsed / hidden fallback ---
+    // If the container is inside a collapsed widget (display:none), both dims are 0.
+    // Walk up the ancestor chain to find a visible element's width so the SVG
+    // is created at the correct horizontal size. Use a sensible vertical fallback.
+    // When the widget is later expanded the ResizeObserver re-fires and the chart
+    // is recreated at the actual size, so this is safe.
+    if (effectiveWidth <= 0) {
+      let ancestor = node.parentElement;
+      while (ancestor && ancestor !== document.body) {
+        const aw = ancestor.getBoundingClientRect().width || ancestor.offsetWidth;
+        if (aw > 0) {
+          effectiveWidth = aw;
+          break;
+        }
+        ancestor = ancestor.parentElement;
+      }
+      if (effectiveWidth <= 0) {
+        effectiveWidth = window.innerWidth || 800;
+      }
+    }
+    if (effectiveHeight <= 0) {
+      effectiveHeight = fallbackHeight;
+    }
 
     // Ensure width/height are not negative or excessively small
     const width = Math.max(10, effectiveWidth - margins.left - margins.right);
@@ -94,18 +123,12 @@ function calculateDimensions() {
     return { width, height, valid };
   };
 
-  _dimensions.focus = getDim(ui.chartContainer, CONFIG.margins.focus);
-  _dimensions.context = getDim(ui.contextContainer, CONFIG.margins.context);
-  _dimensions.balance = getDim(
-    ui.balanceChartContainer,
-    CONFIG.margins.balance,
-  );
-  _dimensions.rate = getDim(ui.rateChartContainer, CONFIG.margins.rate);
-  _dimensions.tdeeDiff = getDim(ui.tdeeDiffContainer, CONFIG.margins.tdeeDiff);
-  _dimensions.scatter = getDim(
-    ui.correlationScatterContainer,
-    CONFIG.margins.correlationScatter,
-  );
+  _dimensions.focus   = getDim(ui.chartContainer,            CONFIG.margins.focus,             400);
+  _dimensions.context = getDim(ui.contextContainer,          CONFIG.margins.context,            60);
+  _dimensions.balance = getDim(ui.balanceChartContainer,     CONFIG.margins.balance,           150);
+  _dimensions.rate    = getDim(ui.rateChartContainer,        CONFIG.margins.rate,              150);
+  _dimensions.tdeeDiff = getDim(ui.tdeeDiffContainer,        CONFIG.margins.tdeeDiff,          150);
+  _dimensions.scatter  = getDim(ui.correlationScatterContainer, CONFIG.margins.correlationScatter, 300);
 
   // Only focus and context are absolutely essential for the main chart view
   const requiredDimsValid =
@@ -113,10 +136,9 @@ function calculateDimensions() {
 
   if (!requiredDimsValid) {
     console.error(
-      "chartSetup: Cannot setup dimensions, focus or context container not found or has zero effective size.",
+      "chartSetup: Dimension calculation failed.",
       { focus: _dimensions.focus, context: _dimensions.context }
     );
-    // Potentially show a user-facing error message here
     Utils.showCriticalErrorMessage("Could not determine chart drawing dimensions.");
     return false;
   }

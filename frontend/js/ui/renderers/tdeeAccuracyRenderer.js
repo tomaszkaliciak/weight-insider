@@ -154,7 +154,9 @@ export const TdeeAccuracyRenderer = {
             </div>
           </div>
           <div class="analysis-card ${tdeeAccuracyClass}">
-            <div class="analysis-title">Device Accuracy</div>
+            <div class="analysis-title">Device Accuracy
+              <span class="info-tooltip" title="Accuracy measures how closely your device's calorie estimates match your actual weight changes. Higher % means the device is more reliable for planning.">ⓘ</span>
+            </div>
             <div class="analysis-value">${analysis.tdeeAccuracy?.toFixed(0) || 'N/A'}%</div>
             <div class="analysis-desc">
               ${analysis.tdeeError > 0 ? `Overestimates by ~${analysis.tdeeError} kcal` :

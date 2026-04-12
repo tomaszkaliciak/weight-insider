@@ -223,7 +223,7 @@ export const StatsDisplayRenderer = {
 
       container.innerHTML = `<div class="${className}">${message}</div>`;
     } else {
-      console.warn('[StatsDisplayRenderer] Trend Flux missing data:', { scale, trend });
+      // console.warn('[StatsDisplayRenderer] Trend Flux missing data:', { scale, trend });
       container.style.display = 'none';
     }
   },

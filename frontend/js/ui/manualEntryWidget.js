@@ -54,6 +54,38 @@ export const ManualEntryWidget = {
 
   _attachHandlers() {
     if (!this._form) return;
+
+    // Real-time validation
+    const weightInput = document.getElementById('me-weight');
+    const caloriesInput = document.getElementById('me-calories');
+    const saveBtn = this._form.querySelector('button[type="submit"]');
+
+    if (weightInput) {
+      weightInput.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        if (!isNaN(val) && (val < 20 || val > 300)) {
+          e.target.setCustomValidity('Weight must be between 20-300 kg');
+          e.target.classList.add('input-error');
+        } else {
+          e.target.setCustomValidity('');
+          e.target.classList.remove('input-error');
+        }
+      });
+    }
+
+    if (caloriesInput) {
+      caloriesInput.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        if (!isNaN(val) && (val < 0 || val > 20000)) {
+          e.target.setCustomValidity('Calories must be between 0-20000');
+          e.target.classList.add('input-error');
+        } else {
+          e.target.setCustomValidity('');
+          e.target.classList.remove('input-error');
+        }
+      });
+    }
+
     this._form.addEventListener('submit', (e) => {
       e.preventDefault();
       this._save();

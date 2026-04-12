@@ -77,7 +77,11 @@ import { DateInputUX } from "./interactions/dateInputUX.js";
  */
 function lazyInit(renderer, anchorId) {
   const el = document.getElementById(anchorId);
-  if (!el || typeof IntersectionObserver === 'undefined') {
+  if (!el) {
+    console.warn(`[LazyInit] Container #${anchorId} not found, skipping ${renderer.name || 'renderer'}`);
+    return; // Don't initialize if element doesn't exist
+  }
+  if (typeof IntersectionObserver === 'undefined') {
     renderer.init();
     return;
   }
@@ -91,6 +95,15 @@ function lazyInit(renderer, anchorId) {
     { rootMargin: '300px' }, // start loading 300 px before widget is visible
   );
   observer.observe(el);
+}
+
+// --- Helper to safely initialize renderers only if their containers exist ---
+function safeInit(renderer, containerId) {
+  if (!containerId || document.getElementById(containerId)) {
+    renderer.init();
+  } else {
+    console.warn(`[Main Init] Container #${containerId} not found, skipping ${renderer.name || 'renderer'}`);
+  }
 }
 
 /**
@@ -163,8 +176,8 @@ async function initialize() {
     GoalHistoryRenderer.init();
     SmartCoachRenderer.init();
     TdeeAccuracyRenderer.init();
-    WeeklySummaryUpdater.init();
-    LegendManager.init();
+    // WeeklySummaryUpdater.init(); // Container not found in DOM
+    // LegendManager.init(); // Container not found in DOM
     InsightsGenerator.init();
     ProgressRing.init();
     QuickStatsRenderer.init();
@@ -244,8 +257,26 @@ async function initialize() {
     StatsManager.init(); // Sets up subscriptions, initial calc triggered by INITIALIZATION_COMPLETE
 
     // 11. Initialize Chart Setup (Creates SVGs, scales, axes - BEFORE domain setup)
-    if (!initializeChartSetup()) {
-      throw new Error("Chart SVG/scale/axis setup failed.");
+    // If the chart widget was persisted as collapsed, its .widget-body has display:none
+    // and getBoundingClientRect returns 0. Temporarily expand it for measurement only.
+    const _chartSection = document.getElementById('chart-section');
+    const _chartBody = _chartSection?.querySelector('.widget-body');
+    const _chartWasCollapsed = _chartSection?.classList.contains('widget-collapsed');
+    if (_chartWasCollapsed && _chartBody) {
+      _chartSection.classList.remove('widget-collapsed');
+      _chartBody.style.display = '';
+    }
+
+    const _chartSetupOk = initializeChartSetup();
+
+    // Restore collapsed state before checking result
+    if (_chartWasCollapsed && _chartBody) {
+      _chartSection.classList.add('widget-collapsed');
+      _chartBody.style.display = 'none';
+    }
+
+    if (!_chartSetupOk) {
+      throw new Error('Chart SVG/scale/axis setup failed.');
     }
 
     // 12. Initialize Domains (Reads state, sets scale domains, dispatches initial range/filter)

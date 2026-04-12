@@ -79,6 +79,11 @@ export function calculateFocusYDomain(
   config,
   stateSnapshot,
 ) {
+  // Early return if no filtered data (prevents console warnings)
+  if (!filteredData || filteredData.length === 0) {
+    return [60, 80]; // Return valid fallback domain
+  }
+
   let yMin = Infinity,
     yMax = -Infinity;
 

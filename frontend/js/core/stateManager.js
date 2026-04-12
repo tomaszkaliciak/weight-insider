@@ -41,6 +41,7 @@ export const ActionTypes = {
   SET_GOAL_LINE_DATA: "SET_GOAL_LINE_DATA",
   SET_PERIODIZATION_PHASES: "SET_PERIODIZATION_PHASES",
   SET_WORKOUT_CORRELATION: "SET_WORKOUT_CORRELATION",
+  TOGGLE_METRIC_VISIBILITY: "TOGGLE_METRIC_VISIBILITY",
 };
 
 // Define the initial structure and default values of the state
@@ -66,6 +67,11 @@ const initialState = {
     plateaus: true,
     trendChanges: true,
     rateMA: true,
+  },
+  metricVisibility: {
+    weight: true,
+    calories: false,
+    tdee: false,
   },
   trendConfig: {
     startDate: null,
@@ -256,6 +262,14 @@ function reducer(currentState, action) {
         action.payload instanceof Date || action.payload === null
           ? action.payload
           : null;
+      break;
+    case ActionTypes.TOGGLE_METRIC_VISIBILITY:
+      if (Object.prototype.hasOwnProperty.call(currentState.metricVisibility, action.payload.metric)) {
+        nextState.metricVisibility = {
+          ...currentState.metricVisibility,
+          [action.payload.metric]: action.payload.isVisible
+        };
+      }
       break;
     case ActionTypes.SET_PINNED_TOOLTIP:
       nextState.pinnedTooltipData = action.payload;

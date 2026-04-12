@@ -68,10 +68,17 @@ export const EventHandlers = {
     );
     // Analysis range preset buttons (7D, 30D, 90D, All)
     d3.selectAll('.preset-btn[data-range]').on('click', function () {
+      // Show loading spinner
+      const spinner = document.getElementById('loading-spinner');
+      if (spinner) spinner.style.display = 'block';
+
       const range = this.getAttribute('data-range');
       const stateSnapshot = StateManager.getState();
       const processedData = Selectors.selectProcessedData(stateSnapshot);
-      if (!processedData || processedData.length === 0) return;
+      if (!processedData || processedData.length === 0) {
+        if (spinner) spinner.style.display = 'none';
+        return;
+      }
 
       const lastDate = processedData[processedData.length - 1]?.date;
       const firstDate = processedData[0]?.date;
@@ -158,6 +165,17 @@ export const EventHandlers = {
           UIInteractions.handleCardToggle(btn);
         }
       }
+    });
+
+    // Metric toggle event listeners
+    d3.selectAll('.metric-checkbox').on('change', function() {
+      const metric = this.getAttribute('data-metric');
+      const isVisible = this.checked;
+
+      StateManager.dispatch({
+        type: ActionTypes.TOGGLE_METRIC_VISIBILITY,
+        payload: { metric, isVisible }
+      });
     });
   },
 };

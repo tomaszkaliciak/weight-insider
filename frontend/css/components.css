@@ -1290,3 +1290,37 @@ body.dark-theme .inline-feedback.error {
         transform: translateY(-4px);
     }
 }
+
+/* === Metric Toggle Controls for Multi-Chart View === */
+.metric-toggle-group {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-right: 12px;
+}
+
+.metric-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.metric-toggle:hover {
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+.metric-toggle input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.metric-toggle span {
+  font-weight: 500;
+}
