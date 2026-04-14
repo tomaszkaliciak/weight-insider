@@ -79,12 +79,21 @@ export const WeekendAnalysisRenderer = {
         volatility: stdDev(weekends.changes),
         daysAnalyzed: weekends.days
       },
-      calorieDiff: mean(weekends.calories) != null && mean(weekdays.calories) != null
-        ? mean(weekends.calories) - mean(weekdays.calories) : null,
-      weeklyWeekendImpact: mean(weekends.calories) != null && mean(weekdays.calories) != null
-        ? ((mean(weekends.calories) - mean(weekdays.calories)) * 2) / 7 : null // Avg daily impact spread over week
-    };
-  },
+  calorieDiff: (() => {
+    const mw = mean(weekends.calories);
+    const md = mean(weekdays.calories);
+    if (mw == null || md == null) return null;
+    return mw - md;
+  })(),
+  weeklyWeekendImpact: (() => {
+    const mw = mean(weekends.calories);
+    const md = mean(weekdays.calories);
+    if (mw == null || md == null) return null;
+    return ((mw - md) * 2) / 7;
+  })()
+  };
+  }
+,
 
   _render(analysis) {
     if (!this._container) return;
@@ -98,7 +107,7 @@ export const WeekendAnalysisRenderer = {
     };
 
     const weekendDamage = analysis.calorieDiff != null
-      ? (analysis.calorieDiff * 2 / 7700 * 7).toFixed(2) // kg/week impact
+      ? (analysis.calorieDiff * 2 / 7700).toFixed(2) // kg/week impact
       : null;
 
     this._container.innerHTML = `

@@ -4,6 +4,7 @@ import { StateManager } from "../../core/stateManager.js";
 import { EventHandlers } from "../../interactions/eventHandlers.js";
 import * as Selectors from "../../core/selectors.js";
 import { AnimatedNumbers } from "../animatedNumbers.js";
+import { GoalManager } from "../../core/goalManager.js";
 
 // Keys that should have animated number transitions
 const ANIMATED_KEYS = new Set([
@@ -186,6 +187,9 @@ export const StatsDisplayRenderer = {
     // Calculates the difference between Scale Weight and Trend Weight
     this._renderTrendFlux(displayStats);
 
+// FEATURE 3: One-click suggested calorie budget
+this._renderSuggestedIntakeTarget(displayStats);
+
     // Call any other specific updaters if needed
     if (ui.statElements["currentRateFeedback"]) {
       // Re-apply class for rate feedback if needed (redundant safety)
@@ -226,6 +230,43 @@ export const StatsDisplayRenderer = {
       // console.warn('[StatsDisplayRenderer] Trend Flux missing data:', { scale, trend });
       container.style.display = 'none';
     }
+  },
+
+
+  /**
+   * FEATURE 3: Renders a clickable "Suggested Calorie Budget" panel below the goal form.
+   * Clicking it sets the calorie target as a goal and pre-fills the goal form to show it.
+   */
+  _renderSuggestedIntakeTarget(displayStats) {
+    const el = document.getElementById('suggested-intake-target');
+    if (!el) return;
+
+    const suggested = displayStats.suggestedIntakeTarget;
+    if (suggested == null || suggested <= 0) {
+      el.style.display = 'none';
+      return;
+    }
+
+    const tdeeSrc = displayStats.baselineTDEESource || this._getTdeeSource(displayStats);
+    el.style.display = '';
+    el.textContent = `Suggested intake: ${suggested} kcal/day based on ${tdeeSrc} TDEE — click to use as target.`;
+
+    el.onclick = () => {
+      // Dispatch a goal with only calorieTarget set (the goal system stores this)
+      StateManager.dispatch({
+        type: 'SET_GOAL',
+        payload: { weight: null, date: null, targetRate: null, calorieTarget: suggested }
+      });
+      GoalManager.save();
+      Utils.showStatusMessage(`Calorie target set: ${suggested} kcal/day`, 'success');
+    };
+  },
+
+  _getTdeeSource(displayStats) {
+    if (displayStats.avgTDEE_Adaptive) return 'Adaptive';
+    if (displayStats.avgTDEE_WgtChange) return 'Trend';
+    if (displayStats.avgExpenditureGFit) return 'Fit';
+    return 'Est.';
   },
 
   init() {

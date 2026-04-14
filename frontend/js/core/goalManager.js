@@ -57,6 +57,43 @@ export const GoalManager = {
       goalTargetRateInput.value =
         normalized.targetRate != null ? normalized.targetRate.toFixed(2) : "";
     }
+
+    // FEATURE 5: Auto-calculate targetRate when goal weight + date are both filled
+    // but rate is empty (user hasn't explicitly set it yet)
+    this._autoRecalcRate(goalWeightInput, goalDateInput, goalTargetRateInput);
+  },
+
+  /**
+   * Feature 5: If goal weight and date are both filled but rate is empty,
+   * auto-calculate the required weekly rate based on current weight.
+   */
+  _autoRecalcRate(weightInput, dateInput, rateInput) {
+    if (!weightInput || !dateInput || !rateInput) return;
+    // Don't overwrite a manually-set rate
+    if (rateInput.value && rateInput.value.trim() !== "") return;
+
+    const targetWeight = weightInput.value ? parseFloat(weightInput.value) : null;
+    const dateStr = dateInput.value ? dateInput.value.trim() : "";
+    if (targetWeight == null || !dateStr) return;
+
+    const targetDate = Utils.parseDateInput(dateStr);
+    if (!(targetDate instanceof Date) || isNaN(targetDate)) return;
+
+    const state = StateManager.getState();
+    const displayStats = Selectors.selectDisplayStats(state) || {};
+    const currentWeight = displayStats.currentSma ?? displayStats.currentWeight;
+    if (currentWeight == null) return;
+
+    const daysToGoal = (targetDate - new Date()) / (1000 * 60 * 60 * 24);
+    if (daysToGoal <= 0) return; // past date
+
+    const weeks = daysToGoal / 7;
+    const rate = (targetWeight - currentWeight) / weeks;
+    // Only show if rate is reasonable
+    if (Math.abs(rate) < 5) {
+      rateInput.value = rate.toFixed(2);
+      rateInput.title = `Auto-calculated from current weight ${currentWeight.toFixed(1)} kg and target date. Overwrite if needed.`;
+    }
   },
   _computeConfidencePct(state, goal) {
     const displayStats = Selectors.selectDisplayStats(state) || {};
@@ -279,5 +316,31 @@ export const GoalManager = {
       });
     }
     this.load();
+
+    // FEATURE 5: Live auto-recalc as user types
+    this._setupAutoRateListeners();
+  },
+
+  /**
+   * Feature 5: Re-runs rate auto-calculation whenever the user edits
+   * goal weight or date, until they explicitly set a rate.
+   */
+  _setupAutoRateListeners() {
+    const weightInput = document.getElementById("goalWeight");
+    const dateInput = document.getElementById("goalDate");
+    const rateInput = document.getElementById("goalTargetRate");
+    if (!weightInput || !dateInput || !rateInput) return;
+
+    const recalc = () => this._autoRecalcRate(weightInput, dateInput, rateInput);
+
+    weightInput.addEventListener("input", recalc);
+    dateInput.addEventListener("input", recalc);
+
+    // When user manually edits the rate, stop auto-updating
+    rateInput.addEventListener("input", () => {
+      if (rateInput.value.trim() !== "") {
+        rateInput.title = "";
+      }
+    });
   },
 };

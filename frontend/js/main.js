@@ -262,18 +262,20 @@ async function initialize() {
     const _chartSection = document.getElementById('chart-section');
     const _chartBody = _chartSection?.querySelector('.widget-body');
     const _chartWasCollapsed = _chartSection?.classList.contains('widget-collapsed');
+  let _chartSetupOk = false;
+  try {
     if (_chartWasCollapsed && _chartBody) {
       _chartSection.classList.remove('widget-collapsed');
       _chartBody.style.display = '';
     }
-
-    const _chartSetupOk = initializeChartSetup();
-
-    // Restore collapsed state before checking result
+    _chartSetupOk = initializeChartSetup();
+  } finally {
+    // Always restore collapsed state, whether setup succeeds or throws
     if (_chartWasCollapsed && _chartBody) {
       _chartSection.classList.add('widget-collapsed');
       _chartBody.style.display = 'none';
     }
+  }
 
     if (!_chartSetupOk) {
       throw new Error('Chart SVG/scale/axis setup failed.');
@@ -295,7 +297,7 @@ async function initialize() {
         type: "SET_REGRESSION_RESULT",
         payload: { slope: null, intercept: null, points: [] },
       });
-      StateManager.dispatch({ type: "UPDATE_DISPLAY_STATS", payload: {} });
+      StateManager.dispatch({ type: ActionTypes.SET_DISPLAY_STATS, payload: {} });
     }
 
     // 13. Restore Initial Viewport (if applicable)
