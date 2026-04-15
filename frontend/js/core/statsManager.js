@@ -527,7 +527,7 @@ export const StatsManager = {
       displayStats.currentWeight = weightSource[weightSource.length - 1].value;
 
   // Calculate total change from the very beginning of all data
-  const allWeightData = processedData.filter((d) => d.value != null && !isNaN(d.value));
+  const allWeightData = rawData.filter((d) => d.value != null && !isNaN(d.value));
   if (allWeightData.length > 0) {
     const firstWeightEver = allWeightData[0].value;
     displayStats.totalChangeFromStart = displayStats.currentWeight != null && firstWeightEver != null
