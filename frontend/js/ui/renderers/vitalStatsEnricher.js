@@ -52,7 +52,7 @@ export const VitalStatsEnricher = {
         // ── Change card: context label (new-low, streak, phase) ───────
         const changeD = document.getElementById('vs-delta-change');
         if (changeD) {
-            const tc = stats.totalChange;
+            const tc = stats.totalChangeFromStart;
             if (tc != null) {
                 if (stats.currentSma != null && stats.minWeight != null && Math.abs(stats.currentSma - stats.minWeight) < 0.3) {
                     changeD.textContent = '🎯 New low!';

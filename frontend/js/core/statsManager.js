@@ -525,6 +525,15 @@ export const StatsManager = {
     if (weightSource.length > 0) {
       displayStats.startingWeight = weightSource[0].value;
       displayStats.currentWeight = weightSource[weightSource.length - 1].value;
+
+  // Calculate total change from the very beginning of all data
+  const allWeightData = processedData.filter((d) => d.value != null && !isNaN(d.value));
+  if (allWeightData.length > 0) {
+    const firstWeightEver = allWeightData[0].value;
+    displayStats.totalChangeFromStart = displayStats.currentWeight != null && firstWeightEver != null
+      ? displayStats.currentWeight - firstWeightEver
+      : null;
+  }
       const maxEntryObject = d3.greatest(weightSource, (d) => d.value);
       displayStats.maxWeight = maxEntryObject?.value ?? null;
       displayStats.maxWeightDate = maxEntryObject?.date ?? null;
