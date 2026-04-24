@@ -6,6 +6,7 @@ import * as Selectors from '../../core/selectors.js';
 import { Utils } from '../../core/utils.js';
 import { CONFIG } from '../../config.js';
 import { VisibilityManager } from '../visibilityManager.js';
+import { icon } from '../icons.js';
 
 export const SmartCoachRenderer = {
     _container: null,
@@ -339,7 +340,7 @@ export const SmartCoachRenderer = {
             </div>
 
             <div class="coach-recommendations">
-                <h4>💡 Smart Recommendations</h4>
+                <h4>${icon('bulb', { size: 16 })} <span>Smart Recommendations</span></h4>
                 ${recsHtml}
             </div>
         `;

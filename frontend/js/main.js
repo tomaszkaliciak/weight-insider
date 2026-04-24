@@ -67,6 +67,11 @@ import { ProteinAdequacyRenderer } from "./ui/renderers/proteinAdequacyRenderer.
 import { WidgetOrderManager } from "./ui/widgetOrderManager.js";
 import { DashboardPresets } from "./ui/dashboardPresets.js";
 import { DateInputUX } from "./interactions/dateInputUX.js";
+import { SettingsService } from "./core/settingsService.js";
+import { SettingsPanel } from "./ui/settingsPanel.js";
+import { CalorieBudgetChip } from "./ui/calorieBudgetChip.js";
+import { RefeedRecommenderRenderer } from "./ui/renderers/refeedRecommenderRenderer.js";
+import { WhatIfOverlayRenderer } from "./ui/renderers/whatIfOverlayRenderer.js";
 
 /**
  * Defers renderer.init() until the element with anchorId enters the viewport.
@@ -141,13 +146,22 @@ async function initialize() {
     ManualEntryWidget.init();
     DateInputUX.init();
 
+    // 1g. Settings panel + calorie budget chip
+    SettingsPanel.init();
+    CalorieBudgetChip.init();
 
-    // 2. Load Settings (Read from CONFIG, dispatch to state)
-    const initialSettings = {
-      smaWindow: CONFIG.movingAverageWindow,
-      rollingVolatilityWindow: CONFIG.ROLLING_VOLATILITY_WINDOW,
-    };
-    StateManager.dispatch({ type: "LOAD_SETTINGS", payload: initialSettings });
+
+
+    // 2. Load Settings (persistent user settings, with schemaVersion + migrations)
+    const loadedSettings = SettingsService.load();
+    StateManager.dispatch({ type: "LOAD_SETTINGS", payload: loadedSettings });
+
+    // Apply motion preference class to body so CSS can disable transitions globally.
+    if (loadedSettings.animationsEnabled === false) {
+      document.body.classList.add("motion-reduced");
+    }
+    // Expose animation speed as a CSS variable so component-level transitions can respect it.
+    document.documentElement.style.setProperty("--motion-speed", String(loadedSettings.animationSpeed ?? 1));
 
     // 3. Initialize Theme (Reads localStorage, dispatches initial theme)
     ThemeManager.init(); // Sets up subscription and applies initial theme
@@ -213,19 +227,27 @@ async function initialize() {
     lazyInit(ProteinAdequacyRenderer,  'protein-adequacy-card');
     lazyInit(WeeklyReviewRenderer,     'weekly-review-card');
     lazyInit(CalorieHeatmapRenderer,   'calorie-heatmap-card');
-    lazyInit(CorrelationMatrixRenderer,'correlation-matrix-card');
+    lazyInit(CorrelationMatrixRenderer,  'correlation-matrix-card');
+    lazyInit(RefeedRecommenderRenderer,  'refeed-recommender-card');
+
+    // What-If overlay: subscribes to state, draws on main chart when pinned.
+    WhatIfOverlayRenderer.init();
 
     // 7. Fetch and Process Data
     const fetchedRaw = await DataService.fetchData();
     // Overlay any manually-entered records (localStorage) onto the fetched data.
     const rawDataObjects = ManualEntryService.mergeInto(fetchedRaw);
     const mergedData = DataService.mergeRawData(rawDataObjects);
-    // Apply processing steps sequentially using the new DataService methods
+    // Cache merged data so the settings panel can re-run the pipeline if analysis windows change.
+    SettingsPanel.setCachedData(mergedData);
+    // Apply processing steps sequentially using the new DataService methods.
+    // Pass user-configured window values so they take effect from first load.
+    const _s = loadedSettings;
     let processedData = DataService.calculateBodyComposition(mergedData);
-    processedData = DataService.calculateSMAAndStdDev(processedData);
-    processedData = DataService.calculateEMA(processedData);
+    processedData = DataService.calculateSMAAndStdDev(processedData, _s.smaWindow);
+    processedData = DataService.calculateEMA(processedData, _s.emaWindow);
     processedData = DataService.identifyOutliers(processedData);
-    processedData = DataService.calculateRollingVolatility(processedData); // Uses default window from CONFIG
+    processedData = DataService.calculateRollingVolatility(processedData, _s.rollingVolatilityWindow);
     processedData = DataService.calculateDailyRatesAndTDEETrend(processedData);
     processedData = DataService.calculateAdaptiveTDEE(processedData); // Uses default window from CONFIG
     processedData = DataService.smoothRatesAndTDEEDifference(processedData);

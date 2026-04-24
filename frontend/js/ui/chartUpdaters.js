@@ -15,6 +15,22 @@ import { TooltipManager } from "../interactions/tooltipManager.js";
 import { Utils } from "../core/utils.js";
 
 
+// --- C4: Transition helper ---
+// kind: 'continuous' (drag/zoom) | 'discrete' (range preset, goal save) | 'highlight' (hover)
+// Reads animationsEnabled / animationSpeed from a lazily-resolved state snapshot.
+let _stateRef = null; // set by MasterUpdater on each render cycle
+export function setTransitionStateRef(s) { _stateRef = s; }
+
+export function getChartTransition(kind) {
+  const settings = _stateRef?.settings ?? {};
+  if (settings.animationsEnabled === false) return d3.transition().duration(0);
+  const speed = settings.animationSpeed ?? 1.0;
+  if (kind === "continuous") return d3.transition().duration(0);
+  if (kind === "highlight")  return d3.transition().duration(Math.round(150 / speed)).ease(d3.easeQuadOut);
+  // 'discrete' — preset click, goal save, theme change
+  return d3.transition().duration(Math.round(550 / speed)).ease(d3.easeCubicInOut);
+}
+
 // --- Focus Chart Updater ---
 export const FocusChartUpdater = {
   /**
@@ -40,21 +56,25 @@ export const FocusChartUpdater = {
       );
       return;
     }
-    const dur = options.isInteractive ? 0 : CONFIG.transitionDurationMs;
+    const kind = options.isInteractive ? "continuous" : (options.kind ?? "discrete");
+    const t = getChartTransition(kind);
+    const dur = t.duration();
 
-    // Update main X axis (ensure scale is current)
+    // Update main X axis
     axes.xAxis.scale(scales.x);
-    const xAxisUpdate = ui.xAxisGroup;
     if (dur > 0) {
-      xAxisUpdate?.transition().duration(dur).call(axes.xAxis);
+      ui.xAxisGroup?.transition(t).call(axes.xAxis);
     } else {
-      xAxisUpdate?.call(axes.xAxis);
+      ui.xAxisGroup?.call(axes.xAxis);
     }
 
-    // Update main Y axis (ensure scale is current)
-    // Y-axis updates instantly during interactions as domain changes are complex
+    // Update main Y axis — now animated on discrete transitions too
     axes.yAxis.scale(scales.y);
-    ui.yAxisGroup?.call(axes.yAxis);
+    if (dur > 0 && !options.isInteractive) {
+      ui.yAxisGroup?.transition(t).call(axes.yAxis);
+    } else {
+      ui.yAxisGroup?.call(axes.yAxis);
+    }
 
     // Update Y grid lines based on the *current* Y-axis ticks
     // This ensures grid lines align correctly even with instant Y-axis updates.
@@ -98,11 +118,11 @@ export const FocusChartUpdater = {
     goalLineData,
     options = {},
   ) {
-    const dur = options.isInteractive ? 0 : CONFIG.transitionDurationMs;
+    const kind = options.isInteractive ? "continuous" : (options.kind ?? "discrete");
+    const t = getChartTransition(kind);
+    const dur = t.duration();
     if (!ui.chartArea || !scales.x || !scales.y) {
-      console.warn(
-        "FocusChartUpdater: Chart area or scales not ready for path update.",
-      );
+      console.warn("FocusChartUpdater: Chart area or scales not ready for path update.");
       return;
     }
     // Capture current scales for generators
@@ -144,6 +164,19 @@ export const FocusChartUpdater = {
         );
 
     const smaLineGen = lineGenFactory((d) => d.sma);
+
+    // Q1 — area under the SMA line, baseline at chart bottom (current y-domain lowest)
+    const yDomain = currentYScale.domain();
+    const yBaseline = currentYScale(yDomain[0]); // pixel of the lowest visible weight
+    const smaAreaGen = d3.area()
+      .x((d) => currentXScale(d.date))
+      .y0(yBaseline)
+      .y1((d) => currentYScale(d.sma))
+      .curve(d3.curveMonotoneX)
+      .defined((d) =>
+        d.date instanceof Date && !isNaN(d.date) &&
+        d.sma != null && isFinite(currentYScale(d.sma)) && isFinite(currentXScale(d.date)),
+      );
     const emaLineGen = lineGenFactory((d) => d.ema);
     const smaBandAreaGen = areaGenFactory(
       (d) => d.lowerBound,
@@ -171,15 +204,16 @@ export const FocusChartUpdater = {
       if (!selection || selection.empty()) return;
       const pathString =
         pathData && pathData.length > 0 ? generator(pathData) : ""; // Generate path string if data exists
-      if (dur > 0 && !options.isInteractive) {
-        selection.transition().duration(dur).attr("d", pathString);
+      if (dur > 0) {
+        selection.transition(t).attr("d", pathString);
       } else {
-        selection.attr("d", pathString); // Apply immediately
+        selection.attr("d", pathString);
       }
       // Visibility is handled by MasterUpdater setting display: none based on state.visibility
     };
 
     // --- UPDATE PATHS ---
+    updateSelection(ui.smaAreaFill, visibleValidSmaData, smaAreaGen); // Q1 — gradient fill
     updateSelection(ui.smaLine, visibleValidSmaData, smaLineGen);
     updateSelection(ui.bandArea, visibleValidSmaData, smaBandAreaGen);
     updateSelection(ui.emaLine, visibleValidEmaData, emaLineGen);
@@ -253,7 +287,9 @@ export const FocusChartUpdater = {
     activeHoverData = null,
     options = {},
   ) {
-    const dur = options.isInteractive ? 0 : CONFIG.transitionDurationMs / 2; // Faster transition for dots
+    const kind = options.isInteractive ? "continuous" : (options.kind ?? "discrete");
+    const t = getChartTransition(kind);
+    const dur = t.duration();
     if (!ui.rawDotsGroup || !scales.x || !scales.y) {
       console.warn("FocusChartUpdater: Raw dots group or scales not ready.");
       return;
@@ -290,18 +326,16 @@ export const FocusChartUpdater = {
           .on("mouseout", ChartInteractions.dotMouseOut)  // Use ChartInteractions
           .on("click", ChartInteractions.dotClick)        // Use ChartInteractions
           .call((enter) =>
-            enter.transition().duration(dur).style("opacity", 0.4),
-          ), // Fade in
+            enter.transition(t).style("opacity", 0.4),
+          ),
       (update) =>
         update
-          // Ensure handlers are attached on update too
-          .on("mouseover", ChartInteractions.dotMouseOver) // Use ChartInteractions
-          .on("mouseout", ChartInteractions.dotMouseOut)  // Use ChartInteractions
-          .on("click", ChartInteractions.dotClick)        // Use ChartInteractions
+          .on("mouseover", ChartInteractions.dotMouseOver)
+          .on("mouseout", ChartInteractions.dotMouseOut)
+          .on("click", ChartInteractions.dotClick)
           .call((update) =>
             update
-              .transition()
-              .duration(dur) // Transition existing dots
+              .transition(t)
               .attr("cx", (d) => scales.x(d.date))
               .attr("cy", (d) => scales.y(d.value))
               .attr("r", (d) => {

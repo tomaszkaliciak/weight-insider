@@ -167,15 +167,5 @@ export const EventHandlers = {
       }
     });
 
-    // Metric toggle event listeners
-    d3.selectAll('.metric-checkbox').on('change', function() {
-      const metric = this.getAttribute('data-metric');
-      const isVisible = this.checked;
-
-      StateManager.dispatch({
-        type: ActionTypes.TOGGLE_METRIC_VISIBILITY,
-        payload: { metric, isVisible }
-      });
-    });
   },
 };

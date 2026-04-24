@@ -234,6 +234,15 @@ export const GoalSimulatorRenderer = {
         );
     },
 
+    // A1: What-If simulator state (persists across renders)
+    _whatIfCalorieDelta: 0,       // kcal/day vs current intake
+    _whatIfRateOverride: null,    // kg/wk; null = use calorie-derived rate
+
+    _whatIfComputeRate(calorieDelta) {
+        // Δkcal/day → Δkg/wk via 7700 kcal/kg
+        return calorieDelta / 7700 * 7;
+    },
+
     _render() {
         if (!this._container) return;
 
@@ -242,6 +251,7 @@ export const GoalSimulatorRenderer = {
         const currentRate = displayStats.currentWeeklyRate || 0;
         const currentWeight = displayStats.currentWeight;
         const volatility = displayStats.volatility || 0.5;
+        const currentTDEE = displayStats.adaptiveTDEE ?? displayStats.currentTDEE ?? null;
         const confidence = this._calculateGoalConfidence(state, displayStats);
         const guardrails = this._buildGoalGuardrails(state, displayStats, confidence);
         const quickActions = this._buildGoalActions(state, displayStats);
@@ -258,6 +268,24 @@ export const GoalSimulatorRenderer = {
 
         const startDate = new Date();
         const projectionDays = 90;
+
+        // What-If scenario using slider values
+        const whatIfRate = this._whatIfRateOverride !== null
+            ? this._whatIfRateOverride
+            : currentRate + this._whatIfComputeRate(this._whatIfCalorieDelta);
+        const whatIfETA = Math.abs(whatIfRate) > 0.01 && state.goal?.weight != null
+            ? (() => {
+                const diff = state.goal.weight - currentWeight;
+                const weeks = diff / whatIfRate;
+                if (!isFinite(weeks) || weeks < 0) return null;
+                const d = new Date(startDate);
+                d.setDate(d.getDate() + Math.round(weeks * 7));
+                return d;
+              })()
+            : null;
+        const whatIfCalorieTarget = currentTDEE != null
+            ? Math.round(currentTDEE + (whatIfRate / 7) * 7700)
+            : null;
 
         // Define Scenarios
         const scenarios = [
@@ -319,6 +347,28 @@ export const GoalSimulatorRenderer = {
                     `).join('')}
                 </div>
             ` : ''}
+            <!-- A1: What-If Simulator -->
+            <div class="whatif-section">
+                <div class="whatif-header">
+                    <span class="whatif-title">What-If Simulator</span>
+                </div>
+                <div class="whatif-row">
+                    <label class="whatif-label">Calorie delta <span class="whatif-value-badge" id="wi-cal-val">${this._whatIfCalorieDelta > 0 ? '+' : ''}${this._whatIfCalorieDelta} kcal/day</span></label>
+                    <input type="range" id="wi-cal-slider" class="whatif-slider" min="-800" max="800" step="50" value="${this._whatIfCalorieDelta}">
+                </div>
+                <div class="whatif-row">
+                    <label class="whatif-label">Target rate <span class="whatif-value-badge" id="wi-rate-val">${whatIfRate > 0 ? '+' : ''}${whatIfRate.toFixed(2)} kg/wk</span></label>
+                    <input type="range" id="wi-rate-slider" class="whatif-slider" min="-1.5" max="0.5" step="0.05" value="${this._whatIfRateOverride !== null ? this._whatIfRateOverride : whatIfRate.toFixed(2)}">
+                </div>
+                <div class="whatif-outputs">
+                    ${whatIfCalorieTarget != null ? `<span class="whatif-chip">Budget: <strong>${whatIfCalorieTarget.toLocaleString()} kcal</strong></span>` : ''}
+                    ${whatIfETA ? `<span class="whatif-chip">ETA: <strong>${whatIfETA.toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'})}</strong></span>` : ''}
+                </div>
+                <div class="whatif-actions">
+                    <button type="button" class="btn-primary whatif-pin-btn" id="wi-pin-btn">📌 Pin to chart</button>
+                    <button type="button" class="btn-secondary whatif-clear-btn" id="wi-clear-btn">Clear</button>
+                </div>
+            </div>
             <div class="sim-legend">
                 ${scenarios.map(s => `
                     <div class="sim-legend-item">
@@ -337,6 +387,44 @@ export const GoalSimulatorRenderer = {
                 if (action) this._applyGoalAction(action.apply);
             });
         });
+
+        // A1: wire up sliders
+        const _self = this;
+        const calSlider  = this._container.querySelector('#wi-cal-slider');
+        const rateSlider = this._container.querySelector('#wi-rate-slider');
+        const calBadge   = this._container.querySelector('#wi-cal-val');
+        const rateBadge  = this._container.querySelector('#wi-rate-val');
+        const pinBtn     = this._container.querySelector('#wi-pin-btn');
+        const clearBtn   = this._container.querySelector('#wi-clear-btn');
+
+        const recompute = () => {
+            _self._whatIfCalorieDelta = parseInt(calSlider.value, 10);
+            _self._whatIfRateOverride = parseFloat(rateSlider.value);
+            const sign = v => v > 0 ? '+' : '';
+            if (calBadge) calBadge.textContent = `${sign(_self._whatIfCalorieDelta)}${_self._whatIfCalorieDelta} kcal/day`;
+            if (rateBadge) rateBadge.textContent = `${sign(_self._whatIfRateOverride)}${_self._whatIfRateOverride.toFixed(2)} kg/wk`;
+        };
+
+        calSlider?.addEventListener('input', recompute);
+        rateSlider?.addEventListener('input', recompute);
+
+        pinBtn?.addEventListener('click', () => {
+            const rate = _self._whatIfRateOverride ?? whatIfRate;
+            const pts = _self._projectScenario(startDate, currentWeight, rate, 120, volatility);
+            StateManager.dispatch({
+                type: 'SET_SIMULATION_OVERLAY',
+                payload: { points: pts.map(p => ({ date: p.date, weight: p.weight })), rateKgWeek: rate, etaDate: whatIfETA },
+            });
+            Utils.showStatusMessage('What-If overlay pinned to main chart.', 'info', 2500);
+        });
+
+        clearBtn?.addEventListener('click', () => {
+            StateManager.dispatch({ type: 'SET_SIMULATION_OVERLAY', payload: null });
+            _self._whatIfCalorieDelta = 0;
+            _self._whatIfRateOverride = null;
+            _self._render();
+        });
+
         this._renderChart(scenarios, projectionDays);
     },
 

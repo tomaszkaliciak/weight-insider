@@ -178,13 +178,52 @@ function createSVGElements() {
       .attr("aria-label", "Main Weight Chart")
       .attr("role", "img");
 
-    ui.svg
-      .append("defs")
+    const focusDefs = ui.svg.append("defs");
+    focusDefs
       .append("clipPath")
       .attr("id", "clip-focus")
       .append("rect")
       .attr("width", width)
       .attr("height", height);
+
+    // Q1 — gradient fill under the SMA line (subtle — lives under the band-area)
+    const smaGradient = focusDefs
+      .append("linearGradient")
+      .attr("id", "sma-area-gradient")
+      .attr("x1", "0%").attr("y1", "0%")
+      .attr("x2", "0%").attr("y2", "100%");
+    smaGradient.append("stop").attr("offset", "0%")
+      .attr("stop-color", "var(--sma-color)")
+      .attr("stop-opacity", 0.18);
+    smaGradient.append("stop").attr("offset", "100%")
+      .attr("stop-color", "var(--sma-color)")
+      .attr("stop-opacity", 0);
+
+    // Q4 — soft shadow under the SMA line (applied only on light/gruvbox, dark uses glow)
+    const lineShadow = focusDefs.append("filter")
+      .attr("id", "line-shadow")
+      .attr("x", "-20%").attr("y", "-20%")
+      .attr("width", "140%").attr("height", "140%");
+    lineShadow.append("feGaussianBlur")
+      .attr("in", "SourceAlpha").attr("stdDeviation", 2);
+    lineShadow.append("feOffset").attr("dy", 2);
+    lineShadow.append("feComponentTransfer")
+      .append("feFuncA").attr("type", "linear").attr("slope", 0.15);
+    const shadowMerge = lineShadow.append("feMerge");
+    shadowMerge.append("feMergeNode");
+    shadowMerge.append("feMergeNode").attr("in", "SourceGraphic");
+
+    // U3 — dark-mode line glow (neon halo) applied via CSS on body.dark-theme
+    const lineGlow = focusDefs.append("filter")
+      .attr("id", "line-glow")
+      .attr("x", "-20%").attr("y", "-20%")
+      .attr("width", "140%").attr("height", "140%");
+    lineGlow.append("feGaussianBlur")
+      .attr("in", "SourceGraphic").attr("stdDeviation", 1.5)
+      .attr("result", "blur");
+    const glowMerge = lineGlow.append("feMerge");
+    glowMerge.append("feMergeNode").attr("in", "blur");
+    glowMerge.append("feMergeNode").attr("in", "SourceGraphic");
 
     ui.zoomCaptureRect = ui.svg
       .append("rect")
@@ -216,6 +255,8 @@ function createSVGElements() {
     // Elements within chartArea - ORDER IS CRITICAL FOR LAYERING
 
     // 1. Areas (drawn first, underneath lines)
+    // Q1 — SMA gradient fill goes behind band area so they layer cleanly
+    ui.smaAreaFill = ui.chartArea.append("path").attr("class", "area sma-area-fill");
     ui.bandArea = ui.chartArea.append("path").attr("class", "area band-area");
 
     // 2. Trend/Reference Lines (drawn after areas, before main data lines/dots)

@@ -13,6 +13,7 @@ import {
   RateChartUpdater,
   TDEEDiffChartUpdater,
   ScatterPlotUpdater,
+  setTransitionStateRef,
 } from "./chartUpdaters.js";
 import { CONFIG } from "../config.js";
 import { ChartInteractions } from "../interactions/chartInteractions.js";
@@ -123,6 +124,7 @@ export const MasterUpdater = {
     requestAnimationFrame(() => {
       try {
         const stateSnapshot = StateManager.getState(); // Get current state once
+        setTransitionStateRef(stateSnapshot); // C4: feed settings to transition helper
 
         // --- Initialization Guard ---
         if (

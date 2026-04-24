@@ -41,7 +41,8 @@ export const ActionTypes = {
   SET_GOAL_LINE_DATA: "SET_GOAL_LINE_DATA",
   SET_PERIODIZATION_PHASES: "SET_PERIODIZATION_PHASES",
   SET_WORKOUT_CORRELATION: "SET_WORKOUT_CORRELATION",
-  TOGGLE_METRIC_VISIBILITY: "TOGGLE_METRIC_VISIBILITY",
+  UPDATE_SETTINGS: "UPDATE_SETTINGS",
+  SET_SIMULATION_OVERLAY: "SET_SIMULATION_OVERLAY",
 };
 
 // Define the initial structure and default values of the state
@@ -68,11 +69,6 @@ const initialState = {
     trendChanges: true,
     rateMA: true,
   },
-  metricVisibility: {
-    weight: true,
-    calories: false,
-    tdee: false,
-  },
   trendConfig: {
     startDate: null,
     initialWeight: null,
@@ -88,7 +84,20 @@ const initialState = {
   tooltipTimeoutId: null,
   sortColumnKey: "weekStartDate",
   sortDirection: "asc",
-  settings: { smaWindow: null, rollingVolatilityWindow: null },
+  // Settings slice — populated from SettingsService on startup.
+  settings: {
+    weightUnit: "kg",
+    dateFormat: "dmy",
+    weekStart: "mon",
+    smaWindow: null,
+    emaWindow: null,
+    rollingVolatilityWindow: null,
+    animationsEnabled: true,
+    animationSpeed: 1.0,
+    budgetUseMaintenance: false,
+  },
+  // A1 what-if simulator overlay — when non-null, masterUpdater draws a ghost line.
+  simulationOverlay: null, // { points: [{date, weight}], rateKgWeek, etaDate } | null
 
   // --- Derived State ---
   processedData: [],
@@ -263,14 +272,6 @@ function reducer(currentState, action) {
           ? action.payload
           : null;
       break;
-    case ActionTypes.TOGGLE_METRIC_VISIBILITY:
-      if (Object.prototype.hasOwnProperty.call(currentState.metricVisibility, action.payload.metric)) {
-        nextState.metricVisibility = {
-          ...currentState.metricVisibility,
-          [action.payload.metric]: action.payload.isVisible
-        };
-      }
-      break;
     case ActionTypes.SET_PINNED_TOOLTIP:
       nextState.pinnedTooltipData = action.payload;
       break;
@@ -309,6 +310,12 @@ function reducer(currentState, action) {
       break;
     case ActionTypes.LOAD_SETTINGS:
       nextState.settings = { ...nextState.settings, ...(action.payload || {}) };
+      break;
+    case ActionTypes.UPDATE_SETTINGS:
+      nextState.settings = { ...nextState.settings, ...(action.payload || {}) };
+      break;
+    case ActionTypes.SET_SIMULATION_OVERLAY:
+      nextState.simulationOverlay = action.payload || null;
       break;
     case ActionTypes.UPDATE_TREND_CONFIG:
       const { startDate, initialWeight, weeklyIncrease1, weeklyIncrease2 } =
@@ -461,6 +468,9 @@ export const StateManager = {
       SET_SORT_OPTIONS: "state:sortOptionsChanged",
       SET_DISPLAY_STATS: "state:displayStatsUpdated",
       SET_PERIODIZATION_PHASES: "state:periodizationPhasesChanged",
+      UPDATE_SETTINGS: "state:settingsChanged",
+      LOAD_SETTINGS: "state:settingsChanged",
+      SET_SIMULATION_OVERLAY: "state:simulationOverlayChanged",
       INITIALIZATION_COMPLETE: "state:initializationComplete",
       SET_HIGHLIGHTED_DATE: "state:highlightedDateChanged",
       SET_PINNED_TOOLTIP: "state:pinnedTooltipDataChanged",
@@ -535,6 +545,13 @@ export const StateManager = {
           break;
         case "SET_PERIODIZATION_PHASES":
           eventPayload = { phases: state.periodizationPhases };
+          break;
+        case "LOAD_SETTINGS":
+        case "UPDATE_SETTINGS":
+          eventPayload = { settings: state.settings, changed: Object.keys(action.payload || {}) };
+          break;
+        case "SET_SIMULATION_OVERLAY":
+          eventPayload = { overlay: state.simulationOverlay };
           break;
         case "INITIALIZATION_COMPLETE":
           eventPayload = {};

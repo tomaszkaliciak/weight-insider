@@ -177,8 +177,7 @@ export const DataService = {
     });
   },
 
-  calculateSMAAndStdDev(data) {
-    const windowSize = CONFIG.movingAverageWindow;
+  calculateSMAAndStdDev(data, windowSize = CONFIG.movingAverageWindow) {
     const stdDevMult = CONFIG.stdDevMultiplier;
     return data.map((d, i, arr) => {
       const windowDataPoints = arr.slice(
@@ -218,8 +217,7 @@ export const DataService = {
     });
   },
 
-  calculateEMA(data) {
-    const windowSize = CONFIG.emaWindow;
+  calculateEMA(data, windowSize = CONFIG.emaWindow) {
     if (windowSize <= 0) return data;
     const alpha = 2 / (windowSize + 1);
     let previousEMA = null;

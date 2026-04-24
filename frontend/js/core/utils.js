@@ -43,6 +43,32 @@ export const Utils = {
       : "N/A";
   },
 
+  // --- Unit conversion helpers (D1 settings panel) ---
+
+  /** Convert kg to display unit. Canonical storage is always kg. */
+  fromKg(valueKg, unit = "kg") {
+    if (valueKg == null || !isFinite(valueKg)) return null;
+    return unit === "lb" ? valueKg * 2.2046226218 : valueKg;
+  },
+
+  /** Convert user-entered value back to kg. */
+  toKg(value, unit = "kg") {
+    if (value == null || !isFinite(value)) return null;
+    return unit === "lb" ? value / 2.2046226218 : value;
+  },
+
+  /**
+   * Format a kg weight value in the user's preferred unit.
+   * @param {number|null} valueKg
+   * @param {string} unit 'kg' | 'lb'
+   * @param {number} [decimals=2]
+   * @param {boolean} [withUnit=false] append unit label
+   */
+  formatWeight(valueKg, unit = "kg", decimals = 2, withUnit = false) {
+    const body = this.formatValue(this.fromKg(valueKg, unit), decimals);
+    return withUnit && body !== "N/A" ? `${body}\u00a0${unit}` : body;
+  },
+
   /**
    * Formats a Date object or a valid date string as 'YYYY-MM-DD', returning 'N/A' for invalid inputs.
    * @param {Date|string|null|undefined} dateInput - The Date object or string to format.
@@ -228,33 +254,20 @@ export const Utils = {
     type = "info",
     duration = CONFIG.statusMessageDurationMs,
   ) {
-    // Static variable within the function scope to hold the timeout ID
-    if (typeof this.statusTimeoutId === "undefined") {
-      this.statusTimeoutId = null;
-    }
-
-    if (!ui.statusMessage || ui.statusMessage.empty()) {
-      console.warn("Status message UI element not found in cache.");
-      return;
-    }
-
-    // Clear any existing timeout for the status message
-    if (this.statusTimeoutId) {
-      clearTimeout(this.statusTimeoutId);
-      this.statusTimeoutId = null; // Reset the stored ID
-    }
-
-    // Update and show the message
-    ui.statusMessage
-      .attr("class", `status-message ${type}`) // Set classes first
-      .text(message) // Then set text
-      .classed("show", true); // Then add show class
-
-    // Create new timeout and store its ID
-    this.statusTimeoutId = setTimeout(() => {
-      ui.statusMessage.classed("show", false);
-      this.statusTimeoutId = null; // Clear the stored ID when timeout executes
-    }, duration);
+    // V4 — delegate to the toast stack (ToastManager is loaded lazily to avoid
+    // circular imports; utils is imported extremely early in the boot chain).
+    import("../ui/toastManager.js").then(({ showToast }) => {
+      showToast(message, type, duration);
+    }).catch((err) => {
+      // Fallback: if ToastManager fails to load, fall back to the old inline banner.
+      console.warn("[Utils] ToastManager unavailable, falling back to status message.", err);
+      if (!ui.statusMessage || ui.statusMessage.empty()) return;
+      ui.statusMessage
+        .attr("class", `status-message ${type}`)
+        .text(message)
+        .classed("show", true);
+      setTimeout(() => ui.statusMessage.classed("show", false), duration);
+    });
   },
 
   /**

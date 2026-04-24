@@ -41,6 +41,10 @@ export const selectTrendLine2Points = (state) => state.trendLine2Points;
 export const selectGoalLinePoints = (state) => state.goalLinePoints;
 export const selectPeriodizationPhases = (state) => state.periodizationPhases;
 export const selectWorkoutCorrelation = (state) => state.workoutCorrelation;
+export const selectSimulationOverlay = (state) => state.simulationOverlay;
+export const selectWeightUnit = (state) => state.settings?.weightUnit ?? "kg";
+export const selectAnimationsEnabled = (state) => state.settings?.animationsEnabled !== false;
+export const selectAnimationSpeed = (state) => state.settings?.animationSpeed ?? 1.0;
 
 // --- Derived/Calculated Selectors ---
 

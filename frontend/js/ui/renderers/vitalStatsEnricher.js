@@ -49,16 +49,25 @@ export const VitalStatsEnricher = {
             }
         }
 
-        // ── Change card: context label (new-low, streak, phase) ───────
+        // ── Change card: context label (new-low, recent trend) ───────
+        // Uses recent weekly rate (end of analysis range), not lifetime net change.
         const changeD = document.getElementById('vs-delta-change');
         if (changeD) {
-            const tc = stats.totalChangeFromStart;
-            if (tc != null) {
+            const recentRate =
+                stats.currentWeeklyRate ??
+                stats.rollingWeeklyChangeSma ??
+                stats.regressionSlopeWeekly;
+            if (recentRate != null && !isNaN(recentRate)) {
                 if (stats.currentSma != null && stats.minWeight != null && Math.abs(stats.currentSma - stats.minWeight) < 0.3) {
                     changeD.textContent = '🎯 New low!';
                     changeD.className = 'stat-delta stat-delta--special';
                 } else {
-                    const direction = tc < -0.5 ? 'Cutting ↓' : tc > 0.5 ? 'Gaining ↑' : 'Steady →';
+                    // Match SMA card neutral band (kg/wk) for Cutting / Gaining / Steady
+                    const band = 0.03;
+                    const direction =
+                        recentRate < -band ? 'Cutting ↓' :
+                            recentRate > band ? 'Gaining ↑' :
+                                'Steady →';
                     changeD.textContent = direction;
                     changeD.className = 'stat-delta stat-delta--neutral';
                 }
