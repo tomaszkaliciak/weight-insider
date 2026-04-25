@@ -791,10 +791,19 @@ body.dark-theme .highlight-trigger:hover .stat-date.highlightable {
 }
 
 .axis text {
+    /* Q3 — axis typography upgrade */
     fill: var(--text-muted);
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-family: var(--font-sans);
+    font-weight: 400;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
     transition: fill var(--transition-speed) var(--transition-ease);
+}
+
+.axis .domain {
+    stroke: var(--border-color);
+    stroke-opacity: 0.35;
 }
 
 .axis-label {
@@ -811,13 +820,26 @@ body.dark-theme .highlight-trigger:hover .stat-date.highlightable {
 
 .grid line {
     stroke: var(--border-color);
-    stroke-opacity: 0.3;
+    stroke-opacity: 0.25;
     shape-rendering: crispEdges;
     transition: stroke var(--transition-speed) var(--transition-ease);
 }
 
 .grid path {
     stroke-width: 0;
+}
+
+/* Q3 — fade gridlines at horizontal edges */
+.y-grid {
+    -webkit-mask-image: linear-gradient(90deg, transparent 0%, black 6%, black 94%, transparent 100%);
+            mask-image: linear-gradient(90deg, transparent 0%, black 6%, black 94%, transparent 100%);
+}
+
+/* U3 — on dark/gruvbox themes, swap the SMA line's soft shadow for a subtle glow.
+   Only the SMA line gets the treatment so the other lines stay crisp. */
+body.dark-theme .line.sma-line,
+body.gruvbox-theme .line.sma-line {
+    filter: url(#line-glow);
 }
 
 .axis-label.y-axis-label-small {
@@ -853,7 +875,18 @@ body.dark-theme .highlight-trigger:hover .stat-date.highlightable {
 
 .line.sma-line {
     stroke: var(--sma-color);
-    stroke-width: 2px;
+    stroke-width: 2.5px;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+    filter: url(#line-shadow);
+}
+
+/* Q1 — SMA area gradient fill */
+.area.sma-area-fill {
+    fill: url(#sma-area-gradient);
+    stroke: none;
+    pointer-events: none;
 }
 
 .area.band-area {
@@ -880,7 +913,9 @@ body.dark-theme .highlight-trigger:hover .stat-date.highlightable {
 
 .trend-line.regression-line {
     stroke: var(--regression-color);
-    stroke-width: 2px;
+    stroke-width: 1.5px;
+    stroke-dasharray: 6 3;
+    opacity: 0.85;
 }
 
 .trend-line.goal-line {

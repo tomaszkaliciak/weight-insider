@@ -1568,9 +1568,7 @@ body.dark-theme .glass-box {
     background: linear-gradient(180deg, var(--bg-secondary), var(--panel-bg));
     border-radius: 24px;
     border: 1px solid var(--border-color-light);
-    box-shadow:
-        0 4px 6px -1px rgba(0, 0, 0, 0.02),
-        0 12px 24px -8px var(--shadow-color);
+    box-shadow: var(--elev-1);
     padding: 24px;
     display: flex;
     flex-direction: column;
@@ -1580,9 +1578,59 @@ body.dark-theme .glass-box {
     backdrop-filter: blur(10px);
 }
 
+/* P2 — Elevation tiers */
+.bento-widget.tier-primary {
+    box-shadow: var(--elev-2);
+}
+
+.bento-widget.tier-hero {
+    background: var(--hero-gradient);
+    box-shadow: var(--elev-3);
+}
+
+/* V2 — hover lift (honours motion-reduced) */
 .bento-widget:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 16px 30px -12px var(--shadow-hover);
+    transform: translateY(var(--lift-y));
+    box-shadow: var(--lift-shadow);
+}
+
+body.motion-reduced .bento-widget:hover {
+    transform: none;
+}
+
+/* T3 — animated spotlight border on focused widget */
+@property --spotlight-angle {
+    syntax: "<angle>";
+    initial-value: 0deg;
+    inherits: false;
+}
+
+@keyframes spotlight-rotate {
+    to { --spotlight-angle: 360deg; }
+}
+
+.bento-widget.widget-spotlight::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    background: var(--spotlight-gradient);
+    -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+            mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+            mask-composite: exclude;
+    animation: spotlight-rotate 6s linear infinite;
+    pointer-events: none;
+    z-index: 1;
+}
+
+body.motion-reduced .bento-widget.widget-spotlight::before {
+    animation: none;
 }
 
 .bento-widget::before {

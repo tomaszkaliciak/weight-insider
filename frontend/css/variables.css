@@ -142,6 +142,53 @@ body.gruvbox-theme #theme-toggle svg {
     --font-mono: "Fira Code", SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     --border-radius-sm: 12px;
     --border-radius-md: 18px;
+
+    /* --- Phase 1 visual polish tokens --- */
+
+    /* Elevation tiers — layered shadows for depth */
+    --elev-1: 0 1px 2px hsla(var(--hue-neutral), 25%, 50%, 0.04);
+    --elev-2: 0 2px 4px hsla(var(--hue-neutral), 25%, 50%, 0.05),
+              0 8px 16px hsla(var(--hue-neutral), 25%, 50%, 0.05);
+    --elev-3: 0 4px 8px hsla(var(--hue-neutral), 25%, 50%, 0.06),
+              0 16px 32px hsla(var(--hue-neutral), 25%, 50%, 0.08);
+    --lift-shadow: 0 6px 14px hsla(var(--hue-neutral), 25%, 50%, 0.10),
+                   0 20px 40px hsla(var(--hue-neutral), 25%, 50%, 0.08);
+    --lift-y: -2px;
+
+    /* Hero card gradient — subtle primary-tinted wash */
+    --hero-gradient: linear-gradient(
+        135deg,
+        hsla(var(--hue-primary), 60%, 98%, 1) 0%,
+        hsla(var(--hue-neutral), 35%, 100%, 1) 100%
+    );
+
+    /* Surfaces */
+    --glass-bg: hsla(var(--hue-neutral), 35%, 100%, 0.72);
+    --glass-blur: 20px;
+    --grain-opacity: 0.035;
+
+    /* Dark-mode extras (overridden below in .dark-theme) */
+    --aurora-opacity: 0;
+    --line-glow-filter: none;
+
+    /* Animated gradient border colors */
+    --spotlight-gradient: conic-gradient(
+        from var(--spotlight-angle, 0deg),
+        var(--primary-color),
+        var(--accent-color),
+        var(--secondary-color),
+        var(--primary-color)
+    );
+}
+
+/* Tabular numerics for stats and hero values (alignment in columns) */
+.stat-value,
+.text-hero,
+.text-subhero,
+.kpi-value,
+.budget-value,
+.settings-range-val {
+    font-variant-numeric: tabular-nums;
 }
 
 body.dark-theme {
@@ -226,6 +273,24 @@ body.dark-theme {
 
     --table-header-bg: hsl(217, 33%, 22%);
     --table-row-hover: hsl(217, 33%, 25%);
+
+    /* Phase 1 — dark-mode tokens */
+    --elev-1: 0 1px 2px rgba(0, 0, 0, 0.25);
+    --elev-2: 0 2px 4px rgba(0, 0, 0, 0.25),
+              0 8px 16px rgba(0, 0, 0, 0.35);
+    --elev-3: 0 4px 8px rgba(0, 0, 0, 0.35),
+              0 16px 32px rgba(0, 0, 0, 0.45);
+    --lift-shadow: 0 6px 14px rgba(0, 0, 0, 0.45),
+                   0 20px 40px rgba(0, 0, 0, 0.35);
+    --hero-gradient: linear-gradient(
+        135deg,
+        hsla(var(--hue-primary), 50%, 22%, 1) 0%,
+        hsla(217, 33%, 17%, 1) 100%
+    );
+    --glass-bg: hsla(217, 33%, 17%, 0.72);
+    --grain-opacity: 0.05;
+    --aurora-opacity: 0.8;
+    --line-glow-filter: drop-shadow(0 0 6px currentColor);
 }
 
 /* ─── Gruvbox Dark Theme ──────────────────────────────────────────────────────
@@ -314,4 +379,22 @@ body.gruvbox-theme {
     --crosshair-color:         #a89984;
     --scatter-dot-color:       #d5c4a1;
     --outlier-color:           #fb4934;
+
+    /* Phase 1 — gruvbox tokens */
+    --elev-1: 0 1px 2px rgba(0, 0, 0, 0.35);
+    --elev-2: 0 2px 4px rgba(0, 0, 0, 0.35),
+              0 8px 16px rgba(0, 0, 0, 0.45);
+    --elev-3: 0 4px 8px rgba(0, 0, 0, 0.45),
+              0 16px 32px rgba(0, 0, 0, 0.55);
+    --lift-shadow: 0 6px 14px rgba(0, 0, 0, 0.55),
+                   0 20px 40px rgba(0, 0, 0, 0.45);
+    --hero-gradient: linear-gradient(
+        135deg,
+        #32302f 0%,
+        #282828 100%
+    );
+    --glass-bg: rgba(40, 40, 40, 0.72);
+    --grain-opacity: 0.05;
+    --aurora-opacity: 0.6;
+    --line-glow-filter: drop-shadow(0 0 4px currentColor);
 }

@@ -24,10 +24,63 @@ body {
     line-height: 1.6;
     font-size: 16px;
     letter-spacing: -0.01em;
+    position: relative;
     /* Modern font feel */
     transition:
         background-color var(--transition-speed) var(--transition-ease),
         color var(--transition-speed) var(--transition-ease);
+}
+
+/* T2 — subtle film-grain texture on page background (fixed, non-interactive) */
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: var(--grain-opacity);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.7 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* U1 — Aurora radial-glow background (primarily dark mode via --aurora-opacity token) */
+body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: var(--aurora-opacity, 0);
+    background:
+        radial-gradient(ellipse 60% 45% at 15% 20%,
+            hsla(var(--hue-primary), 70%, 55%, 0.28),
+            transparent 70%),
+        radial-gradient(ellipse 55% 40% at 85% 30%,
+            hsla(var(--hue-goal), 60%, 65%, 0.22),
+            transparent 70%),
+        radial-gradient(ellipse 65% 50% at 50% 85%,
+            hsla(var(--hue-secondary), 60%, 55%, 0.18),
+            transparent 70%);
+    filter: blur(60px);
+    animation: aurora-drift 32s ease-in-out infinite alternate;
+    transition: opacity 0.4s ease;
+}
+
+@keyframes aurora-drift {
+    0%   { transform: translate3d(0, 0, 0) scale(1); }
+    50%  { transform: translate3d(2%, -1%, 0) scale(1.06); }
+    100% { transform: translate3d(-2%, 1%, 0) scale(1); }
+}
+
+body.motion-reduced::after {
+    animation: none;
+}
+
+/* Ensure main content sits above the grain + aurora layers */
+body > header,
+body > main,
+body > #status-message {
+    position: relative;
+    z-index: 1;
 }
 
 /* --- Scrollbar --- */
@@ -516,8 +569,10 @@ body.dark-theme ::-webkit-scrollbar-thumb:hover {
 
 .line.ema-line {
     stroke: var(--ema-color);
-    stroke-width: 2px;
+    stroke-width: 1.5px;
     stroke-dasharray: 5, 3;
+    stroke-linecap: round;
+    opacity: 0.75;
     fill: none;
     transition:
         stroke var(--transition-speed) var(--transition-ease),
