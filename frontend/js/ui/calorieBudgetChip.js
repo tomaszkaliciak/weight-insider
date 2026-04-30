@@ -4,6 +4,8 @@
 
 import { StateManager } from "../core/stateManager.js";
 import { SettingsService } from "../core/settingsService.js";
+import { CONFIG } from "../config.js";
+import { Utils } from "../core/utils.js";
 
 let _chip, _popover, _valueEl, _tdeeEl, _adjEl, _loggedEl, _barEl, _mainToggle;
 let _open = false;
@@ -12,11 +14,21 @@ function _update() {
   const state = StateManager.getState();
   const stats = state.displayStats || {};
   const settings = state.settings || {};
+  const data = state.filteredData?.length ? state.filteredData : state.processedData;
+  const latestCaloriePoint = [...(data || [])].reverse().find(d => d.calorieIntake != null);
 
   const useMaintenance = settings.budgetUseMaintenance;
-  const tdee = stats.adaptiveTDEE ?? stats.currentTDEE ?? null;
-  const target = useMaintenance ? tdee : (stats.suggestedIntakeTarget ?? null);
-  const logged = stats.todaysCalories ?? stats.latestCalories ?? null;
+  const tdee =
+    stats.avgTDEE_Adaptive ??
+    stats.avgTDEE_WgtChange ??
+    stats.avgExpenditureGFit ??
+    null;
+  const targetFromRate =
+    tdee != null && state.goal?.targetRate != null
+      ? tdee + (state.goal.targetRate / 7) * CONFIG.KCALS_PER_KG
+      : null;
+  const target = useMaintenance ? tdee : (stats.suggestedIntakeTarget ?? targetFromRate ?? null);
+  const logged = latestCaloriePoint?.calorieIntake ?? null;
 
   // Chip value
   if (_valueEl) {
@@ -25,7 +37,7 @@ function _update() {
     } else if (!state.goal?.weight) {
       _valueEl.textContent = "Set goal";
     } else {
-      _valueEl.textContent = "—";
+      _valueEl.textContent = "Needs TDEE";
     }
   }
 
@@ -41,7 +53,7 @@ function _update() {
 
   // Popover content
   const tdeeSource = stats.baselineTDEESource ?? "adaptive";
-  if (_tdeeEl) _tdeeEl.textContent = tdee != null ? `${Math.round(tdee).toLocaleString()} kcal (${tdeeSource})` : "—";
+  if (_tdeeEl) _tdeeEl.textContent = tdee != null ? `${Math.round(tdee).toLocaleString()} kcal (${tdeeSource})` : "No TDEE yet";
 
   const adj = target != null && tdee != null ? target - tdee : null;
   if (_adjEl) {
@@ -54,7 +66,12 @@ function _update() {
     }
   }
 
-  if (_loggedEl) _loggedEl.textContent = logged != null ? `${Math.round(logged).toLocaleString()} kcal` : "—";
+  if (_loggedEl) {
+    const loggedDate = latestCaloriePoint?.date instanceof Date
+      ? ` (${Utils.formatDateShort(latestCaloriePoint.date)})`
+      : "";
+    _loggedEl.textContent = logged != null ? `${Math.round(logged).toLocaleString()} kcal${loggedDate}` : "No calorie log";
+  }
 
   // Progress bar
   if (_barEl && target != null && logged != null) {
@@ -113,12 +130,18 @@ export const CalorieBudgetChip = {
           payload: { budgetUseMaintenance: _mainToggle.checked },
         });
         _update();
+        Utils.showStatusMessage(
+          _mainToggle.checked ? "Budget chip now shows maintenance calories." : "Budget chip now follows your goal target.",
+          "info",
+          2500,
+        );
       });
     }
 
     // Goal icon chip also navigates to goal form when no goal is set
     _chip.addEventListener("click", () => {
       if (!StateManager.getState().goal?.weight) {
+        document.getElementById("goal-widget")?.scrollIntoView({ behavior: "smooth", block: "center" });
         document.getElementById("goalWeight")?.focus();
       }
     });

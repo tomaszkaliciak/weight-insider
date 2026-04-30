@@ -129,8 +129,15 @@ function _save() {
     _reprocessData(saved, _cachedMergedData);
   }
 
+  const displayChanged = ["weightUnit", "dateFormat", "weekStart"].some(k => saved[k] !== previous[k]);
+  const motionChanged = ["animationsEnabled", "animationSpeed"].some(k => saved[k] !== previous[k]);
+  const messages = [];
+  if (pipelineChanged) messages.push(`reprocessed with ${saved.smaWindow}d SMA / ${saved.emaWindow}d EMA`);
+  if (displayChanged) messages.push("updated display preferences");
+  if (motionChanged) messages.push(saved.animationsEnabled ? "updated animation speed" : "reduced motion enabled");
+
   _close();
-  Utils.showStatusMessage("Settings saved.", "success", 2500);
+  Utils.showStatusMessage(`Settings saved${messages.length ? `: ${messages.join(", ")}` : ""}.`, "success", 3500);
 }
 
 function _reprocessData(settings, mergedData) {
@@ -157,6 +164,7 @@ function _reprocessData(settings, mergedData) {
 
 function _exportAll() {
   const dump = SettingsService.exportAll();
+  const count = Object.keys(dump).length;
   const blob = new Blob([JSON.stringify(dump, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -164,6 +172,7 @@ function _exportAll() {
   a.download = `weight-insider-backup-${new Date().toISOString().slice(0, 10)}.json`;
   a.click();
   URL.revokeObjectURL(url);
+  Utils.showStatusMessage(`Exported ${count} saved app item${count === 1 ? "" : "s"}.`, "success", 3000);
 }
 
 function _importFile(file) {
@@ -172,6 +181,21 @@ function _importFile(file) {
   reader.onload = (e) => {
     try {
       const dump = JSON.parse(e.target.result);
+      const keys = Object.keys(dump || {});
+      const appKeys = keys.filter((key) => key.startsWith("weightInsider") || key.startsWith("weightInsights"));
+      if (!appKeys.length) {
+        Utils.showStatusMessage("Import preview: no Weight Insider app data found in this file.", "error", 5000);
+        return;
+      }
+      const preview = appKeys.slice(0, 6).join("\n");
+      const suffix = appKeys.length > 6 ? `\n...and ${appKeys.length - 6} more` : "";
+      const confirmed = window.confirm(
+        `Import ${appKeys.length} saved app item${appKeys.length === 1 ? "" : "s"}?\n\n${preview}${suffix}\n\nThis will overwrite matching saved browser data.`,
+      );
+      if (!confirmed) {
+        Utils.showStatusMessage("Import cancelled.", "info", 2500);
+        return;
+      }
       SettingsService.importAll(dump);
       Utils.showStatusMessage("Data imported. Reload the page to apply.", "success", 6000);
     } catch (err) {

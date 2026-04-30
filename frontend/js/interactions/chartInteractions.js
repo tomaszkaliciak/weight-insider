@@ -85,6 +85,12 @@ export const ChartInteractions = {
     StateManager.dispatch({ type: ActionTypes.SET_ACTIVE_HOVER_DATA, payload: d }); // Use ActionTypes
 
     let tt = `<strong>${Utils.formatDateLong(d.date)}</strong>`;
+    if (d._metricMode) {
+      tt += `<div style="margin-top: 4px;">${d._metricLabel}: ${Utils.formatValue(d.value, 0)} ${d._metricUnit}</div>`;
+      tt += `<hr class="tooltip-hr"><div class="note pinned-note">Click dot to pin tooltip.</div>`;
+      TooltipManager.show(tt, event);
+      return;
+    }
     tt += `<div style="margin-top: 4px;">Weight: ${Utils.formatValue(d.value, 1)} KG</div>`;
     if (d.sma != null)
       tt += `<div>SMA (${CONFIG.movingAverageWindow}d): ${Utils.formatValue(d.sma, 1)} KG</div>`;
@@ -470,6 +476,25 @@ export const ChartInteractions = {
 
     ChartInteractions.syncBrushAndZoomToFocus(); // Point to exported handler
     TooltipManager.hide(); // Use TooltipManager
+  },
+
+  resetToFullRange() {
+    if (!scales.x || !scales.xContext) return;
+    const fullDomain = scales.xContext.domain();
+    if (!fullDomain?.every((d) => d instanceof Date && !isNaN(d))) return;
+    scales.x.domain(fullDomain);
+    StateManager.dispatch({
+      type: ActionTypes.SET_ANALYSIS_RANGE,
+      payload: {
+        start: new Date(new Date(fullDomain[0]).setHours(0, 0, 0, 0)),
+        end: new Date(new Date(fullDomain[1]).setHours(23, 59, 59, 999)),
+      },
+    });
+    StateManager.dispatch({ type: ActionTypes.SET_PINNED_TOOLTIP, payload: null });
+    StateManager.dispatch({ type: ActionTypes.SET_HIGHLIGHTED_DATE, payload: null });
+    ChartInteractions.syncBrushAndZoomToFocus();
+    MasterUpdater.updateAllCharts({ isInteractive: false, kind: "discrete" });
+    Utils.showStatusMessage("Chart reset to all available data.", "info", 1800);
   },
 
   syncBrushAndZoomToFocus() {

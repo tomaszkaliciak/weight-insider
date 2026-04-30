@@ -97,9 +97,15 @@ export const EventHandlers = {
         newStart.setHours(0, 0, 0, 0);
       }
 
-      // Update date inputs
-      ui.analysisStartDateInput?.property("value", Utils.formatDateDMY(newStart));
-      ui.analysisEndDateInput?.property("value", Utils.formatDateDMY(newEnd));
+      // Update date inputs (native date pickers expect ISO YYYY-MM-DD).
+      const startNode = ui.analysisStartDateInput?.node?.();
+      const endNode = ui.analysisEndDateInput?.node?.();
+      const startStr = startNode?.type === "date"
+        ? Utils.formatDate(newStart) : Utils.formatDateDMY(newStart);
+      const endStr = endNode?.type === "date"
+        ? Utils.formatDate(newEnd) : Utils.formatDateDMY(newEnd);
+      ui.analysisStartDateInput?.property("value", startStr);
+      ui.analysisEndDateInput?.property("value", endStr);
 
       // Dispatch and redraw
       StateManager.dispatch({ type: ActionTypes.SET_ANALYSIS_RANGE, payload: { start: newStart, end: newEnd } });
@@ -111,6 +117,24 @@ export const EventHandlers = {
       ChartInteractions.syncBrushAndZoomToFocus();
       MasterUpdater.updateAllCharts({ isInteractive: false });
       Utils.showStatusMessage(`Range set to ${range === 'all' ? 'All data' : range + ' days'}.`, "info", 1500);
+    });
+    d3.selectAll('.chart-mode-btn[data-chart-mode]').on('click', function () {
+      const chartMode = this.getAttribute('data-chart-mode') || 'weight';
+      document.querySelectorAll('.chart-mode-btn[data-chart-mode]').forEach((btn) => {
+        const isActive = btn === this;
+        btn.classList.toggle('active', isActive);
+        btn.setAttribute('aria-pressed', String(isActive));
+      });
+      StateManager.dispatch({ type: ActionTypes.SET_CHART_MODE, payload: chartMode });
+      MasterUpdater.updateAllCharts({ isInteractive: false, kind: "discrete" });
+      Utils.showStatusMessage(
+        chartMode === 'weight' ? 'Showing weight trend.' : `Showing ${chartMode === 'tdee' ? 'TDEE' : 'calories'} over time.`,
+        "info",
+        1800,
+      );
+    });
+    d3.select("#chart-reset-btn").on("click", () => {
+      ChartInteractions.resetToFullRange();
     });
     ui.whatIfSubmitBtn?.on("click", FormHandlers.handleWhatIfSubmit);
     ui.whatIfIntakeInput?.on("keydown", (event) => {

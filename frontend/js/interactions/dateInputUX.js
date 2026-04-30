@@ -18,6 +18,14 @@ function attachDateInputBehavior(el) {
   if (!el) return;
   if (el.dataset.dateUxBound === "1") return;
   el.dataset.dateUxBound = "1";
+
+  // Native date inputs already provide a calendar UI and a fixed ISO value.
+  // Don't shim them with DMY normalization or numeric inputmode hints.
+  if (el.type === "date") {
+    el.addEventListener("input", () => el.classList.remove("date-input-invalid"));
+    return;
+  }
+
   el.setAttribute("placeholder", "DD-MM-YYYY");
   el.setAttribute("inputmode", "numeric");
   el.setAttribute("autocomplete", "off");

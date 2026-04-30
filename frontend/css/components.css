@@ -1589,6 +1589,46 @@ body.motion-reduced * {
   accent-color: var(--primary-color);
 }
 
+@media (max-width: 768px) {
+  .settings-drawer {
+    width: min(420px, 100vw);
+  }
+
+  .settings-tabs {
+    overflow-x: auto;
+    padding-inline: 6px;
+  }
+
+  .settings-tab {
+    flex: 1 0 auto;
+    min-width: max-content;
+  }
+
+  .budget-popover {
+    position: fixed;
+    top: 92px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+    max-width: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .settings-drawer {
+    width: 100vw;
+  }
+
+  .settings-drawer-footer {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+
+  .settings-drawer-footer button {
+    width: 100%;
+  }
+}
+
 /* =====================================================================
    A1 — What-If Simulator
    ===================================================================== */

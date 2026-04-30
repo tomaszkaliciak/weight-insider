@@ -91,8 +91,14 @@ function _updateAnalysisRangeInputsFromFocusScale() {
     focusXDomain[1] instanceof Date &&
     !isNaN(focusXDomain[1])
   ) {
-    const startDateStr = Utils.formatDateDMY(focusXDomain[0]);
-    const endDateStr = Utils.formatDateDMY(focusXDomain[1]);
+    const startNode = ui.analysisStartDateInput?.node?.();
+    const endNode = ui.analysisEndDateInput?.node?.();
+    const startDateStr = startNode?.type === "date"
+      ? Utils.formatDate(focusXDomain[0])
+      : Utils.formatDateDMY(focusXDomain[0]);
+    const endDateStr = endNode?.type === "date"
+      ? Utils.formatDate(focusXDomain[1])
+      : Utils.formatDateDMY(focusXDomain[1]);
     ui.analysisStartDateInput?.property("value", startDateStr);
     ui.analysisEndDateInput?.property("value", endDateStr);
   } else {
@@ -169,6 +175,7 @@ export const MasterUpdater = {
         const goal = Selectors.selectGoal(stateSnapshot);
         const goalAchievedDate = Selectors.selectGoalAchievedDate(stateSnapshot);
         const visibility = Selectors.selectSeriesVisibility(stateSnapshot);
+        const chartMode = Selectors.selectChartMode(stateSnapshot);
 
         const visibleValidSmaData = filteredData.filter((d) => d.sma != null);
         const visibleValidEmaData = filteredData.filter((d) => d.ema != null);
@@ -217,29 +224,58 @@ export const MasterUpdater = {
         if (isMainVisible) {
           FocusChartUpdater.updateAxes(focusWidth, focusHeight, options);
           ContextChartUpdater.updateAxes();
+          ui.svg?.select(".y-axis-label").text(
+            chartMode === "calories" ? "Calories (kcal)" :
+              chartMode === "tdee" ? "TDEE (kcal)" :
+                "Weight (kg)",
+          );
 
-          // Visibility Styles
-          Object.keys(visibility).forEach((key) => {
-            const isVisible = visibility[key];
-            switch (key) {
-              case "smaLine": ui.smaLine?.style("display", isVisible ? null : "none"); break;
-              case "emaLine": ui.emaLine?.style("display", isVisible ? null : "none"); break;
-              case "smaBand": ui.bandArea?.style("display", isVisible ? null : "none"); break;
-              case "regression": ui.regressionLine?.style("display", isVisible ? null : "none"); break;
-              case "trend1": ui.trendLine1?.style("display", isVisible ? null : "none"); break;
-              case "trend2": ui.trendLine2?.style("display", isVisible ? null : "none"); break;
-              case "goal":
-                ui.goalLine?.style("display", isVisible ? null : "none");
-                ui.goalZoneRect?.style("display", isVisible ? null : "none");
-                ui.goalAchievedGroup?.style("display", isVisible ? null : "none");
-                break;
-              case "raw": ui.rawDotsGroup?.style("display", isVisible ? null : "none"); break;
-              case "annotations": ui.annotationsGroup?.style("display", isVisible ? null : "none"); break;
-              case "plateaus": ui.plateauGroup?.style("display", isVisible ? null : "none"); break;
-              case "trendChanges": ui.trendChangeGroup?.style("display", isVisible ? null : "none"); break;
-              case "rateMA": ui.rateMALine?.style("display", isVisible ? null : "none"); break;
-            }
-          });
+          if (chartMode !== "weight") {
+            const metricData = filteredData
+              .map((d) => ({
+                ...d,
+                value: chartMode === "calories"
+                  ? d.calorieIntake
+                  : (d.adaptiveTDEE ?? d.googleFitTDEE ?? d.trendTDEE),
+                _metricMode: chartMode,
+                _metricLabel: chartMode === "calories" ? "Calories" : "TDEE",
+                _metricUnit: "kcal",
+              }))
+              .filter((d) => d.value != null);
+            FocusChartUpdater.updateMetricMode(metricData, chartMode, options);
+            ui.annotationsGroup?.style("display", "none");
+            ui.plateauGroup?.style("display", "none");
+            ui.trendChangeGroup?.style("display", "none");
+            ui.goalAchievedGroup?.style("display", "none");
+            ui.goalZoneRect?.style("display", "none");
+            FocusChartUpdater.updateHighlightMarker(null, []);
+            FocusChartUpdater.updateCrosshair(null, focusWidth, focusHeight);
+            ContextChartUpdater.updateChart(processedData);
+          } else {
+            ui.smaLine?.style("stroke", null).style("filter", null);
+
+            // Visibility Styles
+            Object.keys(visibility).forEach((key) => {
+              const isVisible = visibility[key];
+              switch (key) {
+                case "smaLine": ui.smaLine?.style("display", isVisible ? null : "none"); break;
+                case "emaLine": ui.emaLine?.style("display", isVisible ? null : "none"); break;
+                case "smaBand": ui.bandArea?.style("display", isVisible ? null : "none"); break;
+                case "regression": ui.regressionLine?.style("display", isVisible ? null : "none"); break;
+                case "trend1": ui.trendLine1?.style("display", isVisible ? null : "none"); break;
+                case "trend2": ui.trendLine2?.style("display", isVisible ? null : "none"); break;
+                case "goal":
+                  ui.goalLine?.style("display", isVisible ? null : "none");
+                  ui.goalZoneRect?.style("display", isVisible ? null : "none");
+                  ui.goalAchievedGroup?.style("display", isVisible ? null : "none");
+                  break;
+                case "raw": ui.rawDotsGroup?.style("display", isVisible ? null : "none"); break;
+                case "annotations": ui.annotationsGroup?.style("display", isVisible ? null : "none"); break;
+                case "plateaus": ui.plateauGroup?.style("display", isVisible ? null : "none"); break;
+                case "trendChanges": ui.trendChangeGroup?.style("display", isVisible ? null : "none"); break;
+                case "rateMA": ui.rateMALine?.style("display", isVisible ? null : "none"); break;
+              }
+            });
 
           FocusChartUpdater.updatePaths(
             visibleValidSmaData,
@@ -259,7 +295,8 @@ export const MasterUpdater = {
           FocusChartUpdater.updateGoalVisuals(goal, goalAchievedDate, focusWidth, focusHeight, options);
           FocusChartUpdater.updateRegressionBrushDisplay(stateSnapshot.interactiveRegressionRange, focusWidth);
 
-          ContextChartUpdater.updateChart(processedData);
+            ContextChartUpdater.updateChart(processedData);
+          }
         }
 
         // Update Secondary Charts (only if visible)
@@ -331,6 +368,7 @@ export const MasterUpdater = {
       "state:displayStatsUpdated",
       "state:visibilityChanged",
       "state:themeUpdated",
+      "state:chartModeChanged",
       "state:highlightedDateChanged",
       "state:pinnedTooltipDataChanged",
       "state:activeHoverDataChanged",

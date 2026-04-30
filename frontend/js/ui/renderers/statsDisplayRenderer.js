@@ -4,7 +4,6 @@ import { StateManager } from "../../core/stateManager.js";
 import { EventHandlers } from "../../interactions/eventHandlers.js";
 import * as Selectors from "../../core/selectors.js";
 import { AnimatedNumbers } from "../animatedNumbers.js";
-import { GoalManager } from "../../core/goalManager.js";
 
 // Keys that should have animated number transitions
 const ANIMATED_KEYS = new Set([
@@ -249,16 +248,13 @@ this._renderSuggestedIntakeTarget(displayStats);
 
     const tdeeSrc = displayStats.baselineTDEESource || this._getTdeeSource(displayStats);
     el.style.display = '';
-    el.textContent = `Suggested intake: ${suggested} kcal/day based on ${tdeeSrc} TDEE — click to use as target.`;
+    el.textContent = `Suggested intake: ${suggested} kcal/day based on ${tdeeSrc} TDEE — click to review in the budget chip.`;
 
     el.onclick = () => {
-      // Dispatch a goal with only calorieTarget set (the goal system stores this)
-      StateManager.dispatch({
-        type: 'SET_GOAL',
-        payload: { weight: null, date: null, targetRate: null, calorieTarget: suggested }
-      });
-      GoalManager.save();
-      Utils.showStatusMessage(`Calorie target set: ${suggested} kcal/day`, 'success');
+      const chip = document.getElementById('daily-budget-chip');
+      chip?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      chip?.click();
+      Utils.showStatusMessage(`Budget target: ${suggested} kcal/day from your goal.`, 'success');
     };
   },
 

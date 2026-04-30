@@ -50,8 +50,10 @@ export const GoalManager = {
         normalized.weight != null ? normalized.weight.toFixed(1) : "";
     }
     if (goalDateInput) {
-      goalDateInput.value =
-        normalized.date instanceof Date ? Utils.formatDateDMY(normalized.date) : "";
+      const useIso = goalDateInput.type === "date";
+      goalDateInput.value = normalized.date instanceof Date
+        ? (useIso ? Utils.formatDate(normalized.date) : Utils.formatDateDMY(normalized.date))
+        : "";
     }
     if (goalTargetRateInput) {
       goalTargetRateInput.value =

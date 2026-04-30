@@ -17,15 +17,15 @@ export const ManualEntryWidget = {
   },
 
   _render() {
-    const today = Utils.formatDateDMY(new Date());
+    const today = Utils.formatDate(new Date());
 
     this._container.innerHTML = `
       <div class="widget-header">Quick Entry</div>
       <form id="manual-entry-form" class="manual-entry-form" novalidate>
         <div class="manual-entry-row">
           <label class="manual-entry-label" for="me-date">Date</label>
-          <input type="text" id="me-date" name="date" class="manual-entry-input date-input-dmy"
-                 placeholder="DD-MM-YYYY" value="${today}" required />
+          <input type="date" id="me-date" name="date" class="manual-entry-input date-input-dmy"
+                 value="${today}" required />
         </div>
         <div class="manual-entry-row">
           <label class="manual-entry-label" for="me-weight">Weight (kg)</label>
@@ -98,13 +98,13 @@ export const ManualEntryWidget = {
     const calVal   = parseFloat(document.getElementById('me-calories')?.value);
 
     if (!dateVal) {
-      Utils.showStatusMessage('Please enter a date (DD-MM-YYYY).', 'warn');
+      Utils.showStatusMessage('Please choose a date.', 'warn');
       return;
     }
 
     const parsedDate = Utils.parseDateInput(dateVal);
     if (!parsedDate) {
-      Utils.showStatusMessage('Invalid date. Use DD-MM-YYYY.', 'warn');
+      Utils.showStatusMessage('Invalid date.', 'warn');
       return;
     }
 

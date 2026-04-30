@@ -308,6 +308,40 @@ body.dark-theme ::-webkit-scrollbar-thumb:hover {
         font-size: 1.2rem;
     }
 
+    header {
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .header-controls {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        max-width: 58vw;
+    }
+
+    .budget-chip {
+        min-width: 0;
+        padding-inline: 8px;
+    }
+
+    .bento-widget .widget-header {
+        flex-wrap: wrap;
+        row-gap: 8px;
+    }
+
+    #chart-section .chart-mode-switch {
+        order: 2;
+        width: 100%;
+        margin-left: 0;
+        justify-content: stretch;
+    }
+
+    #chart-section .chart-mode-btn {
+        flex: 1;
+        text-align: center;
+        min-width: 0;
+    }
+
     .card {
         padding: 18px;
         border-radius: 12px;
@@ -420,6 +454,26 @@ body.dark-theme ::-webkit-scrollbar-thumb:hover {
     header h1 {
         font-size: 1.1rem;
         gap: 0.3em;
+    }
+
+    header {
+        flex-direction: column;
+        align-items: stretch;
+        padding-inline: 14px;
+    }
+
+    .header-controls {
+        max-width: none;
+        justify-content: space-between;
+    }
+
+    #dashboard-preset-container {
+        flex: 1 1 100%;
+    }
+
+    .preset-select {
+        max-width: none;
+        width: 100%;
     }
 
     header h1 .edition {
@@ -796,6 +850,86 @@ body.dark-theme ::-webkit-scrollbar-thumb:hover {
 
 .chart-controls {
     margin-left: auto;
+}
+
+#chart-container {
+    position: relative;
+}
+
+#chart-section .chart-mode-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 10px;
+    padding: 3px;
+    border: 1px solid var(--border-color-light);
+    border-radius: 999px;
+    background: var(--bg-secondary);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+
+#chart-section .chart-mode-btn {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 0 !important;
+    border-radius: 999px !important;
+    padding: 5px 14px !important;
+    font-family: var(--font-sans);
+    font-size: 0.78rem !important;
+    line-height: 1.2;
+    font-weight: 700;
+    color: var(--text-secondary) !important;
+    background: transparent !important;
+    cursor: pointer;
+    min-width: 76px;
+    transition: background-color 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
+}
+
+#chart-section .chart-mode-btn:hover {
+    color: var(--text-primary) !important;
+    background: var(--bg-tertiary) !important;
+}
+
+#chart-section .chart-mode-btn.active,
+#chart-section .chart-mode-btn[aria-pressed="true"] {
+    color: var(--text-on-primary, #fff) !important;
+    background: var(--primary-color) !important;
+    box-shadow: 0 2px 8px var(--shadow-color);
+}
+
+.chart-reset-btn {
+    padding: 4px 9px;
+    font-size: 0.75rem;
+    line-height: 1.2;
+}
+
+.chart-help-text {
+    margin-top: 4px;
+    color: var(--text-muted);
+    font-size: 0.76rem;
+    text-align: center;
+}
+
+.chart-empty-state {
+    position: absolute;
+    inset: 64px 24px auto 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 14px 18px;
+    border: 1px dashed var(--border-color);
+    border-radius: 12px;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    box-shadow: 0 8px 24px var(--shadow-color);
+    pointer-events: none;
+    text-align: center;
+}
+
+.chart-empty-state span {
+    color: var(--text-muted);
+    font-size: 0.8rem;
 }
 
 .icon-btn {

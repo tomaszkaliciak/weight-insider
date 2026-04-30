@@ -24,6 +24,7 @@ export const ActionTypes = {
   SET_INTERACTIVE_REGRESSION_RANGE: "SET_INTERACTIVE_REGRESSION_RANGE",
   SET_THEME: "SET_THEME",
   TOGGLE_SERIES_VISIBILITY: "TOGGLE_SERIES_VISIBILITY",
+  SET_CHART_MODE: "SET_CHART_MODE",
   SET_HIGHLIGHTED_DATE: "SET_HIGHLIGHTED_DATE",
   SET_PINNED_TOOLTIP: "SET_PINNED_TOOLTIP",
   SET_ACTIVE_HOVER_DATA: "SET_ACTIVE_HOVER_DATA",
@@ -55,6 +56,7 @@ const initialState = {
   analysisRange: { start: null, end: null },
   interactiveRegressionRange: { start: null, end: null },
   currentTheme: "light",
+  chartMode: "weight", // 'weight' | 'calories' | 'tdee'
   seriesVisibility: {
     /* ... keep all keys ... */ raw: true,
     smaLine: true,
@@ -266,6 +268,11 @@ function reducer(currentState, action) {
         };
       }
       break;
+    case ActionTypes.SET_CHART_MODE:
+      nextState.chartMode = ["weight", "calories", "tdee"].includes(action.payload)
+        ? action.payload
+        : "weight";
+      break;
     case ActionTypes.SET_HIGHLIGHTED_DATE:
       nextState.highlightedDate =
         action.payload instanceof Date || action.payload === null
@@ -451,6 +458,7 @@ export const StateManager = {
       ADD_ANNOTATION: "state:annotationsChanged",
       DELETE_ANNOTATION: "state:annotationsChanged",
       TOGGLE_SERIES_VISIBILITY: "state:visibilityChanged",
+      SET_CHART_MODE: "state:chartModeChanged",
       LOAD_GOAL: "state:goalChanged",
       SET_GOAL: "state:goalChanged",
       SET_GOAL_ACHIEVED_DATE: "state:goalAchievementUpdated",
@@ -542,6 +550,9 @@ export const StateManager = {
           break;
         case "SET_DISPLAY_STATS":
           eventPayload = state.displayStats;
+          break;
+        case "SET_CHART_MODE":
+          eventPayload = { chartMode: state.chartMode };
           break;
         case "SET_PERIODIZATION_PHASES":
           eventPayload = { phases: state.periodizationPhases };

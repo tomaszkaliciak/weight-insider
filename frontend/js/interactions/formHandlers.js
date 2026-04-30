@@ -80,11 +80,16 @@ export const FormHandlers = {
     const parsedRate = rateVal ? parseFloat(rateVal) : null;
     const parsedDate = dateVal ? Utils.parseDateInput(dateVal) : null;
 
+    if (parsedWeight == null || isNaN(parsedWeight) || !(parsedDate instanceof Date) || isNaN(parsedDate.getTime())) {
+      Utils.showStatusMessage("Set a target weight and target date to activate goal tracking.", "warn", 3500);
+      return;
+    }
+
     StateManager.dispatch({
       type: ActionTypes.LOAD_GOAL, // Use ActionTypes
       payload: {
-        weight: parsedWeight != null && !isNaN(parsedWeight) ? parsedWeight : null,
-        date: parsedDate instanceof Date && !isNaN(parsedDate.getTime()) ? parsedDate : null,
+        weight: parsedWeight,
+        date: parsedDate,
         targetRate: parsedRate != null && !isNaN(parsedRate) ? parsedRate : null,
       },
     });
@@ -92,6 +97,7 @@ export const FormHandlers = {
     import("../core/goalManager.js")
       .then(({ GoalManager }) => {
         GoalManager.save();
+        Utils.showStatusMessage("Goal saved. Your calorie budget will update from the new target.", "success", 3500);
       })
       .catch((err) => console.error("Failed to load GoalManager for save", err));
   },

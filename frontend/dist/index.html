@@ -13,8 +13,8 @@
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <!-- widgets.css split into focused modules for maintainability -->
-  <script type="module" crossorigin src="/assets/index-5g3klupY.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-CxAdSZEu.css">
+  <script type="module" crossorigin src="/assets/index-DbBhBh4L.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-DCojhUqi.css">
 </head>
 
 <body>
@@ -31,6 +31,18 @@
         </h1>
         <div class="header-controls">
             <div id="dashboard-preset-container" class="preset-container"></div>
+            <button id="daily-budget-chip" class="budget-chip" title="Daily calorie target" aria-haspopup="true" aria-expanded="false">
+                <span class="budget-icon" aria-hidden="true">◎</span>
+                <span id="budget-chip-value" class="budget-value">--</span>
+                <span class="budget-unit">kcal</span>
+            </button>
+            <div id="budget-chip-popover" class="budget-popover" hidden>
+                <div class="budget-popover-row"><span class="budget-popover-label">Baseline TDEE</span><span id="budget-popover-tdee" class="budget-popover-value">--</span></div>
+                <div class="budget-popover-row"><span class="budget-popover-label">Target adjustment</span><span id="budget-popover-adj" class="budget-popover-value">--</span></div>
+                <div class="budget-popover-row"><span class="budget-popover-label">Today's logged</span><span id="budget-popover-logged" class="budget-popover-value">--</span></div>
+                <div class="budget-popover-bar-wrap"><div id="budget-popover-bar" class="budget-popover-bar"></div></div>
+                <label class="budget-popover-toggle"><input type="checkbox" id="budget-maintenance-toggle"> Use maintenance target instead</label>
+            </div>
             <button id="theme-toggle" title="Toggle Theme" aria-label="Toggle Theme">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -38,6 +50,13 @@
                 <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
             </svg>
         </button>
+            <button id="settings-btn" class="icon-btn" title="Settings" aria-label="Open settings" aria-expanded="false">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3" />
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                </svg>
+            </button>
         </div>
     </header>
 
@@ -70,20 +89,17 @@
             <div id="chart-section" class="bento-widget span-3x1 chart-section" aria-labelledby="chart-section-heading">
                 <div class="widget-header">
                     <span id="chart-section-heading">Master Trend Analysis</span>
+                    <div class="chart-mode-switch" role="group" aria-label="Chart mode">
+                        <button type="button" class="chart-mode-btn active" data-chart-mode="weight" aria-pressed="true">Weight</button>
+                        <button type="button" class="chart-mode-btn" data-chart-mode="calories" aria-pressed="false">Calories</button>
+                        <button type="button" class="chart-mode-btn" data-chart-mode="tdee" aria-pressed="false">TDEE</button>
+                    </div>
                     <div class="chart-controls">
+                        <button id="chart-reset-btn" class="btn-secondary chart-reset-btn" type="button" title="Reset chart zoom">Reset</button>
                         <button id="chart-fullscreen-btn" class="icon-btn" title="Toggle Fullscreen"
                             aria-label="Toggle Fullscreen">
                             ⛶
                         </button>
-      <div class="metric-toggle-group">        <label class="metric-toggle">          <input type="checkbox" id="weight-toggle" class="metric-checkbox" data-metric="weight" checked />          <span>Weight</span>        </label>
-        <label class="metric-toggle">          <input type="checkbox" id="calories-toggle" class="metric-checkbox" data-metric="calories" />
-          <span>Calories</span>
-        </label>
-        <label class="metric-toggle">
-          <input type="checkbox" id="tdee-toggle" class="metric-checkbox" data-metric="tdee" />
-          <span>TDEE</span>
-        </label>
-      </div>
                     </div>
                 </div>
                 <div style="flex: 1; min-height: 0; display: flex; flex-direction: column; width:100%;">
@@ -91,6 +107,7 @@
                         <div class="skeleton-loader" style="min-height: 300px;"></div>
                     </div>
                     <div id="context-chart-container"></div>
+                    <div class="chart-help-text">Drag the mini-chart to zoom, scroll over the chart to zoom, click a dot to pin its tooltip.</div>
                     <canvas id="weight-chart" style="display:none;"></canvas>
                 </div>
                 <div id="loading-spinner" class="spinner" role="status">
@@ -126,9 +143,9 @@
                 <div class="widget-header">Analysis Range</div>
                 <div id="analysis-settings-content" class="analysis-range-form">
                     <div class="range-controls-inline">
-                        <label><span>Start:</span><input type="text" id="analysisStartDate"
-                                name="analysisStartDate" placeholder="DD-MM-YYYY" class="date-input-dmy"></label>
-                        <label><span>End:</span><input type="text" id="analysisEndDate" name="analysisEndDate" placeholder="DD-MM-YYYY" class="date-input-dmy"></label>
+                        <label><span>Start:</span><input type="date" id="analysisStartDate"
+                                name="analysisStartDate" class="date-input-dmy"></label>
+                        <label><span>End:</span><input type="date" id="analysisEndDate" name="analysisEndDate" class="date-input-dmy"></label>
                         <button type="button" id="updateAnalysisRange" class="btn-primary">Apply</button>
                     </div>
                     <div class="range-presets">
@@ -144,7 +161,7 @@
                 <div class="widget-header">Trendlines</div>
                 <div id="manual-trendlines-container" class="trendlines-form">
                     <div class="form-row">
-                        <label>Start<input type="text" id="trendStartDate" placeholder="DD-MM-YYYY" class="date-input-dmy"></label>
+                        <label>Start<input type="date" id="trendStartDate" class="date-input-dmy"></label>
                         <label>Initial<input type="number" id="trendInitialWeight" step="0.1" placeholder="kg"></label>
                     </div>
                     <div class="form-row">
@@ -175,16 +192,18 @@
                 <div class="widget-header">Goal Progress</div>
                 <form id="goal-setting-form" class="goal-form-inline">
                     <label><span>Target</span><input type="number" id="goalWeight" step="0.1" min="30" max="300" placeholder="kg"></label>
-                    <label><span>By</span><input type="text" id="goalDate" placeholder="DD-MM-YYYY" class="date-input-dmy"></label>
+                    <label><span>By</span><input type="date" id="goalDate" class="date-input-dmy"></label>
                     <label><span>Rate</span><input type="number" id="goalTargetRate" step="0.05" placeholder="kg/wk"></label>
                     <button type="submit" class="btn-primary">Set Goal</button>
                 </form>
+                <div id="goal-inline-status" class="goal-inline-status" hidden></div>
                 <div id="smart-coach-container">
                     <div class="skeleton-loader"></div>
                 </div>
                 <div id="goal-alerts-list"></div>
                 <div id="goal-suggestions-list"></div>
                 <div id="goal-history-list"></div>
+ <div id="suggested-intake-target" class="suggested-intake-target" title="Click to use this as your daily calorie target" style="display:none; margin: 8px 8px 0; padding: 8px 12px; border-radius: 6px; background: rgba(34,197,94,0.1); border: 1px dashed var(--success-color, #22c55e); cursor: pointer; font-size: 12px; color: var(--success-color, #22c55e); text-align: center;"></div>
             </div>
 
             <div id="goal-simulator-card" class="bento-widget span-1x1">
@@ -277,6 +296,152 @@
                 </div>
             </div>
 
+            <!-- ADVANCED INSIGHTS -->
+            <div id="insight-summary-card" class="bento-widget span-2x1">
+                <div class="widget-header">Insight Summary</div>
+                <div id="insight-summary"></div>
+            </div>
+
+            <div id="periodization-card" class="bento-widget span-1x1">
+                <div class="widget-header">Periodization</div>
+                <div id="periodization-list">
+                    <div class="skeleton-loader"></div>
+                </div>
+            </div>
+
+            <div id="period-comparison-card" class="bento-widget span-2x1">
+                <div class="widget-header">Period Comparison</div>
+                <div id="period-comparison-content">
+                    <div class="skeleton-loader"></div>
+                </div>
+            </div>
+
+            <div id="monthly-report-card" class="bento-widget span-2x1">
+                <div class="widget-header">Monthly Reports</div>
+                <div id="monthly-report-content">
+                    <div class="skeleton-loader"></div>
+                </div>
+            </div>
+
+            <div id="event-countdown-card" class="bento-widget span-1x1">
+                <div class="widget-header">Event Countdown</div>
+                <div id="event-countdown-content">
+                    <div class="skeleton-loader"></div>
+                </div>
+            </div>
+
+            <div id="rolling-averages-card" class="bento-widget span-2x1">
+                <div class="widget-header">Rolling Averages</div>
+                <div id="rolling-averages-content">
+                    <div class="skeleton-loader"></div>
+                </div>
+            </div>
+
+            <div id="streak-tracker-card" class="bento-widget span-1x1">
+                <div class="widget-header">Streak Tracker</div>
+                <div id="streak-tracker-content">
+                    <div class="skeleton-loader"></div>
+                </div>
+            </div>
+
+            <div id="plateau-breaker-card" class="bento-widget span-1x1">
+                <div class="widget-header">Plateau Breaker</div>
+                <div id="plateau-breaker-content">
+                    <div class="skeleton-loader"></div>
+                </div>
+            </div>
+
+            <div id="what-worked-card" class="bento-widget span-2x1">
+                <div class="widget-header">What Worked</div>
+                <div id="what-worked-content">
+                    <div class="skeleton-loader"></div>
+                </div>
+            </div>
+
+            <div id="rate-optimizer-card" class="bento-widget span-1x1">
+                <div class="widget-header">Rate Optimizer</div>
+                <div id="rate-optimizer-content">
+                    <div class="skeleton-loader"></div>
+                </div>
+            </div>
+
+            <div id="adaptive-rate-card" class="bento-widget span-1x1">
+                <div class="widget-header">Adaptive Rate</div>
+                <div id="adaptive-rate-content">
+                    <div class="skeleton-loader"></div>
+                </div>
+            </div>
+
+            <div id="prediction-bands-card" class="bento-widget span-2x1">
+                <div class="widget-header">Prediction Bands</div>
+                <div id="prediction-bands-content">
+                    <div class="skeleton-loader"></div>
+                </div>
+            </div>
+
+            <div id="calorie-audit-card" class="bento-widget span-1x1">
+                <div class="widget-header">Calorie Audit</div>
+                <div id="calorie-audit-content">
+                    <div class="skeleton-loader"></div>
+                </div>
+            </div>
+
+            <div id="data-health-card" class="bento-widget span-1x1">
+                <div class="widget-header">Data Health</div>
+                <div id="data-health-content">
+                    <div class="skeleton-loader"></div>
+                </div>
+            </div>
+
+            <div id="weekend-analysis-card" class="bento-widget span-1x1">
+                <div class="widget-header">Weekend Patterns</div>
+                <div id="weekend-analysis-content">
+                    <div class="skeleton-loader"></div>
+                </div>
+            </div>
+
+            <div id="macro-impact-card" class="bento-widget span-1x1">
+                <div class="widget-header">Macro Impact</div>
+                <div id="macro-impact-content">
+                    <div class="skeleton-loader"></div>
+                </div>
+            </div>
+
+            <div id="water-weight-card" class="bento-widget span-1x1">
+                <div class="widget-header">Water Weight</div>
+                <div id="water-weight-content">
+                    <div class="skeleton-loader"></div>
+                </div>
+            </div>
+
+            <div id="reverse-diet-card" class="bento-widget span-1x1">
+                <div class="widget-header">Reverse Diet</div>
+                <div id="reverse-diet-content">
+                    <div class="skeleton-loader"></div>
+                </div>
+            </div>
+
+            <div id="metabolic-adaptation-card" class="bento-widget span-2x1">
+                <div class="widget-header">Metabolic Adaptation</div>
+                <div id="metabolic-adaptation-content">
+                    <div class="skeleton-loader"></div>
+                </div>
+            </div>
+
+            <div id="refeed-recommender-card" class="bento-widget span-2x1">
+                <div class="widget-header">Refeed & Diet-Break Coach</div>
+                <div id="refeed-recommender-content">
+                    <div class="skeleton-loader"></div>
+                </div>
+            </div>
+
+            <div id="refeed-history-card" class="bento-widget span-1x1">
+                <div class="widget-header">Refeed History</div>
+                <div id="refeed-history-content">
+                    <div class="skeleton-loader"></div>
+                </div>
+            </div>
+
         </div>
 
         <!-- Essential Absolute Elements -->
@@ -314,11 +479,134 @@
         </div>
         <div id="modal-overlay" class="modal-overlay" aria-hidden="true"></div>
 
+        <!-- Settings drawer -->
+        <div id="settings-overlay" class="settings-overlay" hidden aria-hidden="true"></div>
+        <aside id="settings-drawer" class="settings-drawer" hidden aria-label="Settings" role="dialog" aria-modal="true">
+            <div class="settings-drawer-header">
+                <h2 class="settings-drawer-title">Settings</h2>
+                <button id="settings-close-btn" class="icon-btn" aria-label="Close settings">×</button>
+            </div>
+            <nav class="settings-tabs" role="tablist">
+                <button class="settings-tab active" data-tab="display" role="tab" aria-selected="true">Display</button>
+                <button class="settings-tab" data-tab="analysis" role="tab" aria-selected="false">Analysis</button>
+                <button class="settings-tab" data-tab="motion" role="tab" aria-selected="false">Motion</button>
+                <button class="settings-tab" data-tab="data" role="tab" aria-selected="false">Data</button>
+            </nav>
+
+            <div class="settings-panel active" data-panel="display">
+                <div class="settings-group">
+                    <label class="settings-label">Weight unit
+                        <select id="setting-weight-unit" class="settings-select">
+                            <option value="kg">kg (kilograms)</option>
+                            <option value="lb">lb (pounds)</option>
+                        </select>
+                    </label>
+                    <p class="settings-hint">Applies to the hero card, vital stats, goal form, and widgets using the shared formatter. Some detailed analytics still show kg.</p>
+                </div>
+                <div class="settings-group">
+                    <label class="settings-label">Date format
+                        <select id="setting-date-format" class="settings-select">
+                            <option value="dmy">DD-MM-YYYY</option>
+                            <option value="mdy">MM-DD-YYYY</option>
+                            <option value="iso">YYYY-MM-DD</option>
+                        </select>
+                    </label>
+                    <p class="settings-hint">Controls supported user-facing forms and summaries.</p>
+                </div>
+                <div class="settings-group">
+                    <label class="settings-label">Week starts on
+                        <select id="setting-week-start" class="settings-select">
+                            <option value="mon">Monday</option>
+                            <option value="sun">Sunday</option>
+                        </select>
+                    </label>
+                    <p class="settings-hint">Used by weekly summaries and future calendar-style views.</p>
+                </div>
+            </div>
+
+            <div class="settings-panel" data-panel="analysis" hidden>
+                <div class="settings-group">
+                    <label class="settings-label">SMA window (days)
+                        <div class="settings-range-row">
+                            <input type="range" id="setting-sma-window" min="3" max="30" step="1" class="settings-range">
+                            <span id="setting-sma-window-val" class="settings-range-val">7</span>
+                        </div>
+                    </label>
+                    <p class="settings-hint">Saving reprocesses the chart and derived widgets.</p>
+                </div>
+                <div class="settings-group">
+                    <label class="settings-label">EMA window (days)
+                        <div class="settings-range-row">
+                            <input type="range" id="setting-ema-window" min="3" max="30" step="1" class="settings-range">
+                            <span id="setting-ema-window-val" class="settings-range-val">7</span>
+                        </div>
+                    </label>
+                </div>
+                <div class="settings-group">
+                    <label class="settings-label">Rolling volatility window (days)
+                        <div class="settings-range-row">
+                            <input type="range" id="setting-volatility-window" min="5" max="60" step="1" class="settings-range">
+                            <span id="setting-volatility-window-val" class="settings-range-val">14</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="settings-panel" data-panel="motion" hidden>
+                <div class="settings-group">
+                    <label class="settings-label settings-label-row">
+                        <span>Enable animations</span>
+                        <input type="checkbox" id="setting-animations-enabled" class="settings-checkbox">
+                    </label>
+                    <p class="settings-hint">Turn this off to reduce chart and card transitions immediately.</p>
+                </div>
+                <div class="settings-group" id="setting-speed-group">
+                    <label class="settings-label">Animation speed
+                        <div class="settings-range-row">
+                            <input type="range" id="setting-animation-speed" min="0.5" max="2.0" step="0.1" class="settings-range">
+                            <span id="setting-animation-speed-val" class="settings-range-val">1.0x</span>
+                        </div>
+                    </label>
+                    <p class="settings-hint">0.5x is slower; 2x is snappier.</p>
+                </div>
+            </div>
+
+            <div class="settings-panel" data-panel="data" hidden>
+                <div class="settings-group">
+                    <p class="settings-hint">Export goals, annotations, manual entries, settings, and other browser-saved app data.</p>
+                    <button id="settings-export-btn" class="btn-secondary settings-btn-full">Export all data</button>
+                </div>
+                <div class="settings-group">
+                    <p class="settings-hint">Import a previous Settings export. A preview and stronger confirmation are planned in the data pass.</p>
+                    <label class="btn-secondary settings-btn-full settings-file-label">
+                        Import data
+                        <input type="file" id="settings-import-file" accept=".json" style="display:none">
+                    </label>
+                </div>
+                <div class="settings-group settings-danger-zone">
+                    <p class="settings-hint">Remove all saved app data from this browser. This cannot be undone.</p>
+                    <button id="settings-reset-btn" class="btn-danger settings-btn-full">Reset all app data</button>
+                </div>
+            </div>
+
+            <div class="settings-drawer-footer">
+                <button id="settings-cancel-btn" class="btn-secondary">Cancel</button>
+                <button id="settings-save-btn" class="btn-primary">Save changes</button>
+            </div>
+        </aside>
+
 
         <!-- PWA Service Worker Registration -->
         <script>
             if ('serviceWorker' in navigator) {
                 window.addEventListener('load', () => {
+                    const isLocalDev = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+                    if (isLocalDev) {
+                        navigator.serviceWorker.getRegistrations?.().then(registrations => {
+                            registrations.forEach(registration => registration.unregister());
+                        });
+                        return;
+                    }
                     navigator.serviceWorker.register('/sw.js').then(
                         registration => console.log('[Service Worker] Registration successful with scope: ', registration.scope),
                         err => console.log('[Service Worker] Registration failed: ', err)

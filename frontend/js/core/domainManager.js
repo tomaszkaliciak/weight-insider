@@ -138,6 +138,25 @@ export const DomainManager = {
     // --- Get pre-calculated/filtered data from the state snapshot ---
     const filteredData = Selectors.selectFilteredData(stateSnapshot); // Use filtered data
     const regressionResult = stateSnapshot.regressionResult; // Use regression result from state
+    const chartMode = Selectors.selectChartMode(stateSnapshot);
+
+    if (chartMode !== "weight") {
+      const accessor = chartMode === "calories"
+        ? (d) => d.calorieIntake
+        : (d) => d.adaptiveTDEE ?? d.googleFitTDEE ?? d.trendTDEE;
+      const values = filteredData
+        .map(accessor)
+        .filter((value) => value != null && isFinite(value));
+      if (values.length) {
+        const extent = d3.extent(values);
+        const span = Math.max(100, (extent[1] ?? 0) - (extent[0] ?? 0));
+        const padding = span * 0.12;
+        scales.y.domain([Math.max(0, extent[0] - padding), extent[1] + padding]).nice(Math.max(Math.floor(height / 40), 5));
+        return;
+      }
+      scales.y.domain([0, chartMode === "calories" ? 4000 : 3500]).nice();
+      return;
+    }
     // Note: We no longer need bufferStartDate/EndDate if filteredData is already correct
 
     // The calculation function now takes the state snapshot directly

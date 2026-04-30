@@ -1382,11 +1382,6 @@ body.dark-theme .skeleton-stat .skeleton-value {
     color: var(--info-color);
 }
 
-display: flex;
-flex-direction: column;
-font-size: 0.75rem;
-}
-
 .detail-label {
     color: var(--text-muted);
 }

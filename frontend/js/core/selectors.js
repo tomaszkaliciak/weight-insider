@@ -20,6 +20,7 @@ export const selectInteractiveRegressionRange = (state) =>
   state.interactiveRegressionRange;
 export const selectRegressionStartDate = (state) => state.regressionStartDate;
 export const selectCurrentTheme = (state) => state.currentTheme;
+export const selectChartMode = (state) => state.chartMode ?? "weight";
 export const selectDisplayStats = (state) => state.displayStats;
 export const selectSeriesVisibility = (state) => state.seriesVisibility;
 export const selectHighlightedDate = (state) => state.highlightedDate;

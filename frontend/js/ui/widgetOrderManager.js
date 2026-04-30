@@ -82,8 +82,9 @@ export const WidgetOrderManager = {
       ghostClass: 'widget-drag-ghost',
       chosenClass: 'widget-drag-chosen',
       dragClass: 'widget-dragging',
-      // Ignore collapse-btn clicks so they don't accidentally start a drag
-      filter: '.widget-collapse-btn',
+      // Header controls should remain clickable instead of starting a drag.
+      filter: 'button, input, select, textarea, a',
+      preventOnFilter: false,
       onEnd() {
         const orderedIds = [...canvas.querySelectorAll(':scope > .bento-widget')]
           .filter((el) => el.id)

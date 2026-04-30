@@ -125,12 +125,12 @@ export const PeriodComparisonRenderer = {
   },
 
   _updateDateInputs() {
-    const formatDate = (d) => {
-      if (!d) return '';
-      const day = String(d.getDate()).padStart(2, '0');
-      const month = String(d.getMonth() + 1).padStart(2, '0');
+    const toIso = (d) => {
+      if (!(d instanceof Date) || isNaN(d.getTime())) return '';
       const year = d.getFullYear();
-      return `${day}-${month}-${year}`;
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
     };
 
     const p1Start = document.getElementById('period1-start');
@@ -138,10 +138,10 @@ export const PeriodComparisonRenderer = {
     const p2Start = document.getElementById('period2-start');
     const p2End = document.getElementById('period2-end');
 
-    if (p1Start) p1Start.value = formatDate(this._period1.start);
-    if (p1End) p1End.value = formatDate(this._period1.end);
-    if (p2Start) p2Start.value = formatDate(this._period2.start);
-    if (p2End) p2End.value = formatDate(this._period2.end);
+    if (p1Start) p1Start.value = toIso(this._period1.start);
+    if (p1End) p1End.value = toIso(this._period1.end);
+    if (p2Start) p2Start.value = toIso(this._period2.start);
+    if (p2End) p2End.value = toIso(this._period2.end);
   },
 
   _performComparison() {
@@ -272,17 +272,17 @@ export const PeriodComparisonRenderer = {
           <div class="period-input-group">
             <label class="period-label">Period 1</label>
             <div class="date-range-inputs">
-              <input type="text" id="period1-start" placeholder="DD-MM-YYYY" class="date-input" />
+              <input type="date" id="period1-start" class="date-input" />
               <span class="date-separator">to</span>
-              <input type="text" id="period1-end" placeholder="DD-MM-YYYY" class="date-input" />
+              <input type="date" id="period1-end" class="date-input" />
             </div>
           </div>
           <div class="period-input-group">
             <label class="period-label">Period 2</label>
             <div class="date-range-inputs">
-              <input type="text" id="period2-start" placeholder="DD-MM-YYYY" class="date-input" />
+              <input type="date" id="period2-start" class="date-input" />
               <span class="date-separator">to</span>
-              <input type="text" id="period2-end" placeholder="DD-MM-YYYY" class="date-input" />
+              <input type="date" id="period2-end" class="date-input" />
             </div>
           </div>
         </div>

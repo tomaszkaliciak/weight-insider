@@ -5,7 +5,7 @@ import { ui, cacheSelectors } from "./ui/uiCache.js";
 import { initializeChartSetup } from "./ui/chartSetup.js";
 import { EventHandlers } from "./interactions/eventHandlers.js";
 import { DataService } from "./core/dataService.js";
-import { StateManager } from "./core/stateManager.js";
+import { StateManager, ActionTypes } from "./core/stateManager.js";
 import { DomainManager } from "./core/domainManager.js";
 import { StatsManager } from "./core/statsManager.js";
 import { ThemeManager } from "./core/themeManager.js";
@@ -19,6 +19,7 @@ import { AnnotationListRenderer } from "./ui/renderers/annotationListRenderer.js
 import { PeriodizationRenderer } from "./ui/renderers/periodizationRenderer.js";
 import { PeriodComparisonRenderer } from "./ui/renderers/periodComparisonRenderer.js";
 import { GoalAlertRenderer } from "./ui/renderers/goalAlertRenderer.js";
+import { GoalInlineStatusRenderer } from "./ui/renderers/goalInlineStatusRenderer.js";
 import { GoalSuggestionRenderer } from "./ui/renderers/goalSuggestionRenderer.js";
 import { GoalHistoryRenderer } from "./ui/renderers/goalHistoryRenderer.js";
 import { EventCountdownRenderer } from "./ui/renderers/eventCountdownRenderer.js";
@@ -26,6 +27,7 @@ import { WeekendAnalysisRenderer } from "./ui/renderers/weekendAnalysisRenderer.
 import { PredictionBandsRenderer } from "./ui/renderers/predictionBandsRenderer.js";
 import { AdaptiveRateRenderer } from "./ui/renderers/adaptiveRateRenderer.js";
 import { CalorieAuditRenderer } from "./ui/renderers/calorieAuditRenderer.js";
+import { DataHealthRenderer } from "./ui/renderers/dataHealthRenderer.js";
 import { MonthlyReportRenderer } from "./ui/renderers/monthlyReportRenderer.js";
 import { WhatWorkedRenderer } from "./ui/renderers/whatWorkedRenderer.js";
 import { PlateauBreakerRenderer } from "./ui/renderers/plateauBreakerRenderer.js";
@@ -185,6 +187,7 @@ async function initialize() {
     AnnotationListRenderer.init();
     StatsDisplayRenderer.init();
     GoalAlertRenderer.init();
+    GoalInlineStatusRenderer.init();
     VitalStatsEnricher.init();
     GoalSuggestionRenderer.init();
     GoalHistoryRenderer.init();
@@ -209,6 +212,7 @@ async function initialize() {
     PredictionBandsRenderer.init();
     AdaptiveRateRenderer.init();
     CalorieAuditRenderer.init();
+    DataHealthRenderer.init();
     MonthlyReportRenderer.init();
     WhatWorkedRenderer.init();
     PlateauBreakerRenderer.init();

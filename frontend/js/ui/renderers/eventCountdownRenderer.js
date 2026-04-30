@@ -123,7 +123,7 @@ export const EventCountdownRenderer = {
           <input type="text" id="event-name" placeholder="Event name" class="event-input" />
         </div>
         <div class="form-row">
-          <input type="text" id="event-date" placeholder="DD-MM-YYYY" class="event-input" />
+          <input type="date" id="event-date" class="event-input" />
           <input type="number" id="event-weight" placeholder="Target kg" step="0.1" class="event-input event-input--small" />
         </div>
         <div class="form-row">

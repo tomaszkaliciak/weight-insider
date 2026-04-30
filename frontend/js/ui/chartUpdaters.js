@@ -125,6 +125,7 @@ export const FocusChartUpdater = {
       console.warn("FocusChartUpdater: Chart area or scales not ready for path update.");
       return;
     }
+    ui.chartContainer?.selectAll(".chart-empty-state").remove();
     // Capture current scales for generators
     const currentXScale = scales.x;
     const currentYScale = scales.y;
@@ -271,6 +272,83 @@ export const FocusChartUpdater = {
 
     updateSelection(ui.trendLine1, trendLine1Data, trendLineGen); // Use pre-calculated data
     updateSelection(ui.trendLine2, trendLine2Data, trendLineGen); // Use pre-calculated data
+  },
+
+  updateMetricMode(metricData, mode, options = {}) {
+    const kind = options.isInteractive ? "continuous" : (options.kind ?? "discrete");
+    const t = getChartTransition(kind);
+    const metricColor = mode === "calories" ? "var(--warning-color)" : "var(--info-color)";
+    const valid = metricData.filter(
+      (d) =>
+        d.value != null &&
+        d.date instanceof Date &&
+        !isNaN(d.date) &&
+        isFinite(scales.x(d.date)) &&
+        isFinite(scales.y(d.value)),
+    );
+    ui.chartContainer?.selectAll(".chart-empty-state").remove();
+    if (!valid.length) {
+      ui.chartContainer?.append("div")
+        .attr("class", "chart-empty-state")
+        .html(`
+          <strong>No ${mode === "calories" ? "calorie" : "TDEE"} data in this range</strong>
+          <span>${mode === "calories" ? "Log calorie intake or choose a wider date range." : "Need adaptive or imported expenditure data for TDEE view."}</span>
+        `);
+    }
+    const lineGen = d3.line()
+      .x((d) => scales.x(d.date))
+      .y((d) => scales.y(d.value))
+      .curve(d3.curveMonotoneX);
+
+    const path = valid.length ? lineGen(valid) : "";
+    ui.smaLine
+      ?.style("display", null)
+      .style("stroke", metricColor)
+      .style("filter", "none")
+      .transition(t)
+      .attr("d", path);
+
+    ui.smaAreaFill?.attr("d", "");
+    ui.bandArea?.attr("d", "");
+    ui.emaLine?.attr("d", "");
+    ui.regressionLine?.attr("d", "");
+    ui.goalLine?.attr("d", "");
+    ui.goalLineHit?.attr("d", "");
+    ui.goalConfidenceBand?.attr("d", "");
+    ui.trendLine1?.attr("d", "");
+    ui.trendLine2?.attr("d", "");
+
+    const dots = ui.rawDotsGroup
+      ?.selectAll(".raw-dot")
+      .data(valid, (d) => d.dateString || d.date.getTime());
+
+    dots?.join(
+      (enter) =>
+        enter.append("circle")
+          .attr("class", "raw-dot")
+          .attr("r", CONFIG.rawDotRadius)
+          .attr("cx", (d) => scales.x(d.date))
+          .attr("cy", (d) => scales.y(d.value))
+          .style("fill", metricColor)
+          .style("opacity", 0)
+          .style("pointer-events", "all")
+          .style("cursor", "pointer")
+          .on("mouseover", ChartInteractions.dotMouseOver)
+          .on("mouseout", ChartInteractions.dotMouseOut)
+          .on("click", ChartInteractions.dotClick)
+          .call((enter) => enter.transition(t).style("opacity", 0.55)),
+      (update) =>
+        update
+          .style("fill", metricColor)
+          .on("mouseover", ChartInteractions.dotMouseOver)
+          .on("mouseout", ChartInteractions.dotMouseOut)
+          .on("click", ChartInteractions.dotClick)
+          .call((update) => update.transition(t)
+            .attr("cx", (d) => scales.x(d.date))
+            .attr("cy", (d) => scales.y(d.value))
+            .style("opacity", 0.55)),
+      (exit) => exit.transition(t).style("opacity", 0).remove(),
+    );
   },
 
   /**

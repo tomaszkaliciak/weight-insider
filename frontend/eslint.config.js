@@ -39,6 +39,8 @@ export default [
         HTMLElement: "readonly",
         SVGElement: "readonly",
         Node: "readonly",
+        FileReader: "readonly",
+        FormData: "readonly",
         structuredClone: "readonly",
       },
     },
