@@ -116,10 +116,10 @@ function calculateDimensions() {
 
     // Ensure width/height are not negative or excessively small
     const width = Math.max(10, effectiveWidth - margins.left - margins.right);
-    const height = Math.max(10, effectiveHeight - margins.top - margins.bottom);
+    const height = Math.max(5, effectiveHeight - margins.top - margins.bottom);
 
     // Check validity based on calculated drawable area
-    const valid = width > 10 && height > 10;
+    const valid = width > 10 && height >= 5;
     return { width, height, valid };
   };
 

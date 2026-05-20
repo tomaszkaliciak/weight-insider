@@ -427,7 +427,7 @@ body.dark-theme ::-webkit-scrollbar-thumb:hover {
     /* .axis-label.scatter-axis-label-y override removed - invalid CSS property dy */
 
     #context-chart-container {
-        height: 55px;
+        height: 60px;
     }
 
     .axis text {
@@ -596,7 +596,7 @@ body.dark-theme ::-webkit-scrollbar-thumb:hover {
     }
 
     #context-chart-container {
-        height: 50px;
+        height: 60px;
     }
 
     #pinned-tooltip-container {
