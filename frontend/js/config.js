@@ -65,7 +65,7 @@ export const CONFIG = Object.freeze({
   // --- Interaction & Timing ---
   debounceResizeMs: 350, // Delay (ms) for debouncing window resize events
   transitionDurationMs: 300, // Default D3 transition duration (ms)
-  initialViewMonths: 3, // Default number of months shown on initial load
+  initialViewDays: 30, // Default number of days shown on initial load
   statusMessageDurationMs: 3000, // How long status messages stay visible (ms)
   tooltipDelayMs: 100, // Delay before tooltip appears (ms)
 

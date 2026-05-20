@@ -49,7 +49,7 @@ export const DomainManager = {
         "DomainManager: No valid date range in data. Using fallback.",
       );
       const today = new Date();
-      const past = d3.timeMonth.offset(today, -CONFIG.initialViewMonths);
+      const past = d3.timeDay.offset(today, -CONFIG.initialViewDays);
       contextDomainStart = past;
       contextDomainEnd = today;
       initialFocusStart = past;
@@ -65,11 +65,11 @@ export const DomainManager = {
       }
       // Set initial focus view end date to context end (which includes goal if set)
       initialFocusEnd = contextDomainEnd;
-      // Set initial focus view start date N months before DATA end date
+      // Set initial focus view start date N days before DATA end date
       // This ensures we always see recent data, even if goal is far in future
-      const defaultFocusStart = d3.timeMonth.offset(
+      const defaultFocusStart = d3.timeDay.offset(
         dataEndDate,
-        -CONFIG.initialViewMonths,
+        -CONFIG.initialViewDays,
       );
       initialFocusStart =
         defaultFocusStart < contextDomainStart
@@ -264,7 +264,7 @@ export const DomainManager = {
         "DomainManager: No valid date range in data for context. Using fallback.",
       );
       const today = new Date();
-      const past = d3.timeMonth.offset(today, -CONFIG.initialViewMonths);
+      const past = d3.timeDay.offset(today, -CONFIG.initialViewDays);
       contextDomainStart = past;
       contextDomainEnd = today;
     } else {
