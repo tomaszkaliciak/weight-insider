@@ -729,6 +729,14 @@ body.dark-theme ::-webkit-scrollbar-thumb:hover {
         min-height: 260px !important;
         max-height: 360px !important;
     }
+
+    #chart-container {
+        min-height: 180px !important;
+    }
+
+    #context-chart-container {
+        height: 40px !important;
+    }
 }
 
 
