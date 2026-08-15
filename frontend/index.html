@@ -46,6 +46,7 @@
                 <div class="budget-popover-row"><span class="budget-popover-label">Baseline TDEE</span><span id="budget-popover-tdee" class="budget-popover-value">--</span></div>
                 <div class="budget-popover-row"><span class="budget-popover-label">Target adjustment</span><span id="budget-popover-adj" class="budget-popover-value">--</span></div>
                 <div class="budget-popover-row"><span class="budget-popover-label">Today's logged</span><span id="budget-popover-logged" class="budget-popover-value">--</span></div>
+                <div id="budget-popover-bank" class="budget-popover-row"></div>
                 <div class="budget-popover-bar-wrap"><div id="budget-popover-bar" class="budget-popover-bar"></div></div>
                 <label class="budget-popover-toggle"><input type="checkbox" id="budget-maintenance-toggle"> Use maintenance target instead</label>
             </div>
@@ -79,7 +80,7 @@
                 <div class="text-subhero">Current Weight</div>
                 <div style="margin-top: auto; margin-bottom: auto;">
                     <span id="current-weight" class="text-hero">--</span>
-                    <span style="font-size: 1.2rem; font-weight: 500; color: var(--text-muted);">kg</span>
+                    <span id="hero-weight-unit" style="font-size: 1.2rem; font-weight: 500; color: var(--text-muted);">kg</span>
                 </div>
                 <div id="trend-flux-container" class="trend-flux-container" style="display:none; margin-top: 8px;">
                 </div>

@@ -1,15 +1,11 @@
 // js/ui/renderers/waterWeightRenderer.js
-// Detects and predicts water weight fluctuations
+// Detects and predicts water weight fluctuations, scale noise decomposition,
+// and provides Scale Noise Shield alerts when scale weight spikes.
 
 import { StateManager } from '../../core/stateManager.js';
 import * as Selectors from '../../core/selectors.js';
+import { UnitFormatter } from '../../core/unitFormatter.js';
 
-/**
- * Water Weight Predictor:
- * - Detect likely water weight fluctuations
- * - Analyze calorie swings and patterns
- * - Predict when water weight might drop
- */
 export const WaterWeightRenderer = {
   _container: null,
 
@@ -22,6 +18,7 @@ export const WaterWeightRenderer = {
 
     StateManager.subscribeToSpecificEvent('state:filteredDataChanged', () => this._analyze());
     StateManager.subscribeToSpecificEvent('state:displayStatsUpdated', () => this._analyze());
+    StateManager.subscribeToSpecificEvent('state:settingsChanged', () => this._analyze());
 
     setTimeout(() => this._analyze(), 1350);
   },
@@ -41,13 +38,12 @@ export const WaterWeightRenderer = {
 
   _detectWaterWeight(data) {
     const recent = data.slice(-14);
-    const patterns = [];
 
     // Calculate baseline volatility
     const weights = recent.filter(d => d.value != null).map(d => d.value);
-    const avgWeight = weights.reduce((a, b) => a + b, 0) / weights.length;
+    const avgWeight = weights.length > 0 ? weights.reduce((a, b) => a + b, 0) / weights.length : 70;
     const volatility = Math.sqrt(
-      weights.reduce((sum, w) => sum + Math.pow(w - avgWeight, 2), 0) / weights.length
+      weights.reduce((sum, w) => sum + Math.pow(w - avgWeight, 2), 0) / (weights.length || 1)
     );
 
     // Detect calorie spikes (potential water retention trigger)
@@ -55,24 +51,47 @@ export const WaterWeightRenderer = {
     const avgCalories = withCalories.length > 0 ?
       withCalories.reduce((s, d) => s + d.calorieIntake, 0) / withCalories.length : 2000;
 
-    // Look for high calorie days followed by weight spike
     let refeedDetected = false;
     let recentSpike = null;
+    let noiseShieldAlert = null;
 
+    // Check latest 2 days for Scale Noise Shield
+    const validWeights = recent.filter(d => d.value != null);
+    if (validWeights.length >= 2) {
+      const prev = validWeights[validWeights.length - 2];
+      const curr = validWeights[validWeights.length - 1];
+      const jumpKg = curr.value - prev.value;
+
+      if (jumpKg >= 0.35) { // ~0.8 lbs spike
+        const prevExpenditure = prev.googleFitExpenditure || prev.adaptiveTDEE || 2200;
+        const prevIntake = prev.calorieIntake || avgCalories;
+        const netDeficitSurplus = prevIntake - prevExpenditure;
+        const fatChangeKg = netDeficitSurplus / 7700;
+        const fluidRetentionKg = Math.max(0, jumpKg - fatChangeKg);
+        const waterPct = Math.min(98, Math.max(75, Math.round((fluidRetentionKg / jumpKg) * 100)));
+
+        noiseShieldAlert = {
+          jumpFormatted: UnitFormatter.formatWeightDiff(jumpKg, 1, true),
+          waterPercent: waterPct,
+          estimatedFatFormatted: UnitFormatter.formatWeightDiff(fatChangeKg, 2, true),
+          fluidAmountFormatted: UnitFormatter.formatWeight(fluidRetentionKg, 1, true),
+        };
+      }
+    }
+
+    // Look for high calorie days followed by weight spike
     for (let i = 1; i < recent.length; i++) {
       const prev = recent[i - 1];
       const curr = recent[i];
 
-      // High carb/calorie day
-      if (prev.calorieIntake != null && prev.calorieIntake > avgCalories * 1.3) {
-        // Followed by weight jump
+      if (prev.calorieIntake != null && prev.calorieIntake > avgCalories * 1.25) {
         if (curr.value != null && prev.value != null) {
           const jump = curr.value - prev.value;
-          if (jump > volatility * 1.5) {
+          if (jump > volatility * 1.3) {
             refeedDetected = true;
             recentSpike = {
               date: curr.date,
-              amount: jump,
+              amountKg: jump,
               trigger: 'High calorie day',
               calorieExcess: prev.calorieIntake - avgCalories
             };
@@ -87,16 +106,15 @@ export const WaterWeightRenderer = {
 
     for (let i = recent.length - 1; i >= Math.max(0, recent.length - 7); i--) {
       const d = recent[i];
-      if (d.calorieIntake != null && d.googleFitExpenditure != null) {
-        if (d.calorieIntake < d.googleFitExpenditure - 200) {
+      if (d.calorieIntake != null && (d.googleFitExpenditure || d.adaptiveTDEE)) {
+        const exp = d.googleFitExpenditure || d.adaptiveTDEE;
+        if (d.calorieIntake < exp - 200) {
           daysInDeficit++;
         }
       }
     }
 
-    if (daysInDeficit >= 5) {
-      wooshPotential = true;
-    }
+    if (daysInDeficit >= 5) wooshPotential = true;
 
     // Calculate expected vs actual based on calorie balance
     const last7 = recent.slice(-7);
@@ -104,8 +122,9 @@ export const WaterWeightRenderer = {
     let daysWithData = 0;
 
     last7.forEach(d => {
-      if (d.calorieIntake != null && d.googleFitExpenditure != null) {
-        totalDeficit += d.googleFitExpenditure - d.calorieIntake;
+      const exp = d.googleFitExpenditure || d.adaptiveTDEE;
+      if (d.calorieIntake != null && exp != null) {
+        totalDeficit += exp - d.calorieIntake;
         daysWithData++;
       }
     });
@@ -119,20 +138,20 @@ export const WaterWeightRenderer = {
       waterRetention = actualWeeklyChange - expectedWeeklyChange;
     }
 
-    // Day of week patterns
     const dayOfWeekVolatility = this._analyzeDayOfWeekPatterns(data);
 
     return {
       currentStatus: this._getWaterStatus(waterRetention, wooshPotential, refeedDetected),
-      waterRetention: Math.abs(waterRetention),
+      waterRetentionKg: Math.abs(waterRetention),
       isRetaining: waterRetention > 0.2,
       wooshPotential,
       daysInDeficit,
       refeedDetected,
       recentSpike,
+      noiseShieldAlert,
       volatility,
-      expectedChange: expectedWeeklyChange,
-      actualChange: actualWeeklyChange,
+      expectedChangeKg: expectedWeeklyChange,
+      actualChangeKg: actualWeeklyChange,
       dayOfWeekVolatility,
       tips: this._generateTips(wooshPotential, refeedDetected, waterRetention)
     };
@@ -164,7 +183,7 @@ export const WaterWeightRenderer = {
       const changes = byDay[i];
       if (changes.length >= 3) {
         result[dayNames[i]] = {
-          avg: changes.reduce((a, b) => a + b, 0) / changes.length,
+          avgKg: changes.reduce((a, b) => a + b, 0) / changes.length,
           count: changes.length
         };
       }
@@ -177,21 +196,20 @@ export const WaterWeightRenderer = {
     const tips = [];
 
     if (retention > 0.3) {
-      tips.push({ icon: '💧', tip: 'Check sodium intake - high salt causes water retention' });
+      tips.push({ icon: '💧', tip: 'Check sodium intake - high salt causes temporary fluid retention' });
       tips.push({ icon: '😴', tip: 'Poor sleep increases cortisol and water retention' });
     }
 
     if (woosh) {
       tips.push({ icon: '⏰', tip: 'A "woosh" drop may come soon - stay consistent!' });
-      tips.push({ icon: '🍺', tip: 'A small carb refeed or alcohol can trigger a woosh' });
     }
 
     if (refeed) {
-      tips.push({ icon: '⏳', tip: 'Post-refeed water weight typically drops in 2-4 days' });
+      tips.push({ icon: '⏳', tip: 'Post-refeed water weight typically flushes in 2-4 days' });
     }
 
     if (tips.length === 0) {
-      tips.push({ icon: '👍', tip: 'Weight is tracking normally with expected fluctuations' });
+      tips.push({ icon: '👍', tip: 'Weight is tracking normally within expected fluctuation bounds' });
     }
 
     return tips;
@@ -201,6 +219,11 @@ export const WaterWeightRenderer = {
     if (!this._container) return;
 
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const unitLabel = UnitFormatter.getUnitLabel().toUpperCase();
+
+    const expectedStr = UnitFormatter.formatWeightDiff(analysis.expectedChangeKg, 2);
+    const actualStr = analysis.actualChangeKg != null ? UnitFormatter.formatWeightDiff(analysis.actualChangeKg, 2) : 'N/A';
+    const retentionStr = UnitFormatter.formatWeight(analysis.waterRetentionKg, 1);
 
     this._container.innerHTML = `
       <div class="water-weight-dashboard">
@@ -209,20 +232,30 @@ export const WaterWeightRenderer = {
           <span class="status-text">${analysis.currentStatus.text}</span>
         </div>
 
+        ${analysis.noiseShieldAlert ? `
+          <div class="woosh-alert" style="background: rgba(59, 130, 246, 0.12); border-color: rgba(59, 130, 246, 0.3);">
+            <span class="alert-icon">🛡️</span>
+            <div class="alert-content">
+              <strong>Scale Noise Shield</strong>
+              <p>Recent scale increase of <strong>${analysis.noiseShieldAlert.jumpFormatted}</strong> is <strong>${analysis.noiseShieldAlert.waterPercent}% fluid retention</strong> (${analysis.noiseShieldAlert.fluidAmountFormatted}). Estimated true fat change: ${analysis.noiseShieldAlert.estimatedFatFormatted}.</p>
+            </div>
+          </div>
+        ` : ''}
+
         <div class="water-stats">
           <div class="stat-card">
             <div class="stat-label">Expected Δ</div>
-            <div class="stat-value">${analysis.expectedChange > 0 ? '+' : ''}${analysis.expectedChange.toFixed(2)}</div>
-            <div class="stat-note">KG FROM BALANCE</div>
+            <div class="stat-value">${expectedStr}</div>
+            <div class="stat-note">${unitLabel} FROM BALANCE</div>
           </div>
           <div class="stat-card">
             <div class="stat-label">Actual Δ</div>
-            <div class="stat-value">${analysis.actualChange != null ? (analysis.actualChange > 0 ? '+' : '') + analysis.actualChange.toFixed(2) : 'N/A'}</div>
-            <div class="stat-note">KG LAST 7 DAYS</div>
+            <div class="stat-value">${actualStr}</div>
+            <div class="stat-note">${unitLabel} LAST 7 DAYS</div>
           </div>
           <div class="stat-card ${analysis.isRetaining ? 'warning' : ''}">
             <div class="stat-label">Water Est.</div>
-            <div class="stat-value">${analysis.isRetaining ? '+' : ''}${analysis.waterRetention.toFixed(1)}</div>
+            <div class="stat-value">${analysis.isRetaining ? '+' : ''}${retentionStr}</div>
             <div class="stat-note">${analysis.isRetaining ? 'LIKELY RETAINED' : 'NORMAL RANGE'}</div>
           </div>
         </div>
@@ -242,7 +275,7 @@ export const WaterWeightRenderer = {
             <span class="spike-icon">📊</span>
             <div class="spike-content">
               <strong>Post-Feeding Spike</strong>
-              <p>Weight jumped by ${analysis.recentSpike.amount.toFixed(1)} kg after a ~${Math.round(analysis.recentSpike.calorieExcess)} kcal surplus. This is typical glycogen and water restoration.</p>
+              <p>Weight jumped by ${UnitFormatter.formatWeight(analysis.recentSpike.amountKg, 1, true)} after a ~${Math.round(analysis.recentSpike.calorieExcess)} kcal surplus. This is typical glycogen and water restoration.</p>
             </div>
           </div>
         ` : ''}
@@ -252,16 +285,18 @@ export const WaterWeightRenderer = {
             <h4>📅 Weekly Volatility Patterns</h4>
             <div class="day-pattern-grid">
               ${dayNames.map(day => {
-      const data = analysis.dayOfWeekVolatility[day];
-      if (!data) return `<div class="day-box no-data"><span class="day-name">${day}</span><span class="day-change">-</span></div>`;
-      const cls = data.avg > 0.15 ? 'up' : data.avg < -0.15 ? 'down' : 'neutral';
-      return `
+                const d = analysis.dayOfWeekVolatility[day];
+                if (!d) return `<div class="day-box no-data"><span class="day-name">${day}</span><span class="day-change">-</span></div>`;
+                const changeVal = UnitFormatter.convert(d.avgKg);
+                const cls = changeVal > 0.3 ? 'up' : changeVal < -0.3 ? 'down' : 'neutral';
+                const sign = changeVal > 0 ? '+' : '';
+                return `
                   <div class="day-box ${cls}">
                     <span class="day-name">${day}</span>
-                    <span class="day-change">${data.avg > 0 ? '+' : ''}${data.avg.toFixed(2)}</span>
+                    <span class="day-change">${sign}${changeVal.toFixed(2)}</span>
                   </div>
                 `;
-    }).join('')}
+              }).join('')}
             </div>
           </div>
         ` : ''}

@@ -4,6 +4,7 @@ import { StateManager } from "../../core/stateManager.js";
 import { EventHandlers } from "../../interactions/eventHandlers.js";
 import * as Selectors from "../../core/selectors.js";
 import { AnimatedNumbers } from "../animatedNumbers.js";
+import { UnitFormatter } from "../../core/unitFormatter.js";
 
 // Keys that should have animated number transitions
 const ANIMATED_KEYS = new Set([
@@ -90,25 +91,33 @@ export const StatsDisplayRenderer = {
       }
     };
 
-    // Update all stat elements using the provided displayStats object
-    updateElement("startingWeight", displayStats.startingWeight, fv, 1);
-    updateElement("currentWeight", displayStats.currentWeight, fv, 1);
-    updateElement("currentSma", displayStats.currentSma, fv, 1);
-    updateElement("totalChange", displayStats.totalChange, fv, 1);
-    updateElement("maxWeight", displayStats.maxWeight, fv, 1);
+    // Update weight unit labels if unit element exists
+    const currentUnit = UnitFormatter.getUnitLabel();
+    const heroUnitEl = document.getElementById("hero-weight-unit");
+    if (heroUnitEl) heroUnitEl.textContent = currentUnit;
+
+    // Update all stat elements using the provided displayStats object and UnitFormatter
+    const fmtW = (v, dec = 1) => UnitFormatter.formatWeight(v, dec);
+    const fmtDiff = (v, dec = 1) => UnitFormatter.formatWeightDiff(v, dec);
+
+    updateElement("startingWeight", displayStats.startingWeight, fmtW, 1);
+    updateElement("currentWeight", displayStats.currentWeight, fmtW, 1);
+    updateElement("currentSma", displayStats.currentSma, fmtW, 1);
+    updateElement("totalChange", displayStats.totalChange, fmtDiff, 1);
+    updateElement("maxWeight", displayStats.maxWeight, fmtW, 1);
     updateElement("maxWeightDate", displayStats.maxWeightDate, fd);
-    updateElement("minWeight", displayStats.minWeight, fv, 1);
+    updateElement("minWeight", displayStats.minWeight, fmtW, 1);
     updateElement("minWeightDate", displayStats.minWeightDate, fd);
-    updateElement("startingLbm", displayStats.startingLbm, fv, 1);
-    updateElement("currentLbmSma", displayStats.currentLbmSma, fv, 1);
-    updateElement("totalLbmChange", displayStats.totalLbmChange, fv, 1);
-    updateElement("currentFmSma", displayStats.currentFmSma, fv, 1);
-    updateElement("totalFmChange", displayStats.totalFmChange, fv, 1);
+    updateElement("startingLbm", displayStats.startingLbm, fmtW, 1);
+    updateElement("currentLbmSma", displayStats.currentLbmSma, fmtW, 1);
+    updateElement("totalLbmChange", displayStats.totalLbmChange, fmtDiff, 1);
+    updateElement("currentFmSma", displayStats.currentFmSma, fmtW, 1);
+    updateElement("totalFmChange", displayStats.totalFmChange, fmtDiff, 1);
     updateElement("volatilityScore", displayStats.volatility, fv, 2);
     updateElement("rollingVolatility", displayStats.rollingVolatility, fv, 2);
     updateElement(
       "rollingWeeklyChangeSma",
-      displayStats.currentWeeklyRate,
+      displayStats.currentWeeklyRate != null ? UnitFormatter.convert(displayStats.currentWeeklyRate) : null,
       fv,
       2,
     );

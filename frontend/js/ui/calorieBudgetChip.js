@@ -82,6 +82,23 @@ function _update() {
     _barEl.style.width = "0";
   }
 
+  // Calculate Weekly Calorie Bank (last 7 days cumulative relative to target)
+  const bankEl = document.getElementById("budget-popover-bank");
+  if (target != null && data && data.length) {
+    const recent7 = data.slice(-7).filter(d => d.calorieIntake != null);
+    if (recent7.length > 0) {
+      const totalLogged7 = recent7.reduce((sum, d) => sum + d.calorieIntake, 0);
+      const totalTarget7 = target * recent7.length;
+      const bankedDiff = Math.round(totalTarget7 - totalLogged7);
+
+      if (bankEl) {
+        const sign = bankedDiff >= 0 ? "+" : "";
+        const labelClass = bankedDiff >= 0 ? "budget-pos" : "budget-neg";
+        bankEl.innerHTML = `<span class="budget-popover-label">Weekly Flex Bank</span><span class="budget-popover-value ${labelClass}">${sign}${bankedDiff} kcal</span>`;
+      }
+    }
+  }
+
   if (_mainToggle) _mainToggle.checked = useMaintenance;
 }
 

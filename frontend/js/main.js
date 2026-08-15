@@ -74,6 +74,7 @@ import { SettingsPanel } from "./ui/settingsPanel.js";
 import { CalorieBudgetChip } from "./ui/calorieBudgetChip.js";
 import { RefeedRecommenderRenderer } from "./ui/renderers/refeedRecommenderRenderer.js";
 import { WhatIfOverlayRenderer } from "./ui/renderers/whatIfOverlayRenderer.js";
+import { CommandPalette } from "./ui/components/commandPalette.js";
 
 /**
  * Defers renderer.init() until the element with anchorId enters the viewport.
@@ -148,9 +149,10 @@ async function initialize() {
     ManualEntryWidget.init();
     DateInputUX.init();
 
-    // 1g. Settings panel + calorie budget chip
+    // 1g. Settings panel + calorie budget chip + command palette
     SettingsPanel.init();
     CalorieBudgetChip.init();
+    CommandPalette.init();
 
 
 

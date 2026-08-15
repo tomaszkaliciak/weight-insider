@@ -5,6 +5,7 @@
 import { StateManager } from '../../core/stateManager.js';
 import { Utils } from '../../core/utils.js';
 import { MacroTargetService } from '../../core/macroTargetService.js';
+import { AdaptiveMacroCoach } from '../../core/adaptiveMacroCoach.js';
 import * as Selectors from '../../core/selectors.js';
 
 export const MacroSummaryRenderer = {
@@ -74,6 +75,8 @@ export const MacroSummaryRenderer = {
 
             ${this._showTargetForm ? this._targetFormHTML() : ''}
 
+            ${this._adaptiveCoachHTML()}
+
             ${adherence.hasTargets ? this._adherenceHTML(adherence) : ''}
             ${periodInsights ? this._periodInsightsHTML(periodInsights) : ''}
 
@@ -102,6 +105,24 @@ export const MacroSummaryRenderer = {
         `;
 
         this._bindEvents();
+    },
+
+    _adaptiveCoachHTML() {
+        const plan = AdaptiveMacroCoach.calculatePlan();
+        if (!plan) return '';
+
+        return `
+            <div class="adaptive-coach-card" style="margin: 10px 0; padding: 12px; border-radius: 8px; background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.2); font-size: 0.85rem;">
+                <div style="display:flex; justify-space-between; align-items:center; margin-bottom: 6px;">
+                    <strong style="color: var(--primary-color);">⚡ Adaptive Coach Targets</strong>
+                    <button type="button" id="btn-apply-adaptive-plan" class="btn-primary btn-sm" style="padding: 3px 8px; font-size: 0.75rem;">Apply Targets</button>
+                </div>
+                <div style="display:flex; gap: 12px; color: var(--text-secondary); font-size: 0.8rem;">
+                    <div>🏋️ <strong>Train Days:</strong> ${plan.trainingDays.calories} kcal (${plan.trainingDays.carbs}g C)</div>
+                    <div>😴 <strong>Rest Days:</strong> ${plan.restDays.calories} kcal (${plan.restDays.carbs}g C)</div>
+                </div>
+            </div>
+        `;
     },
 
     _targetFormHTML() {
@@ -264,6 +285,16 @@ export const MacroSummaryRenderer = {
     },
 
     _bindEvents() {
+        // Apply adaptive plan
+        this._container.querySelector('#btn-apply-adaptive-plan')?.addEventListener('click', () => {
+            const plan = AdaptiveMacroCoach.calculatePlan();
+            if (plan) {
+                AdaptiveMacroCoach.applyPlan(plan);
+                this._targets = MacroTargetService.load();
+                this._renderFull();
+            }
+        });
+
         // Toggle target form
         this._container.querySelector('.btn-macro-targets-toggle')?.addEventListener('click', () => {
             this._showTargetForm = !this._showTargetForm;

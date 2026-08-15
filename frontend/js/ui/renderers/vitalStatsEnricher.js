@@ -3,6 +3,7 @@
 // Injects .stat-delta spans dynamically — no HTML changes required.
 
 import { StateManager } from '../../core/stateManager.js';
+import { UnitFormatter } from '../../core/unitFormatter.js';
 
 const STATS = [
     { parentId: 'current-sma', deltaId: 'vs-delta-sma' },
@@ -42,7 +43,8 @@ export const VitalStatsEnricher = {
             if (rate != null && !isNaN(rate)) {
                 const dir = rate > 0.03 ? '▲' : rate < -0.03 ? '▼' : '→';
                 const cls = rate > 0.03 ? 'stat-delta--up' : rate < -0.03 ? 'stat-delta--down' : 'stat-delta--neutral';
-                smaD.textContent = `${dir} ${Math.abs(rate).toFixed(2)} kg/wk`;
+                const rateStr = UnitFormatter.formatRate(Math.abs(rate), 2, true);
+                smaD.textContent = `${dir} ${rateStr}`;
                 smaD.className = `stat-delta ${cls}`;
             } else {
                 smaD.textContent = '';

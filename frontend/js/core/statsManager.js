@@ -587,6 +587,18 @@ export const StatsManager = {
         ? displayStats.currentFmSma - startingFmSma
         : null;
 
+    // Quality of Weight Loss Ratio (% fat vs % lean mass)
+    if (displayStats.totalChange != null && displayStats.totalChange < 0 && displayStats.totalFmChange != null) {
+      const fatLossRatio = Math.min(100, Math.max(0, Math.round((displayStats.totalFmChange / displayStats.totalChange) * 100)));
+      displayStats.qualityOfWeightLoss = {
+        fatLossPercent: fatLossRatio,
+        leanMassLossPercent: 100 - fatLossRatio,
+        rating: fatLossRatio >= 80 ? 'Optimal' : fatLossRatio >= 65 ? 'Good' : 'Sub-optimal',
+      };
+    } else {
+      displayStats.qualityOfWeightLoss = null;
+    }
+
     // Analysis Range Specific Calculations
     if (analysisRange.start && analysisRange.end && processedData.length > 0) {
       results.plateaus = this._detectPlateaus(processedData);
