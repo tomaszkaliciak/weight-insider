@@ -44,6 +44,24 @@ export const selectPeriodizationPhases = (state) => state.periodizationPhases;
 export const selectWorkoutCorrelation = (state) => state.workoutCorrelation;
 export const selectSimulationOverlay = (state) => state.simulationOverlay;
 export const selectWeightUnit = (state) => state.settings?.weightUnit ?? "kg";
+
+/**
+ * Best available TDEE estimate from displayStats.
+ * Canonical fields are avgTDEE_Adaptive / avgTDEE_WgtChange / avgExpenditureGFit.
+ * @param {object} [displayStats]
+ * @param {number|null} [fallback=null]
+ * @returns {number|null}
+ */
+export const selectBaselineTdee = (displayStats, fallback = null) => {
+  const v =
+    displayStats?.avgTDEE_Adaptive ??
+    displayStats?.avgTDEE_WgtChange ??
+    displayStats?.avgExpenditureGFit ??
+    displayStats?.adaptiveTDEE ??
+    displayStats?.avgTDEE ??
+    displayStats?.trendTDEE;
+  return v != null && !isNaN(v) ? v : fallback;
+};
 export const selectAnimationsEnabled = (state) => state.settings?.animationsEnabled !== false;
 export const selectAnimationSpeed = (state) => state.settings?.animationSpeed ?? 1.0;
 

@@ -30,12 +30,6 @@ export const KeyboardNav = {
         }
 
         switch (e.key) {
-            case 'ArrowLeft':
-            case 'ArrowRight':
-                this._navigateTabs(e.key === 'ArrowRight' ? 1 : -1);
-                e.preventDefault();
-                break;
-
             case 'Escape':
                 if (document.fullscreenElement) {
                     document.exitFullscreen();

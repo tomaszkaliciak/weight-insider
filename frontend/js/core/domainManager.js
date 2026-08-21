@@ -141,11 +141,14 @@ export const DomainManager = {
     const chartMode = Selectors.selectChartMode(stateSnapshot);
 
     if (chartMode !== "weight") {
-      const accessor = chartMode === "calories"
-        ? (d) => d.calorieIntake
-        : (d) => d.adaptiveTDEE ?? d.googleFitTDEE ?? d.trendTDEE;
+      const accessor = (d) => {
+        const primary = chartMode === "calories"
+          ? d.calorieIntake
+          : (d.adaptiveTDEE ?? d.googleFitTDEE ?? d.trendTDEE);
+        return [primary, d.googleFitTDEE];
+      };
       const values = filteredData
-        .map(accessor)
+        .flatMap(accessor)
         .filter((value) => value != null && isFinite(value));
       if (values.length) {
         const extent = d3.extent(values);

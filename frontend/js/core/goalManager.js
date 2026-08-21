@@ -33,7 +33,7 @@ export const GoalManager = {
   },
   _goalFingerprint(goal) {
     if (!this._isValidGoal(goal)) return null;
-    const dateStr = goal.date.toISOString().slice(0, 10);
+    const dateStr = Utils.formatDate(goal.date);
     const rateStr = goal.targetRate != null && !isNaN(goal.targetRate)
       ? goal.targetRate.toFixed(2)
       : "na";
@@ -194,17 +194,19 @@ export const GoalManager = {
           : "active";
 
     const existing = history.find((entry) => entry.fingerprint === fingerprint);
+    const targetDateStr = Utils.formatDate(currentGoal.date);
+    const achievedDateStr =
+      goalAchievedDate instanceof Date && !isNaN(goalAchievedDate.getTime())
+        ? Utils.formatDate(goalAchievedDate)
+        : null;
     const basePayload = {
       fingerprint,
       targetWeight: currentGoal.weight,
-      targetDate: currentGoal.date.toISOString().slice(0, 10),
+      targetDate: targetDateStr === "N/A" ? null : targetDateStr,
       targetRate: currentGoal.targetRate,
       lastSeenAt: nowIso,
       status: derivedStatus,
-      achievedDate:
-        goalAchievedDate instanceof Date && !isNaN(goalAchievedDate.getTime())
-          ? goalAchievedDate.toISOString().slice(0, 10)
-          : null,
+      achievedDate: achievedDateStr === "N/A" ? null : achievedDateStr,
       lastConfidencePct: confidencePct,
       lastKnownWeight: currentWeight,
       lastKnownRate: currentRate,
@@ -280,13 +282,13 @@ export const GoalManager = {
       // Prepare object for storage, ensuring date is formatted correctly
       const goalToStore = {
         weight: currentGoal.weight,
-        // Format Date object to YYYY-MM-DD string or null
         date:
           currentGoal.date instanceof Date && !isNaN(currentGoal.date)
-            ? currentGoal.date.toISOString().slice(0, 10)
+            ? Utils.formatDate(currentGoal.date)
             : null,
         targetRate: currentGoal.targetRate,
       };
+      if (goalToStore.date === "N/A") goalToStore.date = null;
 
       localStorage.setItem(
         CONFIG.localStorageKeys.goal,

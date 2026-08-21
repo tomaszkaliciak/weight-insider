@@ -79,7 +79,8 @@ export const AdaptiveMacroCoach = {
    */
   applyPlan(plan) {
     if (!plan || !plan.targets) return;
-    MacroTargetService.save(plan.targets);
+    const existing = MacroTargetService.load();
+    MacroTargetService.save({ ...existing, ...plan.targets });
     StateManager.dispatch({
       type: 'UPDATE_SETTINGS',
       payload: { macroTargetsAppliedAt: new Date().toISOString() },

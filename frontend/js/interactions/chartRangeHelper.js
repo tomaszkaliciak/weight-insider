@@ -1,7 +1,5 @@
 // js/interactions/chartRangeHelper.js
 // Shared helper for cross-widget chart range navigation.
-// Dispatches SET_ANALYSIS_RANGE, updates the chart scales, syncs the brush,
-// and reflects the new range in the Analysis Range date inputs.
 
 import { StateManager, ActionTypes } from '../core/stateManager.js';
 import { scales } from '../ui/chartSetup.js';
@@ -9,12 +7,36 @@ import { ChartInteractions } from './chartInteractions.js';
 import { ui } from '../ui/uiCache.js';
 import { Utils } from '../core/utils.js';
 
+function syncRangeInputs(start, end) {
+  const startNode = ui.analysisStartDateInput?.node?.();
+  const endNode = ui.analysisEndDateInput?.node?.();
+  const startStr = startNode?.type === "date"
+    ? Utils.formatDate(start)
+    : Utils.formatDateDMY(start);
+  const endStr = endNode?.type === "date"
+    ? Utils.formatDate(end)
+    : Utils.formatDateDMY(end);
+  if (ui.analysisStartDateInput) ui.analysisStartDateInput.property("value", startStr);
+  if (ui.analysisEndDateInput) ui.analysisEndDateInput.property("value", endStr);
+}
+
+function applyDomain(start, end, { clearHighlight = true } = {}) {
+  StateManager.dispatch({
+    type: ActionTypes.SET_ANALYSIS_RANGE,
+    payload: { start, end },
+  });
+  StateManager.dispatch({ type: ActionTypes.SET_PINNED_TOOLTIP, payload: null });
+  if (clearHighlight) {
+    StateManager.dispatch({ type: ActionTypes.SET_HIGHLIGHTED_DATE, payload: null });
+  }
+
+  if (scales.x) scales.x.domain([start, end]);
+  ChartInteractions.syncBrushAndZoomToFocus();
+  syncRangeInputs(start, end);
+}
+
 /**
  * Navigate the main chart to the given date range.
- * Mirrors the logic in formHandlers.js debouncedRangeInputChange.
- *
- * @param {Date} rawStart  - Start of the range (will be clamped to start-of-day)
- * @param {Date} rawEnd    - End of the range (will be clamped to end-of-day)
  */
 export function setAnalysisRangeAndSyncChart(rawStart, rawEnd) {
   if (!(rawStart instanceof Date) || !(rawEnd instanceof Date)) return;
@@ -22,20 +44,33 @@ export function setAnalysisRangeAndSyncChart(rawStart, rawEnd) {
 
   const start = new Date(new Date(rawStart).setHours(0, 0, 0, 0));
   const end   = new Date(new Date(rawEnd).setHours(23, 59, 59, 999));
+  applyDomain(start, end, { clearHighlight: true });
+}
 
-  StateManager.dispatch({
-    type: ActionTypes.SET_ANALYSIS_RANGE,
-    payload: { start, end },
-  });
-  StateManager.dispatch({ type: ActionTypes.SET_PINNED_TOOLTIP, payload: null });
-  StateManager.dispatch({ type: ActionTypes.SET_HIGHLIGHTED_DATE, payload: null });
+/**
+ * Shift the current window so `date` is inside it. Keeps duration. Does not clear highlight.
+ */
+export function panRangeToInclude(date) {
+  if (!(date instanceof Date) || isNaN(date) || !scales.x) return;
+  const domain = scales.x.domain();
+  if (!Array.isArray(domain) || domain.length < 2) return;
+  const [d0, d1] = domain;
+  const t = date.getTime();
+  if (t >= d0.getTime() && t <= d1.getTime()) return;
 
-  if (scales.x) scales.x.domain([start, end]);
-  ChartInteractions.syncBrushAndZoomToFocus();
+  const duration = d1.getTime() - d0.getTime();
+  if (!(duration > 0)) return;
 
-  // Reflect in the Analysis Range input fields (DD-MM-YYYY format)
-  const startStr = Utils.formatDateDMY(start);
-  const endStr = Utils.formatDateDMY(end);
-  if (ui.analysisStartDateInput) ui.analysisStartDateInput.property('value', startStr);
-  if (ui.analysisEndDateInput) ui.analysisEndDateInput.property('value', endStr);
+  let start;
+  let end;
+  if (t < d0.getTime()) {
+    start = new Date(date);
+    start.setHours(0, 0, 0, 0);
+    end = new Date(start.getTime() + duration);
+  } else {
+    end = new Date(date);
+    end.setHours(23, 59, 59, 999);
+    start = new Date(end.getTime() - duration);
+  }
+  applyDomain(start, end, { clearHighlight: false });
 }

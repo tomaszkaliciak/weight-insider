@@ -112,7 +112,7 @@ export const ExecutiveHubRenderer = {
                 </div>
 
                 <!-- Metric 3: Adaptive TDEE -->
-                <div class="hub-metric">
+                <button type="button" class="hub-metric stat-explain-btn" data-stat="tdee" aria-expanded="false">
                     <div class="hub-label">Est. Daily TDEE</div>
                     <div class="hub-value">
                         ${fv(tdee, 0)}
@@ -121,7 +121,7 @@ export const ExecutiveHubRenderer = {
                     <div class="hub-status optimal">
                         ${stats.baselineTDEESource || 'Adaptive'}
                     </div>
-                </div>
+                </button>
 
                 <!-- Metric 4: Goal Status -->
                 <div class="hub-metric">

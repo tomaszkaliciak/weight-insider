@@ -5,8 +5,10 @@
 import { StateManager } from "../../core/stateManager.js";
 import * as Selectors from "../../core/selectors.js";
 import { Utils } from "../../core/utils.js";
+import { computePhaseGoalProgress, phaseForGoal } from "../../core/phaseGoalProgress.js";
 
 let _container = null;
+let _phaseContainer = null;
 
 function _formatKg(value) {
   if (value == null || !isFinite(value)) return "--";
@@ -30,9 +32,27 @@ function _classify(currentRate, requiredRate, isGaining) {
   return "off-track";
 }
 
+function _renderPhase(state) {
+  if (!_phaseContainer) return;
+  const phases = Selectors.selectPeriodizationPhases(state) || [];
+  const goal = Selectors.selectGoal(state);
+  const processed = Selectors.selectProcessedData(state) || [];
+  const range = Selectors.selectAnalysisRange(state);
+  const phase = phaseForGoal(phases, range, processed);
+  const progress = computePhaseGoalProgress({ phase, processed, goal });
+  if (!progress) {
+    _phaseContainer.hidden = true;
+    _phaseContainer.textContent = "";
+    return;
+  }
+  _phaseContainer.hidden = false;
+  _phaseContainer.textContent = progress.copy;
+}
+
 function _render() {
-  if (!_container) return;
   const state = StateManager.getState();
+  _renderPhase(state);
+  if (!_container) return;
   const goal = Selectors.selectGoal(state);
   const stats = state.displayStats || {};
 
@@ -85,10 +105,13 @@ function _onClick(event) {
 export const GoalInlineStatusRenderer = {
   init() {
     _container = document.getElementById("goal-inline-status");
-    if (!_container) return;
-    _container.addEventListener("click", _onClick);
+    _phaseContainer = document.getElementById("goal-phase-status");
+    if (!_container && !_phaseContainer) return;
+    _container?.addEventListener("click", _onClick);
     StateManager.subscribeToSpecificEvent("state:goalChanged", _render);
     StateManager.subscribeToSpecificEvent("state:displayStatsUpdated", _render);
+    StateManager.subscribeToSpecificEvent("state:periodizationPhasesChanged", _render);
+    StateManager.subscribeToSpecificEvent("state:analysisRangeChanged", _render);
     StateManager.subscribeToSpecificEvent(
       "state:initializationComplete",
       _render,

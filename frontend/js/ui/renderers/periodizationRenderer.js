@@ -5,6 +5,8 @@ import * as d3 from 'd3';
 import { StateManager } from "../../core/stateManager.js";
 import * as Selectors from "../../core/selectors.js";
 import { Utils } from "../../core/utils.js";
+import { setAnalysisRangeAndSyncChart } from "../../interactions/chartRangeHelper.js";
+import { resolveThisPhase, phaseLabel } from "../../core/phaseHelpers.js";
 
 
 const container = () => d3.select("#periodization-list");
@@ -45,7 +47,17 @@ function render(phases) {
     phases.forEach((phase, index) => {
         const phaseCard = containerEl.append("div")
             .attr("class", `phase-card phase-${phase.type}`)
-            .attr("title", `${Utils.formatDateDMY(phase.startDate)} - ${Utils.formatDateDMY(phase.endDate)}`);
+            .attr("role", "button")
+            .attr("tabindex", "0")
+            .style("cursor", "pointer")
+            .attr("title", `${Utils.formatDateDMY(phase.startDate)} - ${Utils.formatDateDMY(phase.endDate)}`)
+            .on("click", () => setAnalysisRangeAndSyncChart(phase.startDate, phase.endDate))
+            .on("keydown", (event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    setAnalysisRangeAndSyncChart(phase.startDate, phase.endDate);
+                }
+            });
 
         // Phase header with badge
         const header = phaseCard.append("div")
@@ -92,15 +104,33 @@ function render(phases) {
     });
 }
 
+function syncThisPhaseChip(phases) {
+    const btn = document.getElementById("this-phase-btn");
+    if (!btn) return;
+    const processed = Selectors.selectProcessedData(StateManager.getState()) || [];
+    const lastDate = processed[processed.length - 1]?.date;
+    const phase = resolveThisPhase(phases, lastDate);
+    btn.disabled = !phase;
+    if (phase) {
+        btn.title = `${phaseLabel(phase.type)} · ${phase.durationWeeks} weeks`;
+        btn.removeAttribute("disabled");
+    } else {
+        btn.title = "No detected phase yet";
+    }
+}
+
 export const PeriodizationRenderer = {
     init() {
         StateManager.subscribeToSpecificEvent("state:periodizationPhasesChanged", ({ phases }) => {
             render(phases);
+            syncThisPhaseChip(phases);
         });
 
         StateManager.subscribeToSpecificEvent("state:initializationComplete", () => {
             const state = StateManager.getState();
-            render(Selectors.selectPeriodizationPhases(state));
+            const phases = Selectors.selectPeriodizationPhases(state);
+            render(phases);
+            syncThisPhaseChip(phases);
         });
     },
 };

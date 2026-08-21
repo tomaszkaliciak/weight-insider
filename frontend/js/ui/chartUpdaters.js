@@ -13,6 +13,9 @@ import { ChartInteractions } from "../interactions/chartInteractions.js";
 import { EventHandlers } from "../interactions/eventHandlers.js";
 import { TooltipManager } from "../interactions/tooltipManager.js";
 import { Utils } from "../core/utils.js";
+import { phaseLabel } from "../core/phaseHelpers.js";
+import { hasTdeeDisagreement } from "../core/tdeeDisagreement.js";
+import { adherenceKind } from "../core/adherenceTick.js";
 
 
 // --- C4: Transition helper ---
@@ -318,15 +321,43 @@ export const FocusChartUpdater = {
     ui.trendLine1?.attr("d", "");
     ui.trendLine2?.attr("d", "");
 
+    const overlayPoints = metricData.filter(
+      (d) =>
+        d.googleFitTDEE != null &&
+        isFinite(d.googleFitTDEE) &&
+        d.date instanceof Date &&
+        !isNaN(d.date) &&
+        isFinite(scales.x(d.date)) &&
+        isFinite(scales.y(d.googleFitTDEE)),
+    );
+    const overlayGen = d3.line()
+      .x((d) => scales.x(d.date))
+      .y((d) => scales.y(d.googleFitTDEE))
+      .defined((d) => d.googleFitTDEE != null && isFinite(scales.y(d.googleFitTDEE)))
+      .curve(d3.curveMonotoneX);
+    ui.metricOverlayLine
+      ?.style("display", overlayPoints.length ? null : "none")
+      .style("fill", "none")
+      .style("stroke", "var(--secondary-color)")
+      .style("stroke-width", 1.8)
+      .style("stroke-dasharray", "5 4")
+      .style("pointer-events", "none")
+      .attr("d", overlayPoints.length ? overlayGen(overlayPoints) : "");
+
     const dots = ui.rawDotsGroup
       ?.selectAll(".raw-dot")
       .data(valid, (d) => d.dateString || d.date.getTime());
+
+    const styleMetricDot = (sel) => {
+      sel
+        .classed("raw-dot--disagree", (d) => hasTdeeDisagreement(d))
+        .attr("r", (d) => hasTdeeDisagreement(d) ? CONFIG.rawDotRadius + 1.5 : CONFIG.rawDotRadius);
+    };
 
     dots?.join(
       (enter) =>
         enter.append("circle")
           .attr("class", "raw-dot")
-          .attr("r", CONFIG.rawDotRadius)
           .attr("cx", (d) => scales.x(d.date))
           .attr("cy", (d) => scales.y(d.value))
           .style("fill", metricColor)
@@ -336,6 +367,7 @@ export const FocusChartUpdater = {
           .on("mouseover", ChartInteractions.dotMouseOver)
           .on("mouseout", ChartInteractions.dotMouseOut)
           .on("click", ChartInteractions.dotClick)
+          .call(styleMetricDot)
           .call((enter) => enter.transition(t).style("opacity", 0.55)),
       (update) =>
         update
@@ -343,6 +375,7 @@ export const FocusChartUpdater = {
           .on("mouseover", ChartInteractions.dotMouseOver)
           .on("mouseout", ChartInteractions.dotMouseOut)
           .on("click", ChartInteractions.dotClick)
+          .call(styleMetricDot)
           .call((update) => update.transition(t)
             .attr("cx", (d) => scales.x(d.date))
             .attr("cy", (d) => scales.y(d.value))
@@ -738,6 +771,81 @@ export const FocusChartUpdater = {
     );
   },
 
+  updatePhaseBands(phases, focusHeight, options = {}) {
+    const dur = options.isInteractive ? 0 : CONFIG.transitionDurationMs;
+    if (!ui.phaseBandGroup || !scales.x || !focusHeight) return;
+
+    const xDomain = scales.x.domain();
+    const visible = (phases || []).filter(
+      (p) =>
+        p.endDate instanceof Date &&
+        p.startDate instanceof Date &&
+        p.endDate >= xDomain[0] &&
+        p.startDate <= xDomain[1],
+    );
+
+    const fillFor = (type) => {
+      if (type === "cut") return "hsla(var(--hue-tertiary), 65%, 55%, 0.12)";
+      if (type === "bulk") return "hsla(var(--hue-secondary), 50%, 50%, 0.12)";
+      return "hsla(var(--hue-neutral), 15%, 50%, 0.08)";
+    };
+
+    const phaseTitle = (d) => {
+      const rate = d.avgRate != null ? `${d.avgRate > 0 ? "+" : ""}${d.avgRate.toFixed(2)} kg/wk` : "n/a";
+      return `${phaseLabel(d.type)} · ${d.durationWeeks} weeks · ${rate}`;
+    };
+
+    const regions = ui.phaseBandGroup
+      .selectAll(".phase-band")
+      .data(visible, (d) => `${d.type}-${d.startDate.getTime()}-${d.endDate.getTime()}`);
+
+    regions.join(
+      (enter) =>
+        enter
+          .append("rect")
+          .attr("class", (d) => `phase-band phase-band--${d.type}`)
+          .attr("x", (d) => scales.x(d.startDate))
+          .attr("y", 0)
+          .attr("width", (d) => Math.max(0, scales.x(d.endDate) - scales.x(d.startDate)))
+          .attr("height", focusHeight)
+          .style("fill", (d) => fillFor(d.type))
+          .style("cursor", "pointer")
+          .style("pointer-events", "all")
+          .each(function (d) {
+            d3.select(this).append("title").text(phaseTitle(d));
+          })
+          .on("click", (event, d) => {
+            event.stopPropagation();
+            import("../interactions/chartRangeHelper.js").then(({ setAnalysisRangeAndSyncChart }) => {
+              setAnalysisRangeAndSyncChart(d.startDate, d.endDate);
+            });
+          })
+          .style("opacity", 0)
+          .call((sel) => sel.transition().duration(dur).style("opacity", 1)),
+      (update) =>
+        update
+          .on("click", (event, d) => {
+            event.stopPropagation();
+            import("../interactions/chartRangeHelper.js").then(({ setAnalysisRangeAndSyncChart }) => {
+              setAnalysisRangeAndSyncChart(d.startDate, d.endDate);
+            });
+          })
+          .each(function (d) {
+            const title = d3.select(this).select("title");
+            if (title.empty()) d3.select(this).append("title").text(phaseTitle(d));
+            else title.text(phaseTitle(d));
+          })
+          .transition()
+          .duration(dur)
+          .attr("x", (d) => scales.x(d.startDate))
+          .attr("width", (d) => Math.max(0, scales.x(d.endDate) - scales.x(d.startDate)))
+          .attr("height", focusHeight)
+          .style("fill", (d) => fillFor(d.type)),
+      (exit) =>
+        exit.transition().duration(dur / 2).style("opacity", 0).remove(),
+    );
+  },
+
   /**
    * Updates trend change markers on the chart.
    * @param {Array} trendChangePoints - Array of trend change objects { date, magnitude } from state.
@@ -1071,6 +1179,42 @@ export const ContextChartUpdater = {
       ?.datum(processedData)
       .attr("d", contextLineGen)
       .style("stroke", colors.sma || CONFIG.fallbackColors.sma);
+
+    if (ui.contextAdherenceGroup && scales.xContext) {
+      const yBottom = yContextScale.range()[0];
+      const tickH = 4;
+      const days = (processedData || []).filter(
+        (d) => d.date instanceof Date && !isNaN(d.date) && isFinite(scales.xContext(d.date)),
+      );
+      const ticks = ui.contextAdherenceGroup.selectAll("rect.adherence-tick")
+        .data(days, (d) => d.dateString || d.date.getTime());
+      ticks.join(
+        (enter) =>
+          enter.append("rect")
+            .attr("class", (d) => `adherence-tick adherence-tick--${adherenceKind(d)}`)
+            .attr("x", (d) => scales.xContext(d.date))
+            .attr("y", yBottom - tickH)
+            .attr("width", (d) => {
+              const next = new Date(d.date);
+              next.setDate(next.getDate() + 1);
+              return Math.max(1, scales.xContext(next) - scales.xContext(d.date) - 0.4);
+            })
+            .attr("height", tickH)
+            .style("pointer-events", "none"),
+        (update) =>
+          update
+            .attr("class", (d) => `adherence-tick adherence-tick--${adherenceKind(d)}`)
+            .attr("x", (d) => scales.xContext(d.date))
+            .attr("y", yBottom - tickH)
+            .attr("width", (d) => {
+              const next = new Date(d.date);
+              next.setDate(next.getDate() + 1);
+              return Math.max(1, scales.xContext(next) - scales.xContext(d.date) - 0.4);
+            })
+            .attr("height", tickH),
+        (exit) => exit.remove(),
+      );
+    }
   },
 };
 export const BalanceChartUpdater = {

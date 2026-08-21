@@ -81,13 +81,43 @@ export const SettingsService = {
     return { exportedAt: new Date().toISOString(), entries };
   },
 
+  /**
+   * Accepts the official `{ exportedAt, entries }` backup shape, or a flat
+   * object whose keys start with weightInsider or weightInsights.
+   * @returns {{ exportedAt?: string, entries: Object<string, string> }}
+   */
+  normalizeImportDump(dump) {
+    if (!dump || typeof dump !== "object" || Array.isArray(dump)) {
+      throw new Error("Invalid import format.");
+    }
+    if (dump.entries && typeof dump.entries === "object" && !Array.isArray(dump.entries)) {
+      const entries = {};
+      for (const [k, v] of Object.entries(dump.entries)) {
+        if (typeof k === "string" && typeof v === "string") entries[k] = v;
+      }
+      return { exportedAt: dump.exportedAt, entries };
+    }
+    const entries = {};
+    for (const [k, v] of Object.entries(dump)) {
+      if (
+        typeof k === "string" &&
+        typeof v === "string" &&
+        (k.startsWith("weightInsider") || k.startsWith("weightInsights"))
+      ) {
+        entries[k] = v;
+      }
+    }
+    return { exportedAt: dump.exportedAt, entries };
+  },
+
   /** Restore a previously exported dump. */
   importAll(dump) {
-    if (!dump?.entries) throw new Error("Invalid import format.");
-    for (const [k, v] of Object.entries(dump.entries)) {
-      if (typeof v === "string") {
-        try { localStorage.setItem(k, v); } catch { /* quota */ }
-      }
+    const { entries } = this.normalizeImportDump(dump);
+    if (!Object.keys(entries).length) {
+      throw new Error("No Weight Insider app data found in this file.");
+    }
+    for (const [k, v] of Object.entries(entries)) {
+      try { localStorage.setItem(k, v); } catch { /* quota */ }
     }
   },
 };

@@ -1565,33 +1565,31 @@ body.dark-theme .glass-box {
 
 /* --- WIDGET SYSTEM --- */
 .bento-widget {
-    background: linear-gradient(180deg, var(--bg-secondary), var(--panel-bg));
-    border-radius: 24px;
-    border: 1px solid var(--border-color-light);
-    box-shadow: var(--elev-1);
-    padding: 24px;
+    background: var(--bg-card);
+    border-radius: var(--radius-lg, 16px);
+    border: 1px solid var(--border-color);
+    box-shadow: none;
+    padding: 18px 18px 16px;
     display: flex;
     flex-direction: column;
     position: relative;
     overflow: hidden;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    backdrop-filter: blur(10px);
+    transition: border-color 0.18s ease, background-color 0.18s ease;
 }
 
-/* P2 — Elevation tiers */
 .bento-widget.tier-primary {
-    box-shadow: var(--elev-2);
+    box-shadow: none;
 }
 
 .bento-widget.tier-hero {
-    background: var(--hero-gradient);
-    box-shadow: var(--elev-3);
+    background: var(--bg-card);
+    box-shadow: none;
 }
 
-/* V2 — hover lift (honours motion-reduced) */
 .bento-widget:hover {
-    transform: translateY(var(--lift-y));
-    box-shadow: var(--lift-shadow);
+    transform: none;
+    border-color: color-mix(in srgb, var(--primary-color) 35%, var(--border-color));
+    box-shadow: none;
 }
 
 body.motion-reduced .bento-widget:hover {
@@ -1638,7 +1636,7 @@ body.motion-reduced .bento-widget.widget-spotlight::before {
     position: absolute;
     inset: 0 0 auto 0;
     height: 1px;
-    background: linear-gradient(90deg, transparent, hsla(var(--hue-primary), 65%, 55%, 0.24), transparent);
+    background: linear-gradient(90deg, transparent, hsla(var(--hue-primary), 65%, 62%, 0.35), transparent);
     pointer-events: none;
 }
 
@@ -2084,6 +2082,17 @@ body.motion-reduced .bento-widget.widget-spotlight::before {
 }
 
 .goal-inline-status[hidden] {
+    display: none;
+}
+
+.goal-phase-status {
+    margin: 0 8px 6px;
+    padding: 0 12px 4px;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+
+.goal-phase-status[hidden] {
     display: none;
 }
 

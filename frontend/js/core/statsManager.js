@@ -608,6 +608,7 @@ export const StatsManager = {
           processedData,
           analysisRange.start,
           analysisRange.end,
+          Selectors.selectSettings(stateSnapshot)?.weekStart || "mon",
         );
         results.correlationScatterData = results.weeklySummaryData
           .filter((w) => w.avgNetCal != null && w.weeklyRate != null)
@@ -779,6 +780,19 @@ export const StatsManager = {
             displayStats.latestFat     = latestMacro.fat;
             displayStats.latestMacroDate = latestMacro.dateString;
 
+            const fiberDays = results.filteredData.filter(
+              (d) => d.fiber != null && !isNaN(d.fiber),
+            );
+            displayStats.avgDailyFiber = fiberDays.length
+              ? Math.round(fiberDays.reduce((s, d) => s + d.fiber, 0) / fiberDays.length)
+              : null;
+            displayStats.latestFiber =
+              latestMacro.fiber != null && !isNaN(latestMacro.fiber)
+                ? latestMacro.fiber
+                : fiberDays.length
+                  ? [...fiberDays].sort((a, b) => b.date - a.date)[0].fiber
+                  : null;
+
             // Protein per kg bodyweight (uses current SMA if available, else latest weight)
             const refWeight = displayStats.currentSma ?? displayStats.currentWeight;
             displayStats.avgProteinPerKg = refWeight > 0
@@ -808,9 +822,9 @@ export const StatsManager = {
           } else {
             displayStats.macroSplit = null;
             displayStats.avgDailyProtein = null; displayStats.avgDailyCarbs = null;
-            displayStats.avgDailyFat = null;
+            displayStats.avgDailyFat = null; displayStats.avgDailyFiber = null;
             displayStats.latestProtein = null;   displayStats.latestCarbs = null;
-            displayStats.latestFat = null;
+            displayStats.latestFat = null; displayStats.latestFiber = null;
             displayStats.latestMacroDate = null; displayStats.avgProteinPerKg = null;
             displayStats.carbVolatilityCorrelation = null;
             displayStats.correlationMatrix = null;
@@ -821,9 +835,9 @@ export const StatsManager = {
           displayStats.regressionStartDate = null;
           displayStats.macroSplit = null;
           displayStats.avgDailyProtein = null; displayStats.avgDailyCarbs = null;
-          displayStats.avgDailyFat = null;
+          displayStats.avgDailyFat = null; displayStats.avgDailyFiber = null;
           displayStats.latestProtein = null;   displayStats.latestCarbs = null;
-          displayStats.latestFat = null;
+          displayStats.latestFat = null; displayStats.latestFiber = null;
           displayStats.latestMacroDate = null; displayStats.avgProteinPerKg = null;
           displayStats.carbVolatilityCorrelation = null;
           displayStats.correlationMatrix = null;
@@ -921,6 +935,13 @@ export const StatsManager = {
       else if (diff > 0) displayStats.targetRateFeedback = { text: `Faster (+${Utils.formatValue(diff, 2)})`, class: "warn" };
       else displayStats.targetRateFeedback = { text: `Slower (${Utils.formatValue(diff, 2)})`, class: "warn" };
     }
+
+    // Aliases for widgets that historically read different field names.
+    displayStats.adaptiveTDEE = displayStats.avgTDEE_Adaptive ?? null;
+    displayStats.trendTDEE = displayStats.avgTDEE_WgtChange ?? null;
+    displayStats.avgTDEE = baselineTDEE;
+    displayStats.latestWeeklyRate = displayStats.currentWeeklyRate ?? null;
+
     return results;
   },
 
@@ -977,7 +998,10 @@ export const StatsManager = {
         payload: phases,
       });
       // Workout Correlation Calculation
-      const workoutCorrelation = DataService.calculateWorkoutCorrelation(stateSnapshot.processedData);
+      const workoutCorrelation = DataService.calculateWorkoutCorrelation(
+        stateSnapshot.processedData,
+        Selectors.selectSettings(stateSnapshot)?.weekStart || "mon",
+      );
       StateManager.dispatch({
         type: ActionTypes.SET_WORKOUT_CORRELATION,
         payload: workoutCorrelation,
@@ -1030,7 +1054,8 @@ export const StatsManager = {
       "state:interactiveRegressionRangeChanged", // User changes regression brush
       "state:trendConfigChanged", // Affects trend lines and default regression start
       "state:goalChanged", // Re-enabled: update() cycle is safe now that achievement event is separate
-      "state:initializationComplete", // Trigger initial calculation
+      "state:initializationComplete",
+      "state:settingsChanged", // Trigger initial calculation
       // Consider adding state:processedDataChanged if data can change dynamically
     ];
 

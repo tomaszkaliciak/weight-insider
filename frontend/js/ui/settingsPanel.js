@@ -5,6 +5,7 @@ import { SettingsService, DEFAULT_SETTINGS } from "../core/settingsService.js";
 import { StateManager, ActionTypes } from "../core/stateManager.js";
 import { DataService } from "../core/dataService.js";
 import { Utils } from "../core/utils.js";
+import { WidgetVisibility } from "./widgetVisibility.js";
 
 // Elements — cached on init.
 let _drawer, _overlay, _openBtn, _closeBtn, _cancelBtn, _saveBtn;
@@ -80,6 +81,7 @@ function _readDraft() {
 
 function _open() {
   _populate(SettingsService.load());
+  _renderWidgetList();
   _drawer.hidden = false;
   _overlay.hidden = false;
   _drawer.removeAttribute("aria-hidden");
@@ -123,7 +125,7 @@ function _save() {
   document.documentElement.style.setProperty("--motion-speed", String(saved.animationSpeed));
 
   // Re-run the data pipeline if analysis windows changed.
-  const pipelineKeys = ["smaWindow", "emaWindow", "rollingVolatilityWindow"];
+  const pipelineKeys = ["smaWindow", "emaWindow", "rollingVolatilityWindow", "weekStart"];
   const pipelineChanged = pipelineKeys.some(k => saved[k] !== previous[k]);
   if (pipelineChanged && _cachedMergedData) {
     _reprocessData(saved, _cachedMergedData);
@@ -152,10 +154,9 @@ function _reprocessData(settings, mergedData) {
   p = DataService.calculateAdaptiveTDEE(p);
   p = DataService.smoothRatesAndTDEEDifference(p);
   p = DataService.calculateRateMovingAverage(p);
-  const currentState = StateManager.getState();
   StateManager.dispatch({
     type: "SET_INITIAL_DATA",
-    payload: { rawData: currentState.rawData, processedData: p },
+    payload: { rawData: mergedData, processedData: p },
   });
   StateManager.dispatch({ type: "INITIALIZATION_COMPLETE" });
 }
@@ -164,7 +165,7 @@ function _reprocessData(settings, mergedData) {
 
 function _exportAll() {
   const dump = SettingsService.exportAll();
-  const count = Object.keys(dump).length;
+  const count = Object.keys(dump.entries || {}).length;
   const blob = new Blob([JSON.stringify(dump, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -181,8 +182,8 @@ function _importFile(file) {
   reader.onload = (e) => {
     try {
       const dump = JSON.parse(e.target.result);
-      const keys = Object.keys(dump || {});
-      const appKeys = keys.filter((key) => key.startsWith("weightInsider") || key.startsWith("weightInsights"));
+      const normalized = SettingsService.normalizeImportDump(dump);
+      const appKeys = Object.keys(normalized.entries);
       if (!appKeys.length) {
         Utils.showStatusMessage("Import preview: no Weight Insider app data found in this file.", "error", 5000);
         return;
@@ -196,7 +197,7 @@ function _importFile(file) {
         Utils.showStatusMessage("Import cancelled.", "info", 2500);
         return;
       }
-      SettingsService.importAll(dump);
+      SettingsService.importAll(normalized);
       Utils.showStatusMessage("Data imported. Reload the page to apply.", "success", 6000);
     } catch (err) {
       Utils.showStatusMessage(`Import failed: ${err.message}`, "error", 5000);
@@ -222,12 +223,34 @@ function _resetAll() {
 
 // ---- public -----------------------------------------------------------------
 
+function _renderWidgetList() {
+  const list = document.getElementById("settings-widget-list");
+  if (!list) return;
+  const widgets = WidgetVisibility.listHideableWidgets();
+  list.innerHTML = widgets.map(({ id, title }) => `
+    <label class="settings-label settings-label-row settings-widget-row">
+      <span>${title}</span>
+      <input type="checkbox" class="settings-checkbox settings-widget-toggle" data-widget-id="${id}" ${WidgetVisibility.isHidden(id) ? "" : "checked"}>
+    </label>
+  `).join("");
+  list.querySelectorAll(".settings-widget-toggle").forEach((box) => {
+    box.addEventListener("change", () => {
+      WidgetVisibility.setHidden(box.dataset.widgetId, !box.checked);
+    });
+  });
+}
+
 export const SettingsPanel = {
   /**
    * @param {Array} mergedData - Cached merged data array for re-processing on analysis-window change.
    */
   setCachedData(mergedData) {
     _cachedMergedData = mergedData;
+  },
+
+  reprocessFromMerged(mergedData) {
+    _cachedMergedData = mergedData;
+    _reprocessData(SettingsService.load(), mergedData);
   },
 
   init() {
@@ -287,5 +310,9 @@ export const SettingsPanel = {
       e.target.value = ""; // reset so same file can be re-imported
     });
     document.getElementById("settings-reset-btn")?.addEventListener("click", _resetAll);
+    document.getElementById("settings-show-all-widgets")?.addEventListener("click", () => {
+      WidgetVisibility.showAll();
+      _renderWidgetList();
+    });
   },
 };

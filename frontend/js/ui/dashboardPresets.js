@@ -3,6 +3,8 @@
 // Depends on WidgetCollapser being already initialized.
 
 import { WidgetCollapser } from './widgetCollapser.js';
+import { WidgetVisibility } from './widgetVisibility.js';
+import { chartModeForPreset, setChartMode } from './chartMode.js';
 
 const STORAGE_KEY = 'weightInsiderDashboardPresetV1';
 
@@ -12,10 +14,7 @@ const ALL_WIDGET_IDS = [
   'executive-hub-card',
   'chart-section',
   'key-stats-widget',
-  'analysis-settings-widget',
-  'manual-trendlines-card',
   'rate-change-card',
-  'manual-entry-widget',
   'goal-widget',
   'goal-simulator-card',
   'energy-balance-card',
@@ -28,7 +27,30 @@ const ALL_WIDGET_IDS = [
   'tdee-accuracy-card',
   'correlation-matrix-card',
   'scatter-card',
+  'insight-summary-card',
+  'periodization-card',
+  'period-comparison-card',
+  'monthly-report-card',
+  'event-countdown-card',
+  'rolling-averages-card',
+  'streak-tracker-card',
+  'plateau-breaker-card',
+  'what-worked-card',
+  'rate-optimizer-card',
+  'adaptive-rate-card',
+  'prediction-bands-card',
+  'calorie-audit-card',
+  'data-health-card',
+  'weekend-analysis-card',
+  'macro-impact-card',
+  'water-weight-card',
+  'reverse-diet-card',
+  'metabolic-adaptation-card',
+  'refeed-recommender-card',
+  'refeed-history-card',
 ];
+
+export { ALL_WIDGET_IDS };
 
 // IDs to KEEP expanded for each preset — everything else is collapsed.
 const PRESET_EXPANDED = {
@@ -59,11 +81,10 @@ export const PRESET_LABELS = {
   'nutrition-focus': 'Nutrition Focus',
 };
 
-function buildCollapsedSet(presetKey) {
-  const expanded = PRESET_EXPANDED[presetKey] ?? new Set(ALL_WIDGET_IDS);
-  const registeredIds = WidgetCollapser.getWidgetIds();
-  const idsToUse = registeredIds.length > 0 ? registeredIds : ALL_WIDGET_IDS;
-  return new Set(idsToUse.filter((id) => !expanded.has(id)));
+function buildPresetHidden(presetKey) {
+  const expanded = PRESET_EXPANDED[presetKey];
+  if (!expanded || presetKey === 'deep-dive') return [];
+  return ALL_WIDGET_IDS.filter((id) => !expanded.has(id));
 }
 
 export const DashboardPresets = {
@@ -79,8 +100,10 @@ export const DashboardPresets = {
   },
 
   _apply(presetKey) {
-    const collapsedSet = buildCollapsedSet(presetKey);
-    WidgetCollapser.applyCollapsedSet(collapsedSet);
+    WidgetVisibility.setPresetHidden(buildPresetHidden(presetKey));
+    WidgetCollapser.applyCollapsedSet(new Set());
+    const chartMode = chartModeForPreset(presetKey);
+    if (chartMode) setChartMode(chartMode);
     this._currentPreset = presetKey;
     localStorage.setItem(STORAGE_KEY, presetKey);
     this._syncSelector();
@@ -94,6 +117,7 @@ export const DashboardPresets = {
   resetToCustom() {
     this._currentPreset = null;
     localStorage.removeItem(STORAGE_KEY);
+    WidgetVisibility.setPresetHidden([]);
     this._syncSelector();
   },
 

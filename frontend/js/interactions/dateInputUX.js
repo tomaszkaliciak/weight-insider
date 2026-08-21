@@ -41,7 +41,7 @@ function attachDateInputBehavior(el) {
 export const DateInputUX = {
   init() {
     const dateInputs = document.querySelectorAll(
-      'input.date-input-dmy, input.date-input, #analysisStartDate, #analysisEndDate, #trendStartDate, #goalDate, #me-date',
+      'input.date-input-dmy, input.date-input, #analysisStartDate, #analysisEndDate, #trendStartDate, #goalDate',
     );
     dateInputs.forEach((el) => attachDateInputBehavior(el));
   },

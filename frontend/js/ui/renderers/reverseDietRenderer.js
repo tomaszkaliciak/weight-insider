@@ -56,11 +56,8 @@ export const ReverseDietRenderer = {
       recentCalories.reduce((s, d) => s + d.calorieIntake, 0) / recentCalories.length : null;
 
     // Get current TDEE estimate
-    const currentTdee = stats.adaptiveTDEE || stats.avgTDEE || 2200;
-
-    // Calculate estimated true maintenance
-    const recentWeights = recent14.filter(d => d.value != null);
-    const recentRate = stats.latestWeeklyRate || 0;
+    const currentTdee = Selectors.selectBaselineTdee(stats, 2200);
+    const recentRate = stats.currentWeeklyRate ?? stats.latestWeeklyRate ?? 0;
     const isStable = Math.abs(recentRate) < 0.15;
     const isGaining = recentRate > 0.1;
     const isLosing = recentRate < -0.1;

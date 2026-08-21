@@ -108,6 +108,29 @@ function _updateAnalysisRangeInputsFromFocusScale() {
 }
 
 // --- MasterUpdater Object ---
+function syncMetricLegend(chartMode) {
+  const el = document.getElementById("chart-metric-legend");
+  if (!el) return;
+  if (chartMode === "calories") {
+    el.hidden = false;
+    el.innerHTML = `
+      <span class="chart-legend-swatch chart-legend-swatch--intake"></span> Intake
+      <span class="chart-legend-swatch chart-legend-swatch--wearable"></span> Wearable
+      <span class="chart-legend-ring"></span> Ring = large disagreement
+    `;
+  } else if (chartMode === "tdee") {
+    el.hidden = false;
+    el.innerHTML = `
+      <span class="chart-legend-swatch chart-legend-swatch--tdee"></span> Adaptive TDEE
+      <span class="chart-legend-swatch chart-legend-swatch--wearable"></span> Wearable
+      <span class="chart-legend-ring"></span> Ring = large disagreement
+    `;
+  } else {
+    el.hidden = true;
+    el.innerHTML = "";
+  }
+}
+
 export const MasterUpdater = {
   _isUpdating: false, // Re-entry guard flag
   _pendingUpdate: false, // Flag to coalesce rapid updates
@@ -245,14 +268,19 @@ export const MasterUpdater = {
             FocusChartUpdater.updateMetricMode(metricData, chartMode, options);
             ui.annotationsGroup?.style("display", "none");
             ui.plateauGroup?.style("display", "none");
+            ui.phaseBandGroup?.style("display", "none");
             ui.trendChangeGroup?.style("display", "none");
             ui.goalAchievedGroup?.style("display", "none");
             ui.goalZoneRect?.style("display", "none");
+            syncMetricLegend(chartMode);
             FocusChartUpdater.updateHighlightMarker(null, []);
             FocusChartUpdater.updateCrosshair(null, focusWidth, focusHeight);
             ContextChartUpdater.updateChart(processedData);
           } else {
             ui.smaLine?.style("stroke", null).style("filter", null);
+            ui.metricOverlayLine?.style("display", "none").attr("d", "");
+            ui.phaseBandGroup?.style("display", null);
+            syncMetricLegend("weight");
 
             // Visibility Styles
             Object.keys(visibility).forEach((key) => {
@@ -291,6 +319,11 @@ export const MasterUpdater = {
           FocusChartUpdater.updateCrosshair(activeHoverData, focusWidth, focusHeight);
           FocusChartUpdater.updateAnnotations(annotations, processedData, options);
           FocusChartUpdater.updatePlateauRegions(plateaus, focusHeight, options);
+          FocusChartUpdater.updatePhaseBands(
+            Selectors.selectPeriodizationPhases(stateSnapshot),
+            focusHeight,
+            options,
+          );
           FocusChartUpdater.updateTrendChangeMarkers(trendChangePoints, processedData, options);
           FocusChartUpdater.updateGoalVisuals(goal, goalAchievedDate, focusWidth, focusHeight, options);
           FocusChartUpdater.updateRegressionBrushDisplay(stateSnapshot.interactiveRegressionRange, focusWidth);
@@ -376,6 +409,8 @@ export const MasterUpdater = {
       "state:trendConfigChanged",
       "state:goalChanged",
       "state:annotationsChanged",
+      "state:periodizationPhasesChanged",
+      "state:settingsChanged",
     ];
 
     directUpdateEvents.forEach((eventName) => {

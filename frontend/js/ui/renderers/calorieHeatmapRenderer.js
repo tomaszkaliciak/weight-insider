@@ -49,8 +49,8 @@ export const CalorieHeatmapRenderer = {
         }
 
         // Calculate target from adaptive TDEE or average
-        this._targetCalories = displayStats.adaptiveTDEE || displayStats.avgTDEE ||
-            this._calculateAverageCalories(processedData);
+        this._targetCalories = Selectors.selectBaselineTdee(displayStats)
+            ?? this._calculateAverageCalories(processedData);
 
         const calendarData = this._buildCalendarData(processedData);
         this._renderCalendar(calendarData);

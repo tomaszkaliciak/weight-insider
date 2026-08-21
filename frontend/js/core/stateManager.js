@@ -1,6 +1,7 @@
 // js/core/stateManager.js
 
 import { Utils } from "./utils.js";
+import { isTrendConfigValid, parseOptionalNumber } from "./trendConfig.js";
 // Selectors are used by consumers, not needed here.
 
 // --- Action Types ---
@@ -331,23 +332,15 @@ function reducer(currentState, action) {
         startDate instanceof Date && !isNaN(startDate.getTime())
           ? startDate
           : null;
-      const parsedInitialWeight =
-        initialWeight != null && isFinite(initialWeight)
-          ? parseFloat(initialWeight)
-          : null;
-      const parsedWeeklyIncrease1 =
-        weeklyIncrease1 != null && isFinite(weeklyIncrease1)
-          ? parseFloat(weeklyIncrease1)
-          : null;
-      const parsedWeeklyIncrease2 =
-        weeklyIncrease2 != null && isFinite(weeklyIncrease2)
-          ? parseFloat(weeklyIncrease2)
-          : null;
-      const isValid =
-        parsedStartDate &&
-        parsedInitialWeight !== null &&
-        parsedWeeklyIncrease1 !== null &&
-        parsedWeeklyIncrease2 !== null;
+      const parsedInitialWeight = parseOptionalNumber(initialWeight);
+      const parsedWeeklyIncrease1 = parseOptionalNumber(weeklyIncrease1);
+      const parsedWeeklyIncrease2 = parseOptionalNumber(weeklyIncrease2);
+      const isValid = isTrendConfigValid({
+        startDate: parsedStartDate,
+        initialWeight: parsedInitialWeight,
+        weeklyIncrease1: parsedWeeklyIncrease1,
+        weeklyIncrease2: parsedWeeklyIncrease2,
+      });
       nextState.trendConfig = {
         startDate: parsedStartDate,
         initialWeight: parsedInitialWeight,

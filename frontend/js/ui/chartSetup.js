@@ -256,6 +256,7 @@ function createSVGElements() {
 
     // 1. Areas (drawn first, underneath lines)
     // Q1 — SMA gradient fill goes behind band area so they layer cleanly
+    ui.phaseBandGroup = ui.chartArea.append("g").attr("class", "phase-band-group");
     ui.smaAreaFill = ui.chartArea.append("path").attr("class", "area sma-area-fill");
     ui.bandArea = ui.chartArea.append("path").attr("class", "area band-area");
 
@@ -281,6 +282,7 @@ function createSVGElements() {
 
     // 3. Main Data Lines (SMA, EMA - drawn after reference lines)
     ui.smaLine = ui.chartArea.append("path").attr("class", "line sma-line"); // <<< SMA LINE
+    ui.metricOverlayLine = ui.chartArea.append("path").attr("class", "line metric-overlay-line");
     ui.emaLine = ui.chartArea.append("path").attr("class", "line ema-line"); // <<< EMA LINE
 
     // 4. Dots/Markers (drawn last within clipped area, on top of lines/areas)
@@ -377,6 +379,10 @@ function createSVGElements() {
     ui.contextLine = ui.context
       .append("path")
       .attr("class", "line sma-line context-line"); // Line on top of area
+    ui.contextAdherenceGroup = ui.context
+      .append("g")
+      .attr("class", "context-adherence-group")
+      .style("pointer-events", "none");
     ui.contextXAxisGroup = ui.context
       .append("g")
       .attr("class", "axis axis--x")

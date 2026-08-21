@@ -106,6 +106,7 @@ export const WidgetCollapser = {
     _collapsedSet = new Set(newSet);
     saveCollapsed(_collapsedSet);
     _registry.forEach(({ widget, chevron }, widgetId) => {
+      if (widget.classList.contains("widget-hidden")) return;
       collapse(widget, _collapsedSet.has(widgetId), chevron);
     });
   },

@@ -5,6 +5,7 @@ import * as d3 from 'd3';
 import * as ss from 'simple-statistics';
 import { CONFIG } from "../config.js";
 import { Utils } from "./utils.js";
+import { startOfWeek, weekKey } from "./weekBounds.js";
 
 export const DataService = {
   // --- Fetching & Basic Merging ---
@@ -33,6 +34,7 @@ export const DataService = {
         macroProtein: {},
         macroFat: {},
         macroCarbs: {},
+        macroFiber: {},
       }; // Return empty structure on error
     }
   },
@@ -46,6 +48,7 @@ export const DataService = {
     const protein = rawDataObjects.macroProtein || rawDataObjects.protein || {};
     const carbs   = rawDataObjects.macroCarbs   || rawDataObjects.carbs   || {};
     const fat      = rawDataObjects.macroFat     || rawDataObjects.fat     || {};
+    const fiber    = rawDataObjects.macroFiber   || rawDataObjects.fiber   || {};
 
     const workouts = rawDataObjects.workouts || {};
     const allDates = new Set([
@@ -56,7 +59,7 @@ export const DataService = {
       ...Object.keys(protein),
       ...Object.keys(carbs),
       ...Object.keys(fat),
-
+      ...Object.keys(fiber),
       ...Object.keys(workouts),
     ]);
     let mergedData = [];
@@ -121,6 +124,7 @@ export const DataService = {
         protein: findValue(protein),
         carbs: findValue(carbs),
         fat: findValue(fat),
+        fiber: findValue(fiber),
 
         // Workout data
         workoutCount: workoutData?.workoutCount ?? null,
@@ -623,13 +627,13 @@ export const DataService = {
    * @param {Array<object>} processedData - The fullprocessed data array.
    * @returns {object} Correlation results including coefficient, weekly data, and interpretation.
    */
-  calculateWorkoutCorrelation(processedData) {
+  calculateWorkoutCorrelation(processedData, weekStart = "mon") {
     if (!Array.isArray(processedData) || processedData.length < 14) {
       return { coefficient: null, weeklyData: [], interpretation: 'Insufficient data' };
     }
 
     // Group data by week
-    const getWeekKey = (date) => d3.timeFormat("%Y-W%W")(d3.timeMonday(date));
+    const getWeekKey = (date) => weekKey(date, weekStart);
     const groupedByWeek = d3.group(processedData, (d) => getWeekKey(d.date));
 
     const weeklyData = [];
@@ -660,7 +664,7 @@ export const DataService = {
       if (avgWeeklyRate != null && weeklyVolume > 0) {
         weeklyData.push({
           weekKey,
-          weekStartDate: d3.timeMonday(weekData[0].date),
+          weekStartDate: startOfWeek(weekData[0].date, weekStart),
           weeklyVolume,
           trainingDays,
           avgWeeklyRate,
@@ -733,7 +737,7 @@ export const DataService = {
   },
 
   /** Aggregates processed data into weekly statistics (Used by StatsManager) */
-  calculateWeeklyStats(processedData, startDate, endDate) {
+  calculateWeeklyStats(processedData, startDate, endDate, weekStart = "mon") {
     const rangeData =
       startDate && endDate
         ? processedData.filter(
@@ -746,7 +750,7 @@ export const DataService = {
     if (!Array.isArray(rangeData) || rangeData.length === 0) return [];
 
     let weeklyStats = [];
-    const getWeekKey = (date) => d3.timeFormat("%Y-W%W")(d3.timeMonday(date));
+    const getWeekKey = (date) => weekKey(date, weekStart);
     const groupedByWeek = d3.group(rangeData, (d) => getWeekKey(d.date));
 
     groupedByWeek.forEach((weekData, weekKey) => {
@@ -761,7 +765,7 @@ export const DataService = {
         };
         weeklyStats.push({
           weekKey,
-          weekStartDate: d3.timeMonday(weekData[0].date),
+          weekStartDate: startOfWeek(weekData[0].date, weekStart),
           avgNetCal: avgMetric(weekData, "netBalance"),
           weeklyRate: avgMetric(weekData, "smoothedWeeklyRate"),
           avgWeight: avgMetric(weekData, "sma") ?? avgMetric(weekData, "value"), // Fallback to raw if SMA missing
@@ -771,6 +775,7 @@ export const DataService = {
           avgProtein: avgMetric(weekData, "protein"),
           avgCarbs: avgMetric(weekData, "carbs"),
           avgFat: avgMetric(weekData, "fat"),
+          avgFiber: avgMetric(weekData, "fiber"),
 
           avgVolatility: avgMetric(weekData, "rollingVolatility"),
           loggingRate:

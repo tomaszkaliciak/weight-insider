@@ -4,11 +4,11 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Weight Insider | Bento</title>
+    <title>Weight Insights</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800&family=Fira+Code:wght@400;500&display=swap"
         rel="stylesheet" />
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
@@ -21,19 +21,20 @@
     <link rel="stylesheet" href="css/widgets/dashboards.css" />
     <link rel="stylesheet" href="css/widgets/components.css" />
     <link rel="stylesheet" href="css/widgets/advanced-features.css" />
+    <link rel="stylesheet" href="css/theme.css" />
 </head>
 
 <body>
     <header>
         <h1>
-            <span class="icon" aria-hidden="true">
+            <span class="brand-mark icon" aria-hidden="true">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                     class="feather feather-activity">
                     <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
                 </svg>
             </span>
-            Weight Insights <span style="opacity:0.5; font-weight:300;">| Pro</span>
+            Weight Insights <span class="brand-badge">Pro</span>
         </h1>
         <div class="header-controls">
             <div id="dashboard-preset-container" class="preset-container"></div>
@@ -78,9 +79,9 @@
             <!-- Widget 1: Hero Weight (1x1) -->
             <div id="hero-weight-widget" class="bento-widget span-1x1">
                 <div class="text-subhero">Current Weight</div>
-                <div style="margin-top: auto; margin-bottom: auto;">
+                <div class="hero-weight-value">
                     <span id="current-weight" class="text-hero">--</span>
-                    <span id="hero-weight-unit" style="font-size: 1.2rem; font-weight: 500; color: var(--text-muted);">kg</span>
+                    <span id="hero-weight-unit" class="hero-weight-unit">kg</span>
                 </div>
                 <div id="trend-flux-container" class="trend-flux-container" style="display:none; margin-top: 8px;">
                 </div>
@@ -102,6 +103,7 @@
                         <button type="button" class="chart-mode-btn" data-chart-mode="tdee" aria-pressed="false">TDEE</button>
                     </div>
                     <div class="chart-controls">
+                        <button id="chart-log-today" class="btn-secondary chart-log-today" type="button" hidden>Log today</button>
                         <button id="chart-reset-btn" class="btn-secondary chart-reset-btn" type="button" title="Reset chart zoom">Reset</button>
                         <button id="chart-fullscreen-btn" class="icon-btn" title="Toggle Fullscreen"
                             aria-label="Toggle Fullscreen">
@@ -109,12 +111,57 @@
                         </button>
                     </div>
                 </div>
+                <div class="chart-toolbar">
+                    <div class="range-presets" role="group" aria-label="Analysis range">
+                        <button type="button" class="preset-btn" data-range="7">7D</button>
+                        <button type="button" class="preset-btn" data-range="30">30D</button>
+                        <button type="button" class="preset-btn" data-range="90">90D</button>
+                        <button type="button" class="preset-btn" data-range="all">All</button>
+                        <button type="button" class="preset-btn" id="this-phase-btn" data-range="phase" disabled title="No detected phase yet">This phase</button>
+                    </div>
+                    <div id="analysis-settings-content" class="analysis-range-form chart-toolbar-dates">
+                        <div class="range-controls-inline">
+                            <label><span>Start</span><input type="date" id="analysisStartDate"
+                                    name="analysisStartDate" class="date-input-dmy"></label>
+                            <label><span>End</span><input type="date" id="analysisEndDate" name="analysisEndDate" class="date-input-dmy"></label>
+                            <button type="button" id="updateAnalysisRange" class="btn-primary">Apply</button>
+                        </div>
+                    </div>
+                    <div class="chart-trendlines-wrap">
+                        <button type="button" id="chart-trendlines-toggle" class="btn-secondary" aria-expanded="false" aria-controls="chart-trendlines-panel">Trendlines</button>
+                        <div id="chart-trendlines-panel" class="chart-trendlines-panel" hidden>
+                            <div id="manual-trendlines-container" class="trendlines-form">
+                                <div class="form-row">
+                                    <label>Start<input type="date" id="trendStartDate" class="date-input-dmy"></label>
+                                    <label>Initial<input type="number" id="trendInitialWeight" step="0.1" placeholder="kg"></label>
+                                </div>
+                                <div class="form-row">
+                                    <label>Rate 1<input type="number" id="trendWeeklyIncrease" step="0.05"
+                                            placeholder="kg/wk"></label>
+                                    <label>Rate 2<input type="number" id="trendWeeklyIncrease_2" step="0.05"
+                                            placeholder="kg/wk"></label>
+                                </div>
+                                <button type="button" id="view-data-btn" class="btn-secondary">View Data Table</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="chart-metric-legend" class="chart-metric-legend" hidden></div>
+                </div>
                 <div style="flex: 1; min-height: 0; display: flex; flex-direction: column; width:100%;">
                     <div id="chart-container" style="flex: 1; min-height: 300px;">
                         <div class="skeleton-loader" style="min-height: 300px;"></div>
                     </div>
                     <div id="context-chart-container"></div>
-                    <div class="chart-help-text">Drag the mini-chart to zoom, scroll over the chart to zoom, click a dot to pin its tooltip.</div>
+                    <p id="chart-filmstrip-caption" class="chart-filmstrip-caption" hidden></p>
+                    <div class="chart-help-row">
+                        <div class="chart-help-text">Click a day to inspect it. Drag the mini-chart or scroll to zoom. Arrow keys walk days.</div>
+                        <div id="chart-adherence-legend" class="chart-adherence-legend">
+                            <span><i class="adherence-swatch adherence-swatch--logged"></i> Logged</span>
+                            <span><i class="adherence-swatch adherence-swatch--high"></i> High intake</span>
+                            <span><i class="adherence-swatch adherence-swatch--missing"></i> Missing</span>
+                            <span><i class="adherence-swatch adherence-swatch--outlier"></i> Outlier</span>
+                        </div>
+                    </div>
                     <canvas id="weight-chart" style="display:none;"></canvas>
                 </div>
                 <div id="loading-spinner" class="spinner" role="status">
@@ -127,71 +174,36 @@
                 <div class="widget-header">Vital Stats</div>
                 <div class="stat-grid stat-grid-4">
                     <div class="stat-group">
-                        <div class="stat-label">SMA</div>
-                        <span id="current-sma" class="stat-value">--</span>
+                        <button type="button" class="stat-explain-btn" data-stat="sma" aria-expanded="false">
+                            <div class="stat-label">SMA</div>
+                            <span id="current-sma" class="stat-value">--</span>
+                        </button>
                     </div>
                     <div class="stat-group">
                         <div class="stat-label">Change</div>
                         <span id="total-change" class="stat-value">--</span>
                     </div>
                     <div class="stat-group">
-                        <div class="stat-label">TDEE</div>
-                        <span id="current-tdee" class="stat-value">--</span>
+                        <button type="button" class="stat-explain-btn" data-stat="tdee" aria-expanded="false">
+                            <div class="stat-label">TDEE</div>
+                            <span id="current-tdee" class="stat-value">--</span>
+                        </button>
                     </div>
                     <div class="stat-group">
-                        <div class="stat-label">Rate</div>
-                        <span id="rolling-weekly-change-sma" class="stat-value">--</span>
+                        <button type="button" class="stat-explain-btn" data-stat="rate" aria-expanded="false">
+                            <div class="stat-label">Rate</div>
+                            <span id="rolling-weekly-change-sma" class="stat-value">--</span>
+                        </button>
                     </div>
                 </div>
             </div>
 
-            <!-- CHART CONTROLS: Analysis Range + Trendlines (directly below the chart) -->
-            <div id="analysis-settings-widget" class="bento-widget span-2x1">
-                <div class="widget-header">Analysis Range</div>
-                <div id="analysis-settings-content" class="analysis-range-form">
-                    <div class="range-controls-inline">
-                        <label><span>Start:</span><input type="date" id="analysisStartDate"
-                                name="analysisStartDate" class="date-input-dmy"></label>
-                        <label><span>End:</span><input type="date" id="analysisEndDate" name="analysisEndDate" class="date-input-dmy"></label>
-                        <button type="button" id="updateAnalysisRange" class="btn-primary">Apply</button>
-                    </div>
-                    <div class="range-presets">
-                        <button type="button" class="preset-btn" data-range="7">7D</button>
-                        <button type="button" class="preset-btn" data-range="30">30D</button>
-                        <button type="button" class="preset-btn" data-range="90">90D</button>
-                        <button type="button" class="preset-btn" data-range="all">All</button>
-                    </div>
-                </div>
-            </div>
-
-            <div id="manual-trendlines-card" class="bento-widget span-1x1">
-                <div class="widget-header">Trendlines</div>
-                <div id="manual-trendlines-container" class="trendlines-form">
-                    <div class="form-row">
-                        <label>Start<input type="date" id="trendStartDate" class="date-input-dmy"></label>
-                        <label>Initial<input type="number" id="trendInitialWeight" step="0.1" placeholder="kg"></label>
-                    </div>
-                    <div class="form-row">
-                        <label>Rate 1<input type="number" id="trendWeeklyIncrease" step="0.05"
-                                placeholder="kg/wk"></label>
-                        <label>Rate 2<input type="number" id="trendWeeklyIncrease_2" step="0.05"
-                                placeholder="kg/wk"></label>
-                    </div>
-                    <button type="button" id="view-data-btn" class="btn-secondary">View Data Table</button>
-                </div>
-            </div>
-
-            <!-- RATE & QUICK ENTRY -->
-            <div id="rate-change-card" class="bento-widget span-2x1">
+            <!-- RATE -->
+            <div id="rate-change-card" class="bento-widget span-3x1">
                 <div class="widget-header">Rate of Change</div>
                 <div id="rate-of-change-container" style="width:100%; height:100%;">
                     <div class="skeleton-loader"></div>
                 </div>
-            </div>
-
-            <div id="manual-entry-widget" class="bento-widget span-1x1">
-                <!-- Populated by ManualEntryWidget.init() -->
-                <div class="skeleton-loader"></div>
             </div>
 
             <!-- GOAL SECTION -->
@@ -204,6 +216,7 @@
                     <button type="submit" class="btn-primary">Set Goal</button>
                 </form>
                 <div id="goal-inline-status" class="goal-inline-status" hidden></div>
+                <div id="goal-phase-status" class="goal-phase-status" hidden></div>
                 <div id="smart-coach-container">
                     <div class="skeleton-loader"></div>
                 </div>
@@ -497,6 +510,7 @@
                 <button class="settings-tab active" data-tab="display" role="tab" aria-selected="true">Display</button>
                 <button class="settings-tab" data-tab="analysis" role="tab" aria-selected="false">Analysis</button>
                 <button class="settings-tab" data-tab="motion" role="tab" aria-selected="false">Motion</button>
+                <button class="settings-tab" data-tab="widgets" role="tab" aria-selected="false">Widgets</button>
                 <button class="settings-tab" data-tab="data" role="tab" aria-selected="false">Data</button>
             </nav>
 
@@ -578,6 +592,14 @@
                 </div>
             </div>
 
+            <div class="settings-panel" data-panel="widgets" hidden>
+                <div class="settings-group">
+                    <p class="settings-hint">Hidden widgets leave the dashboard entirely. Collapse still just folds a card. Hidden always wins over view presets.</p>
+                    <button type="button" id="settings-show-all-widgets" class="btn-secondary settings-btn-full">Show all widgets</button>
+                </div>
+                <div id="settings-widget-list" class="settings-widget-list"></div>
+            </div>
+
             <div class="settings-panel" data-panel="data" hidden>
                 <div class="settings-group">
                     <p class="settings-hint">Export goals, annotations, manual entries, settings, and other browser-saved app data.</p>
@@ -600,6 +622,17 @@
                 <button id="settings-cancel-btn" class="btn-secondary">Cancel</button>
                 <button id="settings-save-btn" class="btn-primary">Save changes</button>
             </div>
+        </aside>
+
+        <div id="day-inspector-overlay" class="day-inspector-overlay" hidden></div>
+        <aside id="day-inspector" class="day-inspector" hidden aria-label="Day inspector" role="dialog" aria-modal="true">
+            <div class="day-inspector-header">
+                <button type="button" id="day-inspector-prev" class="icon-btn" aria-label="Previous day">‹</button>
+                <h2 id="day-inspector-title" class="day-inspector-title">Day</h2>
+                <button type="button" id="day-inspector-next" class="icon-btn" aria-label="Next day">›</button>
+                <button type="button" id="day-inspector-close" class="icon-btn" aria-label="Close day inspector">×</button>
+            </div>
+            <div id="day-inspector-body" class="day-inspector-body"></div>
         </aside>
 
         <script type="module" src="js/main.js"></script>

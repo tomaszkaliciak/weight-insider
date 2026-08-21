@@ -103,6 +103,7 @@ export const CONFIG = Object.freeze({
     protein: "#3498db", // Blue
     carbs: "#f1c40f", // Yellow
     fat: "#e74c3c", // Red
+    fiber: "#27ae60", // Green
     // Periodization phase colors
     bulkPhase: "#27ae60", // Green
     cutPhase: "#e74c3c", // Red

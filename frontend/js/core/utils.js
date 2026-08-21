@@ -4,6 +4,13 @@
 import * as d3 from 'd3';
 import { ui } from "../ui/uiCache.js";
 import { CONFIG } from "../config.js";
+import { SettingsService } from "./settingsService.js";
+import {
+  formatDateLongWith,
+  formatDateShortWith,
+  parseDateDMYParts,
+  parseFlexibleDate,
+} from "./dateDisplay.js";
 
 
 // Assume simple-statistics (ss) might be needed elsewhere, keep reference if used
@@ -102,13 +109,13 @@ export const Utils = {
     if (!dateStr || typeof dateStr !== "string") return null;
     const trimmed = dateStr.trim();
     if (!trimmed) return null;
-    const dmy = this.parseDateDMY(trimmed);
-    if (dmy) return dmy;
-    if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(trimmed)) {
-      const d = new Date(trimmed + "T00:00:00");
-      return d instanceof Date && !isNaN(d.getTime()) ? d : null;
+    let dateFormat = "dmy";
+    try {
+      dateFormat = SettingsService.load()?.dateFormat || "dmy";
+    } catch {
+      dateFormat = "dmy";
     }
-    return null;
+    return parseFlexibleDate(trimmed, dateFormat);
   },
 
   /**
@@ -117,19 +124,7 @@ export const Utils = {
    * @returns {Date|null} The parsed Date object or null if invalid.
    */
   parseDateDMY(dateStr) {
-    if (!dateStr || typeof dateStr !== "string") return null;
-    const parts = dateStr.split("-");
-    if (parts.length !== 3) return null;
-    const day = parseInt(parts[0], 10);
-    const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
-    const year = parseInt(parts[2], 10);
-    if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
-    const date = new Date(year, month, day);
-    // Validate the date is valid (e.g., not Feb 30)
-    if (date.getDate() !== day || date.getMonth() !== month || date.getFullYear() !== year) {
-      return null;
-    }
-    return date;
+    return parseDateDMYParts(dateStr);
   },
 
   /**
@@ -138,10 +133,13 @@ export const Utils = {
    * @returns {string} The formatted date string or 'N/A'.
    */
   formatDateShort(dateInput) {
-    const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
-    return date instanceof Date && !isNaN(date)
-      ? d3.timeFormat("%d %b '%y")(date)
-      : "N/A";
+    let dateFormat = "dmy";
+    try {
+      dateFormat = SettingsService.load()?.dateFormat || "dmy";
+    } catch {
+      dateFormat = "dmy";
+    }
+    return formatDateShortWith(dateInput, dateFormat);
   },
 
   /**
@@ -150,10 +148,13 @@ export const Utils = {
    * @returns {string} The formatted date string or 'N/A'.
    */
   formatDateLong(dateInput) {
-    const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
-    return date instanceof Date && !isNaN(date)
-      ? d3.timeFormat("%a, %d %b %Y")(date)
-      : "N/A";
+    let dateFormat = "dmy";
+    try {
+      dateFormat = SettingsService.load()?.dateFormat || "dmy";
+    } catch {
+      dateFormat = "dmy";
+    }
+    return formatDateLongWith(dateInput, dateFormat);
   },
 
   /**
@@ -161,33 +162,37 @@ export const Utils = {
    * @param {Function} func - The function to debounce.
    * @param {number} wait - The number of milliseconds to delay.
    * @param {object} [options={}] - Options: leading (boolean).
-   * @returns {Function} The new debounced function with a `cancel` method.
+   * @returns {Function} The new debounced function with `cancel` and `flush` methods.
    */
   debounce(func, wait, options = {}) {
-    let timeout, result;
+    let timeout, result, lastArgs, lastThis;
     const debounced = function (...args) {
-      const context = this;
+      lastThis = this;
+      lastArgs = args;
       const later = function () {
         timeout = null;
         if (!options.leading) {
-          result = func.apply(context, args);
+          result = func.apply(lastThis, lastArgs);
         }
       };
       const callNow = options.leading && !timeout;
       clearTimeout(timeout);
       timeout = setTimeout(later, wait);
       if (callNow) {
-        result = func.apply(context, args);
-        // Set timeout to null after immediate call if leading is true,
-        // to allow subsequent calls after wait period.
-        // Context and args are cleared by later function if trailing call happens.
-        // If only leading, timeout is cleared and reset above anyway.
+        result = func.apply(lastThis, lastArgs);
       }
       return result;
     };
     debounced.cancel = function () {
       clearTimeout(timeout);
       timeout = null;
+    };
+    debounced.flush = function () {
+      if (!timeout) return result;
+      clearTimeout(timeout);
+      timeout = null;
+      result = func.apply(lastThis, lastArgs);
+      return result;
     };
     return debounced;
   },

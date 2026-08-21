@@ -7,12 +7,12 @@ import { CONFIG } from '../config.js';
 /** Tolerance: actual must be within ±TOLERANCE of target to count as a hit. */
 export const MACRO_TOLERANCE = 0.10;
 
-const DEFAULT_TARGETS = { protein: null, carbs: null, fat: null };
+const DEFAULT_TARGETS = { protein: null, carbs: null, fat: null, fiber: null };
 
 export const MacroTargetService = {
   /**
    * Load saved targets from localStorage.
-   * @returns {{ protein: number|null, carbs: number|null, fat: number|null }}
+   * @returns {{ protein: number|null, carbs: number|null, fat: number|null, fiber: number|null }}
    */
   load() {
     try {
@@ -22,7 +22,8 @@ export const MacroTargetService = {
       return {
         protein: parsed.protein != null ? parseFloat(parsed.protein) : null,
         carbs:   parsed.carbs   != null ? parseFloat(parsed.carbs)   : null,
-        fat:     parsed.fat     != null ? parseFloat(parsed.fat)     : null
+        fat:     parsed.fat     != null ? parseFloat(parsed.fat)     : null,
+        fiber:   parsed.fiber   != null ? parseFloat(parsed.fiber)   : null,
       };
     } catch {
       return { ...DEFAULT_TARGETS };
@@ -51,7 +52,7 @@ export const MacroTargetService = {
    * @returns {boolean}
    */
   dayMeetsTargets(dayData, targets) {
-    const macros = ['protein', 'carbs', 'fat'];
+    const macros = ['protein', 'carbs', 'fat', 'fiber'];
     for (const macro of macros) {
       const target = targets[macro];
       if (target == null || target <= 0) continue; // target not set — ignore
@@ -86,7 +87,7 @@ export const MacroTargetService = {
 
     // Filter to days that have at least protein or carbs logged
     const macroData = data.filter(
-      (d) => d.protein != null || d.carbs != null || d.fat != null,
+      (d) => d.protein != null || d.carbs != null || d.fat != null || d.fiber != null,
     );
 
     if (macroData.length === 0) {

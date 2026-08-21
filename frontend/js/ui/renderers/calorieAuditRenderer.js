@@ -53,7 +53,7 @@ export const CalorieAuditRenderer = {
     }
 
     // Get estimated TDEE (use adaptive or trend-based)
-    const estimatedTDEE = stats.adaptiveTDEE || stats.trendTDEE || stats.avgTDEE || 2500;
+    const estimatedTDEE = Selectors.selectBaselineTdee(stats, 2500);
 
     // Calculate expected vs actual
     const totalCaloriesLogged = validDays.reduce((sum, d) => sum + d.calorieIntake, 0);

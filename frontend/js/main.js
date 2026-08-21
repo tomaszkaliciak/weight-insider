@@ -61,8 +61,8 @@ import { DataTableModal } from "./ui/dataTableModal.js";
 import { ChartControls } from "./ui/chartControls.js";
 import { VitalStatsEnricher } from "./ui/renderers/vitalStatsEnricher.js";
 import { WidgetCollapser } from "./ui/widgetCollapser.js";
+import { WidgetVisibility } from "./ui/widgetVisibility.js";
 import { MobileNav } from "./ui/mobileNav.js";
-import { ManualEntryWidget } from "./ui/manualEntryWidget.js";
 import { ManualEntryService } from "./core/manualEntryService.js";
 import { MacroSummaryRenderer } from "./ui/renderers/macroSummaryRenderer.js";
 import { ProteinAdequacyRenderer } from "./ui/renderers/proteinAdequacyRenderer.js";
@@ -75,6 +75,10 @@ import { CalorieBudgetChip } from "./ui/calorieBudgetChip.js";
 import { RefeedRecommenderRenderer } from "./ui/renderers/refeedRecommenderRenderer.js";
 import { WhatIfOverlayRenderer } from "./ui/renderers/whatIfOverlayRenderer.js";
 import { CommandPalette } from "./ui/components/commandPalette.js";
+import { DayInspector } from "./ui/dayInspector.js";
+import { StatsExplainer } from "./ui/statsExplainer.js";
+import { ChartChrome } from "./ui/chartChrome.js";
+import { WidgetEmptiness } from "./ui/widgetEmptinessSync.js";
 
 /**
  * Defers renderer.init() until the element with anchorId enters the viewport.
@@ -138,6 +142,7 @@ async function initialize() {
 
     // 1d. Initialize Widget Collapse/Expand
     WidgetCollapser.init();
+    WidgetVisibility.init();
 
     // 1d-ii. Dashboard presets (must run after WidgetCollapser.init so it can override)
     DashboardPresets.init();
@@ -145,14 +150,16 @@ async function initialize() {
     // 1e. Mobile navigation FAB
     MobileNav.init();
 
-    // 1f. Manual entry widget
-    ManualEntryWidget.init();
     DateInputUX.init();
 
     // 1g. Settings panel + calorie budget chip + command palette
     SettingsPanel.init();
     CalorieBudgetChip.init();
     CommandPalette.init();
+    DayInspector.init();
+    StatsExplainer.init();
+    ChartChrome.init();
+    WidgetEmptiness.init();
 
 
 

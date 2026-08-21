@@ -10,28 +10,36 @@
 html {
     scroll-behavior: smooth;
     font-size: 16px;
+    color-scheme: light;
+}
+
+body.dark-theme,
+body.gruvbox-theme {
+    color-scheme: dark;
 }
 
 body {
     font-family: var(--font-sans);
     background-color: var(--bg-primary);
     color: var(--text-primary);
-    padding: clamp(25px, 4vh, 40px) clamp(25px, 5vw, 60px);
+    padding: 0 0 48px;
     display: flex;
     flex-direction: column;
     align-items: center;
     min-height: 100vh;
-    line-height: 1.6;
-    font-size: 16px;
-    letter-spacing: -0.01em;
+    line-height: 1.55;
+    font-size: 15.5px;
+    letter-spacing: -0.015em;
     position: relative;
-    /* Modern font feel */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
     transition:
         background-color var(--transition-speed) var(--transition-ease),
         color var(--transition-speed) var(--transition-ease);
 }
 
-/* T2 — subtle film-grain texture on page background (fixed, non-interactive) */
+/* Quiet dot grid — texture without competing with numbers */
 body::before {
     content: "";
     position: fixed;
@@ -39,10 +47,11 @@ body::before {
     pointer-events: none;
     z-index: 0;
     opacity: var(--grain-opacity);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.7 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-image: radial-gradient(circle, var(--grid-dot) 1px, transparent 1.4px);
+    background-size: 22px 22px;
 }
 
-/* U1 — Aurora radial-glow background (primarily dark mode via --aurora-opacity token) */
+/* Soft color wash (dark themes). Kept low so charts and type stay readable. */
 body::after {
     content: "";
     position: fixed;
@@ -51,17 +60,17 @@ body::after {
     z-index: 0;
     opacity: var(--aurora-opacity, 0);
     background:
-        radial-gradient(ellipse 60% 45% at 15% 20%,
-            hsla(var(--hue-primary), 70%, 55%, 0.28),
+        radial-gradient(ellipse 55% 40% at 8% 0%,
+            hsla(var(--hue-primary), 80%, 55%, 0.22),
+            transparent 68%),
+        radial-gradient(ellipse 45% 35% at 96% 8%,
+            hsla(var(--hue-goal), 55%, 60%, 0.12),
             transparent 70%),
-        radial-gradient(ellipse 55% 40% at 85% 30%,
-            hsla(var(--hue-goal), 60%, 65%, 0.22),
-            transparent 70%),
-        radial-gradient(ellipse 65% 50% at 50% 85%,
-            hsla(var(--hue-secondary), 60%, 55%, 0.18),
-            transparent 70%);
-    filter: blur(60px);
-    animation: aurora-drift 32s ease-in-out infinite alternate;
+        radial-gradient(ellipse 50% 40% at 70% 100%,
+            hsla(var(--hue-secondary), 50%, 50%, 0.10),
+            transparent 72%);
+    filter: blur(48px);
+    animation: aurora-drift 36s ease-in-out infinite alternate;
     transition: opacity 0.4s ease;
 }
 
@@ -114,9 +123,10 @@ body.dark-theme ::-webkit-scrollbar-thumb:hover {
     flex-direction: column;
     align-items: center;
     gap: clamp(15px, 2vw, 25px);
-    width: 100%;
-    max-width: 1400px;
+    width: calc(100% - (var(--page-gutter) * 2));
+    max-width: var(--header-max, 1440px);
     flex-grow: 1;
+    padding-inline: 0;
 }
 
 .left-sidebar {
@@ -125,8 +135,8 @@ body.dark-theme ::-webkit-scrollbar-thumb:hover {
 }
 
 .chart-section {
-    min-height: 420px;
-    max-height: 560px;
+    min-height: 480px;
+    max-height: 720px;
     width: 100%;
     display: flex;
     flex-direction: column;
@@ -300,23 +310,28 @@ body.dark-theme ::-webkit-scrollbar-thumb:hover {
 
 @media (max-width: 768px) {
     body {
-        padding: 20px;
+        padding: 0 0 32px;
         font-size: 15px;
     }
 
     header h1 {
-        font-size: 1.2rem;
+        font-size: 1.05rem;
     }
 
     header {
-        align-items: flex-start;
-        gap: 12px;
+        align-items: center;
+        gap: 10px;
+        top: 8px;
+        width: calc(100% - 16px);
+        padding: 10px 12px;
+        border-radius: 16px;
+        flex-wrap: wrap;
     }
 
     .header-controls {
         flex-wrap: wrap;
         justify-content: flex-end;
-        max-width: 58vw;
+        max-width: 100%;
     }
 
     .budget-chip {
@@ -427,7 +442,7 @@ body.dark-theme ::-webkit-scrollbar-thumb:hover {
     /* .axis-label.scatter-axis-label-y override removed - invalid CSS property dy */
 
     #context-chart-container {
-        height: 60px;
+        height: 72px;
     }
 
     .axis text {
@@ -596,7 +611,7 @@ body.dark-theme ::-webkit-scrollbar-thumb:hover {
     }
 
     #context-chart-container {
-        height: 60px;
+        height: 72px;
     }
 
     #pinned-tooltip-container {
@@ -646,9 +661,9 @@ body.dark-theme ::-webkit-scrollbar-thumb:hover {
     display: flex;
     flex-direction: column;
     align-items: center;
-    min-height: 100vh;
-    background-color: var(--bg-primary);
-    padding: 20px;
+    min-height: unset;
+    background-color: transparent;
+    padding: 4px 0 40px;
 }
 
 
@@ -658,10 +673,10 @@ body.dark-theme ::-webkit-scrollbar-thumb:hover {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     grid-auto-rows: minmax(180px, auto);
-    gap: 20px;
-    padding: 30px;
+    gap: 16px;
+    padding: 8px 0 0;
     align-content: start;
-    max-width: 1600px;
+    max-width: var(--header-max, 1440px);
     margin: 0 auto;
     width: 100%;
 }
@@ -682,8 +697,8 @@ body.dark-theme ::-webkit-scrollbar-thumb:hover {
 
     .bento-canvas {
         grid-template-columns: minmax(0, 1fr) !important;
-        padding: 15px;
-        gap: 15px;
+        padding: 4px 0 0;
+        gap: 12px;
     }
 
     /* Collapse ALL multi-span widgets to single column on mobile */
@@ -713,15 +728,15 @@ body.dark-theme ::-webkit-scrollbar-thumb:hover {
 
     /* Chart: smaller height on mobile to reduce scrolling */
     .chart-section {
-        min-height: 300px !important;
-        max-height: 420px !important;
+        min-height: 360px !important;
+        max-height: 500px !important;
     }
 }
 
 @media (max-width: 480px) {
     .bento-canvas {
-        padding: 12px;
-        gap: 12px;
+        padding: 0;
+        gap: 10px;
     }
 
     /* Very small phones: compact chart */
@@ -735,7 +750,7 @@ body.dark-theme ::-webkit-scrollbar-thumb:hover {
     }
 
     #context-chart-container {
-        height: 40px !important;
+        height: 56px !important;
     }
 }
 
@@ -905,10 +920,29 @@ body.dark-theme ::-webkit-scrollbar-thumb:hover {
     box-shadow: 0 2px 8px var(--shadow-color);
 }
 
-.chart-reset-btn {
+.chart-reset-btn,
+.chart-log-today {
     padding: 4px 9px;
     font-size: 0.75rem;
     line-height: 1.2;
+}
+
+.chart-log-today[hidden] {
+    display: none;
+}
+
+.chart-filmstrip-caption {
+    margin: 6px 0 2px;
+    padding: 0 4px;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-align: center;
+    letter-spacing: 0.01em;
+}
+
+.chart-filmstrip-caption[hidden] {
+    display: none;
 }
 
 .chart-help-text {
@@ -941,19 +975,28 @@ body.dark-theme ::-webkit-scrollbar-thumb:hover {
 }
 
 .icon-btn {
-    background: transparent;
-    border: none;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
     cursor: pointer;
-    font-size: 1.2rem;
-    color: var(--text-muted);
-    padding: 4px;
-    border-radius: 4px;
-    transition: all 0.2s;
+    font-size: 1.05rem;
+    color: var(--text-secondary);
+    padding: 8px;
+    border-radius: var(--radius-md, 12px);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.16s ease, color 0.16s ease, border-color 0.16s ease;
 }
 
 .icon-btn:hover {
-    background: var(--bg-tertiary);
+    background: var(--bg-secondary);
     color: var(--text-primary);
+    border-color: var(--text-muted);
+}
+
+.icon-btn:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
 }
 
 /* 12. Top Row — Hero & Executive Summary */
@@ -993,7 +1036,6 @@ body.dark-theme ::-webkit-scrollbar-thumb:hover {
 
 #executive-hub-card .widget-header {
     margin-bottom: 8px !important;
-    font-size: 1rem !important;
 }
 
 /* Reduce standard bento row height slightly to compact overall view */

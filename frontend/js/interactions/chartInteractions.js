@@ -11,6 +11,7 @@ import { MasterUpdater } from "../ui/masterUpdater.js";
 import * as Selectors from "../core/selectors.js";
 import { TooltipManager } from "./tooltipManager.js";
 import { explainOutlier } from "../core/outlierExplainer.js";
+import { hasTdeeDisagreement, tdeeDisagreementKcal } from "../core/tdeeDisagreement.js";
 
 
 // Internal flags (not exported)
@@ -87,7 +88,7 @@ export const ChartInteractions = {
     let tt = `<strong>${Utils.formatDateLong(d.date)}</strong>`;
     if (d._metricMode) {
       tt += `<div style="margin-top: 4px;">${d._metricLabel}: ${Utils.formatValue(d.value, 0)} ${d._metricUnit}</div>`;
-      tt += `<hr class="tooltip-hr"><div class="note pinned-note">Click dot to pin tooltip.</div>`;
+      tt += `<hr class="tooltip-hr"><div class="note pinned-note">Click to inspect this day.</div>`;
       TooltipManager.show(tt, event);
       return;
     }
@@ -125,12 +126,14 @@ export const ChartInteractions = {
     if (d.netBalance != null) secondaryDataLines.push(`Balance: ${Utils.formatValue(d.netBalance, 0)} kcal`);
     if (d.smoothedWeeklyRate != null) secondaryDataLines.push(`Smoothed Rate: ${Utils.formatValue(d.smoothedWeeklyRate, 2)} kg/wk`);
     if (d.avgTdeeDifference != null) secondaryDataLines.push(`Avg TDEE Diff: ${Utils.formatValue(d.avgTdeeDifference, 0)} kcal`);
+    const disagreeKcal = tdeeDisagreementKcal(d);
+    if (hasTdeeDisagreement(d) && disagreeKcal != null) {
+      const sign = disagreeKcal > 0 ? "+" : "";
+      secondaryDataLines.push(`Wearable vs adaptive: ${sign}${Utils.formatValue(disagreeKcal, 0)} kcal`);
+    }
     if (secondaryDataLines.length > 0) tt += `<hr class="tooltip-hr">${secondaryDataLines.join("<br>")}`;
 
-    const currentState = StateManager.getState();
-    const pinnedData = Selectors.selectPinnedTooltipData(currentState);
-    const isPinned = pinnedData?.id === d.date.getTime();
-    tt += `<hr class="tooltip-hr"><div class="note pinned-note">${isPinned ? "Click dot to unpin." : "Click dot to pin tooltip."}</div>`;
+    tt += `<hr class="tooltip-hr"><div class="note pinned-note">Click to inspect this day.</div>`;
 
     TooltipManager.show(tt, event);
   },
@@ -147,22 +150,10 @@ export const ChartInteractions = {
   dotClick(event, d) {
     if (!d || !d.date) return;
     event.stopPropagation();
-    const dataId = d.date.getTime();
-    const currentPinnedData = Selectors.selectPinnedTooltipData(StateManager.getState());
-
-    let newPinnedData = null;
-    if (currentPinnedData?.id !== dataId) {
-      newPinnedData = { id: dataId, data: d, pageX: event.pageX, pageY: event.pageY };
-    }
-    StateManager.dispatch({ type: ActionTypes.SET_PINNED_TOOLTIP, payload: newPinnedData }); // Use ActionTypes
-
-    if (newPinnedData) {
-      ChartInteractions.dotMouseOver(event, d); // Regenerate content
-      TooltipManager.clearHideTimeout();
-      TooltipManager.forceShow();
-    } else {
-      TooltipManager.hide();
-    }
+    StateManager.dispatch({ type: ActionTypes.SET_HIGHLIGHTED_DATE, payload: d.date });
+    import("../ui/dayInspector.js").then(({ DayInspector }) => {
+      DayInspector.open(d);
+    });
   },
 
   balanceMouseOver(event, d) {
@@ -389,7 +380,7 @@ export const ChartInteractions = {
   // --- Other Chart Interactions ---
   handleBackgroundClick(event) {
     const targetNode = event.target;
-    const isInteractive = targetNode.closest(".raw-dot, .annotation-marker-group, .trend-change-marker-group, .legend-item, .handle, .selection, .overlay, .highlightable");
+    const isInteractive = targetNode.closest(".raw-dot, .phase-band, .annotation-marker-group, .trend-change-marker-group, .legend-item, .handle, .selection, .overlay, .highlightable");
     const isBackground = targetNode === ui.zoomCaptureRect?.node() || targetNode === ui.svg?.node() || targetNode === ui.focus?.node() || targetNode === ui.chartArea?.node();
 
     if (isBackground && !isInteractive) {

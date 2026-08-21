@@ -4,14 +4,22 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    min-height: 32px;
+    min-height: 28px;
     margin-bottom: 12px;
-    padding-bottom: 10px;
+    padding-bottom: 8px;
     border-bottom: 1px solid var(--border-color-light);
-    color: var(--text-secondary);
-    font-size: 0.86rem;
+    color: var(--text-muted);
+    font-size: 0.72rem;
     font-weight: 700;
-    letter-spacing: 0.01em;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.bento-widget .widget-header .chart-mode-switch,
+.bento-widget .widget-header .chart-controls,
+.bento-widget .widget-header button {
+    text-transform: none;
+    letter-spacing: normal;
+    font-size: 0.78rem;
 }
 .bento-widget .widget-header:active {
     cursor: grabbing;
@@ -75,18 +83,20 @@
 
 .stat-group {
     background: var(--bg-tertiary);
-    padding: 10px;
-    border-radius: 12px;
+    padding: 12px 12px 10px;
+    border-radius: var(--radius-md, 12px);
+    border: 1px solid var(--border-color-light);
     display: flex;
     flex-direction: column;
     gap: 2px;
 }
 
 .stat-group .stat-label {
-    font-size: 0.85rem;
+    font-size: 0.68rem;
     color: var(--text-muted);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.08em;
+    font-weight: 700;
 }
 
 /* Delta badge shown below each stat value in the Vital Stats strip */
@@ -599,8 +609,8 @@ body.dark-theme .highlight-trigger:hover .stat-date.highlightable {
 
 #context-chart-container {
     position: relative;
-    height: 65px;
-    min-height: 40px;
+    height: 80px;
+    min-height: 48px;
     flex-shrink: 0;
     margin-top: 5px;
     padding-bottom: 0;
@@ -1773,10 +1783,12 @@ body.dark-theme .goal-achieved-badge.good {
 .macro-protein      { background: hsl(220, 80%, 60%); }
 .macro-carbs        { background: hsl(38, 90%, 55%); }
 .macro-fat          { background: hsl(350, 70%, 60%); }
+.macro-fiber        { background: hsl(145, 55%, 42%); }
 
 .macro-protein-text { color: hsl(220, 80%, 60%); }
 .macro-carbs-text   { color: hsl(38, 90%, 45%); }
 .macro-fat-text     { color: hsl(350, 70%, 55%); }
+.macro-fiber-text   { color: hsl(145, 55%, 38%); }
 
 /* Calorie split strip */
 .macro-split-row {

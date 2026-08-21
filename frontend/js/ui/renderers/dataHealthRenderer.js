@@ -215,10 +215,7 @@ function _onClick(event) {
   if (!btn) return;
   const action = btn.dataset.action;
   if (action === "add-entry") {
-    document
-      .getElementById("manual-entry-widget")
-      ?.scrollIntoView({ behavior: "smooth", block: "center" });
-    setTimeout(() => document.getElementById("me-weight")?.focus(), 250);
+    import("../dayInspector.js").then(({ DayInspector }) => DayInspector.openToday());
   }
 }
 

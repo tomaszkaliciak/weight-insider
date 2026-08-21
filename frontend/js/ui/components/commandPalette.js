@@ -5,7 +5,6 @@
 import { StateManager, ActionTypes } from '../../core/stateManager.js';
 import { DashboardPresets } from '../dashboardPresets.js';
 import { ThemeManager } from '../../core/themeManager.js';
-import { ManualEntryWidget } from '../manualEntryWidget.js';
 import { Utils } from '../../core/utils.js';
 
 export const CommandPalette = {
@@ -145,6 +144,8 @@ export const CommandPalette = {
       { id: 'range-30', category: 'Range', title: 'Analysis Range: Last 30 Days (Default)', icon: '📅', action: () => this._setRangeDays(30) },
       { id: 'range-90', category: 'Range', title: 'Analysis Range: Last 90 Days', icon: '📅', action: () => this._setRangeDays(90) },
       { id: 'range-all', category: 'Range', title: 'Analysis Range: All Data', icon: '📅', action: () => this._setRangeDays('all') },
+      { id: 'range-phase', category: 'Range', title: 'Analysis Range: This Phase', icon: '📅', action: () => this._setRangeDays('phase') },
+      { id: 'act-inspect-day', category: 'Action', title: 'Inspect latest day', icon: '🔎', action: () => this._inspectLatestDay() },
 
       // Presets
       { id: 'preset-executive', category: 'Preset View', title: 'Switch to Executive Overview', icon: '📊', action: () => DashboardPresets.applyPreset('executive') },
@@ -251,17 +252,21 @@ export const CommandPalette = {
   _jumpToWidget(widgetId) {
     const el = document.getElementById(widgetId);
     if (el) {
-      // Ensure widget is expanded if collapsed
-      el.classList.remove('widget-collapsed');
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      el.classList.add('widget-highlight-glow');
-      setTimeout(() => el.classList.remove('widget-highlight-glow'), 2000);
+      import('../widgetVisibility.js').then(({ WidgetVisibility }) => {
+        WidgetVisibility.show(widgetId);
+        el.classList.remove('widget-collapsed');
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('widget-highlight-glow');
+        setTimeout(() => el.classList.remove('widget-highlight-glow'), 2000);
+      });
     }
   },
 
+  _inspectLatestDay() {
+    import('../dayInspector.js').then(({ DayInspector }) => DayInspector.openLatest());
+  },
+
   _triggerLogWidget() {
-    this._jumpToWidget('manual-entry-widget');
-    const input = document.querySelector('#manual-entry-widget input[type="number"]');
-    if (input) setTimeout(() => input.focus(), 400);
+    import('../dayInspector.js').then(({ DayInspector }) => DayInspector.openToday());
   }
 };

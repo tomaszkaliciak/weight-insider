@@ -21,6 +21,8 @@ import { ChartInteractions } from "./chartInteractions.js";
 import { FormHandlers } from "./formHandlers.js";
 import { UIInteractions } from "./uiInteractions.js";
 import { ResizeHandler } from "./resizeHandler.js";
+import { resolveThisPhase, phaseLabel } from "../core/phaseHelpers.js";
+import { setChartMode } from "../ui/chartMode.js";
 
 export const EventHandlers = {
   // --- Setup ---
@@ -66,9 +68,8 @@ export const EventHandlers = {
       "change.range",
       FormHandlers.handleAnalysisRangeInputChange,
     );
-    // Analysis range preset buttons (7D, 30D, 90D, All)
+    // Analysis range preset buttons (7D, 30D, 90D, All, This phase)
     d3.selectAll('.preset-btn[data-range]').on('click', function () {
-      // Show loading spinner
       const spinner = document.getElementById('loading-spinner');
       if (spinner) spinner.style.display = 'block';
 
@@ -82,22 +83,39 @@ export const EventHandlers = {
 
       const lastDate = processedData[processedData.length - 1]?.date;
       const firstDate = processedData[0]?.date;
-      if (!(lastDate instanceof Date) || !(firstDate instanceof Date)) return;
+      if (!(lastDate instanceof Date) || !(firstDate instanceof Date)) {
+        if (spinner) spinner.style.display = 'none';
+        return;
+      }
 
       let newStart, newEnd;
       newEnd = new Date(new Date(lastDate).setHours(23, 59, 59, 999));
 
       if (range === 'all') {
         newStart = new Date(new Date(firstDate).setHours(0, 0, 0, 0));
+      } else if (range === 'phase') {
+        const phase = resolveThisPhase(
+          Selectors.selectPeriodizationPhases(stateSnapshot),
+          lastDate,
+        );
+        if (!phase?.startDate || !phase?.endDate) {
+          if (spinner) spinner.style.display = 'none';
+          Utils.showStatusMessage("No phase detected yet.", "warn", 2000);
+          return;
+        }
+        newStart = new Date(new Date(phase.startDate).setHours(0, 0, 0, 0));
+        newEnd = new Date(new Date(phase.endDate).setHours(23, 59, 59, 999));
       } else {
         const days = parseInt(range, 10);
-        if (isNaN(days) || days <= 0) return;
+        if (isNaN(days) || days <= 0) {
+          if (spinner) spinner.style.display = 'none';
+          return;
+        }
         newStart = new Date(lastDate);
         newStart.setDate(newStart.getDate() - days);
         newStart.setHours(0, 0, 0, 0);
       }
 
-      // Update date inputs (native date pickers expect ISO YYYY-MM-DD).
       const startNode = ui.analysisStartDateInput?.node?.();
       const endNode = ui.analysisEndDateInput?.node?.();
       const startStr = startNode?.type === "date"
@@ -107,7 +125,10 @@ export const EventHandlers = {
       ui.analysisStartDateInput?.property("value", startStr);
       ui.analysisEndDateInput?.property("value", endStr);
 
-      // Dispatch and redraw
+      document.querySelectorAll('.preset-btn[data-range]').forEach((btn) => {
+        btn.classList.toggle('active', btn === this);
+      });
+
       StateManager.dispatch({ type: ActionTypes.SET_ANALYSIS_RANGE, payload: { start: newStart, end: newEnd } });
       StateManager.dispatch({ type: ActionTypes.SET_PINNED_TOOLTIP, payload: null });
       StateManager.dispatch({ type: ActionTypes.SET_HIGHLIGHTED_DATE, payload: null });
@@ -116,16 +137,28 @@ export const EventHandlers = {
       if (scales.x) scales.x.domain([newStart, newEnd]);
       ChartInteractions.syncBrushAndZoomToFocus();
       MasterUpdater.updateAllCharts({ isInteractive: false });
-      Utils.showStatusMessage(`Range set to ${range === 'all' ? 'All data' : range + ' days'}.`, "info", 1500);
+      const phase = range === 'phase'
+        ? resolveThisPhase(Selectors.selectPeriodizationPhases(stateSnapshot), lastDate)
+        : null;
+      Utils.showStatusMessage(
+        range === 'all' ? 'Range set to all data.'
+          : range === 'phase' ? `Range set to this ${phaseLabel(phase?.type)} phase.`
+          : `Range set to ${range} days.`,
+        "info",
+        1500,
+      );
+    });
+
+    const trendToggle = document.getElementById("chart-trendlines-toggle");
+    const trendPanel = document.getElementById("chart-trendlines-panel");
+    trendToggle?.addEventListener("click", () => {
+      if (!trendPanel) return;
+      const open = trendPanel.hidden;
+      trendPanel.hidden = !open;
+      trendToggle.setAttribute("aria-expanded", String(open));
     });
     d3.selectAll('.chart-mode-btn[data-chart-mode]').on('click', function () {
-      const chartMode = this.getAttribute('data-chart-mode') || 'weight';
-      document.querySelectorAll('.chart-mode-btn[data-chart-mode]').forEach((btn) => {
-        const isActive = btn === this;
-        btn.classList.toggle('active', isActive);
-        btn.setAttribute('aria-pressed', String(isActive));
-      });
-      StateManager.dispatch({ type: ActionTypes.SET_CHART_MODE, payload: chartMode });
+      const chartMode = setChartMode(this.getAttribute('data-chart-mode') || 'weight');
       MasterUpdater.updateAllCharts({ isInteractive: false, kind: "discrete" });
       Utils.showStatusMessage(
         chartMode === 'weight' ? 'Showing weight trend.' : `Showing ${chartMode === 'tdee' ? 'TDEE' : 'calories'} over time.`,
