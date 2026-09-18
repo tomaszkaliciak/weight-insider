@@ -2018,6 +2018,33 @@ body.motion-reduced .bento-widget.widget-spotlight::before {
 }
 
 /* =========================================
+   Maintenance Tolerance Corridor Band
+   ========================================= */
+.corridor-band {
+    fill: var(--primary-color, #4f46e5);
+    fill-opacity: 0.08;
+    stroke: none;
+    pointer-events: none;
+}
+
+[data-theme="dark"] .corridor-band {
+    fill-opacity: 0.12;
+}
+
+.corridor-limit-line {
+    stroke: var(--primary-color, #4f46e5);
+    stroke-width: 1.2px;
+    stroke-dasharray: 4 3;
+    stroke-opacity: 0.45;
+    fill: none;
+    pointer-events: none;
+}
+
+[data-theme="dark"] .corridor-limit-line {
+    stroke-opacity: 0.6;
+}
+
+/* =========================================
    Phase 4: Outlier Explanation (Heatmap)
    ========================================= */
 .health-alert.outlier-explanation {

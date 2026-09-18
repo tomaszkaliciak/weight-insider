@@ -16,6 +16,7 @@ import { Utils } from "../core/utils.js";
 import { phaseLabel } from "../core/phaseHelpers.js";
 import { hasTdeeDisagreement } from "../core/tdeeDisagreement.js";
 import { adherenceKind } from "../core/adherenceTick.js";
+import { StrategyService } from "../core/strategyService.js";
 
 
 // --- C4: Transition helper ---
@@ -72,7 +73,9 @@ export const FocusChartUpdater = {
     }
 
     // Update main Y axis — now animated on discrete transitions too
-    axes.yAxis.scale(scales.y);
+    const currentFocusH = Math.abs(scales.y.range()[0] - scales.y.range()[1]);
+    const currentTickCount = Math.max(3, Math.min(8, Math.floor(currentFocusH / 48)));
+    axes.yAxis.scale(scales.y).ticks(currentTickCount);
     if (dur > 0 && !options.isInteractive) {
       ui.yAxisGroup?.transition(t).call(axes.yAxis);
     } else {
@@ -273,6 +276,65 @@ export const FocusChartUpdater = {
       ui.goalConfidenceBand.attr('d', '');
     }
 
+    // --- Maintenance Tolerance Corridor Band ---
+    // If active strategy is maintenance or has a corridor, draw the tolerance band across visible x-domain
+    try {
+      const strategy = StrategyService.getStrategy();
+      const isMaintenance = strategy?.phase === 'maintenance';
+      const hasCorridor = isMaintenance && strategy?.corridor > 0 && strategy?.targetWeight != null;
+
+      if (hasCorridor && ui.corridorBand && !ui.corridorBand.empty()) {
+        const xDomain = currentXScale.domain();
+        if (xDomain && xDomain.length === 2 && xDomain[0] instanceof Date && xDomain[1] instanceof Date) {
+          const lowerW = strategy.targetWeight - strategy.corridor;
+          const upperW = strategy.targetWeight + strategy.corridor;
+
+          const corridorPoints = [
+            { date: xDomain[0], lower: lowerW, upper: upperW, mid: strategy.targetWeight },
+            { date: xDomain[1], lower: lowerW, upper: upperW, mid: strategy.targetWeight },
+          ];
+
+          const corridorAreaGen = d3.area()
+            .x(d => currentXScale(d.date))
+            .y0(d => currentYScale(d.lower))
+            .y1(d => currentYScale(d.upper))
+            .defined(d => isFinite(currentXScale(d.date)) && isFinite(currentYScale(d.lower)) && isFinite(currentYScale(d.upper)));
+
+          const corridorLineGen = (yVal) => d3.line()
+            .x(d => currentXScale(d.date))
+            .y(() => currentYScale(yVal))
+            .defined(d => isFinite(currentXScale(d.date)) && isFinite(currentYScale(yVal)));
+
+          const bandPath = corridorAreaGen(corridorPoints);
+          const upperPath = corridorLineGen(upperW)(corridorPoints);
+          const lowerPath = corridorLineGen(lowerW)(corridorPoints);
+
+          if (dur > 0 && !options.isInteractive) {
+            ui.corridorBand.transition().duration(dur).attr('d', bandPath);
+            ui.corridorUpperLine?.transition().duration(dur).attr('d', upperPath);
+            ui.corridorLowerLine?.transition().duration(dur).attr('d', lowerPath);
+          } else {
+            ui.corridorBand.attr('d', bandPath);
+            ui.corridorUpperLine?.attr('d', upperPath);
+            ui.corridorLowerLine?.attr('d', lowerPath);
+          }
+        } else {
+          ui.corridorBand.attr('d', '');
+          ui.corridorUpperLine?.attr('d', '');
+          ui.corridorLowerLine?.attr('d', '');
+        }
+      } else {
+        ui.corridorBand?.attr('d', '');
+        ui.corridorUpperLine?.attr('d', '');
+        ui.corridorLowerLine?.attr('d', '');
+      }
+    } catch (err) {
+      console.warn('[FocusChartUpdater] Failed to render corridor band:', err);
+      ui.corridorBand?.attr('d', '');
+      ui.corridorUpperLine?.attr('d', '');
+      ui.corridorLowerLine?.attr('d', '');
+    }
+
     updateSelection(ui.trendLine1, trendLine1Data, trendLineGen); // Use pre-calculated data
     updateSelection(ui.trendLine2, trendLine2Data, trendLineGen); // Use pre-calculated data
   },
@@ -318,6 +380,9 @@ export const FocusChartUpdater = {
     ui.goalLine?.attr("d", "");
     ui.goalLineHit?.attr("d", "");
     ui.goalConfidenceBand?.attr("d", "");
+    ui.corridorBand?.attr("d", "");
+    ui.corridorUpperLine?.attr("d", "");
+    ui.corridorLowerLine?.attr("d", "");
     ui.trendLine1?.attr("d", "");
     ui.trendLine2?.attr("d", "");
 

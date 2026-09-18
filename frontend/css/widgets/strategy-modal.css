@@ -1,0 +1,257 @@
+/* css/widgets/strategy-modal.css */
+/* MacroPhase Style Strategy & Phases Dialog & Form */
+
+.strategy-modal {
+    max-width: 660px !important;
+    width: 92vw;
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius-lg, 16px) !important;
+    box-shadow: var(--elev-3) !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    color: var(--text-primary);
+}
+
+.strategy-modal-content {
+    display: flex;
+    flex-direction: column;
+    max-height: 85vh;
+}
+
+.strategy-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--panel-bg);
+}
+
+.strategy-modal-header h2 {
+    font-size: 1.15rem;
+    font-weight: 800;
+    margin: 0;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.strategy-modal-body {
+    padding: 22px 24px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Phase Selector Tabs */
+.strategy-phase-tabs {
+    display: flex;
+    gap: 8px;
+    background: var(--bg-tertiary);
+    padding: 4px;
+    border-radius: var(--radius-md, 12px);
+    border: 1px solid var(--border-color);
+}
+
+.strategy-tab-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm, 8px);
+    padding: 8px 12px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.strategy-tab-btn:hover {
+    color: var(--text-primary);
+}
+
+.strategy-tab-btn.active {
+    background: var(--bg-card);
+    color: var(--text-primary);
+    box-shadow: var(--elev-1);
+    border: 1px solid var(--border-color);
+}
+
+/* Form Sections */
+.strategy-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md, 12px);
+    padding: 16px 18px;
+}
+
+.strategy-section-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+}
+
+.strategy-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+}
+
+@media (max-width: 600px) {
+    .strategy-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+.strategy-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.strategy-field label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.strategy-field input,
+.strategy-field select {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm, 8px);
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+.strategy-field input:focus,
+.strategy-field select:focus {
+    border-color: var(--primary-color);
+}
+
+/* Preset Pill Buttons */
+.strategy-preset-group {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.strategy-preset-btn {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    border-radius: var(--radius-sm, 6px);
+    padding: 5px 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.strategy-preset-btn:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.strategy-preset-btn.active {
+    background: var(--primary-color);
+    color: var(--text-on-primary, #ffffff);
+    border-color: var(--primary-color);
+}
+
+/* Live Preview Card */
+.strategy-preview-card {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md, 12px);
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.strategy-preview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+}
+
+.strategy-preview-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+@media (max-width: 600px) {
+    .strategy-preview-metrics {
+        grid-template-columns: 1fr;
+    }
+}
+
+.strategy-preview-item {
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm, 8px);
+    padding: 10px 12px;
+}
+
+.strategy-preview-item .label {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+}
+
+.strategy-preview-item .val {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-top: 2px;
+}
+
+/* Footer */
+.strategy-modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 16px 24px;
+    border-top: 1px solid var(--border-color);
+    background: var(--panel-bg);
+}
+
+.btn-strategy-save {
+    background: var(--primary-color);
+    color: var(--text-on-primary, #ffffff);
+    border: none;
+    border-radius: var(--radius-sm, 8px);
+    padding: 9px 20px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-strategy-save:hover {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+}

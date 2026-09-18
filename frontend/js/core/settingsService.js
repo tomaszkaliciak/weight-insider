@@ -20,6 +20,10 @@ export const DEFAULT_SETTINGS = {
   animationSpeed: 1.0,       // 0.5 – 2.0 multiplier
   // A4 chip preference
   budgetUseMaintenance: false,
+  // Adaptive Macro Coach & Phases (MacroPhase style)
+  dietPhase: "maintenance",  // 'maintenance' | 'cut' | 'bulk'
+  proteinPerKg: 2.0,          // grams per kg of body weight
+  dietStyle: "balanced",     // 'balanced' | 'low_carb' | 'low_fat' | 'athletic'
 };
 
 function sanitize(raw) {
@@ -34,6 +38,9 @@ function sanitize(raw) {
   if (!["kg", "lb"].includes(out.weightUnit)) out.weightUnit = DEFAULT_SETTINGS.weightUnit;
   if (!["dmy", "mdy", "iso"].includes(out.dateFormat)) out.dateFormat = DEFAULT_SETTINGS.dateFormat;
   if (!["mon", "sun"].includes(out.weekStart)) out.weekStart = DEFAULT_SETTINGS.weekStart;
+  if (!["maintenance", "cut", "bulk"].includes(out.dietPhase)) out.dietPhase = DEFAULT_SETTINGS.dietPhase;
+  out.proteinPerKg = clampNum(out.proteinPerKg, 1.2, 3.5, DEFAULT_SETTINGS.proteinPerKg);
+  if (!["balanced", "low_carb", "low_fat", "athletic"].includes(out.dietStyle)) out.dietStyle = DEFAULT_SETTINGS.dietStyle;
   return out;
 }
 

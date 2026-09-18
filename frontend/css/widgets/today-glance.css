@@ -1,0 +1,446 @@
+/* css/widgets/today-glance.css */
+/* Modern glassmorphic Today's Live Glance cockpit widget */
+
+.today-glance-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg, 16px);
+    padding: 18px 22px;
+    box-shadow: var(--elev-2);
+    margin-bottom: 20px;
+    position: relative;
+    overflow: visible;
+    backdrop-filter: blur(12px);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.today-glance-card:hover {
+    border-color: var(--primary-color);
+    box-shadow: var(--elev-3);
+}
+
+/* Accent top border glow */
+.today-glance-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color), var(--accent-color));
+    border-radius: var(--radius-lg, 16px) var(--radius-lg, 16px) 0 0;
+    opacity: 0.9;
+}
+
+/* Header row */
+.today-glance-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 16px;
+}
+
+.glance-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.glance-pulse {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--success-color, #10b981);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    animation: glancePulse 2s infinite;
+}
+
+@keyframes glancePulse {
+    0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    }
+    70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+    }
+    100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    }
+}
+
+.glance-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.glance-title span.highlight {
+    color: var(--text-primary);
+    font-weight: 800;
+}
+
+.glance-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.glance-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: var(--radius-pill, 999px);
+    background: hsla(var(--hue-primary), 60%, 58%, 0.12);
+    color: var(--primary-color);
+    border: 1px solid hsla(var(--hue-primary), 60%, 58%, 0.25);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.glance-badge:hover {
+    background: hsla(var(--hue-primary), 60%, 58%, 0.2);
+    border-color: var(--primary-color);
+    transform: translateY(-1px);
+}
+
+.glance-badge-phase {
+    background: hsla(var(--hue-secondary), 50%, 55%, 0.12);
+    color: var(--secondary-color);
+    border-color: hsla(var(--hue-secondary), 50%, 55%, 0.25);
+}
+
+.glance-badge-date {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}
+
+.glance-btn-sync {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    border-radius: var(--radius-sm, 8px);
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.15s ease;
+}
+
+.glance-btn-sync:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+/* 3-Column Grid */
+.today-glance-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 1.3fr 1.6fr;
+    gap: 16px;
+    align-items: stretch;
+}
+
+@media (max-width: 960px) {
+    .today-glance-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+}
+
+.glance-col {
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md, 12px);
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.glance-col-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Column 1: Weight & Corridor */
+.glance-weight-val {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1.1;
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+}
+
+.glance-weight-val .unit {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.glance-corridor-status {
+    margin-top: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: var(--radius-sm, 6px);
+    width: fit-content;
+}
+
+.glance-corridor-status.in_corridor {
+    background: hsla(var(--hue-secondary), 50%, 55%, 0.14);
+    color: var(--secondary-color);
+    border: 1px solid hsla(var(--hue-secondary), 50%, 55%, 0.3);
+}
+
+.glance-corridor-status.above_corridor {
+    background: hsla(var(--hue-accent), 70%, 60%, 0.14);
+    color: var(--warning-color);
+    border: 1px solid hsla(var(--hue-accent), 70%, 60%, 0.3);
+}
+
+.glance-corridor-status.below_corridor {
+    background: hsla(var(--hue-primary), 60%, 58%, 0.14);
+    color: var(--primary-color);
+    border: 1px solid hsla(var(--hue-primary), 60%, 58%, 0.3);
+}
+
+.glance-col-subtext {
+    font-size: 0.76rem;
+    color: var(--text-secondary);
+    margin-top: 10px;
+}
+
+.glance-col-subtext strong {
+    color: var(--text-primary);
+}
+
+/* Column 2: Calories & Energy Balance */
+.glance-calories-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.glance-calories-consumed {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+.glance-calories-target {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.glance-remaining-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: var(--radius-sm, 6px);
+    margin-bottom: 8px;
+}
+
+.glance-remaining-pill.positive {
+    background: hsla(var(--hue-secondary), 50%, 55%, 0.14);
+    color: var(--secondary-color);
+    border: 1px solid hsla(var(--hue-secondary), 50%, 55%, 0.3);
+}
+
+.glance-remaining-pill.surplus {
+    background: hsla(var(--hue-tertiary), 70%, 60%, 0.14);
+    color: var(--danger-color);
+    border: 1px solid hsla(var(--hue-tertiary), 70%, 60%, 0.3);
+}
+
+/* Calorie Progress Bar */
+.glance-progress-track {
+    width: 100%;
+    height: 10px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm, 6px);
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 4px;
+}
+
+.glance-progress-fill {
+    height: 100%;
+    border-radius: var(--radius-sm, 6px);
+    transition: width 0.4s ease;
+    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+}
+
+.glance-progress-fill.over {
+    background: linear-gradient(90deg, var(--warning-color), var(--danger-color));
+}
+
+/* Column 3: Macros Live */
+.glance-macro-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.glance-macro-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.glance-macro-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.78rem;
+}
+
+.glance-macro-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.glance-macro-stats {
+    font-size: 0.74rem;
+    color: var(--text-secondary);
+}
+
+.glance-macro-stats strong {
+    color: var(--text-primary);
+}
+
+.glance-macro-track {
+    width: 100%;
+    height: 6px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.glance-macro-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.35s ease;
+}
+
+.glance-macro-fill.protein {
+    background: hsl(240, 70%, 65%);
+}
+
+.glance-macro-fill.fat {
+    background: hsl(38, 90%, 55%);
+}
+
+.glance-macro-fill.carbs {
+    background: hsl(175, 70%, 45%);
+}
+
+.glance-macro-fill.fiber {
+    background: hsl(270, 60%, 65%);
+}
+
+/* Popover for Settings/Targets */
+.glance-popover {
+    position: absolute;
+    top: 60px;
+    left: 20px;
+    z-index: 100;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md, 12px);
+    padding: 16px;
+    box-shadow: var(--elev-3);
+    min-width: 280px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.glance-popover-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 6px;
+}
+
+.glance-popover-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.glance-popover-group label {
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.glance-btn-group {
+    display: flex;
+    gap: 4px;
+}
+
+.glance-btn-option {
+    flex: 1;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    border-radius: var(--radius-sm, 6px);
+    padding: 5px 8px;
+    font-size: 0.74rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-align: center;
+}
+
+.glance-btn-option:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.glance-btn-option.active {
+    background: var(--primary-color);
+    color: var(--text-on-primary, #ffffff);
+    border-color: var(--primary-color);
+}

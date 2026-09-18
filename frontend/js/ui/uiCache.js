@@ -64,6 +64,9 @@ export const ui = {
   trendLine2: null,
   goalLine: null,
   goalConfidenceBand: null, // Expanding CI band behind the goal line
+  corridorBand: null, // Maintenance tolerance corridor band
+  corridorUpperLine: null, // Corridor upper limit line
+  corridorLowerLine: null, // Corridor lower limit line
   goalLineHit: null, // Interactive hit area
   goalPrognosisLine: null,
   rateLine: null,

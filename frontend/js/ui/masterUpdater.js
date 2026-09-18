@@ -296,6 +296,9 @@ export const MasterUpdater = {
                   ui.goalLine?.style("display", isVisible ? null : "none");
                   ui.goalZoneRect?.style("display", isVisible ? null : "none");
                   ui.goalAchievedGroup?.style("display", isVisible ? null : "none");
+                  ui.corridorBand?.style("display", isVisible ? null : "none");
+                  ui.corridorUpperLine?.style("display", isVisible ? null : "none");
+                  ui.corridorLowerLine?.style("display", isVisible ? null : "none");
                   break;
                 case "raw": ui.rawDotsGroup?.style("display", isVisible ? null : "none"); break;
                 case "annotations": ui.annotationsGroup?.style("display", isVisible ? null : "none"); break;

@@ -6,6 +6,8 @@ import { StateManager, ActionTypes } from '../../core/stateManager.js';
 import { DashboardPresets } from '../dashboardPresets.js';
 import { ThemeManager } from '../../core/themeManager.js';
 import { Utils } from '../../core/utils.js';
+import { WeeklyCheckinModal } from '../weeklyCheckinModal.js';
+import { StrategyModal } from '../strategyModal.js';
 
 export const CommandPalette = {
   _modalEl: null,
@@ -135,6 +137,8 @@ export const CommandPalette = {
   _getAllCommands() {
     const commands = [
       // Quick Actions
+      { id: 'act-strategy', category: 'Action', title: 'Diet Strategy & Phase Setup (Cut / Bulk / Maintenance)', icon: '🎯', action: () => StrategyModal.open() },
+      { id: 'act-checkin', category: 'Action', title: 'Weekly Coach Check-In (Macro & Calorie Target Updates)', icon: '📋', action: () => WeeklyCheckinModal.open() },
       { id: 'act-sync', category: 'Action', title: 'Sync Now (Fitatu & Health Connect)', icon: '🔄', action: () => document.getElementById('sync-now-btn')?.click() },
       { id: 'act-log', category: 'Action', title: 'Log Daily Entry (Weight & Calories)', icon: '✏️', action: () => this._triggerLogWidget() },
       { id: 'act-toggle-theme', category: 'Action', title: 'Toggle Light / Dark Theme', icon: '🌓', action: () => ThemeManager.toggleTheme() },

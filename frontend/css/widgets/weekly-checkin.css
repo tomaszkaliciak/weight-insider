@@ -1,0 +1,298 @@
+/* css/widgets/weekly-checkin.css */
+/* MacroPhase Style Weekly Check-In Modal & Review Styling */
+
+.checkin-modal {
+    max-width: 620px !important;
+    width: 92vw;
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius-lg, 16px) !important;
+    box-shadow: var(--elev-3) !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    color: var(--text-primary);
+}
+
+.checkin-modal-content {
+    display: flex;
+    flex-direction: column;
+    max-height: 85vh;
+}
+
+.checkin-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--panel-bg);
+}
+
+.checkin-modal-header h2 {
+    font-size: 1.15rem;
+    font-weight: 800;
+    margin: 0;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.checkin-modal-body {
+    padding: 22px 24px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* 3-KPI Grid */
+.checkin-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+@media (max-width: 600px) {
+    .checkin-kpi-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.checkin-kpi-card {
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md, 12px);
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.checkin-kpi-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+}
+
+.checkin-kpi-val {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+.checkin-kpi-sub {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+/* Verdict Box */
+.checkin-verdict-box {
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    border-left: 4px solid var(--primary-color);
+    border-radius: var(--radius-md, 12px);
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.checkin-verdict-box.optimal {
+    border-left-color: var(--success-color, #10b981);
+}
+
+.checkin-verdict-box.gaining,
+.checkin-verdict-box.aggressive {
+    border-left-color: var(--warning-color, #f59e0b);
+}
+
+.checkin-verdict-box.losing,
+.checkin-verdict-box.stalled {
+    border-left-color: var(--primary-color, #6366f1);
+}
+
+.checkin-verdict-title {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.checkin-verdict-text {
+    font-size: 0.84rem;
+    line-height: 1.45;
+    color: var(--text-secondary);
+}
+
+/* Comparison Section */
+.checkin-comparison-card {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md, 12px);
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.checkin-comp-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+}
+
+.checkin-comp-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.checkin-target-block {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.checkin-target-block .target-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.checkin-target-block .target-val {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+.checkin-arrow {
+    font-size: 1.2rem;
+    color: var(--text-muted);
+}
+
+.checkin-diff-badge {
+    font-size: 0.82rem;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: var(--radius-pill, 999px);
+    background: hsla(var(--hue-secondary), 50%, 55%, 0.15);
+    color: var(--secondary-color);
+    border: 1px solid hsla(var(--hue-secondary), 50%, 55%, 0.3);
+}
+
+.checkin-diff-badge.zero {
+    background: hsla(var(--hue-primary), 60%, 58%, 0.12);
+    color: var(--primary-color);
+    border-color: hsla(var(--hue-primary), 60%, 58%, 0.25);
+}
+
+.checkin-diff-badge.neg {
+    background: hsla(var(--hue-tertiary), 70%, 60%, 0.12);
+    color: var(--danger-color);
+    border-color: hsla(var(--hue-tertiary), 70%, 60%, 0.25);
+}
+
+/* Macros Pill Row */
+.checkin-macro-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-color);
+}
+
+.checkin-macro-pill {
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm, 8px);
+    padding: 8px 10px;
+    text-align: center;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+
+.checkin-macro-pill strong {
+    display: block;
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-top: 2px;
+}
+
+/* Modal Footer */
+.checkin-modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 16px 24px;
+    border-top: 1px solid var(--border-color);
+    background: var(--panel-bg);
+}
+
+.btn-checkin-apply {
+    background: var(--primary-color);
+    color: var(--text-on-primary, #ffffff);
+    border: none;
+    border-radius: var(--radius-sm, 8px);
+    padding: 9px 18px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-checkin-apply:hover {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+}
+
+.btn-checkin-cancel {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    border-radius: var(--radius-sm, 8px);
+    padding: 9px 16px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-checkin-cancel:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+/* Glance trigger button */
+.glance-btn-checkin {
+    background: hsla(var(--hue-primary), 60%, 58%, 0.12);
+    border: 1px solid hsla(var(--hue-primary), 60%, 58%, 0.25);
+    color: var(--primary-color);
+    border-radius: var(--radius-sm, 8px);
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.15s ease;
+}
+
+.glance-btn-checkin:hover {
+    background: var(--primary-color);
+    color: var(--text-on-primary, #ffffff);
+    transform: translateY(-1px);
+}

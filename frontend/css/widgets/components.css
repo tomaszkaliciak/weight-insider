@@ -464,11 +464,11 @@ body.dark-theme .sankey-link:hover {
 #mobile-nav-fab {
     display: none; /* shown only on mobile via media query */
     position: fixed;
-    bottom: 24px;
-    right: 20px;
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    right: 16px;
     z-index: 1200;
-    width: 48px;
-    height: 48px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     background: var(--primary-color);
     color: #fff;
@@ -478,12 +478,14 @@ body.dark-theme .sankey-link:hover {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+    opacity: 0.92;
 }
 
 #mobile-nav-fab:hover,
 #mobile-nav-fab.active {
-    transform: scale(1.08);
+    opacity: 1;
+    transform: scale(1.06);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
 }
 

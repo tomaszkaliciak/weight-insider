@@ -275,6 +275,9 @@ function createSVGElements() {
     ui.regressionLine = ui.chartArea // Regression line
       .append("path")
       .attr("class", "trend-line regression-line");
+    ui.corridorBand = ui.chartArea.append("path").attr("class", "corridor-band");
+    ui.corridorUpperLine = ui.chartArea.append("path").attr("class", "corridor-limit-line corridor-upper");
+    ui.corridorLowerLine = ui.chartArea.append("path").attr("class", "corridor-limit-line corridor-lower");
     ui.goalConfidenceBand = ui.chartArea.append("path").attr("class", "goal-confidence-band");
     ui.goalLine = ui.chartArea.append("path").attr("class", "trend-line goal-line");
     // goalLineHit moved to end of focus group
@@ -655,7 +658,7 @@ function createAxes() {
     .tickFormat(Utils.formatDateShort); // Use custom date format
   axes.yAxis = d3
     .axisLeft(scales.y)
-    .ticks(Math.max(Math.floor(focusH / 40), 5)) // Dynamic ticks based on height
+    .ticks(Math.max(3, Math.min(8, Math.floor(focusH / 48)))) // Dynamic ticks based on height, avoids crowding
     .tickSizeOuter(0)
     .tickFormat((d) => Utils.formatValue(d, 1)); // Format to 1 decimal place
   axes.yAxis2 = d3

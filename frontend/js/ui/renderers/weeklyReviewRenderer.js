@@ -4,6 +4,7 @@ import * as Selectors from "../../core/selectors.js";
 import { UnitFormatter } from "../../core/unitFormatter.js";
 import { MacroTargetService } from "../../core/macroTargetService.js";
 import { computeWeeklyReviewMetrics } from "../../core/weeklyReviewMetrics.js";
+import { WeeklyCheckinModal } from "../weeklyCheckinModal.js";
 
 export const WeeklyReviewRenderer = {
     _container: null,
@@ -128,7 +129,17 @@ export const WeeklyReviewRenderer = {
                     Net balance was <strong>${netBal > 0 ? "+" : ""}${Math.round(netBal)} kcal</strong>.
                 </p>
             </div>
+            <div class="review-actions" style="margin-top:12px; display:flex; justify-content:flex-end;">
+                <button type="button" class="btn-secondary" id="weekly-review-open-checkin-btn" style="font-size:0.8rem; padding:5px 12px; display:inline-flex; align-items:center; gap:5px; cursor:pointer;">
+                    📋 Open Coach Check-In
+                </button>
+            </div>
         </div>
     `;
+
+        const checkinBtn = document.getElementById('weekly-review-open-checkin-btn');
+        if (checkinBtn) {
+            checkinBtn.addEventListener('click', () => WeeklyCheckinModal.open());
+        }
     },
 };

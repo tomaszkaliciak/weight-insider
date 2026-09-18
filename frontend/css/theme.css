@@ -251,6 +251,105 @@ button.hub-metric {
     box-shadow: var(--elev-3);
 }
 
+@media (max-width: 768px) {
+    .chart-toolbar {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        margin: 0 0 12px;
+    }
+
+    .chart-toolbar .range-presets {
+        display: flex;
+        width: 100%;
+        justify-content: space-between;
+        margin-top: 0;
+        padding: 3px;
+    }
+
+    .chart-toolbar .range-presets .preset-btn {
+        flex: 1 1 auto;
+        text-align: center;
+        padding: 6px 4px;
+        font-size: 0.74rem;
+        min-width: 0;
+        white-space: nowrap;
+    }
+
+    .chart-toolbar-dates {
+        width: 100%;
+    }
+
+    .chart-toolbar-dates .range-controls-inline {
+        display: flex;
+        align-items: flex-end;
+        width: 100%;
+        gap: 8px;
+        flex-wrap: nowrap;
+    }
+
+    .chart-toolbar-dates .range-controls-inline label {
+        flex: 1 1 0;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        min-width: 0;
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: var(--text-muted);
+    }
+
+    .chart-toolbar-dates .range-controls-inline input[type="date"] {
+        width: 100%;
+        min-width: 0;
+        padding: 6px 8px;
+        font-size: 0.75rem;
+        border-radius: var(--radius-sm, 8px);
+        border: 1px solid var(--border-color);
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+        box-sizing: border-box;
+    }
+
+    .chart-toolbar-dates .range-controls-inline .btn-primary {
+        padding: 6px 14px;
+        font-size: 0.75rem;
+        flex-shrink: 0;
+        height: 32px;
+    }
+
+    .chart-trendlines-wrap {
+        display: flex;
+        align-self: flex-start;
+    }
+
+    #chart-trendlines-toggle {
+        padding: 4px 12px;
+        font-size: 0.72rem;
+        border-radius: var(--radius-pill);
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-color-light);
+        color: var(--text-secondary);
+    }
+
+    .chart-help-row {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 6px;
+        margin-top: 6px;
+    }
+
+    .chart-help-text {
+        font-size: 0.72rem;
+    }
+
+    .chart-adherence-legend {
+        justify-content: center;
+    }
+}
+
 .chart-metric-legend {
     display: inline-flex;
     align-items: center;

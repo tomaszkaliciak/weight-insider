@@ -52,12 +52,15 @@ import { EnergyBalanceRenderer } from "./ui/renderers/energyBalanceRenderer.js";
 import { SmartCoachRenderer } from "./ui/renderers/smartCoachRenderer.js";
 import { WeeklyReviewRenderer } from "./ui/renderers/weeklyReviewRenderer.js";
 import { ExecutiveHubRenderer } from "./ui/renderers/executiveHubRenderer.js";
+import { TodayGlanceRenderer } from "./ui/renderers/todayGlanceRenderer.js";
 import { MacroCorrelationRenderer } from "./ui/renderers/macroCorrelationRenderer.js";
 import { CorrelationMatrixRenderer } from "./ui/renderers/correlationMatrixRenderer.js";
 import { MetabolicAdaptationRenderer } from "./ui/renderers/metabolicAdaptationRenderer.js";
 import { GoalSimulatorRenderer } from "./ui/renderers/goalSimulatorRenderer.js";
 import { EnergySankeyRenderer } from "./ui/renderers/energySankeyRenderer.js";
 import { DataTableModal } from "./ui/dataTableModal.js";
+import { WeeklyCheckinModal } from "./ui/weeklyCheckinModal.js";
+import { StrategyModal } from "./ui/strategyModal.js";
 import { ChartControls } from "./ui/chartControls.js";
 import { VitalStatsEnricher } from "./ui/renderers/vitalStatsEnricher.js";
 import { WidgetCollapser } from "./ui/widgetCollapser.js";
@@ -194,6 +197,7 @@ async function initialize() {
 
     // --- Critical: always initialize immediately ---
     MasterUpdater.init();
+    TodayGlanceRenderer.init();
     ExecutiveHubRenderer.init();
     AnnotationListRenderer.init();
     StatsDisplayRenderer.init();
@@ -212,6 +216,8 @@ async function initialize() {
     KeyboardNav.init();
     SparklineRenderer.init();
     DataTableModal.init();
+    WeeklyCheckinModal.init();
+    StrategyModal.init();
 
     // Sidebar/non-bento renderers: init immediately (they target hidden panels,
     // IntersectionObserver would never fire for collapsed sidebar content).

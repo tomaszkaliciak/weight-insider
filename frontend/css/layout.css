@@ -310,7 +310,7 @@ body.dark-theme ::-webkit-scrollbar-thumb:hover {
 
 @media (max-width: 768px) {
     body {
-        padding: 0 0 32px;
+        padding: 0 0 calc(80px + env(safe-area-inset-bottom, 0px));
         font-size: 15px;
     }
 
@@ -342,19 +342,23 @@ body.dark-theme ::-webkit-scrollbar-thumb:hover {
     .bento-widget .widget-header {
         flex-wrap: wrap;
         row-gap: 8px;
+        flex-shrink: 0;
     }
 
     #chart-section .chart-mode-switch {
         order: 2;
-        width: 100%;
-        margin-left: 0;
+        width: 100% !important;
+        margin-left: 0 !important;
+        display: flex !important;
         justify-content: stretch;
     }
 
     #chart-section .chart-mode-btn {
-        flex: 1;
+        flex: 1 !important;
         text-align: center;
-        min-width: 0;
+        min-width: 0 !important;
+        padding: 6px 8px !important;
+        font-size: 0.8rem !important;
     }
 
     .card {
@@ -726,10 +730,15 @@ body.dark-theme ::-webkit-scrollbar-thumb:hover {
         grid-template-columns: repeat(2, 1fr) !important;
     }
 
-    /* Chart: smaller height on mobile to reduce scrolling */
+    /* Chart: responsive height on mobile */
     .chart-section {
-        min-height: 360px !important;
-        max-height: 500px !important;
+        min-height: 520px;
+        max-height: none !important;
+        height: auto !important;
+    }
+
+    #chart-container {
+        min-height: 240px !important;
     }
 }
 
@@ -741,16 +750,17 @@ body.dark-theme ::-webkit-scrollbar-thumb:hover {
 
     /* Very small phones: compact chart */
     .chart-section {
-        min-height: 260px !important;
-        max-height: 360px !important;
+        min-height: 480px;
+        max-height: none !important;
+        height: auto !important;
     }
 
     #chart-container {
-        min-height: 180px !important;
+        min-height: 220px !important;
     }
 
     #context-chart-container {
-        height: 56px !important;
+        height: 50px !important;
     }
 }
 
@@ -918,6 +928,20 @@ body.dark-theme ::-webkit-scrollbar-thumb:hover {
     color: var(--text-on-primary, #fff) !important;
     background: var(--primary-color) !important;
     box-shadow: 0 2px 8px var(--shadow-color);
+}
+
+@media (max-width: 768px) {
+    #chart-section .chart-mode-switch {
+        display: flex !important;
+        width: 100% !important;
+        margin-left: 0 !important;
+        justify-content: stretch;
+    }
+
+    #chart-section .chart-mode-btn {
+        flex: 1 !important;
+        min-width: 0 !important;
+    }
 }
 
 .chart-reset-btn,
