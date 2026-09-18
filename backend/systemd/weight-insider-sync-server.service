@@ -1,0 +1,21 @@
+[Unit]
+Description=Weight Insider On-Demand Sync API Server
+After=network.target network-online.target
+Wants=network-online.target
+ConditionPathExists=/opt/weight-insider/backend
+
+[Service]
+Type=simple
+User=weightinsider
+Group=weightinsider
+WorkingDirectory=/opt/weight-insider/backend
+EnvironmentFile=-/etc/weight-insider/health-connect-sync.env
+Environment=WI_SYNC_ENV_FILE=/etc/weight-insider/health-connect-sync.env
+Environment=WI_SYNC_SERVER_PORT=8085
+ExecStart=/opt/weight-insider/backend/sync-server
+Restart=always
+RestartSec=5s
+Nice=10
+
+[Install]
+WantedBy=multi-user.target

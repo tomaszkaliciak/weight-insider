@@ -102,6 +102,65 @@ Inspect logs:
 journalctl -u weight-insider-health-connect-sync.service -n 200 --no-pager
 ```
 
+## On-Demand Web Sync Server (`sync-server`)
+
+To allow triggering sync directly from the web interface ("Sync Now" button in UI):
+
+1. Compile the server (optional, or run via `go run`):
+```bash
+cd /opt/weight-insider/backend
+go build -o sync-server ./cmd/sync-server
+```
+
+2. Configure systemd service:
+```bash
+sudo cp /opt/weight-insider/backend/systemd/weight-insider-sync-server.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now weight-insider-sync-server.service
+```
+
+Check status:
+```bash
+sudo systemctl status weight-insider-sync-server.service
+```
+
+3. Nginx Reverse Proxy Configuration:
+Because your web server (e.g. `fit.tkaliciak.pl`) serves static frontend files, forward `/api/` requests to `sync-server` (port 8085):
+
+```nginx
+# In /etc/nginx/sites-available/fit.tkaliciak.pl:
+server {
+    server_name fit.tkaliciak.pl;
+
+    # Static frontend files
+    location / {
+        root /opt/weight-insider/frontend/dist;
+        index index.html;
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Proxy on-demand sync API to backend daemon
+    location /api/ {
+        proxy_pass http://127.0.0.1:8085;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+Then test and reload Nginx:
+```bash
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+4. Security for Internet-Exposed Servers (`WI_SYNC_TOKEN`):
+To prevent unauthorized users on the internet from triggering syncs, add a secret token in `/etc/weight-insider/health-connect-sync.env`:
+```bash
+WI_SYNC_TOKEN="your_custom_secret_key"
+```
+Restart `weight-insider-sync-server.service`. Then open the web UI at `https://fit.tkaliciak.pl/`, go to **Settings -> Data -> Sync API Token**, and paste your secret key. It will be saved in your browser's `localStorage` and sent with every sync request.
+
 ## Deploy note
 
 Your exporter still writes the primary file to `frontend/data.json`.
@@ -116,3 +175,4 @@ If Google changes the backup structure or filename:
 
 - update `WI_HEALTH_DB_FILENAME`
 - or point `WI_GDRIVE_FILE_ID` at a single known backup file
+
