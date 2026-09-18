@@ -235,7 +235,7 @@ export const GoalManager = {
    */
   load() {
     const storedGoal = localStorage.getItem(CONFIG.localStorageKeys.goal);
-    let loadedGoalData = { weight: null, date: null, targetRate: null }; // Default structure
+    const loadedGoalData = { weight: null, date: null, targetRate: null }; // Default structure
 
     if (storedGoal) {
       try {

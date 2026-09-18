@@ -163,7 +163,7 @@ export const DomainManager = {
     // Note: We no longer need bufferStartDate/EndDate if filteredData is already correct
 
     // The calculation function now takes the state snapshot directly
-    let [yMin, yMax] = calculateFocusYDomain(
+    const [yMin, yMax] = calculateFocusYDomain(
       filteredData, // Pass the already filtered data
       regressionResult, // Pass the result from state
       CONFIG,

@@ -37,7 +37,14 @@ type config struct {
 	ExporterCommand    string
 	FrontendDataPath   string
 	DistDataPath       string
+	StateFile          string
 	Cleanup            bool
+}
+
+type driveSyncState struct {
+	FileID       string `json:"file_id"`
+	ModifiedTime string `json:"modified_time"`
+	SyncedAt     string `json:"synced_at"`
 }
 
 type serviceAccountKey struct {
@@ -92,14 +99,17 @@ func main() {
 		log.Fatalf("failed to resolve Drive backup file: %v", err)
 	}
 
-	if err := os.MkdirAll(cfg.DownloadDir, 0755); err != nil {
-		log.Fatalf("failed to create download dir: %v", err)
-	}
-	if err := os.RemoveAll(cfg.ExtractDir); err != nil {
-		log.Fatalf("failed to clear extract dir: %v", err)
-	}
-	if err := os.MkdirAll(cfg.ExtractDir, 0755); err != nil {
-		log.Fatalf("failed to create extract dir: %v", err)
+	// Check if local DB already exists and Drive file is unmodified
+	skipDriveDownload := false
+	if driveFile.ModifiedTime != "" {
+		if dbInfo, err := os.Stat(cfg.DBDestPath); err == nil && dbInfo.Size() > 0 {
+			state, err := loadDriveSyncState(cfg.StateFile)
+			if err == nil && state.FileID == driveFile.ID && state.ModifiedTime == driveFile.ModifiedTime {
+				log.Printf("Drive backup unmodified (modifiedTime: %s). Skipping download & extraction, using existing %s",
+					driveFile.ModifiedTime, cfg.DBDestPath)
+				skipDriveDownload = true
+			}
+		}
 	}
 
 	downloadName := driveFile.Name
@@ -107,27 +117,72 @@ func main() {
 		downloadName = "health-connect-backup.zip"
 	}
 	downloadPath := filepath.Join(cfg.DownloadDir, sanitizeFileName(downloadName))
-	log.Printf("downloading Drive backup %q...", driveFile.Name)
-	if err := downloadDriveFile(token, driveFile.ID, downloadPath); err != nil {
-		log.Fatalf("failed to download backup: %v", err)
+
+	if !skipDriveDownload {
+		if err := os.MkdirAll(cfg.DownloadDir, 0755); err != nil {
+			log.Fatalf("failed to create download dir: %v", err)
+		}
+		if err := os.RemoveAll(cfg.ExtractDir); err != nil {
+			log.Fatalf("failed to clear extract dir: %v", err)
+		}
+		if err := os.MkdirAll(cfg.ExtractDir, 0755); err != nil {
+			log.Fatalf("failed to create extract dir: %v", err)
+		}
+
+		log.Printf("downloading Drive backup %q (modified: %s)...", driveFile.Name, driveFile.ModifiedTime)
+		if err := downloadDriveFile(token, driveFile.ID, downloadPath); err != nil {
+			if _, statErr := os.Stat(cfg.DBDestPath); statErr == nil {
+				log.Printf("warning: Drive download failed (%v). Falling back to existing local %s", err, cfg.DBDestPath)
+				skipDriveDownload = true
+			} else {
+				log.Fatalf("failed to download backup: %v", err)
+			}
+		} else {
+			log.Printf("extracting %s...", downloadPath)
+			if err := unzip(downloadPath, cfg.ExtractDir); err != nil {
+				if _, statErr := os.Stat(cfg.DBDestPath); statErr == nil {
+					log.Printf("warning: failed to extract backup (%v). Falling back to existing local %s", err, cfg.DBDestPath)
+					skipDriveDownload = true
+				} else {
+					log.Fatalf("failed to extract backup: %v", err)
+				}
+			} else {
+				dbSourcePath, err := findDatabaseFile(cfg.ExtractDir, cfg.DBFileName)
+				if err != nil {
+					if _, statErr := os.Stat(cfg.DBDestPath); statErr == nil {
+						log.Printf("warning: database not found in backup (%v). Falling back to existing local %s", err, cfg.DBDestPath)
+						skipDriveDownload = true
+					} else {
+						log.Fatalf("failed to locate Health Connect database in extracted backup: %v", err)
+					}
+				} else {
+					log.Printf("copying database %s -> %s", dbSourcePath, cfg.DBDestPath)
+					if err := copyFile(dbSourcePath, cfg.DBDestPath); err != nil {
+						log.Fatalf("failed to place Health Connect DB: %v", err)
+					}
+
+					_ = saveDriveSyncState(cfg.StateFile, &driveSyncState{
+						FileID:       driveFile.ID,
+						ModifiedTime: driveFile.ModifiedTime,
+						SyncedAt:     time.Now().UTC().Format(time.RFC3339),
+					})
+				}
+			}
+		}
+
+		if cfg.Cleanup {
+			_ = os.Remove(downloadPath)
+			_ = os.RemoveAll(cfg.ExtractDir)
+		}
 	}
 
-	log.Printf("extracting %s...", downloadPath)
-	if err := unzip(downloadPath, cfg.ExtractDir); err != nil {
-		log.Fatalf("failed to extract backup: %v", err)
+	driveStatus := "updated"
+	if skipDriveDownload {
+		driveStatus = "cached"
 	}
+	_ = os.Setenv("WI_DRIVE_STATUS", driveStatus)
 
-	dbSourcePath, err := findDatabaseFile(cfg.ExtractDir, cfg.DBFileName)
-	if err != nil {
-		log.Fatalf("failed to locate Health Connect database in extracted backup: %v", err)
-	}
-
-	log.Printf("copying database %s -> %s", dbSourcePath, cfg.DBDestPath)
-	if err := copyFile(dbSourcePath, cfg.DBDestPath); err != nil {
-		log.Fatalf("failed to place Health Connect DB: %v", err)
-	}
-
-	log.Printf("running exporter command: %s", cfg.ExporterCommand)
+	log.Printf("running exporter command: %s (Drive status: %s)", cfg.ExporterCommand, driveStatus)
 	if err := runCommand(cfg.ExporterCommand); err != nil {
 		log.Fatalf("exporter command failed: %v", err)
 	}
@@ -140,11 +195,6 @@ func main() {
 				log.Printf("mirrored %s -> %s", cfg.FrontendDataPath, cfg.DistDataPath)
 			}
 		}
-	}
-
-	if cfg.Cleanup {
-		_ = os.Remove(downloadPath)
-		_ = os.RemoveAll(cfg.ExtractDir)
 	}
 
 	log.Printf("sync completed successfully")
@@ -163,6 +213,7 @@ func loadConfig() (*config, error) {
 		ExporterCommand:    envOrDefault("WI_EXPORTER_COMMAND", "go run ./data_exporter.go"),
 		FrontendDataPath:   envOrDefault("WI_FRONTEND_DATA_JSON", "../frontend/data.json"),
 		DistDataPath:       envOrDefault("WI_DIST_DATA_JSON", "../frontend/dist/data.json"),
+		StateFile:          envOrDefault("WI_SYNC_STATE_FILE", "./.sync-cache/drive_state.json"),
 		Cleanup:            envBoolOrDefault("WI_SYNC_CLEANUP", true),
 	}
 
@@ -288,6 +339,26 @@ func parsePrivateKey(pemString string) (*rsa.PrivateKey, error) {
 
 func resolveDriveFile(token string, cfg *config) (*driveFile, error) {
 	if cfg.DriveFileID != "" {
+		req, err := http.NewRequest(
+			http.MethodGet,
+			fmt.Sprintf("https://www.googleapis.com/drive/v3/files/%s?fields=id,name,modifiedTime,mimeType&supportsAllDrives=true", url.PathEscape(cfg.DriveFileID)),
+			nil,
+		)
+		if err == nil {
+			req.Header.Set("Authorization", "Bearer "+token)
+			if resp, err := http.DefaultClient.Do(req); err == nil {
+				defer resp.Body.Close()
+				if resp.StatusCode == http.StatusOK {
+					var f driveFile
+					if err := json.NewDecoder(resp.Body).Decode(&f); err == nil && f.ID != "" {
+						if f.Name == "" {
+							f.Name = "health-connect-backup.zip"
+						}
+						return &f, nil
+					}
+				}
+			}
+		}
 		return &driveFile{
 			ID:   cfg.DriveFileID,
 			Name: "health-connect-backup.zip",
@@ -505,3 +576,27 @@ func sanitizeFileName(name string) string {
 	name = strings.ReplaceAll(name, "\\", "_")
 	return name
 }
+
+func loadDriveSyncState(path string) (*driveSyncState, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var state driveSyncState
+	if err := json.Unmarshal(data, &state); err != nil {
+		return nil, err
+	}
+	return &state, nil
+}
+
+func saveDriveSyncState(path string, state *driveSyncState) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return err
+	}
+	data, err := json.MarshalIndent(state, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, data, 0644)
+}
+

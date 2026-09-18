@@ -135,6 +135,7 @@ export const CommandPalette = {
   _getAllCommands() {
     const commands = [
       // Quick Actions
+      { id: 'act-sync', category: 'Action', title: 'Sync Now (Fitatu & Health Connect)', icon: '🔄', action: () => document.getElementById('sync-now-btn')?.click() },
       { id: 'act-log', category: 'Action', title: 'Log Daily Entry (Weight & Calories)', icon: '✏️', action: () => this._triggerLogWidget() },
       { id: 'act-toggle-theme', category: 'Action', title: 'Toggle Light / Dark Theme', icon: '🌓', action: () => ThemeManager.toggleTheme() },
       { id: 'act-export', category: 'Action', title: 'Export Application Settings & Data', icon: '📥', action: () => document.getElementById('settings-export-btn')?.click() },

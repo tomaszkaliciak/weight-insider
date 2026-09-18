@@ -97,7 +97,7 @@ export const RateOptimizerRenderer = {
     // Standard recommendations
     let cutMin = -0.5, cutMax = -1.0, cutOptimal = -0.7;
     let bulkMin = 0.1, bulkMax = 0.3, bulkOptimal = 0.2;
-    let maintMin = -0.1, maintMax = 0.1;
+    const maintMin = -0.1, maintMax = 0.1;
 
     // Adjust based on body fat if available
     if (bf !== null) {

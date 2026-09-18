@@ -21,7 +21,7 @@ export const EnergyBalanceRenderer = {
     }
 
     this._resizeObserver = new ResizeObserver(entries => {
-      for (let entry of entries) {
+      for (const entry of entries) {
         if (entry.contentRect.width > 0 && this._lastData) {
           requestAnimationFrame(() => this._renderChart(this._lastData, this._colors));
         }

@@ -35,7 +35,7 @@ export const StatsDisplayRenderer = {
     const updateElement = (key, value, formatter = na, args = undefined) => {
       const element = ui.statElements[key];
       if (element) {
-        let formattedValue = formatter(value, args);
+        const formattedValue = formatter(value, args);
         // Special handling (remains the same)
         if (key === "currentRateFeedback" && displayStats.targetRateFeedback) {
           element.className = `stat-value feedback ${displayStats.targetRateFeedback.class || ""}`;

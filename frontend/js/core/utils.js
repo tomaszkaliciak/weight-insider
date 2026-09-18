@@ -339,7 +339,7 @@ export const Utils = {
 
     for (let i = 0; i < data.length; i++) {
       const value = data[i];
-      let isValidValue = value != null && !isNaN(value) && isFinite(value);
+      const isValidValue = value != null && !isNaN(value) && isFinite(value);
 
       // Add current value (or null placeholder) to queue
       windowQueue.push(isValidValue ? value : null);

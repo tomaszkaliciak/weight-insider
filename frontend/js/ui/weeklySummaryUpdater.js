@@ -20,8 +20,8 @@ export const WeeklySummaryUpdater = {
     const dataToSort = [...data]; // Sort copy
 
     dataToSort.sort((a, b) => {
-      let valA = a[key];
-      let valB = b[key];
+      const valA = a[key];
+      const valB = b[key];
       if (valA == null && valB == null) return 0;
       if (valA == null) return 1;
       if (valB == null) return -1;

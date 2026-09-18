@@ -79,6 +79,7 @@ import { DayInspector } from "./ui/dayInspector.js";
 import { StatsExplainer } from "./ui/statsExplainer.js";
 import { ChartChrome } from "./ui/chartChrome.js";
 import { WidgetEmptiness } from "./ui/widgetEmptinessSync.js";
+import { SyncController } from "./ui/syncController.js";
 
 /**
  * Defers renderer.init() until the element with anchorId enters the viewport.
@@ -160,6 +161,7 @@ async function initialize() {
     StatsExplainer.init();
     ChartChrome.init();
     WidgetEmptiness.init();
+    SyncController.init();
 
 
 
@@ -269,8 +271,11 @@ async function initialize() {
     // 8. Set Initial Data in State
     StateManager.dispatch({
       type: "SET_INITIAL_DATA",
-      payload: { rawData: mergedData, processedData: processedData },
+      payload: { rawData: mergedData, processedData: processedData, rawDataObjects: rawDataObjects },
     });
+    if (fetchedRaw?.lastSync) {
+      SyncController.setLastSync(fetchedRaw.lastSync);
+    }
 
     // 9. Initialize Trend Config State from UI Defaults (after caching selectors)
     const initialStartDateVal = ui.trendStartDateInput?.property("value");

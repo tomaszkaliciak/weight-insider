@@ -1516,6 +1516,88 @@ body.motion-reduced * {
 }
 
 /* =====================================================================
+   Sync Controls & Last Sync Indicator
+   ===================================================================== */
+.sync-status-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sync-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  transition: border-color 0.2s, background 0.2s, color 0.2s;
+  font-family: inherit;
+}
+
+.sync-btn:hover:not(:disabled) {
+  border-color: var(--primary-color);
+  background: var(--bg-secondary);
+  color: var(--primary-color);
+}
+
+.sync-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sync-icon {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.3s;
+  flex-shrink: 0;
+}
+
+.sync-btn.is-syncing .sync-icon {
+  animation: sync-spin 1s linear infinite;
+}
+
+@keyframes sync-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.sync-last-indicator {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  cursor: help;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm, 4px);
+  transition: background 0.2s;
+}
+
+.sync-last-indicator:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+@media (max-width: 600px) {
+  .sync-btn .sync-btn-text {
+    display: none;
+  }
+  .sync-last-indicator {
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+/* =====================================================================
    A4 — Daily Calorie Budget Chip
    ===================================================================== */
 

@@ -38,6 +38,16 @@
         </h1>
         <div class="header-controls">
             <div id="dashboard-preset-container" class="preset-container"></div>
+            <div class="sync-status-group">
+                <button id="sync-now-btn" class="sync-btn" title="Sync latest data from Fitatu & Health Connect" aria-label="Sync latest data">
+                    <svg class="sync-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                    </svg>
+                    <span class="sync-btn-text">Sync</span>
+                </button>
+                <span id="sync-last-indicator" class="sync-last-indicator" title="Last sync status">--</span>
+            </div>
             <button id="daily-budget-chip" class="budget-chip" title="Daily calorie target" aria-haspopup="true" aria-expanded="false">
                 <span class="budget-icon" aria-hidden="true">◎</span>
                 <span id="budget-chip-value" class="budget-value">--</span>

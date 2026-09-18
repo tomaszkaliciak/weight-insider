@@ -258,7 +258,7 @@ export const StatsManager = {
     if (!Array.isArray(processedData) || processedData.length === 0) return [];
     const minDurationDays = CONFIG.plateauMinDurationWeeks * 7;
     const rateThreshold = CONFIG.plateauRateThresholdKgWeek;
-    let plateaus = [];
+    const plateaus = [];
     let currentPlateauStart = null;
     let currentPlateauStartDateObj = null;
 
@@ -324,7 +324,7 @@ export const StatsManager = {
       return [];
     const windowSize = CONFIG.trendChangeWindowDays;
     const minSlopeDiff = CONFIG.trendChangeMinSlopeDiffKgWeek / 7; // Convert threshold to daily slope diff
-    let changes = [];
+    const changes = [];
     const calculateSlope = (dataSegment) => {
       const validPoints = dataSegment.filter(
         (p) => p.sma != null && p.date instanceof Date && !isNaN(p.date),

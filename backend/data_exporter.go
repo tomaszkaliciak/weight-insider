@@ -27,6 +27,17 @@ const (
 	DataJSONPath     = "../frontend/data.json"
 )
 
+type SyncMetadata struct {
+	Timestamp       string  `json:"timestamp"`
+	DriveStatus     string  `json:"driveStatus"`
+	LatestWeight    float64 `json:"latestWeight,omitempty"`
+	LatestWeightDay string  `json:"latestWeightDay,omitempty"`
+	LatestIntake    int     `json:"latestIntake,omitempty"`
+	LatestIntakeDay string  `json:"latestIntakeDay,omitempty"`
+	WeightRecords   int     `json:"weightRecords"`
+	IntakeRecords   int     `json:"intakeRecords"`
+}
+
 type WeightInsiderData struct {
 	BodyFat              map[string]float64 `json:"bodyFat"`
 	CalorieIntake        map[string]int     `json:"calorieIntake"`
@@ -36,6 +47,7 @@ type WeightInsiderData struct {
 	MacroFat             map[string]float64 `json:"macroFat"`
 	MacroCarbs           map[string]float64 `json:"macroCarbs"`
 	MacroFiber           map[string]float64 `json:"macroFiber"`
+	LastSync             *SyncMetadata      `json:"lastSync,omitempty"`
 }
 
 type WeightData struct {
@@ -64,7 +76,11 @@ type Meal struct {
 }
 
 type Item struct {
-	Energy float64 `json:"energy"`
+	Energy       float64  `json:"energy"`
+	Protein      float64  `json:"protein"`
+	Fat          float64  `json:"fat"`
+	Carbohydrate float64  `json:"carbohydrate"`
+	Fiber        *float64 `json:"fiber"`
 }
 
 type PlanDataDay struct {
@@ -504,65 +520,151 @@ func main() {
 		close(results)
 	}()
 
+	fitatuProtein := make(map[string]float64)
+	fitatuFat := make(map[string]float64)
+	fitatuCarbs := make(map[string]float64)
+	fitatuFiber := make(map[string]float64)
+
+	roundVal := func(v float64) float64 {
+		return float64(int(v*10+0.5)) / 10
+	}
+
 	countIntake := 0
 	for result := range results {
-		sum := 0.0
+		sumEnergy := 0.0
+		sumProtein := 0.0
+		sumFat := 0.0
+		sumCarbs := 0.0
+		sumFiber := 0.0
+
 		for _, value := range result.planData.DietPlan {
 			for _, element := range value.Items {
-				sum += element.Energy
+				sumEnergy += element.Energy
+				sumProtein += element.Protein
+				sumFat += element.Fat
+				sumCarbs += element.Carbohydrate
+				if element.Fiber != nil {
+					sumFiber += *element.Fiber
+				}
 			}
 		}
-		if sum > 0 {
+		if sumEnergy > 0 {
 			dateKey := result.calendarDay.Format("2006-01-02")
-			insiderData.CalorieIntake[dateKey] = int(sum)
+			insiderData.CalorieIntake[dateKey] = int(sumEnergy)
+			fitatuProtein[dateKey] = roundVal(sumProtein)
+			fitatuFat[dateKey] = roundVal(sumFat)
+			fitatuCarbs[dateKey] = roundVal(sumCarbs)
+			fitatuFiber[dateKey] = roundVal(sumFiber)
 			countIntake++
 		}
 	}
-	fmt.Printf("Updated %d intake records.\n", countIntake)
+	fmt.Printf("Updated %d intake records with macros from Fitatu.\n", countIntake)
 
 	fmt.Println("Fetching expenditure and nutrition from Health Connect DB...")
-	db, err := sql.Open("sqlite3", "./health_connect_export.db")
-	if err != nil {
-		log.Printf("Failed to open database: %v", err)
+	if _, err := os.Stat("./health_connect_export.db"); os.IsNotExist(err) {
+		log.Printf("Notice: ./health_connect_export.db not found. Preserving existing Health Connect records.")
 	} else {
-		caloriesBurnedRecords, err := fetchTotalCaloriesBurnedRecords(db)
+		db, err := sql.Open("sqlite3", "./health_connect_export.db")
 		if err != nil {
-			log.Printf("Could not fetch total calories burned records: %v", err)
+			log.Printf("Failed to open database: %v", err)
 		} else {
-			expenditureRecords := getCaloriesBurnedRecords(caloriesBurnedRecords)
-			for date, kcal := range expenditureRecords {
-				insiderData.GoogleFitExpenditure[date] = int(kcal)
+			caloriesBurnedRecords, err := fetchTotalCaloriesBurnedRecords(db)
+			if err != nil {
+				log.Printf("Could not fetch total calories burned records: %v", err)
+			} else {
+				expenditureRecords := getCaloriesBurnedRecords(caloriesBurnedRecords)
+				for date, kcal := range expenditureRecords {
+					insiderData.GoogleFitExpenditure[date] = int(kcal)
+				}
+				fmt.Printf("Updated %d expenditure records.\n", len(expenditureRecords))
 			}
-			fmt.Printf("Updated %d expenditure records.\n", len(expenditureRecords))
-		}
 
-		nutritionRecords, err := fetchNutritionRecords(db)
-		if err != nil {
-			log.Printf("Could not fetch nutrition records: %v", err)
-		} else {
-			protein, fat, carbs, fiber := aggregateNutritionByDay(nutritionRecords)
-			for date, v := range protein {
-				insiderData.MacroProtein[date] = v
+			nutritionRecords, err := fetchNutritionRecords(db)
+			if err != nil {
+				log.Printf("Could not fetch nutrition records: %v", err)
+			} else {
+				protein, fat, carbs, fiber := aggregateNutritionByDay(nutritionRecords)
+				for date, v := range protein {
+					insiderData.MacroProtein[date] = v
+				}
+				for date, v := range fat {
+					insiderData.MacroFat[date] = v
+				}
+				for date, v := range carbs {
+					insiderData.MacroCarbs[date] = v
+				}
+				for date, v := range fiber {
+					insiderData.MacroFiber[date] = v
+				}
+				fmt.Printf("Updated nutrition from Health Connect DB: %d protein, %d fat, %d carbs, %d fiber day-records.\n",
+					len(protein), len(fat), len(carbs), len(fiber))
 			}
-			for date, v := range fat {
-				insiderData.MacroFat[date] = v
-			}
-			for date, v := range carbs {
-				insiderData.MacroCarbs[date] = v
-			}
-			for date, v := range fiber {
-				insiderData.MacroFiber[date] = v
-			}
-			fmt.Printf("Updated nutrition: %d protein, %d fat, %d carbs, %d fiber day-records.\n",
-				len(protein), len(fat), len(carbs), len(fiber))
-		}
 
-		db.Close()
+			db.Close()
+		}
+	}
+
+	// Always overlay / fill fresh Fitatu macros (especially today and recent days that Health Connect hasn't synced yet)
+	for date, v := range fitatuProtein {
+		if cur, exists := insiderData.MacroProtein[date]; !exists || cur == 0 || v > 0 {
+			insiderData.MacroProtein[date] = v
+		}
+	}
+	for date, v := range fitatuFat {
+		if cur, exists := insiderData.MacroFat[date]; !exists || cur == 0 || v > 0 {
+			insiderData.MacroFat[date] = v
+		}
+	}
+	for date, v := range fitatuCarbs {
+		if cur, exists := insiderData.MacroCarbs[date]; !exists || cur == 0 || v > 0 {
+			insiderData.MacroCarbs[date] = v
+		}
+	}
+	for date, v := range fitatuFiber {
+		if cur, exists := insiderData.MacroFiber[date]; !exists || cur == 0 || v > 0 {
+			insiderData.MacroFiber[date] = v
+		}
+	}
+
+	// Find latest weight and intake entries
+	var maxWeightDate string
+	var latestWeight float64
+	for date, w := range insiderData.Weights {
+		if date > maxWeightDate {
+			maxWeightDate = date
+			latestWeight = w
+		}
+	}
+
+	var maxIntakeDate string
+	var latestIntake int
+	for date, c := range insiderData.CalorieIntake {
+		if date > maxIntakeDate {
+			maxIntakeDate = date
+			latestIntake = c
+		}
+	}
+
+	driveStatus := os.Getenv("WI_DRIVE_STATUS")
+	if driveStatus == "" {
+		driveStatus = "unspecified"
+	}
+
+	insiderData.LastSync = &SyncMetadata{
+		Timestamp:       time.Now().UTC().Format(time.RFC3339),
+		DriveStatus:     driveStatus,
+		LatestWeight:    latestWeight,
+		LatestWeightDay: maxWeightDate,
+		LatestIntake:    latestIntake,
+		LatestIntakeDay: maxIntakeDate,
+		WeightRecords:   len(insiderData.Weights),
+		IntakeRecords:   len(insiderData.CalorieIntake),
 	}
 
 	fmt.Printf("Saving all data to %s...\n", DataJSONPath)
 	if err := saveData(DataJSONPath, insiderData); err != nil {
 		log.Fatalf("Failed to save data.json: %v", err)
 	}
-	fmt.Println("Success! All data updated and valid JSON saved.")
+	fmt.Printf("Success! All data updated and valid JSON saved (LastSync: %s, Drive: %s).\n",
+		insiderData.LastSync.Timestamp, driveStatus)
 }

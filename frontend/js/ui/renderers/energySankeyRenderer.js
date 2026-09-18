@@ -20,7 +20,7 @@ export const EnergySankeyRenderer = {
 
         // Handle resize/visibility changes
         const resizeObserver = new ResizeObserver(entries => {
-            for (let entry of entries) {
+            for (const entry of entries) {
                 if (entry.contentRect.width > 0 && this._lastData) {
                     requestAnimationFrame(() => this._renderSankey(this._lastData));
                 }

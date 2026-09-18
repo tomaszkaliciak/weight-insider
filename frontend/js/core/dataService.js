@@ -62,7 +62,7 @@ export const DataService = {
       ...Object.keys(fiber),
       ...Object.keys(workouts),
     ]);
-    let mergedData = [];
+    const mergedData = [];
     // Normalize date keys: group all variant formats (e.g. "2026-1-2" and "2026-01-02")
     // into a canonical YYYY-MM-DD format to avoid duplicate entries for the same date.
     const normalizedDates = new Map(); // canonical key -> Set of original keys
@@ -555,7 +555,7 @@ export const DataService = {
     };
 
     // Build phases by tracking consecutive days with same classification
-    let phases = [];
+    const phases = [];
     let currentPhase = null;
 
     for (let i = 0; i < validData.length; i++) {
@@ -749,7 +749,7 @@ export const DataService = {
         : processedData;
     if (!Array.isArray(rangeData) || rangeData.length === 0) return [];
 
-    let weeklyStats = [];
+    const weeklyStats = [];
     const getWeekKey = (date) => weekKey(date, weekStart);
     const groupedByWeek = d3.group(rangeData, (d) => getWeekKey(d.date));
 
