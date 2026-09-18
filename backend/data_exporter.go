@@ -479,8 +479,13 @@ func main() {
 		log.Fatalf("JWT ID not found")
 	}
 
-	fmt.Printf("Loading existing data from %s...\n", DataJSONPath)
-	insiderData, err := loadOrInitData(DataJSONPath)
+	targetDataPath := DataJSONPath
+	if envData := os.Getenv("WI_FRONTEND_DATA_JSON"); envData != "" {
+		targetDataPath = envData
+	}
+
+	fmt.Printf("Loading existing data from %s...\n", targetDataPath)
+	insiderData, err := loadOrInitData(targetDataPath)
 	if err != nil {
 		log.Fatalf("Failed to load existing data: %v", err)
 	}
@@ -561,10 +566,14 @@ func main() {
 	fmt.Printf("Updated %d intake records with macros from Fitatu.\n", countIntake)
 
 	fmt.Println("Fetching expenditure and nutrition from Health Connect DB...")
-	if _, err := os.Stat("./health_connect_export.db"); os.IsNotExist(err) {
-		log.Printf("Notice: ./health_connect_export.db not found. Preserving existing Health Connect records.")
+	dbPath := "./health_connect_export.db"
+	if envDb := os.Getenv("WI_HEALTH_DB_DEST"); envDb != "" {
+		dbPath = envDb
+	}
+	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
+		log.Printf("Notice: %s not found. Preserving existing Health Connect records.", dbPath)
 	} else {
-		db, err := sql.Open("sqlite3", "./health_connect_export.db")
+		db, err := sql.Open("sqlite3", dbPath)
 		if err != nil {
 			log.Printf("Failed to open database: %v", err)
 		} else {
@@ -661,8 +670,8 @@ func main() {
 		IntakeRecords:   len(insiderData.CalorieIntake),
 	}
 
-	fmt.Printf("Saving all data to %s...\n", DataJSONPath)
-	if err := saveData(DataJSONPath, insiderData); err != nil {
+	fmt.Printf("Saving all data to %s...\n", targetDataPath)
+	if err := saveData(targetDataPath, insiderData); err != nil {
 		log.Fatalf("Failed to save data.json: %v", err)
 	}
 	fmt.Printf("Success! All data updated and valid JSON saved (LastSync: %s, Drive: %s).\n",

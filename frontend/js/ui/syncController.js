@@ -62,6 +62,15 @@ function updateDisplay() {
   _indicator.title = lines.join("\n");
 }
 
+function getSyncHeaders() {
+  const headers = { "Content-Type": "application/json" };
+  const token = (localStorage.getItem("weightInsider_syncToken") || "").trim();
+  if (token) {
+    headers["X-Sync-Token"] = token;
+  }
+  return headers;
+}
+
 async function triggerSync() {
   if (_isSyncing) return;
 
@@ -75,7 +84,7 @@ async function triggerSync() {
   try {
     const response = await fetch("/api/sync", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: getSyncHeaders(),
     });
 
     let result = null;
@@ -83,6 +92,16 @@ async function triggerSync() {
       result = await response.json();
     } catch {
       // response might not be JSON if server 404s
+    }
+
+    if (response.status === 401) {
+      throw new Error("Unauthorized (401). Sync token is missing or invalid. Set it in Settings > Data.");
+    }
+    if (response.status === 404) {
+      throw new Error("Endpoint /api/sync not found (404). Ensure sync-server is running and Nginx is proxying /api/.");
+    }
+    if (response.status === 429) {
+      throw new Error("Sync was performed recently. Please wait 20 seconds before retrying.");
     }
 
     if (!response.ok || !result?.success) {
@@ -109,14 +128,14 @@ async function triggerSync() {
     Utils.showStatusMessage("Dashboard updated with latest records.", "success", 2500);
   } catch (err) {
     console.warn("[SyncController] Sync error:", err);
-    if (err.message?.includes("Failed to fetch") || err.message?.includes("404")) {
+    if (err.message?.includes("Failed to fetch")) {
       Utils.showStatusMessage(
-        "Sync endpoint not reachable. Ensure the sync server or Vite dev server is running.",
+        "Sync server unreachable. Ensure the backend daemon or dev server is running.",
         "warn",
         6000,
       );
     } else {
-      Utils.showStatusMessage(`Sync failed: ${err.message}`, "error", 6000);
+      Utils.showStatusMessage(`Sync failed: ${err.message}`, "error", 7000);
     }
   } finally {
     _isSyncing = false;
@@ -130,7 +149,9 @@ async function triggerSync() {
 
 async function checkSyncStatus() {
   try {
-    const res = await fetch("/api/sync/status");
+    const res = await fetch("/api/sync/status", {
+      headers: getSyncHeaders(),
+    });
     if (res.ok) {
       const data = await res.json();
       if (data.lastSync) {

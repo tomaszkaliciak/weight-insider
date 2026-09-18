@@ -157,8 +157,13 @@ func handleSync(w http.ResponseWriter, r *http.Request, scriptPath, dataPath str
 		syncMutex.Unlock()
 	}()
 
-	log.Println("[SyncServer] Executing sync script:", scriptPath)
-	cmd := exec.Command("/bin/bash", scriptPath)
+	log.Println("[SyncServer] Executing sync command:", scriptPath)
+	var cmd *exec.Cmd
+	if strings.HasSuffix(scriptPath, ".sh") {
+		cmd = exec.Command("/bin/bash", scriptPath)
+	} else {
+		cmd = exec.Command(scriptPath)
+	}
 	cmd.Dir = filepath.Dir(scriptPath)
 	output, err := cmd.CombinedOutput()
 
@@ -234,9 +239,9 @@ func main() {
 	addr := ":" + strings.TrimPrefix(port, ":")
 	log.Printf("[SyncServer] Starting Weight Insider Sync API server on %s (script: %s, data: %s)", addr, scriptPath, dataPath)
 	if os.Getenv("WI_SYNC_TOKEN") != "" {
-		log.Println("[SyncServer] Security: WI_SYNC_TOKEN authentication is enabled")
+		log.Println("[SyncServer] Access mode: WI_SYNC_TOKEN authentication is enabled")
 	} else {
-		log.Println("[SyncServer] Security warning: WI_SYNC_TOKEN is not set. Anyone can trigger sync.")
+		log.Println("[SyncServer] Access mode: Public sync enabled (anyone can trigger, protected with 20s cooldown)")
 	}
 
 	if err := http.ListenAndServe(addr, nil); err != nil {

@@ -21,11 +21,15 @@ RUN npm run build
 # 2. Runtime Stage
 FROM nginx:alpine
 
+# Custom Nginx configuration with /api/ reverse proxy and data.json live volume support
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
 # Copy the built assets to Nginx's public folder
 COPY --from=builder /app/dist /usr/share/nginx/html
+# Fallback data.json
+COPY data.json /usr/share/nginx/html/data.json
 
 # Expose port (internal to docker network)
 EXPOSE 80
 
-# The data.json should be mounted to /usr/share/nginx/html/data.json so the backend can update it
 CMD ["nginx", "-g", "daemon off;"]
