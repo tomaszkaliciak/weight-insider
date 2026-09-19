@@ -7,6 +7,8 @@ import { DataService } from "../core/dataService.js";
 import { ManualEntryService } from "../core/manualEntryService.js";
 import { SettingsPanel } from "./settingsPanel.js";
 import { Utils } from "../core/utils.js";
+import { DomainManager } from "../core/domainManager.js";
+import { ChartInteractions } from "../interactions/chartInteractions.js";
 
 let _btn = null;
 let _indicator = null;
@@ -123,8 +125,10 @@ async function triggerSync() {
       _lastSyncData = fetchedRaw.lastSync;
     }
 
-    // Refresh UI without page reload
-    SettingsPanel.reprocessFromMerged(mergedData);
+    // Refresh UI without page reload and re-initialize chart domains to include new date
+    SettingsPanel.reprocessFromMerged(mergedData, rawDataObjects);
+    DomainManager.initializeDomains(StateManager.getState());
+    ChartInteractions.syncBrushAndZoomToFocus();
     Utils.showStatusMessage("Dashboard updated with latest records.", "success", 2500);
   } catch (err) {
     console.warn("[SyncController] Sync error:", err);

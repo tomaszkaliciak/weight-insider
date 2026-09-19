@@ -142,7 +142,7 @@ function _save() {
   Utils.showStatusMessage(`Settings saved${messages.length ? `: ${messages.join(", ")}` : ""}.`, "success", 3500);
 }
 
-function _reprocessData(settings, mergedData) {
+function _reprocessData(settings, mergedData, rawDataObjects = null) {
   // Temporarily override CONFIG values that the pipeline reads.
   // We do this by passing explicit window parameters to each step.
   let p = DataService.calculateBodyComposition(mergedData);
@@ -156,7 +156,11 @@ function _reprocessData(settings, mergedData) {
   p = DataService.calculateRateMovingAverage(p);
   StateManager.dispatch({
     type: "SET_INITIAL_DATA",
-    payload: { rawData: mergedData, processedData: p },
+    payload: {
+      rawData: mergedData,
+      processedData: p,
+      rawDataObjects: rawDataObjects || StateManager.getState().rawDataObjects,
+    },
   });
   StateManager.dispatch({ type: "INITIALIZATION_COMPLETE" });
 }
@@ -248,9 +252,9 @@ export const SettingsPanel = {
     _cachedMergedData = mergedData;
   },
 
-  reprocessFromMerged(mergedData) {
+  reprocessFromMerged(mergedData, rawDataObjects = null) {
     _cachedMergedData = mergedData;
-    _reprocessData(SettingsService.load(), mergedData);
+    _reprocessData(SettingsService.load(), mergedData, rawDataObjects);
   },
 
   init() {

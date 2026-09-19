@@ -11,7 +11,13 @@ export const DataService = {
   // --- Fetching & Basic Merging ---
   async fetchData() {
     try {
-      const response = await fetch("../data.json"); // Adjust path if needed
+      const response = await fetch(`../data.json?t=${Date.now()}`, {
+        cache: "no-store",
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+        },
+      });
       if (!response.ok) {
         throw new Error(
           `HTTP error! Status: ${response.status} - Failed to fetch data.json`,

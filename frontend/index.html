@@ -21,6 +21,9 @@
     <link rel="stylesheet" href="css/widgets/dashboards.css" />
     <link rel="stylesheet" href="css/widgets/components.css" />
     <link rel="stylesheet" href="css/widgets/advanced-features.css" />
+    <link rel="stylesheet" href="css/widgets/today-glance.css" />
+    <link rel="stylesheet" href="css/widgets/weekly-checkin.css" />
+    <link rel="stylesheet" href="css/widgets/strategy-modal.css" />
     <link rel="stylesheet" href="css/theme.css" />
 </head>
 
@@ -84,6 +87,13 @@
         <!-- Main Bento Canvas (no sidebar) -->
         <!-- Main Bento Canvas -->
         <div class="bento-canvas">
+
+            <!-- TODAY'S LIVE GLANCE (Full width cockpit widget) -->
+            <div id="today-glance-card" class="bento-widget span-3x1 today-glance-card">
+                <div id="today-glance-content">
+                    <div class="skeleton-loader"></div>
+                </div>
+            </div>
 
             <!-- ROW 1: High-Level KPIs & Summary -->
             <!-- Widget 1: Hero Weight (1x1) -->

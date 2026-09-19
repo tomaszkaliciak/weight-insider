@@ -109,35 +109,17 @@ async function networkFirstData(request) {
   const cache = await caches.open(DATA_CACHE);
 
   try {
-    const networkResponse = await fetch(request);
+    const networkResponse = await fetch(request, { cache: "no-store" });
     if (!networkResponse || networkResponse.status !== 200) {
       throw new Error("Non-200 response");
     }
 
-    // Check if the data changed compared to what's cached.
-    const existing = await cache.match(request);
-    if (existing) {
-      const [newText, oldText] = await Promise.all([
-        networkResponse.clone().text(),
-        existing.text(),
-      ]);
-      if (newText !== oldText) {
-        // Data actually changed — update cache and notify the UI.
-        await cache.put(request, new Response(newText, {
-          status: 200,
-          headers: networkResponse.headers,
-        }));
-        await notifyClients({ type: "DATA_UPDATED" });
-      }
-    } else {
-      // First fetch — just cache it.
-      await cache.put(request, networkResponse.clone());
-    }
-
+    // Always update cache with fresh network data
+    await cache.put(request, networkResponse.clone());
     return networkResponse;
   } catch {
     // Network unavailable or error — serve from cache.
-    const cached = await cache.match(request);
+    const cached = await cache.match(request, { ignoreSearch: true });
     if (cached) {
       await notifyClients({ type: "SERVING_CACHED_DATA" });
       return cached;

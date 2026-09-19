@@ -159,15 +159,33 @@ func DecodeJWT(token string) (*JWT, error) {
 }
 
 func loadCredentials(filename string) (*Credentials, error) {
-	byteValue, err := os.ReadFile(filename)
-	if err != nil {
-		return nil, fmt.Errorf("error reading file %s: %w", filename, err)
+	if login := strings.TrimSpace(os.Getenv("WI_FITATU_LOGIN")); login != "" {
+		pass := strings.TrimSpace(os.Getenv("WI_FITATU_PASSWORD"))
+		return &Credentials{Login: login, Password: pass}, nil
 	}
-	var credentials Credentials
-	if err := json.Unmarshal(byteValue, &credentials); err != nil {
-		return nil, fmt.Errorf("error unmarshalling JSON: %w", err)
+
+	candidates := []string{
+		filename,
+		os.Getenv("WI_FITATU_CREDENTIALS_FILE"),
+		"/app/secrets/credentials.json",
+		"/app/credentials.json",
+		"./credentials.json",
 	}
-	return &credentials, nil
+
+	for _, cand := range candidates {
+		if cand == "" {
+			continue
+		}
+		data, err := os.ReadFile(cand)
+		if err == nil {
+			var creds Credentials
+			if err := json.Unmarshal(data, &creds); err == nil && creds.Login != "" {
+				return &creds, nil
+			}
+		}
+	}
+
+	return nil, fmt.Errorf("credentials.json not found and WI_FITATU_LOGIN not set (checked %v)", candidates)
 }
 
 func makeHTTPRequest(client *http.Client, method, url string, body io.Reader, headers map[string]string) (*http.Response, error) {
@@ -674,6 +692,21 @@ func main() {
 	if err := saveData(targetDataPath, insiderData); err != nil {
 		log.Fatalf("Failed to save data.json: %v", err)
 	}
+
+	distDataPath := os.Getenv("WI_DIST_DATA_JSON")
+	if distDataPath == "" && targetDataPath == DataJSONPath {
+		if _, err := os.Stat("../frontend/dist"); err == nil {
+			distDataPath = "../frontend/dist/data.json"
+		}
+	}
+	if distDataPath != "" && distDataPath != targetDataPath {
+		if err := saveData(distDataPath, insiderData); err != nil {
+			log.Printf("Warning: Failed to mirror data to %s: %v", distDataPath, err)
+		} else {
+			fmt.Printf("Mirrored updated data to %s\n", distDataPath)
+		}
+	}
+
 	fmt.Printf("Success! All data updated and valid JSON saved (LastSync: %s, Drive: %s).\n",
 		insiderData.LastSync.Timestamp, driveStatus)
 }

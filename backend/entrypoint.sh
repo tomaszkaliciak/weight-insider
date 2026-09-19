@@ -3,10 +3,15 @@ set -e
 
 # Load environment file if present
 if [ -f "/app/health_connect_sync.env" ]; then
-    set -a
-    # shellcheck disable=SC1091
-    source /app/health_connect_sync.env
-    set +a
+    while IFS='=' read -r key value || [ -n "$key" ]; do
+        key=$(echo "$key" | tr -d '\r' | xargs)
+        [ -z "$key" ] || echo "$key" | grep -q '^#' && continue
+        value=$(echo "$value" | tr -d '\r' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'$//")
+        eval "var_set=\${$key+x}"
+        if [ -z "$var_set" ]; then
+            export "$key"="$value"
+        fi
+    done < "/app/health_connect_sync.env"
 fi
 
 # Ensure directories exist
